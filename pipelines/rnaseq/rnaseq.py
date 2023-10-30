@@ -2260,26 +2260,18 @@ pandoc \\
 
             # Count reads
             output_count = os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.tsv")
-            stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
+            stranded = config.param('htseq_count', 'stranded')
             job = concat_jobs(
                 [
                     bash.mkdir(f"{self.output_dirs['raw_counts_directory']}"),
                     bash.mkdir(link_directory),## ensure existance of link directory
-                    pipe_jobs(
-                        [
-                            samtools.view(
-                                input_bam,
-                                options="-F 4"
-                            ),
-                            htseq.htseq_count(
-                                "-",
-                                config.param('htseq_count', 'gtf', param_type='filepath'),
-                                output_count,
-                                config.param('htseq_count', 'options'),
-                                stranded
-                            ),
-                        ]
-                    ),
+                    htseq.htseq_count(
+                        input_bam,
+                        config.param('htseq_count', 'gtf', param_type='filepath'),
+                        output_count,
+                        config.param('htseq_count', 'options'),
+                        stranded
+                        ),
                     bash.ln(
                         target_file=os.path.relpath(output_count, link_directory),
                         link=os.path.join(link_directory, sample.name + ".tsv"),

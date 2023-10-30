@@ -24,11 +24,11 @@ import os
 from core.config import *
 from core.job import *
 
-def htseq_count(input, gtf, output, options="", stranded="no",input_type="sam"):
+def htseq_count(input, gtf, output, options="", stranded="no",input_type="bam"):
     return Job(
         [input],
         [output],
-        [['htseq_count', 'module_python']],
+        [['htseq_count', 'module_htseq']],
         command="""\
 htseq-count {input} \\
   {options} \\
