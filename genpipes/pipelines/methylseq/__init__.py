@@ -281,7 +281,6 @@ Parameters:
         gembs_config_file = os.path.join(self.output_dir, "gembs.config")
         index_dir = os.path.join(self.output_dirs["alignment_directory"], "index")
         gembs_dir = os.path.join(self.output_dir, ".gemBS")
-        trim_files = []
 
         # write directly, instead of parsing readset file. It's already parsed and info already available.
         #gembs.make_metadata(self.args.readsets.name, metadata_file)
@@ -300,7 +299,6 @@ Parameters:
                     if readset.bam:
                         candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
                     [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                    trim_files.extend([fastq1, fastq2])
                 
                     metadata = [readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1,fastq2]
                 
@@ -312,7 +310,6 @@ Parameters:
                         candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
                     [fastq1] = self.select_input_files(candidate_input_files)
                     fastq2 = None
-                    trim_files.extend([fastq1])
     
                     metadata = [readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1]
     
@@ -339,7 +336,7 @@ Parameters:
                             )
                         ],
                     name="gembs_prepare",
-                    input_dependency=[metadata_file,gembs_config_file] + trim_files
+                    input_dependency=[metadata_file,gembs_config_file]
                     )
                 )
 
@@ -373,7 +370,22 @@ Parameters:
         for sample in self.samples:
             alignment_dir = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             config_dir = os.path.join(alignment_dir, ".gemBS")
-          
+            trim_directory = os.path.join(self.output_dirs["trim_directory"], sample.name)
+            trim_files = []
+
+            for readset in sample.readsets:
+                trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
+                if readset.run_type == "PAIRED_END":
+                    trim_fastqs = [trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]
+                    trim_files.extend(trim_fastqs)
+                elif read.run_type == "SINGLE_END":
+                    trim_fastq = trim_file_prefix + "single.fastq.gz"
+                    trim_files.append(trim_fastq)
+                else:
+                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+
             jobs.append(
                     concat_jobs(
                         [
@@ -396,7 +408,7 @@ Parameters:
                         ],
                         name = "gembs_map." + sample.name,
                         samples = [sample],
-                        input_dependency=[gembs_config,index]
+                        input_dependency=[gembs_config,index] + trim_files
                         )
                     )
         return jobs
