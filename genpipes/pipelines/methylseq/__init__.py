@@ -282,42 +282,39 @@ Parameters:
         index_dir = os.path.join(self.output_dirs["alignment_directory"], "index")
         gembs_dir = os.path.join(self.output_dir, ".gemBS")
 
-        # write directly, instead of parsing readset file. It's already parsed and info already available.
-        #gembs.make_metadata(self.args.readsets.name, metadata_file)
-        with open(metadata_file, 'w') as f:
-            writer = csv.writer(f)
-            writer.writerow(["sampleID","dataset","library","sample","file1","file2"])
-            for readset in self.readsets:
+        metadata_list = []
+        
+        for readset in self.readsets:
                 
-                trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
                 
-                # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-                if readset.run_type == "PAIRED_END":
-                    candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                    if readset.fastq1 and readset.fastq2:
-                        candidate_input_files.append([readset.fastq1, readset.fastq2])
-                    if readset.bam:
-                        candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                    [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 
-                    metadata = [readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1,fastq2]
+                metadata = ','.join([readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1,fastq2])
                 
-                elif readset.run_type == "SINGLE_END":
-                    candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                    if readset.fastq1:
-                        candidate_input_files.append([readset.fastq1])
-                    if readset.bam:
-                        candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                    [fastq1] = self.select_input_files(candidate_input_files)
-                    fastq2 = None
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
     
-                    metadata = [readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1]
+                metadata = ','.join([readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1])
     
-                else:
-                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
                 
-                writer.writerow(metadata)
+            metadata_list.append(metadata)
 
         jobs.append(
                 concat_jobs(
@@ -325,6 +322,10 @@ Parameters:
                         #bash.rm(index_dir),
                         bash.mkdir(index_dir),
                         bash.rm(gembs_dir),
+                        gembs.make_metadata(
+                            metadata_list,
+                            metadata_file
+                            ),
                         gembs.make_config(
                             self.output_dir,
                             gembs_config_file
@@ -1308,6 +1309,30 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         name = "gembs_extract." + sample.name,
                         samples = [sample],
                         input_dependency = [input]
+                        )
+                    )
+
+            # decide on what to use for snp output
+            dbSNP = config.param('DEFAULT','known_variants')
+            snp_output = os.path.join(variants_directory, sample.name + "_snps.vcf")
+            # create vcf of snps instead of using gemBS snp output format
+            jobs.append(
+                    pipe_jobs(
+                        [
+                            bcftools.view(
+                                input,
+                                None,
+                                '-f.,PASS'
+                                ),
+                            bedtools.intersect(
+                                '-',
+                                snp_output,
+                                dbSNP,
+                                include_header=True
+                                )
+                            ],
+                        name = "bedtools_intersect." + sample.name,
+                        samples = [sample]
                         )
                     )
 
