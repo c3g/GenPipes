@@ -1284,7 +1284,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         input_dependency=[bam,gembs_config]
                         )
                     )
-        # add extract here or in separate step?
+            
             variants_dir = os.path.join(self.output_dirs["variants_directory"], sample.name)
             config_dir = os.path.join(variants_dir, ".gemBS")
             input = output_prefix + ".bcf"
@@ -1303,39 +1303,13 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                                 input,
                                 sample.name,
                                 variants_dir
-                                ) #,
-                            # add symlink for snp output to variants dir?
+                                )
                             ],
                         name = "gembs_extract." + sample.name,
                         samples = [sample],
                         input_dependency = [input]
                         )
                     )
-
-            # decide on what to use for snp output
-            dbSNP = config.param('DEFAULT','known_variants')
-            snp_output = os.path.join(variants_directory, sample.name + "_snps.vcf")
-            # create vcf of snps instead of using gemBS snp output format
-            jobs.append(
-                    pipe_jobs(
-                        [
-                            bcftools.view(
-                                input,
-                                None,
-                                '-f.,PASS'
-                                ),
-                            bedtools.intersect(
-                                '-',
-                                snp_output,
-                                dbSNP,
-                                include_header=True
-                                )
-                            ],
-                        name = "bedtools_intersect." + sample.name,
-                        samples = [sample]
-                        )
-                    )
-
         return jobs
 
     def gembs_report(self):
