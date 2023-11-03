@@ -378,7 +378,7 @@ Parameters:
                 if readset.run_type == "PAIRED_END":
                     trim_fastqs = [trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]
                     trim_files.extend(trim_fastqs)
-                elif read.run_type == "SINGLE_END":
+                elif readset.run_type == "SINGLE_END":
                     trim_fastq = trim_file_prefix + "single.fastq.gz"
                     trim_files.append(trim_fastq)
                 else:
