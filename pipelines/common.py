@@ -501,12 +501,12 @@ pandoc \\
                         [
                             mkdir_job,
                             bash.ln(
-                                os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
+                                os.path.relpath(readset_bam, os.path.join(self.output_dir, "alignment", sample.name)),
                                 sample_bam,
                                 input=readset_bam
                             ),
                             bash.ln(
-                                os.path.relpath(readset_index, os.path.dirname(sample_index)),
+                                os.path.relpath(readset_index, os.path.join(self.output_dir, "alignment", sample.name)),
                                 sample_index,
                                 input=readset_index
                             )
