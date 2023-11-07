@@ -477,7 +477,7 @@ pandoc \\
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dir, 'alignment', sample.name)
+            alignment_directory = os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
             # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [
@@ -501,12 +501,12 @@ pandoc \\
                         [
                             mkdir_job,
                             bash.ln(
-                                os.path.relpath(readset_bam, os.path.join(self.output_dir, "alignment", sample.name)),
+                                os.path.relpath(readset_bam, alignment_directory),
                                 sample_bam,
                                 input=readset_bam
                             ),
                             bash.ln(
-                                os.path.relpath(readset_index, os.path.join(self.output_dir, "alignment", sample.name)),
+                                os.path.relpath(readset_index, alignment_directory),
                                 sample_index,
                                 input=readset_index
                             )
