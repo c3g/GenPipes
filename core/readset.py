@@ -332,11 +332,17 @@ class IlluminaRawReadset(IlluminaReadset):
     
     @property
     def external_project_id(self):
-        return self._external_project_id
+        if not hasattr(self, "_external_project_id"):
+            return None
+        else:
+            return self._external_project_id
 
     @property
     def external_project_name(self):
-        return self._external_project_name
+        if not hasattr(self, "_external_project_name"):
+            return None
+        else:
+            return self._external_project_name
 
     @property
     def library_source(self):
@@ -376,7 +382,10 @@ class IlluminaRawReadset(IlluminaReadset):
 
     @property
     def run_obj_id(self):
-        return self._run_obj_id
+        if not hasattr(self, "_run_obj_id"):
+            return None
+        else:
+             return self._run_obj_id
 
     @property
     def flow_cell(self):

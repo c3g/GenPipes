@@ -382,6 +382,63 @@ bcl2fastq \\
             other_options=config.param('bcl2fastq_index', 'other_options'),
         )
     )
+def mgi_splitbarcode(
+    input,
+    run_dir,
+    flowcell_id,
+    fastq_outputs,
+    output_dir,
+    json_flag_hash,
+    barcode_file,   # here check if we use flag file or barcode file : first draft of barcode file creation already in pipelines/run_processing/run_processing.py
+    mismatches,
+    ini_section='basecall'
+    ):
+
+    read1len = int(json_flag_hash['Read1'])
+    read2len = int(json_flag_hash['Read2']) if json_flag_hash['Read2'] else 0
+
+    barcode1len = int(json_flag_hash['Barcode']) if json_flag_hash['Barcode'] else 0
+    barcode2len = int(json_flag_hash['Dual Barcode']) if json_flag_hash['Dual Barcode'] else 0
+    barcodelen = barcode1len + barcode2len
+
+    total_cycles = read1len + read2len + barcode1len + barcode2len
+    barcode_start_cycle = read1len + read2len + 1
+
+    return Job(
+        [input, barcode_file],
+        fastq_outputs,
+        [
+            [ini_section, 'module_basecall_t7'],
+            [ini_section, 'module_python']
+        ],
+        command="""\
+splitBarcode \\
+  -F {run_dir}/L01/calFile \\
+  -C {total_cycles} \\
+  --Col {fovcolumns} \\
+  --Row {fovrows} \\
+  -N {flowcell_id} \\
+  -B {barcode_file} \\
+  -o {output_dir} \\
+  -r 1 \\
+  -i {barcode_start_cycle} {barcodelen} {mismatches} \\
+  -E 3 \\
+  -P {read1len} \\
+  --filter_param 2 23 22 1 1 0.78 0.71""".format(
+            run_dir=run_dir,
+            total_cycles=total_cycles,
+            fovcolumns=json_flag_hash["fovMaxC"],
+            fovrows=json_flag_hash["fovMaxR"],
+            flowcell_id=flowcell_id,
+            barcode_file=barcode_file,
+            output_dir=output_dir,
+            barcode_start_cycle=barcode_start_cycle,
+            barcodelen=barcodelen,
+            mismatches=mismatches,
+            read1len=read1len
+            # some other parameters could be parsed from the json file as well i.e.--Col and --Row are for last column and row on the flowcell
+        )
+    )
 
 def mgi_t7_basecall(
     input,
