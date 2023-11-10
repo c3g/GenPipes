@@ -481,8 +481,8 @@ pandoc \\
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
             # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+                [os.path.join(self.output_dir, alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
+                [os.path.join(self.output_dir, alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
             ]
             candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
             readset_bams = self.select_input_files(candidate_readset_bams)
