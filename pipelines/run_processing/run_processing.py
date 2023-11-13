@@ -3620,6 +3620,8 @@ class RunProcessing(common.MUGQICPipeline):
         unaligned_dir = self.output_dirs[lane][f"Unaligned.{lane}_directory"]
         basecall_dir = os.path.join(unaligned_dir, "basecall")
 
+        index_lengths = self.get_smallest_index_length(lane)
+
         for readset in self.readsets[lane]:
             readset_r1_outputs = []
             readset_r2_outputs = []
@@ -3743,16 +3745,21 @@ class RunProcessing(common.MUGQICPipeline):
                 samples=self.samples[lane]
             )
         )
+        
         if self.is_paired_end[lane]:
             unmatched_R2_fastq = os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz")
+            unaligned_i1 = os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+            unexpected_barcode_counts_i1 = re.sub(".fastq.gz", ".counts.txt", unaligned_i1)
             if unmatched_R2_fastq not in basecall_outputs:
                 basecall_outputs.append(unmatched_R2_fastq)
             outputs = [
                 os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
-                os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+                unaligned_i1
             ]
             if self.is_dual_index[lane]:
-                outputs.append(os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz"))
+                unaligned_i2 = os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
+                unexpected_barcode_counts_i2 = re.sub(".fastq.gz", ".counts.txt", unaligned_i2)
+                outputs.append(unaligned_i2)
             postprocessing_jobs.append(
                 pipe_jobs(
                     [
@@ -3773,6 +3780,82 @@ class RunProcessing(common.MUGQICPipeline):
                 )
             )
 
+            if unaligned_i1:
+                index1length = index_lengths[1] if unaligned_i2 else index_lengths[0]
+                if index1length:
+                    postprocessing_jobs.append(
+                        pipe_jobs(
+                            [
+                                bash.cat(
+                                    unaligned_i1,
+                                    None,
+                                    zip=True
+                                ),
+                                bash.awk(
+                                    None,
+                                    unexpected_barcode_counts_i1,
+                                    f"'NR%4==2 {{print substr($0,1,{index1length})}}' | sort | uniq -c | sort -nr"
+                                )
+                            ],
+                            name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
+                            samples=self.samples[lane]
+                        )
+                    )
+            if unaligned_i2:
+                index1length = index_lengths[1]
+                index2length = index_lengths[0]
+                if index2length:
+                    postprocessing_jobs.append(
+                        pipe_jobs(
+                            [
+                                bash.cat(
+                                    unaligned_i2,
+                                    None,
+                                    zip=True
+                                ),
+                                bash.awk(
+                                    None,
+                                    unexpected_barcode_counts_i2,
+                                    f"'NR%4==2 {{print substr($0,1,{index2length})}}' | sort | uniq -c | sort -nr"
+                                )
+                            ],
+                            name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
+                            samples=self.samples[lane]
+                        )
+                    )
+                unexpected_barcode_counts_i1i2 = re.sub("_I1_", "_I1I2_", unexpected_barcode_counts_i1)
+                postprocessing_jobs.append(
+                    concat_jobs(
+                        [
+                            bash.paste(
+                                None,
+                                unexpected_barcode_counts_i1i2,
+                                options=f"-d '' <(zcat {unaligned_i1} | awk 'NR%4==2 {{print substr($0,1,{index1length})}}') <(zcat {unaligned_i2} | awk 'NR%4==2 {{print substr($0,1,{index2length})}}') | sort | uniq -c | sort -nr"
+                            )
+                        ],
+                        input_dependency=[
+                            unaligned_i1,
+                            unaligned_i2
+                            ],
+                        name="fastq_countbarcodes.I1I2.unmatched." + self.run_id + "." + lane,
+                        samples=self.samples[lane]
+                    )
+                )
+    
+            if unaligned_i2:
+                unexpected_barcode_counts = unexpected_barcode_counts_i1i2
+            else:
+                unexpected_barcode_counts = unexpected_barcode_counts_i1
+            unexpected_barcode_matches = re.sub(".counts.txt", ".match_table.tsv", unexpected_barcode_counts)
+    
+            job = run_processing_tools.match_undetermined_barcodes(
+                    unexpected_barcode_counts,
+                    unexpected_barcode_matches
+                    )
+            job.name = 'fastq_match_undetermined_barcodes.' + self.run_id + "." + lane
+            job.samples = self.samples[lane]
+            postprocessing_jobs.append(job)
+        
         return basecall_outputs, postprocessing_jobs
 
     def generate_bcl2fastq_outputs(self, lane):
@@ -4629,7 +4712,7 @@ class RunProcessing(common.MUGQICPipeline):
                 self.md5,
                 self.report,
                 self.copy,
-                self.final_notification
+                self.final_notification,
             ]
         ]
 
