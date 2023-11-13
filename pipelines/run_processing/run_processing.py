@@ -4712,7 +4712,7 @@ class RunProcessing(common.MUGQICPipeline):
                 self.md5,
                 self.report,
                 self.copy,
-                self.final_notification,
+                self.final_notification
             ]
         ]
 
