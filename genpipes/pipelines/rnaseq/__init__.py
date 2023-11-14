@@ -32,7 +32,6 @@ from ...core.config import global_conf, _raise, SanitycheckError
 from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import common
 from ...bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
-import ... utils
 
 from ...bfx import (
     adapters,
@@ -2627,9 +2626,9 @@ END
 
         return jobs
 
-    @property
     def protocols(self):
-        return [
+        return {
+            'stringtie':
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
@@ -2653,6 +2652,7 @@ END
                 self.multiqc,
                 self.cram_output
             ],
+            'variant':
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
@@ -2680,6 +2680,7 @@ END
                 self.multiqc,
                 self.cram_output
             ],
+            'cancer':
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
@@ -2711,7 +2712,7 @@ END
                 self.multiqc,
                 self.cram_output
             ]
-        ]
+        }
 
 class RnaSeq(RnaSeqRaw):
     __doc__ = RnaSeqRaw.__doc__
@@ -2725,7 +2726,7 @@ class RnaSeq(RnaSeqRaw):
         def argparser(cls, argparser):
             super().argparser(argparser)
             cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
-                                        choices=['stringtie', 'variants', 'cancer']), default="stringtie")
+                                        choices=['stringtie', 'variants', 'cancer'], default="stringtie")
             cls._argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction",
                                         type=argparse.FileType('r'))
 

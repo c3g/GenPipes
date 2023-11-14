@@ -30,7 +30,6 @@ import gzip
 from ...core.config import global_conf
 from ...core.job import Job, concat_jobs, pipe_jobs
 from ...core.sample_tumor_pairs import parse_tumor_pair_file
-import ... import utils
 
 from ...pipelines.dnaseq import dnaseq
 
@@ -7029,5 +7028,5 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.linx_annotations_germline, #15
                 self.linx_plot
             ]
-        ]
+        }
 

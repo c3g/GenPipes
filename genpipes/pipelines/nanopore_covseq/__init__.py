@@ -39,7 +39,7 @@ from ...bfx import sambamba
 from ...bfx import samtools
 from ...bfx import snpeff
 from ...bfx import wub
-from ...core.config import config, SanitycheckError, _raise
+from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import common
 

@@ -315,7 +315,6 @@ class Nanopore(common.GenPipesPipeline):
     def step_list(self):
         return self.protocols()[self._protocol]
 
-    @property
     def protocols(self):
         return { 'default': [
             self.blastqc,
