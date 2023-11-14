@@ -24,22 +24,45 @@ import os
 from core.config import *
 from core.job import *
 
-def run(input_bam, output_directory):
-    input_base = os.path.basename(input_bam)    
+def run(input_bam, input_gtf, output_directory):
+    input_base = os.path.basename(input_bam)
     return Job(
-        [input_bam],
+        [input_bam, input_gtf],
         [os.path.join(output_directory, input_base + ".metrics.tsv")],
         [
             ['rnaseqc2', 'module_rnaseqc2']
         ],
         command="""\
 rnaseqc \\
-  {gtf_file} \\
+  {input_gtf} \\
   {input_bam} \\
+  {other_options} \\
   {output_directory}""".format(
-            gtf_file=config.param('rnaseqc2', 'gtf', param_type='filepath'),
+            input_gtf=input_gtf,
             input_bam=input_bam,
             output_directory=output_directory,
             other_options=(" \\\n  " + config.param('rnaseqc2', 'other_options', required=False)) if config.param('rnaseqc2', 'other_options', required=False) else ""
         )
     )
+
+def parse_expression_profiling_efficiency_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export expression_profiling_efficiency=`awk '{{if ($0 ~ /Expression Profiling Efficiency/) {{print $4}}}}' {input_file}`"""
+        )
+
+def parse_rrna_rate_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export rrna_rate=`awk '{{if ($0 ~ /rRNA Rate/) {{print $3}}}}' {input_file}`"""
+        )

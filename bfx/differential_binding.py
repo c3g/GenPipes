@@ -45,6 +45,7 @@ def diffbind(
     R_filename = os.path.join(output_dir, f"diffbind_{comparison}_{method}_dba.R")
 
     th = config.param('differential_binding', 'th')
+    thT = config.param('differential_binding', 'thT')
     bUsePval = config.param('differential_binding', 'bUsePval')
     contrastnb = config.param('differential_binding', 'contrastnb', required=False) if config.param('differential_binding', 'contrastnb', required=False) else 1
 
@@ -59,7 +60,7 @@ def diffbind(
         command="""\
         mkdir -p {output_dir} &&
 cp $R_TOOLS/DiffBind.R {R_filename} &&
-Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",ext="{alignment_ext}",p="{peak_dir}",dir="{output_dir}",minOverlap={minOverlap},minMembers={minMembers},method="{method}",th={th},bUsePval={bUsePval},contrastnb={contrastnb}),output_file=file.path(cur_dir,"{html_output}"));' &&
+Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",ext="{alignment_ext}",p="{peak_dir}",dir="{output_dir}",minOverlap={minOverlap},minMembers={minMembers},method="{method}",th={th},thT={thT},bUsePval={bUsePval},contrastnb={contrastnb}),output_file=file.path(cur_dir,"{html_output}"));' &&
 rm {R_filename}""".format(
             design=design,
             comparison=comparison,
@@ -75,6 +76,7 @@ rm {R_filename}""".format(
             R_filename=R_filename,
             method=method,
             th=th,
+            thT=thT,
             bUsePval=bUsePval,
             contrastnb=contrastnb
         )

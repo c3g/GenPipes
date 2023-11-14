@@ -47,7 +47,6 @@ def align(
     allsjdbFiles=None,	
     ):
 
-
     if not genome_index_folder:
         genome_index_folder = config.param('star_align', 'genome_index_folder', required=True).format(
             star_version=config.param('star_align', 'module_star').split('/')[-1]
@@ -64,9 +63,11 @@ def align(
         inputs.extend(allsjdbFiles)
 
     bam_name = "Aligned.sortedByCoord.out.bam" if sort_bam else "Aligned.out.bam"
+    log_file = os.path.join(output_directory, "Log.final.out")
+
     job = Job(
         inputs,
-        [os.path.join(output_directory, bam_name), os.path.join(output_directory, "SJ.out.tab")],
+        [os.path.join(output_directory, bam_name), os.path.join(output_directory, "SJ.out.tab"), log_file],
         [['star_align', 'module_star']],
         removable_files=[os.path.join(output_directory, bam_name)]
     )

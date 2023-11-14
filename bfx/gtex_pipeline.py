@@ -24,22 +24,20 @@ import os
 from core.config import *
 from core.job import *
 
-def htseq_count(input, gtf, output, options="", stranded="no",input_type="bam"):
+def collapse_gtf(input_gtf, output_gtf):
     return Job(
-        [input],
-        [output],
-        [['htseq_count', 'module_htseq']],
+        input_files=[input_gtf],
+        output_files=[output_gtf],
+        module_entries=[
+            ['gtex_pipeline', 'module_gtex-pipeline'],
+            ['gtex_pipeline', 'module_python']
+        ],
         command="""\
-htseq-count {input} \\
-  {options} \\
-  --stranded={stranded} \\
-  --format={input_type} \\
-  {gtf}{output}""".format(
-        options=options,
-        stranded=stranded,
-        input=input,
-        gtf=gtf,
-        output=" \\\n  > " + output if output else "",
-        input_type="-" if input_type == "/dev/stdin" else input_type
+        collapse_annotation.py \\
+        {input_gtf} \\
+        {output_gtf} """.format(
+        	input_gtf=input_gtf,
+            output_gtf=output_gtf
         )
+
     )

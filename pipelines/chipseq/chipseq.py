@@ -2086,7 +2086,8 @@ done""".format(
                                 gatk4.genotype_gvcf(
                                     output_haplotype_file_prefix + ".hc.g.vcf.gz",
                                     output_haplotype_file_prefix + ".hc.vcf.gz",
-                                    config.param('gatk_genotype_gvcf', 'options')
+                                    options=config.param('merge_and_call_individual_gvcf', 'options'),
+                                    ini_section='merge_and_call_individual_gvcf'
                                 )
                             ],
                             name="merge_and_call_individual_gvcf.call." + sample.name +"_"+ mark_name,

@@ -68,7 +68,7 @@ def germline_config(
 
     if not isinstance(input_normal, list):
         input_normal = [input_normal]
-        
+
     return Job(
         input_normal,
         [os.path.join(output_dir, "runWorkflow.py")],
@@ -97,7 +97,7 @@ def run(
     output_dep=[]
     ):
 
-    ram = config.param('manta_sv', 'ram')
+    ram = config.param('strelka2_paired_somatic', 'ram')
     ram_num = re.match('[0-9]+', ram)
     ram_GB = ram_num.group()
     if 'm' in ram.lower():

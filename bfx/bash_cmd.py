@@ -56,7 +56,7 @@ def ln(
     input=None,
     output=None
     ):
-    
+
     inputs = [input] if input else [target_file]
     outputs = [output] if output else [link]
 

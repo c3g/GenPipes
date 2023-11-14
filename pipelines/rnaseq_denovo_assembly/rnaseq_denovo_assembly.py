@@ -608,6 +608,7 @@ pandoc --to=markdown \\
                 job_name="trinotate_report",
                 input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.trinotate.Rmd"),
                 samples=self.samples,
+                readsets=self.readsets,
                 render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
                 prerun_r=f'report_dir="{self.output_dirs["trinotate_directory"]}"; source_dir="{self.output_dirs["trinotate_directory"]}";'
@@ -755,6 +756,7 @@ pandoc --to=markdown \\
                 job_name="gq_seq_utils_exploratory_analysis_rnaseq_denovo_report",
                 input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq.Rmd"),
                 samples=self.samples,
+                readsets=self.readsets,
                 render_output_dir=self.output_dirs["report_directory"],
                 module_section='report', # TODO: this or exploratory?
                 prerun_r=f'report_dir="{self.output_dirs["report_directory"]}";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
@@ -922,6 +924,7 @@ pandoc --to=markdown \\
                 job_name="gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered_report",
                 input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq_filtered.Rmd"),
                 samples=self.samples,
+                readsets=self.readsets,
                 render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
                 prerun_r=f'report_dir="{self.output_dirs["report_directory"]}/filtered_assembly"; exploratory_dir="{exploratory_output_dir}";'
@@ -1058,6 +1061,7 @@ pandoc --to=markdown \\
                 job_name="differential_expression_goseq_rnaseq_denovo_report",
                 input_rmarkdown_file=input_rmarkdown_file,
                 samples=self.samples,
+                readsets=self.readsets,
                 render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
                 prerun_r=f'design_file="{os.path.relpath(self.args.design.name, self.output_dir)}"; ' +
@@ -1150,6 +1154,7 @@ pandoc --to=markdown \\
                 job_name="differential_expression_goseq_rnaseq_denovo_filtered_report",
                 input_rmarkdown_file=input_rmarkdown_file,
                 samples=self.samples,
+                readsets=self.readsets,
                 render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
                 prerun_r=f'report_dir="{report_dir}"; ' +

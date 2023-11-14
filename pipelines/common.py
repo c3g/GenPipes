@@ -73,12 +73,12 @@ class MUGQICPipeline(Pipeline):
         if 'NO_MUGQIC_REPORT' in os.environ:
             return None
         server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
-        listName = {}
+        list_name = {}
         for readset in self.readsets:
-            if readset.sample.name in listName:
-                listName[readset.sample.name]+="."+readset.name
+            if readset.sample.name in list_name:
+                list_name[readset.sample.name]+="."+readset.name
             else:
-                listName[readset.sample.name]=readset.sample.name+"."+readset.name
+                list_name[readset.sample.name]=readset.sample.name+"."+readset.name
 
         # The unique identifier is computed from:
         # - Pipeline name
@@ -86,18 +86,16 @@ class MUGQICPipeline(Pipeline):
         # - Server name
         # - Readset File
 
-        hostName = socket.gethostname()
-        serverIP = socket.gethostbyname(hostName)
-        pipelineName = self.__class__.__name__
-        readsetFiles = ",".join(listName.values())
-        uniqueIdentifier = "{serverIP}-{pipelineName}-{readsetFiles}" \
-            .format(serverIP=serverIP, pipelineName=pipelineName, readsetFiles=readsetFiles) \
-            .replace("'", "''")
+        host_name = socket.gethostname()
+        server_ip = socket.gethostbyname(host_name)
+        pipeline_name = self.__class__.__name__
+        readset_files = ",".join(list_name.values())
+        unique_identifier = f"{server_ip}-{pipeline_name}-{readset_files}".replace("'", "''")
 
         request = '&'.join([
-            "hostname=" + hostName,
-            "ip=" + serverIP,
-            "pipeline=" + pipelineName,
+            "hostname=" + host_name,
+            "ip=" + server_ip,
+            "pipeline=" + pipeline_name,
             "steps=" + ",".join([step.name for step in self.step_range]),
             "samples=" + str(len(self.samples))
         ])
@@ -106,10 +104,10 @@ class MUGQICPipeline(Pipeline):
 {separator_line}
 # Call home with pipeline statistics
 {separator_line}
-LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
+LOG_MD5=$(echo $USER-'{unique_identifier}' | md5sum | awk '{{ print $1 }}')
 if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; fi; fi
 wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
-""".format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
+""".format(separator_line = "#" + "-" * 79, server=server, request=request, unique_identifier=unique_identifier))
 
     def submit_jobs(self):
         super(MUGQICPipeline, self).submit_jobs()
@@ -248,9 +246,13 @@ class Illumina(MUGQICPipeline):
                                 bam,
                                 fastq1,
                                 fastq2
+                                )
+                            ],
+                            name=f"picard_sam_to_fastq.{readset.name}",
+                            samples=[readset.sample],
+                            readsets=[readset]
                             )
-                        ], name="picard_sam_to_fastq."+readset.name, samples=[readset.sample])
-                    )
+                        )
                 else:
                     _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs
@@ -349,17 +351,22 @@ END
             if adapter_job:
                 job = concat_jobs([adapter_job, job])
 
-            jobs.append(concat_jobs([
-                # Trimmomatic does not create output directory by default
-                bash.mkdir(trim_directory),
-                bash.mkdir(link_directory),
-                job,
-                bash.ln(
+            jobs.append(concat_jobs(
+                [
+                    # Trimmomatic does not create output directory by default
+                    bash.mkdir(trim_directory),
+                    bash.mkdir(link_directory),
+                    job,
+                    bash.ln(
                     os.path.relpath(trim_log, link_directory),
                     os.path.join(link_directory, readset.name + ".trim.log"),
                     trim_log
                     )
-            ], name="trimmomatic." + readset.name, samples=[readset.sample]))
+                ],
+                name="trimmomatic." + readset.name,
+                samples=[readset.sample],
+                readsets=[readset]
+                ))
         return jobs
 
     def merge_trimmomatic_stats(self):
@@ -369,7 +376,10 @@ END
 
         read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
         readset_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimReadsetTable.tsv")
-        job = concat_jobs([Job(command=f"mkdir -p {self.output_dirs['metrics_directory']}"), Job(command=f"echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > {readset_merge_trim_stats}")])
+        job = concat_jobs([
+            bash.mkdir(self.output_dirs['metrics_directory']),
+            Job(command=f"echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > {readset_merge_trim_stats}")
+            ])
         for readset in self.readsets:
             trim_log = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
@@ -479,31 +489,39 @@ pandoc \\
 
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
-            
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
                 readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
                 sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
-    
+
+                if alignment_directory in readset_bam:
+                    bam_link = os.path.relpath(readset_bam, alignment_directory)
+                    index_link = os.path.relpath(readset_index, alignment_directory)
+
+                else:
+                    bam_link = os.path.relpath(readset_bam, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
+                    index_link = os.path.relpath(readset_index, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
+
                 jobs.append(
                     concat_jobs(
                         [
                             mkdir_job,
                             bash.ln(
-                                os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
+                                bam_link,
                                 sample_bam,
                                 input=readset_bam
                             ),
                             bash.ln(
-                                os.path.relpath(readset_index, os.path.dirname(sample_index)),
+                                index_link,
                                 sample_index,
                                 input=readset_index
                             )
                         ],
                         name="symlink_readset_sample_bam." + sample.name,
-                        samples=[sample]
+                        samples=[sample],
+                        readsets=list(sample.readsets)
                     )
                 )
 
@@ -555,7 +573,7 @@ pandoc \\
                 [known_variants_annotated],
                 [variants_directory, verify_bam_id_directory],
                 command="mkdir -p " + variants_directory + " " + verify_bam_id_directory,
-                name = "verify_bam_id_create_directories"
+                name="verify_bam_id_create_directories"
         ))
 
         for sample in self.samples:
@@ -573,7 +591,6 @@ pandoc \\
             # Run verifyBamID
             job = verify_bam_id.verify(
                 input_bam,
-                known_variants_annotated,
                 output_prefix
             )
             job.name = "verify_bam_id." + sample.name
@@ -589,13 +606,14 @@ pandoc \\
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-                job_input            = verify_bam_results ,
-                job_name             = "verify_bam_id_report",
-                input_rmarkdown_file = os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd"),
-                samples              = self.samples,
-                render_output_dir    = 'report',
-                module_section       = 'report',
-                prerun_r             = 'source_dir="' + verify_bam_id_directory + '"; report_dir="report" ; params=list(verifyBamID_variants_file="' + known_variants_annotated  + '", dbnsfp_af_field="' + population_AF + '", coverage_bed="' + target_bed + '");'
+                job_input=verify_bam_results ,
+                job_name="verify_bam_id_report",
+                input_rmarkdown_file=os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd"),
+                samples=self.samples,
+                readsets=self.readsets,
+                render_output_dir='report',
+                module_section='report',
+                prerun_r=f'source_dir="{verify_bam_id_directory}"; report_dir="report" ; params=list(verifyBamID_variants_file="{known_variants_annotated}", dbnsfp_af_field="{population_AF}", coverage_bed="{target_bed}");'
             )
         )
 
