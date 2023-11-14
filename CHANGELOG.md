@@ -1,6 +1,185 @@
-44 tags, 10124 commits
+45 tags, 10289 commits
 
-HEAD        Fri Sep 8 17:48:23 2023 +0000        0 commits
+HEAD        Tue Nov 14 12:32:38 2023 -0500        0 commits
+
+4.4.5        Tue Nov 14 17:48:30 2023 +0000        165 commits
+
+  Gerardo Zapata Abogado <gerardo_za_94@hotmail.com>      29 commits
+
+       c04a5293 Merged in GZ_rnaseq_sortmeRNA (pull request #454)
+       1b794477 addition of sortmerna following rebase
+       574d57a3 condense code, move other_options to avoid empty lines, forgot to remove other options.
+       8a561729 condense code, move other_options to avoid empty lines
+       97987a68 condense code, add loop to sortmerna_job only 3
+       61b65ed8 condense code, add loop to sortmerna_job only 2
+       8485db61 condense code, add loop to sortmerna_job only
+       23487518 Fixes to the initial PR, messages and help by MJ
+       facbab9e Addition of sortmerna 15
+       0b20d87d Addition of sortmerna 14
+       a61cf918 Addition of sortmerna 13
+       86dbfa5f Revert "test"
+       783d6c2e test
+       af3b4f99 Addition of sortmerna 12
+       b23b3105 Addition of sortmerna 11
+       9fb44346 Addition of sortmerna 10
+       328e3bf4 Addition of sortmerna 9
+       41389de1 Addition of sortmerna 8
+       1bf8621c Addition of sortmerna 7
+       12619a1f Addition of sortmerna 6
+       e67a92e4 Addition of sortmerna 4
+       aa05162c Addition of sortmerna 3
+       f8cc98ff Addition of sortmerna 2
+       9fb360bf Addition of sortmerna 1
+       1752b7c3 Merged in GZ_rnaseq_rnaseqc (pull request #434)
+       de02808d Merged dev into GZ_rnaseq_rnaseqc
+       94fe40ca PR Changes
+       74e9e3e9 PR Changes
+       405f28c9 commit after checking out dev & squashing
+
+  mareike.janiak@computationalgenomics.ca <mareike.janiak@computationalgenomics.ca>      5 commits
+
+       e224f79e GenPipes common : debugging merge links
+       c04c313f GenPipes common : fix for output dependency issue
+       5d009f4f GenPipes chipseq : update mugqic_tools version
+       3d63b427 GenPipes chipseq : add thT to ini
+       a43d2893 bfx : add 2nd th parameter to diffBind
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>      53 commits
+
+       bc2121f5 Merged in release_4.4.5 (pull request #468)
+       a0957ffa Version bump to 4.4.5
+       1c7b2a42 Merged in tp_merge_fix (pull request #467)
+       af55f2bd GenPipes common : add if/else in step 5 merge step
+       3e8e8a41 Merged in tp_step6_fix (pull request #466)
+       3fe68355 Merged in cit_strelka (pull request #465)
+       446f07b4 GenPipes cit : gemini and strelka fixes
+       fbd688b6 Merged in merge_link_fix (pull request #463)
+       d4b22d1d GenPipes common : improvements in link fix
+       3183dd42 Merged in cit_timeouts (pull request #464)
+       2862e91b GenPipes cit : resources for gemini
+       23ea509b GenPipes common : absolute paths in merge step to fix symlinks when -o is not equal to pwd
+       a02e98df GenPipes common : fix merge symlink
+       f6413719 GenPipes rnaseq : increase default cit walltime
+       b13d5491 Merged in cit_fixes (pull request #462)
+       e771d8d0 GenPipes : cit resources
+       722c89e7 GenPipes rnaseq : set default htseq-count strandedness to reverse
+       4f0b045b Merged in htseq_fix (pull request #460)
+       4eda7e86 GenPipes rnaseq : more info on stranded option for htseq
+       4120576b bfx kallisto_report : changes to work with multiple single end readsets
+       201aeeb4 GenPipes rnaseq_light : sleuth resources
+       7ff4e309 GenPipes rnaseq_light : add threads parameter to kallisto
+       df8f0021 GenPipes rnaseq_light : add bootstraps for single end reads
+       dd7d96cc GenPipes rnaseq : update htseq version, set stranded option explicitely
+       c45aca95 Merged in diffBind_th (pull request #457)
+       d6a4574a Merged in cit_sortmerna_fix (pull request #458)
+       4d05f8b0 GenPipes rnaseq : add sortmerna to cit
+       1fe5f5fb GenPipes dnaseq : increase cit walltime
+       9b6f755a Merged in cit_chr19 (pull request #455)
+       5ce3dea3 update path for gridss cit file
+       a5a50628 cit chr19 : updating genome paths
+       0c0b3907 GenPipes rnaseq : typo
+       02d106eb GenPipes rnaseq : missing comma
+       808b896b GenPipes rnaseq : rm sortmerna output before restarts
+       324afea0 GenPipes : increase walltimes, mem
+       26821c7c GenPipes rnaseq : sortmerna create idx-dir
+       a66ce582 GenPipes covseq : cit resources
+       ebcf0799 cit chr19 gridss debug
+       d367d090 arriba restart debug
+       73bd6b47 GenPipes rnaseq arriba debug
+       86ea6234 sequenza cit time
+       a12d1361 debug run_arriba restart
+       0a0c6937 GenPipes tumor_pair : cit time
+       a316a343 GenPipes tumor_pair : cit resources
+       6a8a72e0 GenPipes cit : chr19 marker files for conpair
+       ebdfd1ca GenPipes cit chr19 : marker file for conpair
+       c4c64c71 typo
+       df6d41b3 GenPipes cit : add chr19 only reference
+       6d5e2803 GenPipes rnaseq_light : added note about kallisto index naming
+       5d1ec9c7 Version bump to 4.4.5-beta
+       c97d8025 Merged master into dev
+       5c71fd9a Merged in release_4.4.4 (pull request #452)
+       025b289e Version bump to 4.4.4
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      78 commits
+
+       8a39b2e2 Merged in HotFix_dev (pull request #459)
+       52bd3f50 Loading and unloading python when calling job2json_project_tracking withing GenPipes
+       3e736936 Merged in HotFix_dev (pull request #456)
+       3b3bec74 Try debug for re-ordering modules (among others)
+       33e86125 Merged in project_tracking_json (pull request #453)
+       1d5a58b2 tumor_pair - report_pcgr - Increasing mem for cit
+       3a511e4e rnaseq_denovo_assembly - rmarkdown.render - Debug
+       d0278437 methylseq - bvatools_depth_of_coverage - increasing ram to avoid random OOM error
+       ede194a4 chipseq - merge_and_call_individual_gvcf - Consolidating gatk4 bfx with ini_section to make sure resources are well linked
+       4c3c1440 rnaseq - run_arriba - preventing the unnecessary restarts
+       9e09229b tumor_pair - linx - Re-organizing ini for linx
+       b8771aca tumor_pair - linx - Fixing linx not taking into account ini
+       a2a9e198 rnaseq - picard_merge_sam_file - Typo
+       0c632ac1 Adding missing files for purple
+       73df2a05 tumor_pair - qualimap - Typo
+       d2c622f8 tumour_pair - database - Adding few decimals to mean coverage metrics + adding mean insert size usage
+       3b893860 rnaseq - rnaseqc2 - Typo making it fail
+       4b0d3169 debug
+       e4b8184a Debug
+       79909221 bfx - Debug kallisto metrics file path
+       78514735 Debug
+       20b2ff3c Debug readsets
+       92c512e4 Debug trace ini name when pipeline doesn't have protocol
+       4b6c63af Debug
+       cd6d0d55 Debug trace ini name when pipeline doesn't have protocol
+       4ed45393 Debug trace ini name when pipeline doesn't have protocol
+       5abdcee4 Typo
+       19f1f075 Debug trace ini name when pipeline doesn't have protocol
+       9d9dc1f9 Debug trace ini name when pipeline doesn't have protocol
+       450ab24b Debug trace ini name when pipeline doesn't have protocol
+       d689e267 Debug trace ini name when pipeline doesn't have protocol
+       8a4d997a Debug trace ini name when pipeline doesn't have protocol
+       b7d0428f Debug
+       60d12503 Adding Rnaseq light and sv metrics for MoH
+       edd5a8e0 Debug
+       7054b908 Debug
+       bf3f4973 Debug
+       7e841018 Fixing json file name
+       cf7f03ec Debug
+       05dbd3c6 Adding metrics
+       80fa9c87 Debug
+       746f6a71 Debug
+       c7b31778 Debug
+       99af7922 Debug
+       fa37497f Adding qualimap insert size metrics + Renaming trace ini
+       1f47eb8a Adding purity to metrics for TP pt
+       fcbcbb3b Debug
+       88726e35 Strelka2 ini change
+       d0456a75 Debug
+       817e7b34 Debug
+       e4dc586a Debug
+       79a9d299 Debug samples and readsets to be joined at pipeline level and not in bfx
+       aab9e336 Debug nested for loop
+       36a88762 Debug
+       eb9e2c39 Debug file name error
+       307ab20a Typo
+       a49eb5fb Debug
+       50d5fbdf Adding json project tracking dedicated args + parsing conpair metrics + job2json_pt bfx for updating metrics
+       fcf6e91e Reducing resources for TP cit
+       9a2bd9a4 Converting genpipes version to string
+       1c86a085 Debug
+       3830b62e Debug
+       aa72ccb1 Debug
+       cd1de741 Debug
+       c71223ac Adding project tracking json in use in tumor pair
+       9e1a198f Removing deliverable files from GenPipes and making project_name not mandatory
+       eb43d15a Debug job2json_project_tracking when no metrics
+       65ca4eb3 Making job2json_project_tracking executable
+       9f4f429c Debug job2json_project_tracking
+       851ee1df Missing job2json_project_tracking call for Slurm
+       974576d1 Fixing location uri + trying to make job and readsets matching
+       20eabc19 Debug
+       25f8d54b Adding project_tracking_json to pipeline
+       9cb6bb82 debug
+       9875283e debug
+       a96e145e debug
+       362f649e Adding project_name for all pipelines in cit
+       761145d7 job2json_project_tracking
 
 4.4.4        Fri Sep 8 18:46:58 2023 +0000        14 commits
 
