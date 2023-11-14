@@ -225,7 +225,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
                 output=output
             )
         )
-    )
 
 def haplotype_caller(
     inputs,

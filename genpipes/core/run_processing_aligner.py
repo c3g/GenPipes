@@ -1,36 +1,36 @@
 ################################################################################
 # Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 import configparser
 import os
 import re
 
-from ..core.job import concat_jobs, pipe_jobs, Job
-from ..core.config import global_conf
-from . import bvatools
-from . import snpeff
-from . import verify_bam_id
-from . import bwa
-from . import metrics
-from . import picard
-from . import star
-from . import tools
+from .job import concat_jobs, pipe_jobs, Job
+from .config import global_conf
+from ..bfx import bvatools
+from ..bfx import snpeff
+from ..bfx import verify_bam_id
+from ..bfx import bwa
+from ..bfx import metrics
+from ..bfx import picard
+from ..bfx import star
+from ..bfx import tools
 
 
 class RunProcessingAligner(object):

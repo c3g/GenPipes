@@ -3,20 +3,20 @@
 ################################################################################
 # Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -27,15 +27,12 @@ import os
 import re
 import sys
 
-# Append mugqic_pipelines directory to Python library path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
-
-# MUGQIC Modules
+# GenPipes Modules
 from ...core.config import global_conf
 from ...core.job import Job, concat_jobs, pipe_jobs
 from ...bfx.sample_tumor_pairs import parse_tumor_pair_file
 from ...bfx.sequence_dictionary import split_by_size, parse_sequence_dictionary_file
-import utils.utils
+import ...utils.utils
 
 import gzip
 from sys import stderr

@@ -1,36 +1,29 @@
 ################################################################################
 # Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
 import csv
 import logging
 
-# MUGQIC Modules
-<<<<<<<< HEAD:genpipes/core/design.py
-from core.config import _raise
-from core.sample import *
-|||||||| parent of 27e6c3dd (Packaging of GenPipes):bfx/design.py
-from sample import *
-========
-from ..core.config import _raise, SanitycheckError
+# GenPipes Modules
+from .config import _raise, SanitycheckError
 from .sample import *
->>>>>>>> 27e6c3dd (Packaging of GenPipes):genpipes/bfx/design.py
 
 log = logging.getLogger(__name__)
 
@@ -67,23 +60,12 @@ class Contrast(object):
         self._treatments = value
 
 
-<<<<<<<< HEAD:genpipes/core/design.py
-def parse_chipseq_design_file(design_file, samples):
-    design_csv = csv.DictReader(open(design_file, 'r'), delimiter='\t')
-|||||||| parent of 27e6c3dd (Packaging of GenPipes):bfx/design.py
-def parse_new_design_file(design_file, samples):
-
-    log.info("Parse design file " + design_file + " ...")
-    design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
-
-========
 def parse_chipseq_design_file(design_file, samples):
 
     if isinstance(design_file, str):
         design_file = open(design_file, 'r')
 
     design_csv = csv.DictReader(design_file, delimiter='\t')
->>>>>>>> 27e6c3dd (Packaging of GenPipes):genpipes/bfx/design.py
     # Skip first column which is Sample
     contrasts = [Contrast(name) for name in design_csv.fieldnames[2:]]
 
@@ -94,48 +76,14 @@ def parse_chipseq_design_file(design_file, samples):
                             if (sample.name == sample_name and mark_name == markname)]
         if matching_samples:
 
-<<<<<<<< HEAD:genpipes/core/design.py
             # There should be only one matching sample and mark name
-           sample = matching_samples[0]
-
-        else:
-            _raise(SanitycheckError("Error: Sample " + sample_name + " and MarkName " + mark_name + " in design file " +
-                                    design_file + " not found in pipeline samples!"))
-|||||||| parent of 27e6c3dd (Packaging of GenPipes):bfx/design.py
-        # Skip first column which is Sample
-========
-            # There should be only one matching sample and mark name
-           sample = matching_samples[0]
+            sample = matching_samples[0]
 
         else:
             _raise(SanitycheckError("Error: Sample " + sample_name + " and MarkName " + markname + " in design file " +
                                     design_file + " not found in pipeline samples!"))
->>>>>>>> 27e6c3dd (Packaging of GenPipes):genpipes/bfx/design.py
         for contrast in contrasts:
             sample_contrast_type = line[contrast.name]
-<<<<<<<< HEAD:genpipes/core/design.py
-            # Empty or '0' types are ignored
-            if not sample_contrast_type or sample_contrast_type == "0":
-                pass
-            elif sample_contrast_type == "1":
-                contrast.controls.append(sample)
-            elif sample_contrast_type == "2":
-                contrast.treatments.append(sample)
-            else:
-                _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and MarkName " + mark_name
-                                        + " and contrast " + contrast.name + " in design file " + design_file +
-                                        " (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
-|||||||| parent of 27e6c3dd (Packaging of GenPipes):bfx/design.py
-            # Empty types are ignored
-            if sample_contrast_type:
-                if sample_contrast_type == "control":
-                    contrast.controls.append(sample)
-                elif sample_contrast_type == "treatment":
-                    contrast.treatments.append(sample)
-                else:
-                    raise Exception("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be 'control', 'treatment' or '')!")
-
-========
             # Empty or '0' types are ignored
             if not sample_contrast_type or sample_contrast_type == "0":
                 pass
@@ -147,7 +95,6 @@ def parse_chipseq_design_file(design_file, samples):
                 _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and MarkName " + markname
                                         + " and contrast " + contrast.name + " in design file " + design_file.name +
                                         " (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
->>>>>>>> 27e6c3dd (Packaging of GenPipes):genpipes/bfx/design.py
     for contrast in contrasts:
         log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: "
                  + str(len(contrast.treatments)) + ") created")
@@ -158,16 +105,10 @@ def parse_chipseq_design_file(design_file, samples):
 
 def parse_design_file(design_file, samples):
 
-<<<<<<<< HEAD:genpipes/core/design.py
-    design_csv = csv.DictReader(open(design_file, 'r'), delimiter='\t')
-|||||||| parent of 27e6c3dd (Packaging of GenPipes):bfx/design.py
-    design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
-========
     if isinstance(design_file, str):
         design_file = open(design_file, 'r')
 
     design_csv = csv.DictReader(design_file, delimiter='\t')
->>>>>>>> 27e6c3dd (Packaging of GenPipes):genpipes/bfx/design.py
 
     # Skip first column which is Sample
     contrasts = [Contrast(name) for name in design_csv.fieldnames[1:]]
@@ -192,15 +133,9 @@ def parse_design_file(design_file, samples):
             elif sample_contrast_type == "2":
                 contrast.treatments.append(sample)
             else:
-<<<<<<<< HEAD:genpipes/core/design.py
-                _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
-|||||||| parent of 27e6c3dd (Packaging of GenPipes):bfx/design.py
-                raise Exception("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!")
-========
                 _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and contrast "
                                         + contrast.name + " in design file " + design_file.name +
                                         "(should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
->>>>>>>> 27e6c3dd (Packaging of GenPipes):genpipes/bfx/design.py
 
     for contrast in contrasts:
         log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: " + str(len(contrast.treatments)) + ") created")

@@ -1,20 +1,20 @@
 ################################################################################
 # Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 import json
 import logging
@@ -227,7 +227,7 @@ NO_PROBLEM_IN_LOG=\$?
 
   if [[  \$NO_PROBLEM_IN_LOG == 0 ]] ; then
    echo {pattern} found in job log, forcing error 
-   MUGQIC_STATE=74
+   GenPipes_STATE=74
 fi
 """.format(pattern=pattern, tmp_dir=tmp_dir)
 
@@ -472,21 +472,21 @@ chmod 755 $COMMAND
 
                     cmd = """\
 echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
-MUGQIC_STATE=\$PIPESTATUS
-echo MUGQICexitStatus:\$MUGQIC_STATE
+GenPipes_STATE=\$PIPESTATUS
+echo GenPipesexitStatus:\$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
-if [ \$MUGQIC_STATE -eq 0 ] ; then
+if [ \$GenPipes_STATE -eq 0 ] ; then
   touch $JOB_DONE ;
 fi
-exit \$MUGQIC_STATE" | \\
+exit \$GenPipes_STATE" | \\
 """.format(
                         container_line=self.container_line,
                         job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
-                        job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$MUGQIC_STATE'),
+                        job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
+                        job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE'),
                     )
                         #sleep_time=sleepTime
 
@@ -585,22 +585,22 @@ set -eu -o pipefail
 {limit_string}
 chmod 755 $COMMAND
 printf "\\n$SEPARATOR_LINE\\n"
-echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
+echo "Begin GenPipes Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
 rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} $COMMAND &> $JOB_OUTPUT
-MUGQIC_STATE=$?
-echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
-echo MUGQICexitStatus:$MUGQIC_STATE
+GenPipes_STATE=$?
+echo "End GenPipes Job $JOB_NAME at `date +%FT%H:%M:%S`"
+echo GenPipesexitStatus:$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
-if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
+if [ $GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $GenPipes_STATE ; fi
 """.format(
                             job=job,
                             limit_string=os.path.basename(job.done),
                             separator_line=separator_line,
                             job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
-                            job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$MUGQIC_STATE'),
+                            job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
                             job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                            job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
+                            job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE')
                         )
                     )
 
@@ -701,31 +701,31 @@ chmod 755 $COMMAND
                     cmd = """\
 echo "#! /bin/bash
 echo '#######################################'
-echo 'SLURM FAKE PROLOGUE (MUGQIC)'
+echo 'SLURM FAKE PROLOGUE (GenPipes)'
 date
 scontrol show job \$SLURM_JOBID
 sstat -j \$SLURM_JOBID.batch
 echo '#######################################'
 rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
-MUGQIC_STATE=\$PIPESTATUS
-echo MUGQICexitStatus:\$MUGQIC_STATE
+GenPipes_STATE=\$PIPESTATUS
+echo GenPipesexitStatus:\$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
-if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+if [ \$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 echo '#######################################'
-echo 'SLURM FAKE EPILOGUE (MUGQIC)'
+echo 'SLURM FAKE EPILOGUE (GenPipes)'
 date
 scontrol show job \$SLURM_JOBID
 sstat -j \$SLURM_JOBID.batch
 echo '#######################################'
-exit \$MUGQIC_STATE" | \\
+exit \$GenPipes_STATE" | \\
 """.format(
                         job=job,
                         job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
-                        job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$MUGQIC_STATE'),
+                        job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE') ,
+                        job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE') ,
                         container_line=self.container_line
 )
 

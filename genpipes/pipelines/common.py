@@ -3,20 +3,20 @@
 ################################################################################
 # Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -32,13 +32,13 @@ import collections
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
 
-# MUGQIC Modules
+# GenPipes Modules
 from ..core.config import global_conf, _raise, SanitycheckError
 from ..core.job import Job, concat_jobs
 from ..core.pipeline import Pipeline
-from ..bfx.design import parse_design_file
-from ..bfx.readset import parse_illumina_readset_file, parse_nanopore_readset_file
-from ..bfx.sample_tumor_pairs import *
+from ..core.design import parse_design_file
+from ..core.readset import parse_illumina_readset_file, parse_nanopore_readset_file
+from ..core.sample_tumor_pairs import *
 
 from ..bfx import bvatools
 from ..bfx import verify_bam_id
@@ -51,8 +51,8 @@ from ..bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
-# Abstract pipeline gathering common features of all MUGQIC pipelines (readsets, samples, remote log, etc.)
-class MUGQICPipeline(Pipeline):
+# Abstract pipeline gathering common features of all GinPipes pipelines (readsets, samples, remote log, etc.)
+class GenPipesPipeline(Pipeline):
 
     def __init__(self, *args, readsets_file=None, design_file=None, **kwargs):
         # Add pipeline specific arguments
@@ -61,7 +61,7 @@ class MUGQICPipeline(Pipeline):
         self._readsets_file = readsets_file
         self._design_file = design_file
         self._samples = None
-        super(MUGQICPipeline, self).__init__(*args, **kwargs)
+        super(GenPipesPipeline, self).__init__(*args, **kwargs)
 
     @classmethod
     def argparser(cls, argparser):
@@ -104,8 +104,8 @@ class MUGQICPipeline(Pipeline):
             self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
         return self._samples
 
-    def mugqic_log(self):
-        if 'NO_MUGQIC_REPORT' in os.environ:
+    def genpipes_log(self):
+        if 'NO_GENPIPES_REPORT' in os.environ:
             return None
         server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
         list_name = {}
@@ -145,7 +145,7 @@ wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, unique_identifier=unique_identifier))
 
     def submit_jobs(self):
-        super(MUGQICPipeline, self).submit_jobs()
+        super(GenPipesPipeline, self).submit_jobs()
         if self.jobs and self.job_scheduler.name.lower() in ["pbs", "batch", "slurm"]:
             self.mugqic_log()
 
@@ -154,7 +154,7 @@ wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${
 
 # Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
 # Specific steps must be defined in Illumina children pipelines.
-class Nanopore(MUGQICPipeline):
+class Nanopore(GenPipesPipeline):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -168,7 +168,7 @@ class Nanopore(MUGQICPipeline):
 
 # Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
 # Specific steps must be defined in Illumina children pipelines.
-class Illumina(MUGQICPipeline):
+class Illumina(GenPipesPipeline):
 
     def __init__(self, *args, **kwargs):
         super(Illumina, self).__init__(*args, **kwargs)

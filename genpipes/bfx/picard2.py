@@ -246,15 +246,15 @@ def collect_gcbias_metrics(
         summary_file
     ]
 
-        return Job(
-            [input],
-            [output],
-            [
-                ['picard_collect_gcbias_metrics', 'module_java'],
-                ['picard_collect_gcbias_metrics', 'module_picard'],
-                ['picard_collect_gcbias_metrics', 'module_R']
-            ],
-            command="""\
+    return Job(
+        [input],
+        [output],
+        [
+            ['picard_collect_gcbias_metrics', 'module_java'],
+            ['picard_collect_gcbias_metrics', 'module_picard'],
+            ['picard_collect_gcbias_metrics', 'module_R']
+        ],
+        command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectGcBiasMetrics \\
  VALIDATION_STRINGENCY=SILENT ALSO_IGNORE_DUPLICATES=TRUE \\
  TMP_DIR={tmp_dir} \\
@@ -273,8 +273,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             summary_file=summary_file,
             reference=reference_sequence if reference_sequence else global_conf.get('picard_collect_gcbias_metrics', 'genome_fasta'),
             max_records_in_ram=global_conf.get('picard_collect_gcbias_metrics', 'max_records_in_ram', param_type='int')
-            )
         )
+    )
 
 def fix_mate_information(input, output):
 

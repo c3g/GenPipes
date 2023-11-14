@@ -1,20 +1,20 @@
 ################################################################################
 # Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -24,18 +24,10 @@ import logging
 import os
 import re
 
-# MUGQIC Modules
-<<<<<<<< HEAD:genpipes/core/readset.py
-from bfx.run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner
-from core.sample import Sample, NanoporeSample
-|||||||| parent of 27e6c3dd (Packaging of GenPipes):bfx/readset.py
-from run_processing_aligner import *
-from sample import *
-========
+# GenPipes Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
 from .sample import Sample, NanoporeSample
-from ..core.config import global_conf, _raise, SanitycheckError
->>>>>>>> 27e6c3dd (Packaging of GenPipes):genpipes/bfx/readset.py
+from .config import global_conf, _raise, SanitycheckError
 
 log = logging.getLogger(__name__)
 
@@ -502,159 +494,6 @@ def parse_pacbio_readset_file(pacbio_readset_file):
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
-<<<<<<<< HEAD:genpipes/core/readset.py
-
-class NanoporeReadset(Readset):
-
-    @property
-    def sample(self):
-        return self._sample
-
-    @property
-    def run(self):
-        return self._run
-
-    @property
-    def flowcell(self):
-        return self._flowcell
-
-    @property
-    def library(self):
-        return self._library
-
-    @property
-    def summary_file(self):
-        return self._summary_file
-
-    @property
-    def fastq_files(self):
-        return self._fastq_files
-
-    @property
-    def fast5_files(self):
-        return self._fast5_files
-
-    @property
-    def analysis_name(self):
-        return self._analysis_name
-
-
-def parse_nanopore_readset_file(nanopore_readset_file):
-    readsets = []
-    samples = []
-
-    log.info("Parse Nanopore readset file " + nanopore_readset_file + " ...")
-
-    # Check for duplicate readsets in file
-    dup_found_message = checkDuplicateReadsets(nanopore_readset_file)
-    if dup_found_message:
-        # Display message with the path to the corrected readset file and end the pipeline
-        log.error(dup_found_message)
-        exit(18)
-
-    readset_csv = csv.DictReader(open(nanopore_readset_file, 'r'), delimiter='\t')
-    for line in readset_csv:
-        sample_name = line['Sample']
-        sample_names = [sample.name for sample in samples]
-        # Create new sample
-        sample = NanoporeSample(sample_name)
-        samples.append(sample)
-
-        # Create readset and add it to sample
-        readset = NanoporeReadset(line['Readset'])
-
-        # Readset file paths are either absolute or relative to the readset file
-        # Convert them to absolute paths
-        for format in ("Summary", "FASTQ", "FAST5"):
-            if line.get(format, None):
-                abs_files = []
-                for file in line[format].split(","):
-                    file = os.path.expandvars(file)
-                    if not os.path.isabs(file):
-                        file = os.path.dirname(os.path.abspath(os.path.expandvars(nanopore_readset_file))) + os.sep + file
-                    abs_files.append(os.path.normpath(file))
-                line[format] = ",".join(abs_files)
-
-        readset._sample = Sample(sample_name)
-        readset._run = line.get('Run', None)
-        sample._run = readset._run
-        readset._flowcell = line.get('Flowcell', None)
-        sample._flowcell = readset._flowcell
-        readset._library = line.get('Library', None)
-        sample._library = readset._library
-        readset._summary_file = line['Summary'] if line.get('Summary', None) else []
-        sample._summary_file = readset._summary_file
-        readset._fastq_files = line['FASTQ'] if line.get('FASTQ', None) else []
-        sample._fastq_files = readset._fastq_files
-        readset._fast5_files = line['FAST5'] if line.get('FAST5', None) else []
-        sample._fast5_files = readset._fast5_files
-        readset._analysis_name = line.get('AnalysisName', None)
-        sample._analysis_name = readset._analysis_name
-        sample._barcode = line.get('Barcode', None)
-
-        readsets.append(readset)
-        sample.add_readset(readset)
-
-    # log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
-    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
-    return readsets
-
-def checkDuplicateReadsets(readset_file):
-    readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t')
-
-    readset_dict = {}
-    for readset_key in [line['Readset'] for line in readset_csv]:
-        if readset_key in readset_dict:
-            readset_dict[readset_key] += 1
-        else:
-            readset_dict[readset_key] = 1
-    duplicate_readsets = [readset_name for readset_name, readset_count in readset_dict.items() if readset_count > 1]
-
-    # If duplicate readsets are found
-    execption_message = ""
-    if len(duplicate_readsets) > 0:
-        # Rebuild a readset file with unique readset IDs
-        genpipes_proposed_readset_file = os.path.join(
-            os.path.splitext(os.path.basename(readset_file))[0] + ".genpipes.txt"
-        )
-        # Set the header
-        csv_headers = readset_csv.fieldnames
-        writer = csv.DictWriter(
-            open(genpipes_proposed_readset_file, 'w'),
-            delimiter=str('\t'),
-            fieldnames=csv_headers
-        )
-        writer.writeheader()
-        # Set the counter for already written duplicates
-        dup_written = {}
-        readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t')
-        for line in readset_csv:
-            # If current redset has no duplicate, just write the line as is
-            if readset_dict[line['Readset']] == 1:
-                writer.writerow(line)
-            # If current readset has duplicates
-            else:
-                current_readset = line['Readset']
-                # Get the number of replicates
-                rep_total = readset_dict[current_readset]
-                # Get how much was already written
-                if not current_readset in dup_written:
-                    dup_written[current_readset] = 0
-                # Use counter to ensure uniqueness of readset ID
-                line['Readset'] += "_" + str(dup_written[current_readset] + 1)
-                # Write the corrected line
-                writer.writerow(line)
-                dup_written[current_readset] += 1
-        # Prepare the error message before ending the pipeline
-        exception_message = "Error: Readsets should be unique !!\n\tDuplicates found in the readset file \"" + readset_file + "\": \n"
-        exception_message += "\t\t\"" + "\", \"".join(duplicate_readsets)+ "\"\n"
-        exception_message += "  You should either upadate your readset file with unique readset names,\n"
-        exception_message += "  or use \"" + os.path.realpath(genpipes_proposed_readset_file) + "\" (automatically built by the pipeline upon \"" + readset_file + "\"" + " with unique readset IDs)"
-
-    return execption_message
-
-|||||||| parent of 27e6c3dd (Packaging of GenPipes):bfx/readset.py
-========
 
 class NanoporeReadset(Readset):
 
@@ -808,6 +647,5 @@ def checkDuplicateReadsets(readset_file):
         exception_message += "  You should either upadate your readset file with unique readset names,\n"
         exception_message += "  or use \"" + os.path.realpath(genpipes_proposed_readset_file) + "\" (automatically built by the pipeline upon \"" + readset_file + "\"" + " with unique readset IDs)"
 
-    return execption_message
+    return exception_message
 
->>>>>>>> 27e6c3dd (Packaging of GenPipes):genpipes/bfx/readset.py
