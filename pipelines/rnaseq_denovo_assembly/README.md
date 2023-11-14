@@ -74,7 +74,7 @@ Usage
 usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                  [-s STEPS] [-o OUTPUT_DIR]
                                  [-j {pbs,batch,daemon,slurm}] [-f]
-                                 [--no-json] [--report] [--clean]
+                                 [--no-json] [--json-pt] [--report] [--clean]
                                  [-l {debug,info,warning,error,critical}]
                                  [--sanity-check]
                                  [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -83,7 +83,7 @@ usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                  [-t {trinity,seq2fun}] [-d DESIGN] [-b BATCH]
                                  [-r READSETS] [-v]
 
-Version: 4.4.3
+Version: 4.4.5
 
 For more documentation, visit our website: https://genpipes.readthedocs.io/en/latest/user_guide/user_guide.html
 
@@ -106,6 +106,9 @@ optional arguments:
   --no-json             do not create JSON file per analysed sample to track
                         the analysis status (default: false i.e. JSON file
                         will be created)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -147,8 +150,8 @@ Steps:
 
 ----
 ```
-![rnaseq_denovo_assembly trinity workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_trinity.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_trinity.png)
+![rnaseq_denovo_assembly trinity workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_trinity.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_trinity.png)
 ```
 trinity:
 1- picard_sam_to_fastq
@@ -176,8 +179,8 @@ trinity:
 23- differential_expression_filtered
 ----
 ```
-![rnaseq_denovo_assembly seq2fun workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_seq2fun.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_seq2fun.png)
+![rnaseq_denovo_assembly seq2fun workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_seq2fun.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_seq2fun.png)
 ```
 seq2fun:
 1- picard_sam_to_fastq

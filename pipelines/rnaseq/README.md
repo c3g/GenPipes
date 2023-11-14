@@ -9,7 +9,7 @@ Usage
 
 usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
-                 [--no-json] [--report] [--clean]
+                 [--no-json] [--json-pt] [--report] [--clean]
                  [-l {debug,info,warning,error,critical}] [--sanity-check]
                  [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                  [--container {wrapper, singularity} <IMAGE PATH>]
@@ -17,7 +17,7 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-t {stringtie,variants,cancer}] [-d DESIGN] [-b BATCH]
                  [-r READSETS] [-v]
 
-Version: 4.4.3
+Version: 4.4.5
 
 For more documentation, visit our website: https://genpipes.readthedocs.io/en/latest/user_guide/user_guide.html
 
@@ -40,6 +40,9 @@ optional arguments:
   --no-json             do not create JSON file per analysed sample to track
                         the analysis status (default: false i.e. JSON file
                         will be created)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -81,94 +84,97 @@ Steps:
 
 ----
 ```
-![rnaseq stringtie workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_stringtie.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_stringtie.png)
+![rnaseq stringtie workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_stringtie.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_stringtie.png)
 ```
 stringtie:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
-4- star
-5- picard_merge_sam_files
-6- picard_sort_sam
-7- mark_duplicates
-8- picard_rna_metrics
-9- estimate_ribosomal_rna
-10- rnaseqc
-11- wiggle
-12- raw_counts
-13- raw_counts_metrics
-14- stringtie
-15- stringtie_merge
-16- stringtie_abund
-17- ballgown
-18- differential_expression
-19- multiqc
-20- cram_output
+4- sortmerna
+5- star
+6- picard_merge_sam_files
+7- picard_sort_sam
+8- mark_duplicates
+9- picard_rna_metrics
+10- estimate_ribosomal_rna
+11- rnaseqc2
+12- wiggle
+13- raw_counts
+14- raw_counts_metrics
+15- stringtie
+16- stringtie_merge
+17- stringtie_abund
+18- ballgown
+19- differential_expression
+20- multiqc
+21- cram_output
 ----
 ```
-![rnaseq variants workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_variants.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_variants.png)
+![rnaseq variants workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_variants.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_variants.png)
 ```
 variants:
 1- picard_sam_to_fastq
 2- skewer_trimming
-3- star
-4- picard_merge_sam_files
-5- mark_duplicates
-6- split_N_trim
-7- sambamba_merge_splitNtrim_files
-8- gatk_indel_realigner
-9- sambamba_merge_realigned
-10- recalibration
-11- gatk_haplotype_caller
-12- merge_hc_vcf
-13- run_vcfanno
-14- variant_filtration
-15- decompose_and_normalize
-16- compute_snp_effects
-17- gemini_annotations
-18- picard_rna_metrics
-19- estimate_ribosomal_rna
-20- rnaseqc2
-21- gatk_callable_loci
-22- wiggle
-23- multiqc
-24- cram_output
+3- sortmerna
+4- star
+5- picard_merge_sam_files
+6- mark_duplicates
+7- split_N_trim
+8- sambamba_merge_splitNtrim_files
+9- gatk_indel_realigner
+10- sambamba_merge_realigned
+11- recalibration
+12- gatk_haplotype_caller
+13- merge_hc_vcf
+14- run_vcfanno
+15- variant_filtration
+16- decompose_and_normalize
+17- compute_snp_effects
+18- gemini_annotations
+19- picard_rna_metrics
+20- estimate_ribosomal_rna
+21- rnaseqc2
+22- gatk_callable_loci
+23- wiggle
+24- multiqc
+25- cram_output
 ----
 ```
-![rnaseq cancer workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cancer.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cancer.png)
+![rnaseq cancer workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_cancer.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_cancer.png)
 ```
 cancer:
 1- picard_sam_to_fastq
 2- skewer_trimming
-3- star
-4- picard_merge_sam_files
-5- mark_duplicates
-6- split_N_trim
-7- sambamba_merge_splitNtrim_files
-8- gatk_indel_realigner
-9- sambamba_merge_realigned
-10- recalibration
-11- gatk_haplotype_caller
-12- merge_hc_vcf
-13- run_vcfanno
-14- decompose_and_normalize
-15- filter_gatk
-16- report_cpsr
-17- report_pcgr
-18- run_star_fusion
-19- run_arriba
-20- run_annofuse
-21- picard_rna_metrics
-22- estimate_ribosomal_rna
-23- rnaseqc2
-24- rseqc
-25- gatk_callable_loci
-26- wiggle
-27- multiqc
-28- cram_output
+3- sortmerna
+4- star
+5- picard_merge_sam_files
+6- mark_duplicates
+7- split_N_trim
+8- sambamba_merge_splitNtrim_files
+9- gatk_indel_realigner
+10- sambamba_merge_realigned
+11- recalibration
+12- gatk_haplotype_caller
+13- merge_hc_vcf
+14- run_vcfanno
+15- decompose_and_normalize
+16- filter_gatk
+17- report_cpsr
+18- report_pcgr
+19- run_star_fusion
+20- run_arriba
+21- run_annofuse
+22- picard_rna_metrics
+23- estimate_ribosomal_rna
+24- rnaseqc2
+25- rseqc
+26- gatk_callable_loci
+27- wiggle
+28- multiqc
+29- cram_output
 
 ```
 
@@ -194,6 +200,13 @@ This step takes as input files:
 merge_trimmomatic_stats
 -----------------------
 The trim statistics per readset are merged at this step.
+
+sortmerna
+---------
+Calculation of ribosomal RNA per read based on known ribosomal sequences from archea, bacteria and eukaryotes.
+Using [sortmeRNA] (https://github.com/sortmerna/sortmerna)
+
+Taking trimmed fastqs and reporting on each read, either paired-end or single end.
 
 star
 ----
@@ -234,8 +247,8 @@ BWA output BAM files are then sorted by coordinate using [Picard](http://broadin
 
 This step takes as input files: readset Bam files.
 
-rnaseqc
--------
+rnaseqc2
+--------
 Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
 
 wiggle
@@ -354,10 +367,6 @@ gemini_annotations
 [gemini](https://github.com/arq5x/gemini) (GEnome MINIng) is used to integrative exploration of genetic
 variation and genome annotations. For more information
 [visit](https://gemini.readthedocs.io/en/latest/).
-
-rnaseqc2
---------
-Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
 
 gatk_callable_loci
 ------------------

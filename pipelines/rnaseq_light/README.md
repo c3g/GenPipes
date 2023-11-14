@@ -9,7 +9,7 @@ Usage
 
 usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
-                       [--no-json] [--report] [--clean]
+                       [--no-json] [--json-pt] [--report] [--clean]
                        [-l {debug,info,warning,error,critical}]
                        [--sanity-check]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -17,7 +17,7 @@ usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [--genpipes_file GENPIPES_FILE] [-d DESIGN] [-b BATCH]
                        [-r READSETS] [-v]
 
-Version: 4.4.3
+Version: 4.4.5
 
 For more documentation, visit our website: https://genpipes.readthedocs.io/en/latest/user_guide/user_guide.html
 
@@ -40,6 +40,9 @@ optional arguments:
   --no-json             do not create JSON file per analysed sample to track
                         the analysis status (default: false i.e. JSON file
                         will be created)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -76,8 +79,8 @@ optional arguments:
 
 Steps:
 ```
-![rnaseq_light workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_light.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_light.png)
+![rnaseq_light workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_light.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_rnaseq_light.png)
 ```
 ------
 1- picard_sam_to_fastq
@@ -119,7 +122,7 @@ Run Kallisto on fastq files for a fast esimate of abundance.
 
 kallisto_count_matrix
 ---------------------
-Use the output from Kallisto to create a transcript count matrix. 
+Use the output from Kallisto to create a transcript count matrix.
 
 gq_seq_utils_exploratory_analysis_rnaseq_light
 ----------------------------------------------
@@ -127,7 +130,7 @@ Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight.
 
 sleuth_differential_expression
 ------------------------------
-Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
-Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
+Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/).
+Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT.
 
 

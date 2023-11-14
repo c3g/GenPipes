@@ -33,7 +33,7 @@ Usage
 
 usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
-                 [--no-json] [--report] [--clean]
+                 [--no-json] [--json-pt] [--report] [--clean]
                  [-l {debug,info,warning,error,critical}] [--sanity-check]
                  [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                  [--container {wrapper, singularity} <IMAGE PATH>]
@@ -41,7 +41,7 @@ usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  {DpnII,HindIII,NcoI,MboI,Arima} [-t {hic,capture}]
                  [-r READSETS] [-v]
 
-Version: 4.4.3
+Version: 4.4.5
 
 For more documentation, visit our website: https://genpipes.readthedocs.io/en/latest/user_guide/user_guide.html
 
@@ -64,6 +64,9 @@ optional arguments:
   --no-json             do not create JSON file per analysed sample to track
                         the analysis status (default: false i.e. JSON file
                         will be created)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -104,8 +107,8 @@ Steps:
 
 ----
 ```
-![hicseq hic workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_hic.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_hic.png)
+![hicseq hic workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_hicseq_hic.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_hicseq_hic.png)
 ```
 hic:
 1- samtools_bam_sort
@@ -129,8 +132,8 @@ hic:
 19- multiqc_report
 ----
 ```
-![hicseq capture workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.png)
+![hicseq capture workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_hicseq_capture.png)
 ```
 capture:
 1- samtools_bam_sort

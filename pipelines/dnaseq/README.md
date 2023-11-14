@@ -9,14 +9,14 @@ Usage
 
 usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
-                 [--no-json] [--report] [--clean]
+                 [--no-json] [--json-pt] [--report] [--clean]
                  [-l {debug,info,warning,error,critical}] [--sanity-check]
                  [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                  [--container {wrapper, singularity} <IMAGE PATH>]
                  [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
-Version: 4.4.3
+Version: 4.4.5
 
 For more documentation, visit our website: https://genpipes.readthedocs.io/en/latest/user_guide/user_guide.html
 
@@ -39,6 +39,9 @@ optional arguments:
   --no-json             do not create JSON file per analysed sample to track
                         the analysis status (default: false i.e. JSON file
                         will be created)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -76,8 +79,8 @@ Steps:
 
 ----
 ```
-![dnaseq mugqic workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mugqic.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mugqic.png)
+![dnaseq mugqic workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_dnaseq_mugqic.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_dnaseq_mugqic.png)
 ```
 mugqic:
 1- picard_sam_to_fastq
@@ -120,8 +123,8 @@ mugqic:
 38- metrics_gatk_cluster_fingerprint
 ----
 ```
-![dnaseq mpileup workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.png)
+![dnaseq mpileup workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_dnaseq_mpileup.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_dnaseq_mpileup.png)
 ```
 mpileup:
 1- picard_sam_to_fastq
@@ -157,8 +160,8 @@ mpileup:
 31- sym_link_final_bam
 ----
 ```
-![dnaseq light workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_light.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_light.png)
+![dnaseq light workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_dnaseq_light.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_dnaseq_light.png)
 ```
 light:
 1- picard_sam_to_fastq
@@ -194,8 +197,8 @@ light:
 31- cram_output
 ----
 ```
-![dnaseq sv workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.png)
+![dnaseq sv workflow diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_dnaseq_sv.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_dnaseq_sv.png)
 ```
 sv:
 1- picard_sam_to_fastq
