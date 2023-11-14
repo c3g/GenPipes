@@ -7,10 +7,6 @@ from ... import utils
 
 from ..ampliconseq import AmpliconSeq
 
-# Append mugqic_pipelines directory to Python library path
-# that is the old crappy setup!
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
-
 def main(argv=None):
 
     if argv is None:
