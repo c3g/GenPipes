@@ -817,6 +817,18 @@ class RunProcessing(common.MUGQICPipeline):
                 if postprocessing_jobs:
                     jobs_to_throttle.extend(postprocessing_jobs)
 
+                # not sure if best location?
+                parse_job = run_processing_tools.parse_splitBarcode_metrics(
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat.txt"),
+                        os.path.join(self.output_dir, "samplesheet." + lane + ".csv"),
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat_multiqc.txt")
+                        )
+                parse_job.name=f"parse_splitBarcode_metrics.{self.run_id}.{lane}",
+                samples=self.samples[lane],
+                report_files=[os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat_multiqc.txt")]
+
+                lane_jobs.append(parse_job)
+
             else:
                 basecall_outputs = [
                     os.path.join(basecall_dir, self.run_id, f"L0{lane}"),

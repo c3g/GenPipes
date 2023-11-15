@@ -494,6 +494,29 @@ client_linux \\
         )
     )
 
+def parse_splitBarcode_metrics(
+        input_metrics,
+        samplesheet,
+        output,
+        ini_section='parse_splitBarcode_metrics'):
+
+    return Job(
+            [input_metrics, samplesheet],
+            [output],
+            [
+                [ini_section, 'module_python']
+            ],
+            command="""\
+python $PYTHON_TOOLS/parseSplitBarcodeMetrics.py \\
+    -i {input_metrics} \\
+    -s {samplesheet} \\
+    -o {output}""".format(
+        input_metrics=input_metrics,
+        samplesheet=samplesheet,
+        output=output
+        )
+    )
+
 def match_undetermined_barcodes(
         input,
         output,
@@ -501,7 +524,7 @@ def match_undetermined_barcodes(
     
     return Job(
             [input],
-            output,
+            [output],
             [
                 [ini_section, 'module_mugqic_tools']
             ],
