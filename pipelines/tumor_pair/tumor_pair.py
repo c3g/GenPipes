@@ -1817,6 +1817,29 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             collect_oxog_metrics_normal_job.readsets = list(tumor_pair.normal.readsets)
             tumor_pair_jobs.append(collect_oxog_metrics_normal_job)
 
+            collect_wgs_metrics_normal_job = concat_jobs(
+                    [
+                        mkdir_job_normal,
+                        gatk4.collect_wgs_metrics(
+                            normal_input,
+                            os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt")
+                            ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
+                            ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt"), self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.normal.name + ".wgs_metrics.txt"),
+                            input=os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt")
+                            )
+                    ]
+            )
+            self.multiqc_inputs[tumor_pair.name].append(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt"))
+            collect_wgs_metrics_normal_job.name = "picard_collect_wgs_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
+            collect_wgs_metrics_normal_job.samples = [tumor_pair.normal]
+            collect_wgs_metrics_normal_job.readsets = list(tumor_pair.normal.readsets)
+            tumor_pair_jobs.append(collect_wgs_metrics_normal_job)
+
             collect_gcbias_metrics_normal_job = concat_jobs(
                 [
                     mkdir_job_normal,
@@ -1922,6 +1945,29 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             collect_oxog_metrics_tumor_job.samples = [tumor_pair.tumor]
             collect_oxog_metrics_tumor_job.readsets = list(tumor_pair.tumor.readsets)
             tumor_pair_jobs.append(collect_oxog_metrics_tumor_job)
+
+            collect_wgs_metrics_tumor_job = concat_jobs(
+                    [
+                        mkdir_job_tumor,
+                        gatk4.collect_wgs_metrics(
+                            tumor_input,
+                            os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt")
+                            ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
+                            ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt"), self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.tumor.name + ".wgs_metrics.txt"),
+                            input=os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt")
+                            )
+                    ]
+            )
+            self.multiqc_inputs[tumor_pair.name].append(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt"))
+            collect_wgs_metrics_tumor_job.name = "picard_collect_wgs_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
+            collect_wgs_metrics_tumor_job.samples = [tumor_pair.tumor]
+            collect_wgs_metrics_tumor_job.readsets = list(tumor_pair.tumor.readsets)
+            tumor_pair_jobs.append(collect_wgs_metrics_tumor_job)
 
             collect_gcbias_metrics_tumor_job = concat_jobs(
                 [
