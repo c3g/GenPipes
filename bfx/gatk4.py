@@ -2021,6 +2021,46 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
         )
     )
 
+def collect_wgs_metrics(
+    input,
+    output,
+    reference_sequence=None,
+    ini_section='picard_collect_wgs_metrics'
+    ):
+
+    if config.param(ini_section, 'module_gatk').split("/")[2] < "4":
+        return picard2.collect_wgs_metrics(
+            input,
+            output,
+            reference_sequence
+        )
+    else:
+        return Job(
+            [input],
+            [output],
+            [
+                [ini_section, 'module_java'],
+                [ini_section, 'module_gatk'],
+            ],
+            command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  CollectWgsMetrics \\
+  --VALIDATION_STRINGENCY SILENT  \\
+  --TMP_DIR {tmp_dir} \\
+  --INPUT {input} \\
+  --OUTPUT {output} \\
+  --REFERENCE_SEQUENCE {reference} \\
+  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
+                tmp_dir=config.param(ini_section, 'tmp_dir'),
+                java_other_options=config.param(ini_section, 'gatk4_java_options'),
+                ram=config.param(ini_section, 'ram'),
+                input=input,
+                output=output,
+                reference=reference_sequence if reference_sequence else config.param(ini_section, 'genome_fasta'),
+                max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
+            )
+        )
+
 def parse_bases_over_q30_percent_metrics_pt(input_file):
     """
     """
