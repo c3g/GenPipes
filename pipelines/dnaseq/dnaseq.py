@@ -3699,14 +3699,24 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 samples = [tumor_pair.normal, tumor_pair.tumor]
                 readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 
-                input_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
-                                         tumor_pair.name,
-                                         tumor_pair.name + ".vardict.germline.vt.vcf.gz"
-                                         )
-                flt_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
-                                         tumor_pair.name,
-                                         tumor_pair.name + ".vardict.germline.flt.vcf.gz"
-                                         )
+                if 'fastpass' in self.get_protocol():
+                    input_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
+                                             tumor_pair.name,
+                                             tumor_pair.name + ".varscan2.germline.vt.vcf.gz"
+                                             )
+                    flt_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
+                                           tumor_pair.name,
+                                           tumor_pair.name + ".varscan2.germline.flt.vcf.gz"
+                                           )
+                else:
+                    input_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
+                                             tumor_pair.name,
+                                             tumor_pair.name + ".vardict.germline.vt.vcf.gz"
+                                             )
+                    flt_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
+                                             tumor_pair.name,
+                                             tumor_pair.name + ".vardict.germline.flt.vcf.gz"
+                                             )
                 
                 sample_id = tumor_pair.tumor.name
                 normal_id = tumor_pair.normal.name
