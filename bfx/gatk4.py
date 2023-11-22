@@ -2044,7 +2044,7 @@ def collect_wgs_metrics(
             ],
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-  CollectWgsMetrics \\
+  CollectWgsMetrics {options} \\
   --VALIDATION_STRINGENCY SILENT  \\
   --TMP_DIR {tmp_dir} \\
   --INPUT {input} \\
@@ -2054,6 +2054,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 tmp_dir=config.param(ini_section, 'tmp_dir'),
                 java_other_options=config.param(ini_section, 'gatk4_java_options'),
                 ram=config.param(ini_section, 'ram'),
+                options=config.param(ini_section, 'options')
                 input=input,
                 output=output,
                 reference=reference_sequence if reference_sequence else config.param(ini_section, 'genome_fasta'),

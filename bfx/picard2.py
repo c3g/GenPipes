@@ -735,33 +735,34 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 def collect_wgs_metrics(
     input,
     output,
-    reference_sequence=None
+    reference_sequence=None,
+    ini_section='picard_collect_wgs_metrics'
     ):
 
     return Job(
         [input],
         [output],
         [
-            ['picard_collect_gcbias_metrics', 'module_java'],
-            ['picard_collect_gcbias_metrics', 'module_picard']
+            [ini_section, 'module_java'],
+            [ini_section, 'module_picard']
         ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectWgsMetrics \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar \\
+  CollectWgsMetrics {options} \\
   VALIDATION_STRINGENCY=SILENT \\
   TMP_DIR={tmp_dir} \\
   INPUT={input} \\
   OUTPUT={output} \\
   REFERENCE_SEQUENCE={reference} \\
   MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_wgs_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_wgs_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_wgs_metrics', 'ram'),
+            tmp_dir=config.param(ini_section, 'tmp_dir'),
+            java_other_options=config.param(ini_section, 'java_other_options'),
+            ram=config.param(ini_section, 'ram'),
+            options=config.param(ini_section, 'options')
             input=input,
             output=output,
-            chart=chart,
-            summary_file=summary_file,
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_wgs_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_wgs_metrics', 'max_records_in_ram', param_type='int')
+            reference=reference_sequence if reference_sequence else config.param(ini_section, 'genome_fasta'),
+            max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
         )
     )
 
