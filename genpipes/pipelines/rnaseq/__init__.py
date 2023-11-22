@@ -118,6 +118,10 @@ class RnaSeqRaw(common.Illumina):
 
     """
 
+    def __init__(self, *args, **kwargs):
+        # Add pipeline specific arguments
+        super(RnaSeqRaw, self).__init__(*args, **kwargs)
+
     @property
     def output_dirs(self):
         dirs = {
@@ -2626,6 +2630,10 @@ END
 
         return jobs
 
+    @property
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
     def protocols(self):
         return {
             'stringtie':
@@ -2720,19 +2728,14 @@ class RnaSeq(RnaSeqRaw):
         self._protocol = protocol
         self.batch_file = batch
         # Add pipeline specific arguments
-        super().__init__(*args, **kwargs)
+        super(RnaSeq).__init__(*args, **kwargs)
 
-        @classmethod
-        def argparser(cls, argparser):
-            super().argparser(argparser)
-            cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
-                                        choices=['stringtie', 'variants', 'cancer'], default="stringtie")
-            cls._argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction",
-                                        type=argparse.FileType('r'))
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
+                                    choices=['stringtie', 'variants', 'cancer'], default="stringtie")
+        cls._argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction",
+                                    type=argparse.FileType('r'))
 
-            return cls._argparser
-
-        @property
-        def step_list(self):
-            return self.protocols()[self._protocol]
-        
+        return cls._argparser
