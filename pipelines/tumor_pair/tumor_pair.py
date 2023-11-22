@@ -2163,18 +2163,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     normal_job_project_tracking_metrics
                 ]
             )
-          #  for outfile in qualimap_normal_job.report_files:
             self.multiqc_inputs[tumor_pair.name].append(normal_qualimap_directory)
-          #      qualimap_normal_job = concat_jobs(
-          #          [
-          #              qualimap_normal_job,
-          #              bash.ln(
-          #                  os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
-          #                  os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.normal.name + "." + os.path.basename(outfile)),
-          #                  input=outfile
-          #              )
-          #          ]
-          #      )
             qualimap_normal_job.name = normal_job_name
             qualimap_normal_job.samples = normal_samples
             qualimap_normal_job.readsets = list(tumor_pair.normal.readsets)
@@ -2247,18 +2236,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     tumor_job_project_tracking_metrics
                 ]
             )
-         #   for outfile in qualimap_tumor_job.report_files:
             self.multiqc_inputs[tumor_pair.name].append(tumor_qualimap_directory)
-         #       qualimap_tumor_job = concat_jobs(
-         #           [
-         #               qualimap_tumor_job,
-         #               bash.ln(
-         #                   os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
-         #                   os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.tumor.name + "." + os.path.basename(outfile)),
-         #                   input=outfile
-         #               )
-         #           ]
-         #       )
             qualimap_tumor_job.name = tumor_job_name
             qualimap_tumor_job.samples = tumor_samples
             qualimap_tumor_job.readsets = list(tumor_pair.tumor.readsets)
