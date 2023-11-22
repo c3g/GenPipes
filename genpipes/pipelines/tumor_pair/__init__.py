@@ -31,7 +31,7 @@ from ...core.config import global_conf
 from ...core.job import Job, concat_jobs, pipe_jobs
 from ...core.sample_tumor_pairs import parse_tumor_pair_file
 
-from ...pipelines.dnaseq import dnaseq
+from .. import dnaseq
 
 #utilizes
 from ...bfx import (

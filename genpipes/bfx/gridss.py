@@ -22,7 +22,7 @@ import logging
 import os
 
 # GenPipes Modules
-from ..core.config import config
+from ..core.config import global_conf
 from ..core.job import Job
 
 def paired_somatic(
