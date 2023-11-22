@@ -3702,7 +3702,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 if 'fastpass' in self.get_protocol():
                     input_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
                                              tumor_pair.name,
-                                             tumor_pair.name + ".varscan2.germline.vt.vcf.gz"
+                                             tumor_pair.name + ".varscan2.germline.vcf.gz"
                                              )
                     flt_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
                                            tumor_pair.name,
