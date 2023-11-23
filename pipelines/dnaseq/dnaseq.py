@@ -1593,14 +1593,14 @@ END
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             
-            interval_list = ""
+            interval_list = []
             if coverage_bed:
-                interval_list = os.path.join(interval_directory,
+                [interval_list] = os.path.join(interval_directory,
                                              os.path.basename(coverage_bed).replace('.bed',
                                                                               '.noALT.interval_list'))
 
             elif scatter_jobs == 1:
-                interval_list = os.path.join(interval_directory,
+                [interval_list] = os.path.join(interval_directory,
                                              os.path.basename(reference).replace('.fa',
                                                                                  '.ACGT.noALT.interval_list')),
 
@@ -5188,7 +5188,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         """
         jobs = []
         
-        reference = config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath')
+        reference = config.param('manta_sv_calls', 'genome_fasta', param_type='filepath')
         
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
