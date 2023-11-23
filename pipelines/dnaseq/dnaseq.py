@@ -3461,8 +3461,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
                 pair_directory = os.path.join(self.output_dirs["sv_variants_directory"], sample.name)
                 cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-                tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".targetcoverage.cnn")
-                antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".antitargetcoverage.cnn")
+                tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.targetcoverage.cnn")
+                antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.antitargetcoverage.cnn")
                 
                 ## Set coverage bed if using exome
                 coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
@@ -3480,7 +3480,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     ref_cnn = None
                 
                 else:
-                    pool_ref_cnn = None
+                    pool_ref_cnn = config.param('cnvkit_batch', 'genome_fasta', param_type='filepath')
                 
                 vcf_gz = os.path.join(pair_directory, sample_name + ".cnvkit.vcf.gz")
                 
@@ -3725,8 +3725,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
                 pair_directory = os.path.join(self.output_dirs["sv_variants_directory"], sample_name)
                 cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-                tarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".targetcoverage.cnn")
-                antitarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".antitargetcoverage.cnn")
+                tarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".sorted.dup.targetcoverage.cnn")
+                antitarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".sorted.dup.antitargetcoverage.cnn")
                 
                 ## Set coverage bed if using exome
                 coverage_bed = bvatools.resolve_readset_coverage_bed(
