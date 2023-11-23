@@ -1852,10 +1852,11 @@ pandoc \\
                 sample.name,
                 "pcgr"
             )
-            output = os.path.join(
-                pcgr_directory,
-                sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"
-            )
+            output = [
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv")
+                ]
 
             jobs.append(
                 concat_jobs(
@@ -1869,13 +1870,13 @@ pandoc \\
                             pcgr_directory,
                             sample.name
                         ),
-                        bash.ls(output)
+                        bash.ls(output[0])
                     ],
                     name="report_pcgr." + sample.name,
                     samples=[sample],
                     readsets=list(sample.readsets),
                     input_dependency=[input_cpsr],
-                    output_dependency=[output]
+                    output_dependency=output
                 )
             )
 

@@ -4916,7 +4916,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             tumor_pair.name,
                             input_cna=output_cna
                         ),
-                        bash.ls(output)
+                        bash.ls(output[0])
                     ],
                     name="report_pcgr." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
