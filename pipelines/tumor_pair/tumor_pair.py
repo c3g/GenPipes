@@ -4881,10 +4881,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 tumor_pair.name,
                 "pcgr"
             )
-            output = os.path.join(
-                pcgr_directory,
-                tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"
-            )
+            output = [
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".cna_segments.tsv.gz")
+                ]
 
             jobs.append(
                 concat_jobs(
@@ -4920,7 +4922,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency = [header, input, input_cna, input_cpsr, output_cna_body],
-                    output_dependency = [header, output_cna_body, output_cna, output]
+                    output_dependency = [header, output_cna_body, output_cna] + output
                 )
             )
 
