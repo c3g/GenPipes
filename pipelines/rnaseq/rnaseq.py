@@ -559,7 +559,7 @@ class RnaSeqRaw(common.Illumina):
             if len(readset.sample.readsets) == 1:
                 readset_bam = os.path.join(alignment_pass_directory, "Aligned.sortedByCoord.out.bam")
                 sample_bam = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.sample.name + ".sorted.bam")
-                
+
                 job = concat_jobs(
                     [
                         job,
@@ -2595,7 +2595,7 @@ END
                     os.path.join(self.output_dirs['metrics_directory'], "rnaseqRep", "metrics.tsv"),
                     os.path.join(self.output_dirs["report_directory"], "trimAlignmentTable.tsv")
                 ] + [
-                    os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name, readset.name+"rRNA.stats.tsv")
+                    os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name, readset.name + "rRNA.stats.tsv")
                     for readset in self.readsets
                 ],
                 [os.path.join(self.output_dirs['report_directory'], "IHEC_metrics_rnaseq_All.txt")],
@@ -2628,7 +2628,7 @@ END
         if by_sample == "true":
             for sample in self.samples:
                 input = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", sample.name)
-                output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_by_sample", sample.name, "multiqc_" + sample.name)
+                output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_by_sample", sample.name, f"{sample.name}.multiqc")
 
                 job = multiqc.run(
                         input + "*",
@@ -2636,6 +2636,8 @@ END
                         )
                 job.name = "multiqc." + sample.name
                 job.input_files = self.multiqc_inputs
+                job.samples = self.samples
+                job.readsets = self.readsets
                 jobs.append(job)
 
         return jobs
