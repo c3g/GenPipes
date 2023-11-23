@@ -67,7 +67,7 @@ cnvkit.py batch {options} \\
             target_bed="--targets " + target_bed if target_bed else "",
             output_cnn="--output-reference " + output_cnn if output_cnn else "",
             outdir=outdir,
-            normal_bam="--normal " + normal_bam if normal_bam else "",
+            normal_bam="--normal " + normal_bam if normal_bam else "--normal ",
             tumor_bam=tumor_bam if tumor_bam else "",
         )
     )

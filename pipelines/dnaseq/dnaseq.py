@@ -1616,7 +1616,7 @@ END
                             gatk4.haplotype_caller(
                                 input_bam,
                                 os.path.join(haplotype_directory, sample.name + ".hc.g.vcf.gz"),
-                                interval_list[0]
+                                interval_list
                             )
                         ],
                         name="gatk_haplotype_caller." + sample.name,
@@ -3480,7 +3480,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     ref_cnn = None
                 
                 else:
-                    pool_ref_cnn = config.param('cnvkit_batch', 'genome_fasta', param_type='filepath')
+                    pool_ref_cnn = None
                 
                 vcf_gz = os.path.join(pair_directory, sample_name + ".cnvkit.vcf.gz")
                 
