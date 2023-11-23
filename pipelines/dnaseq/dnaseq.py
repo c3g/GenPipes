@@ -3415,7 +3415,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             jobs.append(
                 concat_jobs(
                     [
-                        snpeff.compute_effects(germline_vcf, os.path.join(pair_directory, f"{sample.name}..wham.germline.snpeff.vcf.gz")),
+                        snpeff.compute_effects(germline_vcf, os.path.join(pair_directory, f"{sample.name}.wham.germline.snpeff.vcf.gz")),
                     ],
                     name=f"sv_annotation.wham.germline.{sample.name}",
                     samples=[sample]
@@ -3703,7 +3703,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     input_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
                                              tumor_pair.name,
                                              "panel",
-                                             tumor_pair.name + ".varscan2.germline.vcf.gz"
+                                             tumor_pair.name + ".varscan2.germline.vt.vcf.gz"
                                              )
                     flt_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
                                            tumor_pair.name,

@@ -56,7 +56,7 @@ cnvkit.py batch {options} \\
   {target_bed} \\
   {output_cnn} \\
   --output-dir {outdir} \\
-  --normal {normal_bam} \\
+  {normal_bam} \\
   {tumor_bam}""".format(
             options=config.param('cnvkit_batch','batch_options'),
             threads=config.param('cnvkit_batch','threads'),
@@ -67,7 +67,7 @@ cnvkit.py batch {options} \\
             target_bed="--targets " + target_bed if target_bed else "",
             output_cnn="--output-reference " + output_cnn if output_cnn else "",
             outdir=outdir,
-            normal_bam=normal_bam,
+            normal_bam="--normal " + normal_bam if normal_bam else "",
             tumor_bam=tumor_bam if tumor_bam else "",
         )
     )
