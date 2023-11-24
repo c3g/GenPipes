@@ -50,6 +50,7 @@ from bfx import (
     bwa,
     cpsr,
     deeptools,
+    deliverables,
     differential_expression,
     fastqc,
     gatk4,
@@ -1405,7 +1406,12 @@ pandoc \\
                             input,
                             print_reads_output,
                             base_recalibrator_output
-                        )
+                        ),
+                        deliverables.md5sum(
+                            print_reads_output,
+                            print_reads_output + ".md5",
+                            self.output_dir
+                            )
                     ],
                     name="gatk_print_reads." + sample.name,
                     samples=[sample],
