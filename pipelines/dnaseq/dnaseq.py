@@ -1438,135 +1438,6 @@ END
 
         return jobs
 
-    def set_interval_list(self):
-        jobs = []
-        
-        reference = config.param('gatk_scatterIntervalsByNs', 'genome_fasta', param_type='filepath')
-        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
-        
-        for sample in self.samples:
-            interval_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name, "intervals")
-            output = os.path.join(interval_directory,
-                                  os.path.basename(reference).replace('.fa',
-                                                                      '.ACGT.interval_list'))
-            
-            coverage_bed = bvatools.resolve_readset_coverage_bed(
-                sample.readsets[0]
-            )
-            if coverage_bed:
-                dictionary = config.param('gatk_scatterIntervalsByNs', 'genome_dictionary', param_type='filepath')
-                region = coverage_bed
-                
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(interval_directory),
-                            gatk4.bed2interval_list(
-                                dictionary,
-                                region,
-                                os.path.join(interval_directory,
-                                             os.path.basename(region).replace('.bed',
-                                                                              '.interval_list'))
-                            ),
-                            pipe_jobs(
-                                [
-                                    bash.grep(
-                                        os.path.join(interval_directory,
-                                                     os.path.basename(region).replace('.bed',
-                                                                                      '.interval_list')),
-                                        None,
-                                        '-Ev "_GL|_K"'
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        os.path.join(interval_directory,
-                                                     os.path.basename(region).replace('.bed',
-                                                                                         '.noALT.interval_list')),
-                                        '-v "EBV"'
-                                    )
-                                ]
-                            ),
-                        ],
-                        name="gatk_scatterIntervalsByNs." + sample.name,
-                        samples=[sample]
-                    )
-                )
-            elif scatter_jobs == 1:
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(interval_directory),
-                            gatk4.scatterIntervalsByNs(
-                                reference,
-                                output
-                            ),
-                            pipe_jobs(
-                                [
-                                    bash.grep(
-                                        output,
-                                        None,
-                                        '-Ev "_GL|_K"'
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        os.path.join(interval_directory,
-                                                     os.path.basename(reference).replace('.fa',
-                                                                                         '.ACGT.noALT.interval_list')),
-                                        '-v "EBV"'
-                                    )
-                                ]
-                            ),
-                            gatk4.interval_list2bed(
-                                os.path.join(interval_directory,
-                                             os.path.basename(reference).replace('.fa',
-                                                                                 '.ACGT.noALT.interval_list')),
-                                os.path.join(interval_directory,
-                                             os.path.basename(reference).replace('.ACGT.noALT.interval_list',
-                                                                                 '.bed'))
-                            ),
-                        ],
-                        name="gatk_scatterIntervalsByNs." + sample.name,
-                        samples=[sample]
-                    )
-                )
-            else:
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(interval_directory),
-                            gatk4.scatterIntervalsByNs(
-                                reference,
-                                output
-                            ),
-                            pipe_jobs(
-                                [
-                                    bash.grep(
-                                        output,
-                                        None,
-                                        '-Ev "_GL|_K"'
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        os.path.join(interval_directory,
-                                                     os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list')),
-                                        '-v "EBV"'
-                                        )
-                                ]
-                            ),
-                            gatk4.splitInterval(
-                                os.path.join(interval_directory,
-                                             os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list')),
-                                interval_directory,
-                                config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
-                            )
-                        ],
-                        name="gatk_scatterIntervalsByNs." + sample.name,
-                        samples=[sample]
-                    )
-                )
-        
-        return jobs
-
     def gatk_haplotype_caller(self):
         """
         GATK haplotype caller for snps and small indels.
@@ -2604,19 +2475,6 @@ pandoc \\
                     output_directory,
                     sample.name + ".annot.vcf.gz"
                 )
-                input_cna = os.path.join(
-                    self.output_dirs['sv_variants_directory'],
-                    sample.name,
-                    sample.name + ".cnvkit.vcf.gz"
-                )
-                header = os.path.join(
-                    self.output_dirs['sv_variants_directory'],
-                    sample.name + ".header"
-                )
-                output_cna_body = os.path.join(
-                    self.output_dirs['sv_variants_directory'],
-                    sample.name + ".cnvkit.body.tsv"
-                )
                 output_cna = os.path.join(
                     self.output_dirs['sv_variants_directory'],
                     sample.name + ".cnvkit.cna.tsv"
@@ -2649,8 +2507,8 @@ pandoc \\
                         ],
                         name="report_pcgr_tumor_only." + sample.name,
                         samples=[sample],
-                        input_dependency=[header, input, input_cna, input_cpsr, output_cna_body],
-                        output_dependency=[header, output_cna_body, output_cna, output]
+                        input_dependency=[input, input_cpsr, output_cna],
+                        output_dependency=[output]
                     )
                 )
         else:
@@ -4134,153 +3992,277 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
     
-    def set_interval_list_pair(self):
+    def set_interval_list(self):
         jobs = []
         
         reference = config.param('gatk_scatterIntervalsByNs', 'genome_fasta', param_type='filepath')
         dictionary = config.param('gatk_scatterIntervalsByNs', 'genome_dictionary', param_type='filepath')
         scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
         
-        for tumor_pair in self.tumor_pairs.values():
-            interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name,
-                                              "intervals")
-            output = os.path.join(interval_directory,
-                                  os.path.basename(reference).replace('.fa',
-                                                                      '.ACGT.interval_list'))
-            
-            coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsets[0]
-            )
-            
-            if self.get_protocol() == "fastpass":
-                coverage_bed = config.param('rawmpileup_panel', 'panel')
-            
-            if coverage_bed:
-                region = coverage_bed
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(interval_directory),
-                            gatk4.bed2interval_list(
-                                dictionary,
-                                region,
-                                os.path.join(interval_directory,
-                                             os.path.basename(region).replace('.bed',
-                                                                              '.interval_list'))
-                            ),
-                            pipe_jobs(
-                                [
-                                    bash.grep(
-                                        os.path.join(interval_directory,
-                                                     os.path.basename(region).replace('.bed',
-                                                                                      '.interval_list')),
-                                        None,
-                                        '-Ev "_GL|_K"'
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        os.path.join(interval_directory,
-                                                     os.path.basename(region).replace('.bed',
-                                                                                      '.noALT.interval_list')),
-                                        '-v "EBV"'
-                                    ),
-                                ]
-                            ),
-                            gatk4.interval_list2bed(
-                                os.path.join(interval_directory,
-                                             os.path.basename(region).replace('.bed',
-                                                                              '.noALT.interval_list')),
-                                os.path.join(interval_directory,
-                                             os.path.basename(region).replace('.bed',
-                                                                              '.noALT.bed'))
-                            ),
-                        ],
-                        name="gatk_scatterIntervalsByNs." + tumor_pair.name,
-                        samples=[tumor_pair.tumor, tumor_pair.normal]
-                    )
+        if 'tumor_only' in self.get_protocol() or 'germline' in self.get_protocol():
+            for sample in self.samples:
+                interval_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name, "intervals")
+                output = os.path.join(interval_directory,
+                                      os.path.basename(reference).replace('.fa',
+                                                                          '.ACGT.interval_list'))
+                
+                coverage_bed = bvatools.resolve_readset_coverage_bed(
+                    sample.readsets[0]
                 )
-            elif scatter_jobs == 1:
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(interval_directory),
-                            gatk4.scatterIntervalsByNs(
-                                reference,
-                                output
-                            ),
-                            pipe_jobs(
-                                [
-                                    bash.grep(
-                                        output,
-                                        None,
-                                        '-Ev "_GL|_K"'
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        os.path.join(interval_directory,
-                                                     os.path.basename(reference).replace('.fa',
-                                                                                         '.ACGT.noALT.interval_list')),
-                                        '-v "EBV"'
-                                    )
-                                ]
-                            ),
-                            gatk4.interval_list2bed(
-                                os.path.join(interval_directory,
-                                             os.path.basename(reference).replace('.fa',
-                                                                                 '.ACGT.noALT.interval_list')),
-                                os.path.join(interval_directory,
-                                             os.path.basename(reference).replace('.fa',
-                                                                                 '.ACGT.noALT.bed'))
-                            ),
-                        ],
-                        name="gatk_scatterIntervalsByNs." + tumor_pair.name,
-                        samples=[tumor_pair.tumor, tumor_pair.normal]
+                if coverage_bed:
+                    dictionary = config.param('gatk_scatterIntervalsByNs', 'genome_dictionary', param_type='filepath')
+                    region = coverage_bed
+                    
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(interval_directory),
+                                gatk4.bed2interval_list(
+                                    dictionary,
+                                    region,
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(region).replace('.bed',
+                                                                                  '.interval_list'))
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bash.grep(
+                                            os.path.join(interval_directory,
+                                                         os.path.basename(region).replace('.bed',
+                                                                                          '.interval_list')),
+                                            None,
+                                            '-Ev "_GL|_K"'
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            os.path.join(interval_directory,
+                                                         os.path.basename(region).replace('.bed',
+                                                                                          '.noALT.interval_list')),
+                                            '-v "EBV"'
+                                        )
+                                    ]
+                                ),
+                            ],
+                            name="gatk_scatterIntervalsByNs." + sample.name,
+                            samples=[sample]
+                        )
                     )
-                )
-            else:
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(interval_directory),
-                            gatk4.scatterIntervalsByNs(
-                                reference,
-                                output
-                            ),
-                            pipe_jobs(
-                                [
-                                    bash.grep(
-                                        output,
-                                        None,
-                                        '-Ev "_GL|_K"'
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        os.path.join(interval_directory,
-                                                     os.path.basename(reference).replace('.fa',
-                                                                                         '.ACGT.noALT.interval_list')),
-                                        '-v "EBV"'
-                                    )
-                                ]
-                            ),
-                            gatk4.interval_list2bed(
-                                os.path.join(interval_directory,
-                                             os.path.basename(reference).replace('.fa',
-                                                                                 '.ACGT.noALT.interval_list')),
-                                os.path.join(interval_directory,
-                                             os.path.basename(reference).replace('.fa',
-                                                                                 '.ACGT.noALT.bed'))
-                            ),
-                            gatk4.splitInterval(
-                                os.path.join(interval_directory,
-                                             os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list')),
-                                interval_directory,
-                                config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
-                            )
-                        ],
-                        name="gatk_scatterIntervalsByNs." + tumor_pair.name,
-                        samples=[tumor_pair.tumor, tumor_pair.normal]
+                elif scatter_jobs == 1:
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(interval_directory),
+                                gatk4.scatterIntervalsByNs(
+                                    reference,
+                                    output
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bash.grep(
+                                            output,
+                                            None,
+                                            '-Ev "_GL|_K"'
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            os.path.join(interval_directory,
+                                                         os.path.basename(reference).replace('.fa',
+                                                                                             '.ACGT.noALT.interval_list')),
+                                            '-v "EBV"'
+                                        )
+                                    ]
+                                ),
+                                gatk4.interval_list2bed(
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(reference).replace('.fa',
+                                                                                     '.ACGT.noALT.interval_list')),
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(reference).replace('.ACGT.noALT.interval_list',
+                                                                                     '.bed'))
+                                ),
+                            ],
+                            name="gatk_scatterIntervalsByNs." + sample.name,
+                            samples=[sample]
+                        )
                     )
+                else:
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(interval_directory),
+                                gatk4.scatterIntervalsByNs(
+                                    reference,
+                                    output
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bash.grep(
+                                            output,
+                                            None,
+                                            '-Ev "_GL|_K"'
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            os.path.join(interval_directory,
+                                                         os.path.basename(reference).replace('.fa',
+                                                                                             '.ACGT.noALT.interval_list')),
+                                            '-v "EBV"'
+                                        )
+                                    ]
+                                ),
+                                gatk4.splitInterval(
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list')),
+                                    interval_directory,
+                                    config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+                                )
+                            ],
+                            name="gatk_scatterIntervalsByNs." + sample.name,
+                            samples=[sample]
+                        )
+                    )
+                    
+        if 'somatic' in self.get_protocol() and 'tumor_only' not in self.get_protocol():
+            for tumor_pair in self.tumor_pairs.values():
+                interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name,
+                                                  "intervals")
+                output = os.path.join(interval_directory,
+                                      os.path.basename(reference).replace('.fa',
+                                                                          '.ACGT.interval_list'))
+                
+                coverage_bed = bvatools.resolve_readset_coverage_bed(
+                    tumor_pair.normal.readsets[0]
                 )
+                
+                if self.get_protocol() == "fastpass":
+                    coverage_bed = config.param('rawmpileup_panel', 'panel')
+                
+                if coverage_bed:
+                    region = coverage_bed
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(interval_directory),
+                                gatk4.bed2interval_list(
+                                    dictionary,
+                                    region,
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(region).replace('.bed',
+                                                                                  '.interval_list'))
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bash.grep(
+                                            os.path.join(interval_directory,
+                                                         os.path.basename(region).replace('.bed',
+                                                                                          '.interval_list')),
+                                            None,
+                                            '-Ev "_GL|_K"'
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            os.path.join(interval_directory,
+                                                         os.path.basename(region).replace('.bed',
+                                                                                          '.noALT.interval_list')),
+                                            '-v "EBV"'
+                                        ),
+                                    ]
+                                ),
+                                gatk4.interval_list2bed(
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(region).replace('.bed',
+                                                                                  '.noALT.interval_list')),
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(region).replace('.bed',
+                                                                                  '.noALT.bed'))
+                                ),
+                            ],
+                            name="gatk_scatterIntervalsByNs." + tumor_pair.name,
+                            samples=[tumor_pair.tumor, tumor_pair.normal]
+                        )
+                    )
+                elif scatter_jobs == 1:
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(interval_directory),
+                                gatk4.scatterIntervalsByNs(
+                                    reference,
+                                    output
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bash.grep(
+                                            output,
+                                            None,
+                                            '-Ev "_GL|_K"'
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            os.path.join(interval_directory,
+                                                         os.path.basename(reference).replace('.fa',
+                                                                                             '.ACGT.noALT.interval_list')),
+                                            '-v "EBV"'
+                                        )
+                                    ]
+                                ),
+                                gatk4.interval_list2bed(
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(reference).replace('.fa',
+                                                                                     '.ACGT.noALT.interval_list')),
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(reference).replace('.fa',
+                                                                                     '.ACGT.noALT.bed'))
+                                ),
+                            ],
+                            name="gatk_scatterIntervalsByNs." + tumor_pair.name,
+                            samples=[tumor_pair.tumor, tumor_pair.normal]
+                        )
+                    )
+                else:
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(interval_directory),
+                                gatk4.scatterIntervalsByNs(
+                                    reference,
+                                    output
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bash.grep(
+                                            output,
+                                            None,
+                                            '-Ev "_GL|_K"'
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            os.path.join(interval_directory,
+                                                         os.path.basename(reference).replace('.fa',
+                                                                                             '.ACGT.noALT.interval_list')),
+                                            '-v "EBV"'
+                                        )
+                                    ]
+                                ),
+                                gatk4.interval_list2bed(
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(reference).replace('.fa',
+                                                                                     '.ACGT.noALT.interval_list')),
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(reference).replace('.fa',
+                                                                                     '.ACGT.noALT.bed'))
+                                ),
+                                gatk4.splitInterval(
+                                    os.path.join(interval_directory,
+                                                 os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list')),
+                                    interval_directory,
+                                    config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+                                )
+                            ],
+                            name="gatk_scatterIntervalsByNs." + tumor_pair.name,
+                            samples=[tumor_pair.tumor, tumor_pair.normal]
+                        )
+                    )
         
         return jobs
     
@@ -8186,7 +8168,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.trim_fastp,
                 self.bwa_mem2_samtools_sort,
                 self.gatk_mark_duplicates,
-                self.set_interval_list_pair,
+                self.set_interval_list,
                 self.sequenza,
                 self.rawmpileup_panel,
                 self.paired_varscan2_panel,
@@ -8210,7 +8192,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.trim_fastp,
                 self.bwa_mem2_samtools_sort,
                 self.gatk_mark_duplicates,
-                self.set_interval_list_pair,
+                self.set_interval_list,
                 self.conpair_concordance_contamination,  # 10
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
@@ -8249,7 +8231,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.trim_fastp,
                 self.bwa_mem2_samtools_sort,
                 self.gatk_mark_duplicates,
-                self.set_interval_list_pair,
+                self.set_interval_list,
                 self.manta_sv_calls,  # 10
                 self.strelka2_paired_somatic,
                 # self.sv_prep,
