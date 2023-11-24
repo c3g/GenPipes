@@ -1595,7 +1595,7 @@ END
             
             interval_list = []
             if coverage_bed:
-                [interval_list] = os.path.join(interval_directory,
+                interval_list = os.path.join(interval_directory,
                                              os.path.basename(coverage_bed).replace('.bed',
                                                                               '.noALT.interval_list'))
 
@@ -1604,7 +1604,7 @@ END
                                              os.path.basename(reference).replace('.fa',
                                                                                  '.ACGT.noALT.interval_list')),
 
-            if scatter_jobs == 1 and interval_list is not None:
+            if scatter_jobs == 1 or coverage_bed:
                 jobs.append(
                     concat_jobs(
                         [
