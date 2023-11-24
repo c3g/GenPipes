@@ -1779,7 +1779,12 @@ pandoc \\
                         htslib.tabix(
                             output_filter,
                             options="-pvcf"
-                        )
+                        ),
+                        deliverables.md5sum(
+                            output_filter,
+                            output_filter + ".md5",
+                            self.output_dir
+                            )
                     ],
                     name="filter_gatk." + sample.name,
                     samples=[sample],
