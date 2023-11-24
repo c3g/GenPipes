@@ -3493,7 +3493,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         samples=samples,
                         readsets=readsets,
                         input_dependency=[input_cna],
-                        output_dependency=[header, output_cna_body]
+                        output_dependency=[header, output_cna_body, output_cna]
                     )
                 )
                 
