@@ -61,7 +61,6 @@ def somatic(
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $LINX_JAR \\
-  {options} \\
   -threads {threads} \\
   -ref_genome_version {build} \\
   -sample {sample} \\
@@ -79,7 +78,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $LINX_JAR \\
             tmp_dir=config.param(ini_section, 'tmp_dir'),
             java_other_options=config.param(ini_section, 'java_other_options'),
             ram=config.param(ini_section, 'ram'),
-            options=config.param(ini_section, 'options'),
             threads=config.param(ini_section, 'threads'),
             build=config.param(ini_section, 'assembly_alias2'),
             sample=tumor_name,
@@ -169,6 +167,7 @@ def plot(
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $LINX_JAR com.hartwig.hmftools.linx.visualiser.SvVisualiser \\
+  {options} \\
   -threads {threads} \\
   -sample {sample} \\
   -plot_out {linx_dir}/plot/ \\
@@ -178,6 +177,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $LINX_JAR com
             tmp_dir=config.param(ini_section, 'tmp_dir'),
             java_other_options=config.param(ini_section, 'java_other_options'),
             ram=config.param(ini_section, 'ram'),
+            options=config.param(ini_section, 'options'),
             threads=config.param(ini_section, 'threads'),
             sample=sample_name,
             linx_dir=linx_dir
