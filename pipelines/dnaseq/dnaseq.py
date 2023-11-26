@@ -2605,8 +2605,8 @@ pandoc \\
                         name=job_name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                        input_dependency=[input, input_cpsr],
-                        output_dependency=[output_cna, output]
+                        input_dependency=[input, input_cpsr, output_cna],
+                        output_dependency=[output]
                     )
                 )
         
