@@ -61,6 +61,7 @@ def somatic(
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $LINX_JAR \\
+  {options} \\
   -threads {threads} \\
   -ref_genome_version {build} \\
   -sample {sample} \\
@@ -78,6 +79,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $LINX_JAR \\
             tmp_dir=config.param(ini_section, 'tmp_dir'),
             java_other_options=config.param(ini_section, 'java_other_options'),
             ram=config.param(ini_section, 'ram'),
+            options=config.param(ini_section, 'options'),
             threads=config.param(ini_section, 'threads'),
             build=config.param(ini_section, 'assembly_alias2'),
             sample=tumor_name,
