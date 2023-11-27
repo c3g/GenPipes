@@ -3431,7 +3431,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 vcf=flt_vcf,
                                 sample_id=sample_id,
                                 normal_id=normal_id
-                            )
+                            ),
+                            cnvkit.segmetrics(
+                                os.path.join(cnvkit_dir, sample_name + ".cnr"),
+                                os.path.join(cnvkit_dir, sample_name + ".cns"),
+                                os.path.join(cnvkit_dir, sample_name + ".seg.cns"),
+                            ),
                         ],
                         name="cnvkit_batch.correction." + sample_name,
                         samples=samples,
@@ -3447,7 +3452,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 remove=True
                             ),
                             cnvkit.call(
-                                os.path.join(cnvkit_dir, sample_name + ".cns"),
+                                os.path.join(cnvkit_dir, sample_name + ".seg.cns"),
                                 call_cns
                             ),
                             pipe_jobs(
@@ -3697,6 +3702,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             vcf=flt_vcf,
                             sample_id=sample_id,
                             normal_id=normal_id
+                        ),
+                        cnvkit.segmetrics(
+                            os.path.join(cnvkit_dir, sample_name + ".cnr"),
+                            os.path.join(cnvkit_dir, sample_name + ".cns"),
+                            os.path.join(cnvkit_dir, sample_name + ".seg.cns"),
                         )
                     ],
                     name="cnvkit_batch.correction." + sample_name,
@@ -3713,7 +3723,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             remove=True
                         ),
                         cnvkit.call(
-                            os.path.join(cnvkit_dir, sample_name + ".cns"),
+                            os.path.join(cnvkit_dir, sample_name + ".seg.cns"),
                             call_cns
                         ),
                         pipe_jobs(
