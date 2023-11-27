@@ -504,6 +504,7 @@ def parse_splitBarcode_metrics(
             [input_metrics, samplesheet],
             [output],
             [
+                [ini_section, 'module_python'],
                 [ini_section, 'module_mugqic_tools']
             ],
             command="""\
