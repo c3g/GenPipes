@@ -675,11 +675,10 @@ END
 
         for readset in self.readsets:
             output_dir = os.path.join(self.output_dirs['trim_directory'], readset.sample.name)
-            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            metrics_directory = os.path.join(self.output_dirs["metrics_directory"][readset.sample.name])
             
-            trim_file_prefix = os.path.join(output_dir, readset.name)
-            trim_json = trim_file_prefix + ".json"
-            trim_html = trim_file_prefix + ".html"
+            trim_json = os.path.join(metrics_directory, readset.name + ".trim.json")
+            trim_html = os.path.join(metrics_directory, readset.name + ".trim.html")
             
             adapter_file = config.param('trim_fastp', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
@@ -695,6 +694,8 @@ END
             fastq2 = ""
             output1 = ""
             output2 = ""
+            trim_file_prefix = os.path.join(output_dir, readset.name)
+            
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
@@ -739,7 +740,7 @@ END
                             output_dir,
                             remove=True
                         ),
-                        bash.mkdir(link_directory),
+                        bash.mkdir(metrics_directory),
                         adapter_job,
                         fastp.trim(
                             adapter_file,
@@ -751,18 +752,21 @@ END
                             trim_html,
                             ini_section='trim_fastp'
                         ),
-                        bash.ln(
-                            os.path.relpath(trim_json, link_directory),
-                            os.path.join(link_directory, readset.name + ".trim.json"),
-                            trim_json
-                        )
+                        # bash.ln(
+                        #     os.path.relpath(trim_json, link_directory),
+                        #     os.path.join(link_directory, readset.name + ".trim.json"),
+                        #     trim_json
+                        # )
                     ],
                     name="trim_fastp." + readset.name,
                     removable_files=[output_dir],
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    output_dependency=[output1, output2, trim_json, trim_html]
                 )
             )
-            self.multiqc_inputs[readset.sample.name].append(os.path.join(link_directory, readset.name + ".trim.json"))
+            self.multiqc_inputs[readset.sample.name].append(
+                os.path.join(metrics_directory, readset.name + ".trim.json")
+            )
             
         return jobs
 
@@ -949,7 +953,7 @@ END
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            metrics_directory = os.path.join(self.output_dirs["metrics_directory"][sample.name])
             
             # Find input readset CRAMs/BAMs first from previous bwa_mem2_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [
@@ -969,13 +973,13 @@ END
                 output =os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")
                 output_index = output + ".bai"
 
-            metrics_file = os.path.join(alignment_directory, sample.name + ".sorted.dup.metrics")
+            metrics_file = os.path.join(metrics_directory, sample.name + ".sorted.dup.metrics")
 
             jobs.append(
                 concat_jobs(
                     [
                         bash.mkdir(alignment_directory),
-                        bash.mkdir(link_directory),
+                        bash.mkdir(metrics_directory),
                         gatk4.mark_duplicates(
                             input,
                             output,
@@ -988,17 +992,20 @@ END
                             output,
                             ini_section='samtools_index_cram'
                         ),
-                        bash.ln(
-                            os.path.relpath(metrics_file, link_directory),
-                            os.path.join(link_directory, sample.name + ".sorted.dup.metrics"),
-                            metrics_file
-                        )
+                        # bash.ln(
+                        #     os.path.relpath(metrics_file, link_directory),
+                        #     os.path.join(link_directory, sample.name + ".sorted.dup.metrics"),
+                        #     metrics_file
+                        # )
                     ],
                     name="gatk_mark_duplicates." + sample.name,
                     samples=[sample],
+                    output_dependency= [output, output_index, metrics_file]
                 )
             )
-            self.multiqc_inputs[sample.name].append(os.path.join(link_directory, sample.name + ".sorted.dup.metrics"))
+            self.multiqc_inputs[sample.name].append(
+                metrics_file
+            )
             
         return jobs
     
