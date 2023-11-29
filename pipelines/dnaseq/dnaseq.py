@@ -511,7 +511,7 @@ END
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            picard_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "picard_metrics")
+            picard_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
@@ -1307,7 +1307,7 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
-            #link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
             [input] = self.select_input_files(
                 [
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
@@ -1329,25 +1329,11 @@ END
                             metrics_directory,
                             remove=False
                         ),
-                        # bash.mkdir(os.path.join(
-                        #     self.output_dirs['report_directory'],
-                        #     "multiqc_inputs",
-                        #     sample.name)
-                        # ),
                         verify_bam_id2.verify(
                             input,
-                            metrics_directory,
+                            os.path.join(metrics_directory, sample.name),
                             bed_file
                         ),
-                        # bash.ln(
-                        #     os.path.relpath(
-                        #         os.path.join(os.path.join(output, sample.name + ".selfSM")),
-                        #         link_directory
-                        #     ),
-                        #     os.path.join(link_directory, sample.name + ".selfSM"),
-                        #     os.path.join(output, sample.name + ".selfSM")
-                        # )
-                        
                     ],
                     name="verify_bam_id2." + sample.name,
                     samples=[sample],
@@ -1855,75 +1841,6 @@ END
             )
         )
         return jobs
-
-    def dna_sample_metrics(self):
-        """
-        Merge metrics. Read metrics per sample are merged at this step.
-        """
-        #get library type
-        library = "SINGLE_END"
-        for readset in self.readsets:
-            if readset.run_type == "PAIRED_END" :
-                library="PAIRED_END"
-
-
-        trim_metrics_file = os.path.join(self.output_dirs['metrics_directory'], "trimSampleTable.tsv")
-        metrics_file = os.path.join(self.output_dirs['metrics_directory'], "SampleMetrics.stats")
-        report_metrics_file = os.path.join(self.output_dirs["report_directory"], "sequenceAlignmentTable.tsv")
-
-        report_file = os.path.join(self.output_dirs["report_directory"], "DnaSeq.dna_sample_metrics.md")
-        job = concat_jobs(
-            [
-                bash.mkdir(os.path.join(self.output_dirs['metrics_directory'])),
-                metrics.dna_sample_metrics(
-                    "alignment",
-                    metrics_file,
-                    library
-                ),
-                Job(
-                    [metrics_file],
-                    [report_file],
-                    [
-                        ['dna_sample_metrics', 'module_pandoc']
-                    ],
-                    # Ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
-                    command="""\
-mkdir -p report && \\
-if [[ -f {trim_metrics_file} ]]
-then
-  awk -F"\t" 'FNR==NR{{raw_reads[$1]=$2; surviving_reads[$1]=$3; surviving_pct[$1]=$4; next}}{{OFS="\t"; if ($2=="Mapped Reads"){{mapped_pct="Mapped %"}} else {{mapped_pct=($2 / surviving_reads[$1] * 100)}}; printf $1"\t"raw_reads[$1]"\t"surviving_reads[$1]"\t"surviving_pct[$1]"\t"$2"\t"mapped_pct; for (i = 3; i<= NF; i++) {{printf "\t"$i}}; print ""}}' \\
-  {trim_metrics_file} \\
-  {metrics_file} \\
-  > {report_metrics_file}
-else
-  cp {metrics_file} {report_metrics_file}
-fi && \\
-sequence_alignment_table_md=`if [[ -f {trim_metrics_file} ]] ; then cut -f1-10 {report_metrics_file} | LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%\\47d", $8), sprintf("%.1f", $9), $10}}}}' ; else cut -f1-6 {report_metrics_file} | LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5), $6}}}}' ; fi`
-pandoc \\
-  {report_template_dir}/{basename_report_file} \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable sequence_alignment_table="$sequence_alignment_table_md" \\
-  --to markdown \\
-  > {report_file}""".format(
-                        report_template_dir=self.report_template_dir,
-                        trim_metrics_file=trim_metrics_file,
-                        metrics_file=metrics_file,
-                        basename_report_file=os.path.basename(report_file),
-                        report_metrics_file=report_metrics_file,
-                        report_file=report_file
-                    ),
-                    report_files=[report_file]
-                )
-            ],
-            name="dna_sample_metrics",
-            samples=readset.sample
-        )
-        job.input_files = [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.metrics") for sample in self.samples]
-
-        if library == "PAIRED_END" :
-            job.input_files += [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.recal.all.metrics.insert_size_metrics") for sample in self.samples]
-
-        return [job]
 
     def vt_decompose_and_normalize(
         self,

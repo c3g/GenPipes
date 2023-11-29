@@ -752,11 +752,6 @@ END
                             trim_html,
                             ini_section='trim_fastp'
                         ),
-                        # bash.ln(
-                        #     os.path.relpath(trim_json, link_directory),
-                        #     os.path.join(link_directory, readset.name + ".trim.json"),
-                        #     trim_json
-                        # )
                     ],
                     name="trim_fastp." + readset.name,
                     removable_files=[output_dir],
@@ -992,11 +987,6 @@ END
                             output,
                             ini_section='samtools_index_cram'
                         ),
-                        # bash.ln(
-                        #     os.path.relpath(metrics_file, link_directory),
-                        #     os.path.join(link_directory, sample.name + ".sorted.dup.metrics"),
-                        #     metrics_file
-                        # )
                     ],
                     name="gatk_mark_duplicates." + sample.name,
                     samples=[sample],
