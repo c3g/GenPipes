@@ -50,6 +50,7 @@ from bfx import (
     bwa,
     cpsr,
     deeptools,
+    deliverables,
     differential_expression,
     fastqc,
     gatk4,
@@ -559,7 +560,7 @@ class RnaSeqRaw(common.Illumina):
             if len(readset.sample.readsets) == 1:
                 readset_bam = os.path.join(alignment_pass_directory, "Aligned.sortedByCoord.out.bam")
                 sample_bam = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.sample.name + ".sorted.bam")
-                
+
                 job = concat_jobs(
                     [
                         job,
@@ -1405,7 +1406,12 @@ pandoc \\
                             input,
                             print_reads_output,
                             base_recalibrator_output
-                        )
+                        ),
+                        deliverables.md5sum(
+                            print_reads_output,
+                            print_reads_output + ".md5",
+                            self.output_dir
+                            )
                     ],
                     name="gatk_print_reads." + sample.name,
                     samples=[sample],
@@ -1773,7 +1779,12 @@ pandoc \\
                         htslib.tabix(
                             output_filter,
                             options="-pvcf"
-                        )
+                        ),
+                        deliverables.md5sum(
+                            output_filter,
+                            output_filter + ".md5",
+                            self.output_dir
+                            )
                     ],
                     name="filter_gatk." + sample.name,
                     samples=[sample],
@@ -1852,10 +1863,11 @@ pandoc \\
                 sample.name,
                 "pcgr"
             )
-            output = os.path.join(
-                pcgr_directory,
-                sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"
-            )
+            output = [
+                    os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                    os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".maf"),
+                    os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv")
+                ]
 
             jobs.append(
                 concat_jobs(
@@ -1869,13 +1881,13 @@ pandoc \\
                             pcgr_directory,
                             sample.name
                         ),
-                        bash.ls(output)
+                        bash.ls(output[0])
                     ],
                     name="report_pcgr." + sample.name,
                     samples=[sample],
                     readsets=list(sample.readsets),
                     input_dependency=[input_cpsr],
-                    output_dependency=[output]
+                    output_dependency=output
                 )
             )
 
@@ -2595,7 +2607,7 @@ END
                     os.path.join(self.output_dirs['metrics_directory'], "rnaseqRep", "metrics.tsv"),
                     os.path.join(self.output_dirs["report_directory"], "trimAlignmentTable.tsv")
                 ] + [
-                    os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name, readset.name+"rRNA.stats.tsv")
+                    os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name, readset.name + "rRNA.stats.tsv")
                     for readset in self.readsets
                 ],
                 [os.path.join(self.output_dirs['report_directory'], "IHEC_metrics_rnaseq_All.txt")],
@@ -2628,7 +2640,7 @@ END
         if by_sample == "true":
             for sample in self.samples:
                 input = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", sample.name)
-                output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_by_sample", sample.name, "multiqc_" + sample.name)
+                output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_by_sample", sample.name, f"{sample.name}.multiqc")
 
                 job = multiqc.run(
                         input + "*",
@@ -2636,6 +2648,8 @@ END
                         )
                 job.name = "multiqc." + sample.name
                 job.input_files = self.multiqc_inputs
+                job.samples = self.samples
+                job.readsets = self.readsets
                 jobs.append(job)
 
         return jobs

@@ -33,11 +33,25 @@ def somatic(
     ini_section='linx_somatic'
     ):
     purple_input = os.path.join(purple_dir, tumor_name + ".purple.purity.tsv")
-    linx_output = os.path.join(output_dir, tumor_name + ".linx.vis_sv_data.tsv")
+    linx_output = [
+            os.path.join(output_dir, tumor_name + ".linx.breakend.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.clusters.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.driver.catalog.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.drivers.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.fusion.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.links.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.svs.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.vis_copy_number.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.vis_fusion.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.vis_gene_exon.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.vis_protein_domain.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.vis_segments.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.vis_sv_data.tsv")
+        ]
 
     return Job(
         [purple_vcf, purple_input],
-        [linx_output],
+        linx_output,
         [
             [ini_section, 'module_java'],
             [ini_section, 'module_R'],
@@ -85,11 +99,17 @@ def germline(
     ini_section='linx_germline'
     ):
     purple_input = os.path.join(os.path.dirname(purple_vcf), tumor_name + ".purple.purity.tsv")
-    linx_output = os.path.join(output_dir, tumor_name + ".linx.vis_sv_data.tsv")
+    linx_output = [
+            os.path.join(output_dir, tumor_name + ".linx.germline.clusters.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.germline.disruption.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.germline.driver.catalog.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.germline.links.tsv"),
+            os.path.join(output_dir, tumor_name + ".linx.germline.svs.tsv")
+        ]
 
     return Job(
         [purple_vcf, purple_input],
-        [linx_output],
+        linx_output,
         [
             [ini_section, 'module_java'],
             [ini_section, 'module_R'],
