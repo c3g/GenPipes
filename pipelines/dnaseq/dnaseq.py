@@ -802,9 +802,6 @@ END
                             metrics_directory,
                             remove=False
                         ),
-                        # bash.mkdir(
-                        #     self.output_dirs['report_directory'][tumor_pair.name]
-                        # ),
                         conpair.concordance(
                             pileup_normal,
                             pileup_tumor,
@@ -815,18 +812,6 @@ END
                             pileup_tumor,
                             contamination_out
                         ),
-                        # bash.ln(
-                        #     os.path.relpath(concordance_out, self.output_dirs['report_directory'][tumor_pair.name]),
-                        #     os.path.join(self.output_dirs['report_directory'][tumor_pair.name],
-                        #                  os.path.basename(concordance_out)),
-                        #     input=concordance_out
-                        # ),
-                        # bash.ln(
-                        #     os.path.relpath(contamination_out, self.output_dirs['report_directory'][tumor_pair.name]),
-                        #     os.path.join(self.output_dirs['report_directory'][tumor_pair.name],
-                        #                  os.path.basename(contamination_out)),
-                        #     input=contamination_out
-                        # ),
                         job_project_tracking_metrics
                     ],
                     name=job_name,
@@ -863,7 +848,6 @@ END
         jobs = []
         for sample in self.samples:
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
-            #link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             readset = sample.readsets[0]
@@ -888,44 +872,11 @@ END
                 concat_jobs(
                     [
                         mkdir_job,
-                        #bash.mkdir(link_directory),
                         gatk4.collect_multiple_metrics(
                             input,
                             os.path.join(metrics_directory, sample.name + ".all.metrics"),
                             library_type=library[sample]
                         ),
-                        # bash.ln(
-                        #     os.path.relpath(
-                        #         os.path.join(metrics_directory, sample.name + ".all.metrics.alignment_summary_metrics"),
-                        #         link_directory
-                        #     ),
-                        #     os.path.join(link_directory, sample.name + ".all.metrics.alignment_summary_metrics"),
-                        #     os.path.join(metrics_directory, sample.name + ".all.metrics.alignment_summary_metrics")
-                        # ),
-                        # bash.ln(
-                        #     os.path.relpath(
-                        #         os.path.join(metrics_directory, sample.name + ".all.metrics.insert_size_metrics"),
-                        #         link_directory
-                        #     ),
-                        #     os.path.join(link_directory, sample.name + ".all.metrics.insert_size_metrics"),
-                        #     os.path.join(metrics_directory, sample.name + ".all.metrics.insert_size_metrics")
-                        # ),
-                        # bash.ln(
-                        #     os.path.relpath(
-                        #         os.path.join(metrics_directory, sample.name + ".all.metrics.quality_by_cycle_metrics"),
-                        #         link_directory
-                        #     ),
-                        #     os.path.join(link_directory, sample.name + ".all.metrics.quality_by_cycle_metrics"),
-                        #     os.path.join(metrics_directory, sample.name + ".all.metrics.quality_by_cycle_metrics")
-                        # ),
-                        # bash.ln(
-                        #     os.path.relpath(
-                        #         os.path.join(metrics_directory, sample.name + ".all.metrics.quality_distribution_metrics"),
-                        #         link_directory
-                        #     ),
-                        #     os.path.join(link_directory, sample.name + ".all.metrics.quality_distribution_metrics"),
-                        #     os.path.join(metrics_directory, sample.name + ".all.metrics.quality_distribution_metrics")
-                        # ),
                     ],
                     name="picard_collect_multiple_metrics." + sample.name,
                     samples=[sample],
@@ -948,15 +899,6 @@ END
                             input,
                             os.path.join(metrics_directory, sample.name + ".oxog_metrics.txt")
                         ),
-                        # bash.ln(
-                        #     os.path.relpath(
-                        #         os.path.join(metrics_directory,
-                        #                      sample.name + ".oxog_metrics.txt"),
-                        #         link_directory
-                        #     ),
-                        #     os.path.join(link_directory, sample.name + ".oxog_metrics.txt"),
-                        #     os.path.join(metrics_directory, sample.name + ".oxog_metrics.txt")
-                        # )
                     ],
                     name="picard_collect_oxog_metrics." + sample.name,
                     samples=[sample],
@@ -969,20 +911,10 @@ END
                 concat_jobs(
                     [
                         mkdir_job,
-                        #bash.mkdir(link_directory),
                         gatk4.collect_gcbias_metrics(
                             input,
                             os.path.join(metrics_directory, sample.name)
                         ),
-                        # bash.ln(
-                        #     os.path.relpath(
-                        #         os.path.join(metrics_directory,
-                        #                      sample.name + ".gcbias_metrics.txt"),
-                        #         link_directory
-                        #     ),
-                        #     os.path.join(link_directory, sample.name + ".gcbias_metrics.txt"),
-                        #     os.path.join(metrics_directory, sample.name + ".gcbias_metrics.txt")
-                        # )
                     ],
                     name="picard_collect_gcbias_metrics." + sample.name,
                     samples=[sample],
@@ -1010,10 +942,7 @@ END
         """
         
         jobs = []
-        
-        
-        #link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
-        
+
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
@@ -1040,18 +969,12 @@ END
                 concat_jobs(
                     [
                         bash.mkdir(metrics_directory),
-                        #bash.mkdir(link_directory),
                         mosdepth.run(
                             input,
-                            metrics_directory,
+                            os.path.join(metrics_directory, sample.name),
                             True,
                             region
                         ),
-                        # bash.ln(
-                        #     os.path.relpath(output_dependency, link_directory),
-                        #     os.path.join(link_directory, os.path.basename(output_dependency)),
-                        #     output_dependency
-                        # )
                     ],
                     name="mosdepth." + sample.name,
                     samples=[sample],
@@ -1095,19 +1018,10 @@ END
                             metrics_directory,
                             remove=True
                         ),
-                        #bash.mkdir(link_directory),
                         samtools.flagstat(
                             input,
                             output
                         ),
-                        # bash.ln(
-                        #     os.path.relpath(
-                        #         output,
-                        #         link_directory
-                        #     ),
-                        #     os.path.join(link_directory, sample.name + ".flagstat"),
-                        #     output
-                        # )
                     ],
                     name="dna_samtools_flagstat." + sample.name,
                     samples=[sample],
@@ -1133,60 +1047,53 @@ END
 
         jobs = []
         
-        multiqc_files_paths = [item for sample in self.samples for item in self.multiqc_inputs[sample.name]]
-
-        multiqc_input_path = [os.path.join(self.output_dirs['metrics_directory'][sample.name]) for sample in self.samples]
-        
-        output = os.path.join(self.output_dirs['report_directory'], "multiqc_report")
-
-        job = multiqc.run(
-            multiqc_input_path,
-            output
-        )
-        job.name = "multiqc_all_samples"
-        job.samples = self.samples
-        job.input_files = multiqc_files_paths
-        job.input_dependency = [multiqc_files_paths]
-        jobs.append(job)
-
-        return jobs
+        # Generate multiqc report for dnaseq and tumor only protocols
+        if 'germline' in self.get_protocol() or 'tumor_only' in self.get_protocol():
+            multiqc_files_paths = [item for sample in self.samples for item in self.multiqc_inputs[sample.name]]
     
-    def run_pair_multiqc(self):
-        """
-        Aggregate results from bioinformatics analyses across many samples into a single report
-        MultiQC searches a given directory for analysis logs and compiles an HTML report. It's a general-use tool,
-        perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
-        """
-        
-        jobs = []
-        
-        report_directory = os.path.join(self.output_dirs['report_directory'])
-        for tumor_pair in self.tumor_pairs.values():
-            patient_folders = [
-                os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name]),
-                os.path.join(self.output_dirs['metrics_directory'][tumor_pair.normal.name]),
-                os.path.join(self.output_dirs['metrics_directory'][tumor_pair.tumor.name]),
-            ]
-            multiqc_input_paths = []
-            for metrics in (
-                    self.multiqc_inputs[tumor_pair.name] +
-                    self.multiqc_inputs[tumor_pair.normal.name] +
-                    self.multiqc_inputs[tumor_pair.tumor.name]):
-                multiqc_input_paths.append(metrics)
+            multiqc_input_path = [os.path.join(self.output_dirs['metrics_directory'][sample.name]) for sample in self.samples]
             
-            output = os.path.join(report_directory, tumor_pair.name + ".multiqc")
+            output = os.path.join(self.output_dirs['report_directory'], "multiqc_report")
+    
             job = multiqc.run(
-                patient_folders,
+                multiqc_input_path,
                 output
             )
-            
-            job.name = "multiqc." + tumor_pair.name
-            job.samples = [tumor_pair.normal, tumor_pair.tumor]
-            job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-            job.input_files = multiqc_input_paths
-            job.input_dependency = [multiqc_input_paths]
+            job.name = "multiqc_all_samples"
+            job.samples = self.samples
+            job.input_files = multiqc_files_paths
+            job.input_dependency = [multiqc_files_paths]
             jobs.append(job)
-        
+
+        # Generate multiqc reports for somatics protocols excluding tumor only protocol
+        elif 'somatic' in self.get_protocol() and 'tumor_only' not in self.get_protocol():
+            report_directory = os.path.join(self.output_dirs['report_directory'])
+            for tumor_pair in self.tumor_pairs.values():
+                patient_folders = [
+                    os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name]),
+                    os.path.join(self.output_dirs['metrics_directory'][tumor_pair.normal.name]),
+                    os.path.join(self.output_dirs['metrics_directory'][tumor_pair.tumor.name]),
+                ]
+                multiqc_input_paths = []
+                for metrics in (
+                        self.multiqc_inputs[tumor_pair.name] +
+                        self.multiqc_inputs[tumor_pair.normal.name] +
+                        self.multiqc_inputs[tumor_pair.tumor.name]):
+                    multiqc_input_paths.append(metrics)
+                
+                output = os.path.join(report_directory, tumor_pair.name + ".multiqc")
+                job = multiqc.run(
+                    patient_folders,
+                    output
+                )
+                
+                job.name = "multiqc." + tumor_pair.name
+                job.samples = [tumor_pair.normal, tumor_pair.tumor]
+                job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                job.input_files = multiqc_input_paths
+                job.input_dependency = [multiqc_input_paths]
+                jobs.append(job)
+
         return jobs
     
     def sym_link_report(self):
@@ -5944,12 +5851,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name=job_name,
                     samples=samples,
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    output_dependency=[
-                        os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name],
-                                     os.path.basename(purple_purity_output)),
-                        os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name],
-                                     os.path.basename(purple_qc_output))
-                    ]
+                    # output_dependency=[
+                    #     os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name],
+                    #                  os.path.basename(purple_purity_output)),
+                    #     os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name],
+                    #                  os.path.basename(purple_qc_output))
+                    # ]
                 )
             )
             self.multiqc_inputs[tumor_pair.name].extend(
@@ -8256,7 +8163,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.conpair_concordance_contamination,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
-                self.run_pair_multiqc,
+                self.run_multiqc,
                 self.sym_link_report,
                 self.sym_link_fastq_pair,
                 self.sym_link_panel
@@ -8294,7 +8201,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.filter_ensemble_somatic,  # 35
                 self.report_cpsr,
                 self.report_pcgr,
-                self.run_pair_multiqc,
+                self.run_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,  # 40
                 self.sym_link_report,
