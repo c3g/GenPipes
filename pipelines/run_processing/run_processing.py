@@ -3773,6 +3773,8 @@ class RunProcessing(common.MUGQICPipeline):
                 unaligned_i2 = os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
                 unexpected_barcode_counts_i2 = re.sub(".fastq.gz", ".counts.txt", unaligned_i2)
                 outputs.append(unaligned_i2)
+            else:
+                unaligned_i2 = False
             postprocessing_jobs.append(
                 pipe_jobs(
                     [
