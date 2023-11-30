@@ -29,7 +29,7 @@ PIPELINES = [
 "Tumor_Pair",
 ]
 
-__VERSION__ = "4.1.2"
+__VERSION__ = "5.0.0"
 
 def add_default_command(parser):
     """
@@ -73,14 +73,14 @@ def make_parser(argv=None):
 
         epilog = p_class.process_help(argv)
 
-        subparser =  subparsers.add_parser(module,
+        subparser = subparsers.add_parser(module,
             formatter_class=argparse.RawDescriptionHelpFormatter,
             conflict_handler='resolve', epilog=epilog, help='\n'.join(p_class.__doc__.split()[0:2]))
 
         subparser.set_defaults(__command__ = module)
 
         # Let the class feed its subparser.
-        subparser =  p_class.argparser(subparser)
+        subparser = p_class.argparser(subparser)
 
     return parser
 
