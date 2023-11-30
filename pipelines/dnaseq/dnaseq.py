@@ -2338,22 +2338,19 @@ END
                     output_directory,
                     sample.name + ".annot.vcf.gz"
                 )
-                output_cna = os.path.join(
+                
+                input_cna = os.path.join(
                     self.output_dirs['sv_variants_directory'],
                     sample.name + ".cnvkit.cna.tsv"
                 )
-                # check cna file for observed cnas - if none found do not send file to pcgr
-                # try:
-                #     with open(input_cna, 'r') as file:
-                #         lines = file.readlines()
-                #         if len(lines) > 0:
-                #             output_cna = input_cna
-                #         else:
-                #             output_cna = None
-                # except FileNotFoundError:
-                #     print(f"File not found: '{input_cna}'")
-                # except Exception as e:
-                #     print(f"An error occurred: {e}")
+                
+                if input_cna + ".pass":
+                    output_cna = os.path.join(
+                        self.output_dirs['sv_variants_directory'],
+                        sample.name + ".cnvkit.cna.tsv"
+                    )
+                else:
+                    output_cna = None
                 
                 pcgr_directory = os.path.join(
                     output_directory,
@@ -2444,23 +2441,19 @@ END
                     tumor_pair.name + ".cpsr." + assembly + ".json.gz"
                 )
                 
-                output_cna = os.path.join(
+                input_cna = os.path.join(
                     self.output_dirs['sv_variants_directory'],
                     tumor_pair.name + ".cnvkit.cna.tsv"
                 )
-                
-                # try:
-                #     with open(input_cna, 'r') as file:
-                #         lines = file.readlines()
-                #         if len(lines) > 0:
-                #             output_cna = input_cna
-                #         else:
-                #             output_cna = None
-                # except FileNotFoundError:
-                #     print(f"File not found: '{input_cna}'")
-                # except Exception as e:
-                #     print(f"An error occurred: {e}")
 
+                if input_cna + ".pass":
+                    output_cna = os.path.join(
+                        self.output_dirs['sv_variants_directory'],
+                        tumor_pair.name + ".cnvkit.cna.tsv"
+                    )
+                else:
+                    output_cna = None
+                    
                 output = os.path.join(
                     pcgr_directory,
                     tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"
@@ -3266,6 +3259,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     self.output_dirs['sv_variants_directory'],
                     sample_name + ".cnvkit.cna.tsv"
                 )
+                output_check = output_cna + ".pass"
                 
                 jobs.append(
                     concat_jobs(
@@ -3372,12 +3366,16 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     output_cna_body,
                                 ],
                                 output_cna
+                            ),
+                            cnvkit.file_check(
+                                output_cna,
+                                output_check
                             )
                         ],
                         name="cnvkit_batch.cna." + sample_name,
                         samples=samples,
                         readsets=readsets,
-                        input_dependency=[input_cna],
+                        input_dependency=[input_cna, output_cna],
                         output_dependency=[header, output_cna_body, output_cna]
                     )
                 )
@@ -3537,6 +3535,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.output_dirs['sv_variants_directory'],
                 sample_name + ".cnvkit.cna.tsv"
             )
+            output_check = output_cna + ".pass"
             
             jobs.append(
                 concat_jobs(
@@ -3643,12 +3642,16 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 output_cna_body,
                             ],
                             output_cna
-                        )
+                        ),
+                        cnvkit.file_check(
+                            output_cna,
+                            output_check
+                            )
                     ],
                     name="cnvkit_batch.cna." + sample_name,
                     samples=samples,
                     readsets=readsets,
-                    input_dependency=[input_cna],
+                    input_dependency=[input_cna, output_cna],
                     output_dependency=[header, output_cna_body, output_cna]
                 )
             )

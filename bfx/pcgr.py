@@ -29,7 +29,7 @@ def report(input_vcf,
            cpsr_report,
            output_dir,
            tumor_id,
-           input_cna=None,
+           input_cna,
            ini_section=None
            ):
     
@@ -43,12 +43,18 @@ def report(input_vcf,
     return Job(
         [
             input_vcf,
+            input_cna
         ],
         output_dir,
         [
             [ini_section, 'module_pcgr'],
         ],
         command="""\
+`if [ -e {input_cna}.pass ] then
+    export input_cna="--input_cna {input_cna}"
+ else
+    export input_cna=""
+fi`
 {call} {options} \\
     {tumor_type} \\
     {assay} \\
@@ -59,7 +65,7 @@ def report(input_vcf,
     {msi_options} \\
     --input_vcf {input_vcf} \\
     --cpsr_report {cpsr_report} \\
-    {input_cna} \\
+    $input_cna \\
     --pcgr_dir $PCGR_DATA \\
     --output_dir {output_dir} \\
     --genome_assembly {assembly} \\
@@ -75,7 +81,8 @@ def report(input_vcf,
             msi_options=config.param(ini_section, 'msi_options'),
             input_vcf=input_vcf,
             cpsr_report=cpsr_report,
-            input_cna=" \\\n    --input_cna " + input_cna if input_cna else "",
+            input_cna=input_cna,
+            #input_cna=" \\\n    --input_cna " + input_cna if input_cna else "",
             output_dir=output_dir,
             assembly=config.param(ini_section, 'assembly'),
             tumor_id=tumor_id
