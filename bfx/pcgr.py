@@ -50,11 +50,11 @@ def report(input_vcf,
             [ini_section, 'module_pcgr'],
         ],
         command="""\
-`if [ -e {input_cna}.pass ]; then
+if [ -e {input_cna}.pass ]; then
     export input_cna="--input_cna {input_cna}"
  else
     export input_cna=""
-fi` && \\
+fi && \\
 {call} {options} \\
     {tumor_type} \\
     {assay} \\
