@@ -54,7 +54,7 @@ def report(input_vcf,
     export input_cna="--input_cna {input_cna}"
  else
     export input_cna=""
-fi`
+fi` && \\
 {call} {options} \\
     {tumor_type} \\
     {assay} \\
