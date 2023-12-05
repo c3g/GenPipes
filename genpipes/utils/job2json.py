@@ -18,11 +18,8 @@ import uuid
 
 from uuid import uuid4
 
-# Append mugqic_pipelines directory to Python library path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
 # MUGQIC Modules
-from core.config import *
+from ...core.config import *
 
 def getarg(argument):
     step_name = ""
@@ -180,7 +177,7 @@ def main():
                             current_json_hash = json.load(json_file)
                         if current_json_hash:
                             # Print a copy of the JSON file for the monitoring interface
-                            portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
+                            portal_output_dir = global_conf.get('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
                             if portal_output_dir != '':
                                 shutil.copy(jfile, os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'))
                             count = 0
