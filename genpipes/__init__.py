@@ -77,7 +77,7 @@ def make_parser(argv=None):
             formatter_class=argparse.RawDescriptionHelpFormatter,
             conflict_handler='resolve', epilog=epilog, help='\n'.join(p_class.__doc__.split()[0:2]))
 
-        subparser.set_defaults(__command__ = module)
+        subparser.set_defaults(__command__ = p_module)
 
         # Let the class feed its subparser.
         subparser = p_class.argparser(subparser)
@@ -88,5 +88,11 @@ def make_parser(argv=None):
 
 def main(argv):
     parser = make_parser(argv)
-    parsed = parser.parse_args(argv)
-    return parsed.__command__.main(parsed)
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+
+    return parsed_args.__command__.main(parsed_args)
