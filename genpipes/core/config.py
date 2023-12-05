@@ -28,7 +28,7 @@ import io
 
 log = logging.getLogger(__name__)
 
-class Config(configparser.SafeConfigParser):
+class Config(configparser.ConfigParser):
 
     # True only for continuous integration testing
     continuous_integration_testing = 'GENPIPES_CIT' in os.environ
@@ -43,7 +43,7 @@ class Config(configparser.SafeConfigParser):
     sanity = False
 
     def __init__(self):
-        configparser.SafeConfigParser.__init__(self)
+        configparser.ConfigParser.__init__(self)
 
     @property
     def filepath(self):

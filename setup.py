@@ -13,7 +13,7 @@ setuptools.setup(
     entry_points = {
     "console_scripts": [
         "genpipes = genpipes.__main__:main"] },
-    install_requires = ["packaging >=   20.9"],
+    install_requires = [ "packaging >=   20.9"],
     include_package_data=True
 )
 

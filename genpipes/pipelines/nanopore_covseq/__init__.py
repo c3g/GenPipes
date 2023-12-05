@@ -19,7 +19,6 @@
 
 # Python Standard Modules
 import collections
-import distutils.util
 import logging
 import os
 import re
@@ -42,6 +41,7 @@ from ...bfx import wub
 from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import common
+from ...utils.utils import strtobool
 
 log = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ class NanoporeCoVSeq(common.Nanopore):
         jobs = []
 
         reads_fast5_dir = []
-        transfer = bool(distutils.util.strtobool(global_conf.get('guppy_basecall', 'transfer_to_tmp')))
+        transfer = bool(strtobool(global_conf.get('guppy_basecall', 'transfer_to_tmp')))
 
         for sample in self.samples:
             reads_fast5_dir.append(sample.fast5_files)
@@ -146,7 +146,7 @@ class NanoporeCoVSeq(common.Nanopore):
 
         demux_fastq_directory = os.path.join("demultiplex")
 
-        transfer = bool(distutils.util.strtobool(global_conf.get('guppy_demultiplex', 'transfer_to_tmp')))
+        transfer = bool(strtobool(global_conf.get('guppy_demultiplex', 'transfer_to_tmp')))
 
         demux_barcode_dir = []
         for sample in self.samples:
