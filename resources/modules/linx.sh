@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=linx
-VERSION=1.22
+VERSION=1.24.1
 ARCHIVE=${SOFTWARE}-${VERSION}.jar
 ARCHIVE_URL=https://github.com/hartwigmedical/hmftools/releases/download/${SOFTWARE}-v${VERSION}/${SOFTWARE}_v${VERSION}.jar
 SOFTWARE_DIR=$SOFTWARE-$VERSION

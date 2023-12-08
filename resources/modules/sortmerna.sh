@@ -1,0 +1,36 @@
+#!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
+
+SOFTWARE=sortmerna
+VERSION=4.3.6
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/${SOFTWARE}/${SOFTWARE}/archive/refs/tags/v${VERSION}.tar.gz
+SOFTWARE_DIR=$SOFTWARE-$VERSION
+
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar xvf $ARCHIVE
+  mkdir -p ${INSTALL_DIR}/${SOFTWARE_DIR}
+  mv ${SOFTWARE_DIR}/data ${INSTALL_DIR}/${SOFTWARE_DIR}/.
+  wget https://github.com/biocore/${SOFTWARE}/releases/download/v${VERSION}/${SOFTWARE}-${VERSION}-Linux.sh
+  bash ${SOFTWARE}-${VERSION}-Linux.sh --skip-license --prefix=${INSTALL_DIR}/${SOFTWARE_DIR}
+}
+
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - $SOFTWARE \"
+}
+module-whatis \"$SOFTWARE\"
+
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root/bin
+setenv          SORTMERNA_DATA      \$root/data
+"
+}
+
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@

@@ -2,21 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=blast
-VERSION=2.15.0+
-ARCHIVE=ncbi-$SOFTWARE-$VERSION-src.tar.gz
-ARCHIVE_URL=ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${VERSION%+}/$ARCHIVE
-SOFTWARE_DIR=ncbi-$SOFTWARE-$VERSION
-
+SOFTWARE=bs_call
+VERSION=2.0.3
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/heathsc/${SOFTWARE}/archive/v$VERSION.tar.gz
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
-
-  cd ${SOFTWARE_DIR}-src/c++
+  git clone --recursive https://github.com/heathsc/bs_call.git
+  mv $SOFTWARE $SOFTWARE_DIR
+  cd $SOFTWARE_DIR
+  module load gsl
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make -j12
-  make install
+  make all
+  cd ..
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -29,8 +30,6 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
-prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME)/genomes/blast_db
-setenv          BLAST_HOME          \$root
 "
 }
 

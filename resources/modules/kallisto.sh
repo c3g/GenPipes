@@ -3,21 +3,22 @@
 set -eu -o pipefail
 
 SOFTWARE=kallisto 
-VERSION=0.48.0
+VERSION=0.50.0
 ARCHIVE=v${VERSION}.tar.gz
 ARCHIVE_URL=https://github.com/pachterlab/${SOFTWARE}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}  
 
 build() {
   cd ${INSTALL_DOWNLOAD}
-  rm -rf ${SOFTWARE}
-  git clone https://github.com/pachterlab/${SOFTWARE}.git -b v${VERSION}
+  tar zxvf $ARCHIVE
 
   cd ${SOFTWARE}
-
+  # To avoid making compilation system specific and break with other cpus
+  sed -i -e 's@BIFROST_CMAKE_CXX_FLAGS}@BIFROST_CMAKE_CXX_FLAGS} -DCOMPILATION_ARCH=OFF@g' CMakeLists.txt
   mkdir build
   cd build
-  cmake -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_DIR}/${SOFTWARE_DIR} ..
+  # Adding HDF5 option explicitely OFF by default
+  cmake -DUSE_HDF5=ON -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_DIR}/${SOFTWARE_DIR} ..
   make
   make install
 }
