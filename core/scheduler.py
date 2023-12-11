@@ -271,7 +271,7 @@ cd $OUTPUT_DIR
 """
                 .format(
                     pipeline=pipeline,
-                    protocol="." + pipeline.args.type if pipeline.args.type else "",
+                    protocol="." + pipeline.args.type if hasattr(pipeline.args, 'type') else "",
                     config_files=",".join([c.name for c in self._config_files ])
                 )
             )
