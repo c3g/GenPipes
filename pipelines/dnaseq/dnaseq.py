@@ -956,14 +956,17 @@ END
                 ]
             )
             region = None
-            output_dependency = os.path.join(metrics_directory, sample.name + ".mosdepth.global.dist.txt")
+            output_dist = os.path.join(metrics_directory, sample.name + ".mosdepth.global.dist.txt")
+            output_summary = os.path.join(metrics_directory, sample.name + ".mosdepth.summary.txt")
             
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 sample.readsets[0]
             )
             if coverage_bed:
                 region = coverage_bed
-                output_dependency = os.path.join(metrics_directory, sample.name + ".mosdepth.region.dist.txt")
+                output_dist = os.path.join(metrics_directory, sample.name + ".mosdepth.region.dist.txt")
+                output_summary = os.path.join(metrics_directory, sample.name + ".mosdepth.summary.txt")
+
                 
             jobs.append(
                 concat_jobs(
@@ -978,13 +981,14 @@ END
                     ],
                     name="mosdepth." + sample.name,
                     samples=[sample],
-                    output_dependency=[
-                        os.path.join(metrics_directory, os.path.basename(output_dependency))
-                    ]
+                    output_dependency=[output_dist, output_summary]
                 )
             )
-            self.multiqc_inputs[sample.name].append(
-                    os.path.join(metrics_directory, os.path.basename(output_dependency))
+            self.multiqc_inputs[sample.name].extend(
+                [
+                    os.path.join(metrics_directory, os.path.basename(output_dist)),
+                    os.path.join(metrics_directory, os.path.basename(output_summary))
+                ]
             )
             
         return jobs
