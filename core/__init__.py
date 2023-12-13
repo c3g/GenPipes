@@ -1,1 +1,11 @@
-__all__ = ["config", "job", "pipeline", "scheduler", "step"]
+__all__ = [
+    "config",
+    "design",
+    "job",
+    "pipeline",
+    "readset",
+    "sample",
+    "sample_tumor_pairs",
+    "scheduler",
+    "step"
+]
