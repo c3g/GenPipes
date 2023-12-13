@@ -799,7 +799,8 @@ class RunProcessing(common.MUGQICPipeline):
                             run_processing_tools.mgi_splitbarcode(
                                 input,
                                 self.run_dir,
-                                self.flowcell_id,
+                                #self.flowcell_id,
+                                self.raw_fastq_prefix,
                                 basecall_outputs,
                                 basecall_dir,
                                 self.json_flag_hash[lane],
