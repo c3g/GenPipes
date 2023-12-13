@@ -174,7 +174,7 @@ then
   #  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
     exit 1
   fi
-  LIBDIR=$LIBDIR:$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library
+  LIBDIR=$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library:$LIBDIR
 fi
 
 echo "The software install location is $INSTALL_DIR"
