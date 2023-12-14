@@ -39,8 +39,46 @@ from pipelines import common
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 import utils.utils
 
-from bfx import bash_cmd as bash
-from bfx import *
+from bfx import (
+    adapters,
+    annoFuse,
+    arriba,
+    ballgown,
+    bash_cmd as bash,
+    bcftools,
+    bedtools,
+    bvatools,
+    bwa,
+    cpsr,
+    deeptools,
+    deliverables,
+    differential_expression,
+    fastqc,
+    gatk4,
+    gemini,
+    gtex_pipeline,
+    htseq,
+    htslib,
+    job2json_project_tracking,
+    metrics,
+    multiqc,
+    pcgr,
+    picard2 as picard,
+    rseqc,
+    rnaseqc2,
+    sambamba,
+    samtools,
+    skewer,
+    snpeff,
+    star,
+    star_fusion,
+    stringtie,
+    tools,
+    ucsc,
+    vcfanno,
+    vt,
+    sortmerna
+    )
 
 log = logging.getLogger(__name__)
 
@@ -284,11 +322,11 @@ class RnaSeqRaw(common.Illumina):
                             trim_fastq1,
                             trim_fastq2,
                             output_dir,
-                            output_dir_sample, 
+                            output_dir_sample,
                             readset.name
                         )
                 inputs = [trim_fastq1, trim_fastq2]
-                
+
             elif readset.run_type == "SINGLE_END":
                 trim_fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "single.fastq.gz")
                 trim_fastq2 = None
@@ -300,7 +338,7 @@ class RnaSeqRaw(common.Illumina):
                             readset.name
                         )
                 inputs = [trim_fastq1]
-                
+
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
@@ -312,7 +350,7 @@ class RnaSeqRaw(common.Illumina):
                     bash.mkdir(output_dir_sample),
                     bash.mkdir(index_directory),
                     bash.mkdir(link_directory),
-                    sortmerna_job, 
+                    sortmerna_job,
                     bash.ln(
                         os.path.relpath(os.path.join(output_dir_sample, readset.name + ".aligned.log"), link_directory),
                         os.path.join(link_directory, readset.name + ".aligned.log"),
@@ -326,9 +364,9 @@ class RnaSeqRaw(common.Illumina):
             )
 
             self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.name + ".aligned.log"))
-        
+
         return jobs
-    
+
 
     def star(self):
         """
@@ -1113,10 +1151,10 @@ pandoc \\
             output = os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.bam")
 
             if nb_jobs > 1:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                unique_sequences_per_job, _ = split_by_size(self.sequence_dictionary, nb_jobs - 1)
 
                 inputs = []
-                for idx, sequences in enumerate(unique_sequences_per_job):
+                for idx, _ in enumerate(unique_sequences_per_job):
                     inputs.append(split_file_prefix + "sorted.mdup.split." + str(idx) + ".bam")
                 inputs.append(split_file_prefix + "sorted.mdup.split.others.bam")
 
@@ -1874,8 +1912,10 @@ pandoc \\
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                                                  re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    candidate_input_files.append([
+                        re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
+                        re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                        ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
@@ -2669,7 +2709,7 @@ END
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
-                self.sortmerna, 
+                self.sortmerna,
                 self.star,
                 self.picard_merge_sam_files,
                 self.mark_duplicates,
