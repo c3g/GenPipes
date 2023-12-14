@@ -39,49 +39,8 @@ from pipelines import common
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 import utils.utils
 
-from bfx import (
-    adapters,
-    annoFuse,
-    arriba,
-    ballgown,
-    bcftools,
-    bedtools,
-    bvatools,
-    bwa,
-    cpsr,
-    deeptools,
-    deliverables,
-    differential_expression,
-    fastqc,
-    gatk4,
-    gemini,
-    htseq,
-    htslib,
-    job2json_project_tracking,
-    metrics,
-    pcgr,
-    picard2 as picard,
-    rseqc,
-    rnaseqc2,
-    sambamba,
-    samtools,
-    skewer,
-    snpeff,
-    star,
-    star_fusion,
-    stringtie,
-    tools,
-    ucsc,
-    vcfanno,
-    vt,
-    sortmerna
-    )
-
-#Metrics tools
-from bfx import multiqc
-from bfx import gtex_pipeline
-
 from bfx import bash_cmd as bash
+from bfx import *
 
 log = logging.getLogger(__name__)
 

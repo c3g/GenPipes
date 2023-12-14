@@ -7,7 +7,6 @@ __all__ = [
     "artic",
     "ballgown",
     "bamreadcount",
-    "bash_cmd",
     "bcbio_variation_recall",
     "bcftools",
     "bed_file",
