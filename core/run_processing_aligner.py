@@ -241,12 +241,12 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                             "/dev/stdin",
                             output,
                             "coordinate"
-                        ),
-                        samtools.quickcheck(
-                            output
                         )
                     ]
-                )
+                ),
+                samtools.quickcheck(
+                    output
+                    ) 
             ],
             name="bwa_mem_picard_sort_sam." + readset.name + "." + readset.run + "." + readset.lane,
             samples=[readset.sample]
