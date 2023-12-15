@@ -35,6 +35,7 @@ from bfx import star
 from bfx import cellranger
 from bfx import tools
 from bfx import bash_cmd as bash
+from bfx import samtools
 
 import logging
 log = logging.getLogger(__name__)
