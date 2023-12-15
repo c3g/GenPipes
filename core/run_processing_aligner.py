@@ -240,6 +240,9 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                             "/dev/stdin",
                             output,
                             "coordinate"
+                        ),
+                        samtools.quickcheck(
+                            output
                         )
                     ]
                 )
