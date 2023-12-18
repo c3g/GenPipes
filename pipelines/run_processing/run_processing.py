@@ -782,11 +782,20 @@ class RunProcessing(common.MUGQICPipeline):
                 basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
                 basecall_outputs.extend(
                     [
-                        os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}"),
-                        os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", "SequenceStat.txt"),
-                        os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", "BarcodeStat.txt")
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}"),
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", "SequenceStat.txt"),
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat.txt")
                     ]
                 )
+
+                if self.run_id == self.flowcell_id:
+                    symlink_command = None
+                else:
+                    symlink_command = bash.ln(
+                            os.path.relpath(os.path.join(basecall_dir, self.flowcell_id), basecall_dir),
+                            os.path.join(basecall_dir, self.run_id),
+                            input = os.path.join(basecall_dir, self.flowcell_id)
+                            )
 
                 lane_jobs.append(
                     concat_jobs(
@@ -795,35 +804,36 @@ class RunProcessing(common.MUGQICPipeline):
                             run_processing_tools.mgi_splitbarcode(
                                 input,
                                 self.run_dir,
-                                #self.flowcell_id,
-                                self.raw_fastq_prefix,
+                                self.flowcell_id,
                                 basecall_outputs,
                                 basecall_dir,
                                 self.json_flag_hash[lane],
                                 self.barcode_files[lane],
                                 self.number_of_mismatches
-                            )
+                            ),
+                            symlink_command
                         ],
                         name=f"basecall.{self.run_id}.{lane}",
                         samples=self.samples[lane],
-                        report_files=[os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", "SequenceStat.txt")]
+                        input_dependency=[input],
+                        report_files=[os.path.join(basecall_dir, self.run_id, f"L0{lane}", "SequenceStat.txt")]
                     )
                 )
                 for readset in self.readsets[lane]:
-                    readset.report_files['basecall'] = [os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", "SequenceStat.txt")]
+                    readset.report_files['basecall'] = [os.path.join(basecall_dir, self.run_id, f"L0{lane}", "SequenceStat.txt")]
 
                 if postprocessing_jobs:
                     jobs_to_throttle.extend(postprocessing_jobs)
 
                 # not sure if best location?
                 parse_job = run_processing_tools.parse_splitBarcode_metrics(
-                        os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", "BarcodeStat.txt"),
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat.txt"),
                         os.path.join(self.output_dir, "samplesheet." + lane + ".csv"),
-                        os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", "BarcodeStat_L0" + lane + "_multiqc.txt")
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat_L0" + lane + "_multiqc.txt")
                         )
                 parse_job.name=f"parse_splitBarcode_metrics.{self.run_id}.{lane}"
                 parse_job.samples=self.samples[lane]
-                parse_job.report_files=[os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", "BarcodeStat_L01" + lane + "_multiqc.txt")]
+                parse_job.report_files=[os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat_L01" + lane + "_multiqc.txt")]
 
                 lane_jobs.append(parse_job)
 
@@ -3638,15 +3648,15 @@ class RunProcessing(common.MUGQICPipeline):
             for index in readset.indexes:
                 readset_r1_outputs.extend(
                     [
-                        os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.gz"),
-                        os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.fqStat.txt")
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.gz"),
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.fqStat.txt")
                     ]
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.extend(
                         [
-                            os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.gz"),
-                            os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.fqStat.txt")
+                            os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.gz"),
+                            os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.fqStat.txt")
                         ]
                     )
 
@@ -3654,15 +3664,15 @@ class RunProcessing(common.MUGQICPipeline):
             if self.merge_undetermined[lane]:
                 readset_r1_outputs.extend(
                     [
-                        os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.gz"),
-                        os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.fqStat.txt")
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_undecoded_1.fq.gz"),
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_undecoded_1.fq.fqStat.txt")
                     ]
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.extend(
                         [
-                            os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz"),
-                            os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.fqStat.txt")
+                            os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_undecoded_2.fq.gz"),
+                            os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_undecoded_2.fq.fqStat.txt")
                         ]
                     )
             # Processing R1 fastq outputs :
@@ -3730,7 +3740,7 @@ class RunProcessing(common.MUGQICPipeline):
                     )
                 )
         # Process undetermined reads fastq files
-        unmatched_R1_fastq = os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.gz")
+        unmatched_R1_fastq = os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_undecoded_1.fq.gz")
         if unmatched_R1_fastq not in basecall_outputs:
             basecall_outputs.append(unmatched_R1_fastq)
         postprocessing_jobs.append(
@@ -3757,7 +3767,7 @@ class RunProcessing(common.MUGQICPipeline):
         )
         
         if self.is_paired_end[lane]:
-            unmatched_R2_fastq = os.path.join(basecall_dir, self.raw_fastq_prefix, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz")
+            unmatched_R2_fastq = os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_undecoded_2.fq.gz")
             unaligned_i1 = os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             unexpected_barcode_counts_i1 = re.sub(".fastq.gz", ".counts.txt", unaligned_i1)
             if unmatched_R2_fastq not in basecall_outputs:
