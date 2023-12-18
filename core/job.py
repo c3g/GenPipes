@@ -269,6 +269,6 @@ def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=
         job.output_files=output_dependency
 
     # Merge commands
-    job.command = "set -eu -o pipefail \\\n" + " | \\\n".join([job_item.command for job_item in jobs])
+    job.command = " | \\\n".join([job_item.command for job_item in jobs])
 
     return job
