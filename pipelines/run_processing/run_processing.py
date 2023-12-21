@@ -55,6 +55,7 @@ from bfx import bamixchecker
 from bfx import gatk
 from bfx.sequence_dictionary import split_by_size, parse_sequence_dictionary_file
 from bfx import sambamba
+from bfx import samtools
 
 import utils
 
@@ -825,15 +826,20 @@ class RunProcessing(common.MUGQICPipeline):
                 if postprocessing_jobs:
                     jobs_to_throttle.extend(postprocessing_jobs)
 
-                # not sure if best location?
-                parse_job = run_processing_tools.parse_splitBarcode_metrics(
-                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat.txt"),
-                        os.path.join(self.output_dir, "samplesheet." + lane + ".csv"),
-                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat_L0" + lane + "_multiqc.txt")
-                        )
-                parse_job.name=f"parse_splitBarcode_metrics.{self.run_id}.{lane}"
-                parse_job.samples=self.samples[lane]
-                parse_job.report_files=[os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat_L01" + lane + "_multiqc.txt")]
+                # parse splitBarcode metrics to be compatible with multiqc
+                parse_job = concat_jobs(
+                        [
+                            run_processing_tools.parse_splitBarcode_metrics(
+                                os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat.txt"),
+                                os.path.join(self.output_dir, "samplesheet." + lane + ".csv"),
+                                os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat_L0" + lane + "_multiqc.txt")
+                                )
+                        ],
+                        name=f"parse_splitBarcode_metrics.{self.run_id}.{lane}",
+                        input_dependency=[os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat.txt")],
+                        samples=self.samples[lane],
+                        report_files=[os.path.join(basecall_dir, self.run_id, f"L0{lane}", "BarcodeStat_L01" + lane + "_multiqc.txt")]
+                    )
 
                 lane_jobs.append(parse_job)
 
@@ -3699,7 +3705,12 @@ class RunProcessing(common.MUGQICPipeline):
                                     readset.fastq1
                                 )
                             ]
-                        )
+                        ),
+                        samtools.quickcheck(
+                            readset.fastq1,
+                            None,
+                            "-u"
+                            )
                     ],
                     name=f"fastq_convert.R1." + readset.name + "." + self.run_id + "." + lane,
                     samples=self.samples[lane]
@@ -3732,8 +3743,14 @@ class RunProcessing(common.MUGQICPipeline):
                                         self.awk_read_2_processing_command(lane, readset)
                                     )
                                 ]
-                            )
+                            ),
+                            samtools.quickcheck(
+                                readset.fastq2,
+                                None,
+                                "-u"
+                                )
                         ],
+                        input_dependency=readset_r2_outputs,
                         output_dependency=outputs,
                         name=f"fastq_convert.R2." + readset.name + "." + self.run_id + "." + lane,
                         samples=self.samples[lane]
@@ -3744,22 +3761,31 @@ class RunProcessing(common.MUGQICPipeline):
         if unmatched_R1_fastq not in basecall_outputs:
             basecall_outputs.append(unmatched_R1_fastq)
         postprocessing_jobs.append(
-            pipe_jobs(
+            concat_jobs(
                 [
-                    bash.cat(
-                        unmatched_R1_fastq,
-                        None,
-                        zip=True
+                    pipe_jobs(
+                        [
+                            bash.cat(
+                                unmatched_R1_fastq,
+                                None,
+                                zip=True
+                            ),
+                            bash.awk(
+                                None,
+                                None,
+                                self.awk_read_1_processing_command(lane)
+                            ),
+                            bash.gzip(
+                                None,
+                                os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")
+                            )
+                        ],
                     ),
-                    bash.awk(
+                    samtools.quickcheck(
+                        os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz"),
                         None,
-                        None,
-                        self.awk_read_1_processing_command(lane)
-                    ),
-                    bash.gzip(
-                        None,
-                        os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")
-                    )
+                        "-u"
+                        )
                 ],
                 name=f"fastq_convert.R1.unmatched.{self.run_id}.{lane}",
                 samples=self.samples[lane]
@@ -3783,19 +3809,29 @@ class RunProcessing(common.MUGQICPipeline):
             else:
                 unaligned_i2 = False
             postprocessing_jobs.append(
-                pipe_jobs(
+                concat_jobs(
                     [
-                        bash.cat(
-                            unmatched_R2_fastq,
-                            None,
-                            zip=True
+                        pipe_jobs(
+                            [
+                                bash.cat(
+                                    unmatched_R2_fastq,
+                                    None,
+                                    zip=True
+                                ),
+                                bash.awk(
+                                    None,
+                                    None,
+                                    self.awk_read_2_processing_command(lane)
+                                )
+                            ],
                         ),
-                        bash.awk(
+                        samtools.quickcheck(
+                            os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
                             None,
-                            None,
-                            self.awk_read_2_processing_command(lane)
+                            "-u"
                         )
                     ],
+                    input_dependency=[unmatched_R2_fastq],
                     output_dependency=outputs,
                     name=f"fastq_convert.R2.unmatched.{self.run_id}.{lane}",
                     samples=self.samples[lane]
