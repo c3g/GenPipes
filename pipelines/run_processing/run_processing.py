@@ -3668,7 +3668,7 @@ class RunProcessing(common.MUGQICPipeline):
 
                 summary_report = re.sub("_1.fq.gz", "_summaryReport.html", readset_r1_outputs[0])
 
-                summary_report_job = run_processing_tools.mgi_summaryReport(
+                summary_report_job = run_processing_tools.mgi_summary_report(
                     readset_r1_outputs[1],
                     readset_r2_outputs[1] if readset.run_type == "PAIRED_END" else None,
                     summary_report,
