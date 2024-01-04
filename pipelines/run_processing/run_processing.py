@@ -3666,6 +3666,18 @@ class RunProcessing(common.MUGQICPipeline):
                         ]
                     )
 
+                summary_report = re.sub("_1.fq.gz", "_summaryReport.html", readset_r1_outputs[0])
+
+                summary_report_job = run_processing_tools.mgi_summaryReport(
+                    readset_r1_outputs[1],
+                    readset_r2_outputs[1] if readset.run_type == "PAIRED_END" else None,
+                    summary_report,
+                    index['INDEX_NAME']
+                    )
+                summary_report_job.name = "mgi_summary_report." + index['INDEX_NAME']
+                summary_report_job.samples=self.samples[lane]
+                postprocessing_jobs.append(summary_report_job)
+
             # If True, then merge the 'Undetermined' reads
             if self.merge_undetermined[lane]:
                 readset_r1_outputs.extend(

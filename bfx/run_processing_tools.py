@@ -494,6 +494,40 @@ client_linux \\
         )
     )
 
+def mgi_summary_report(
+    input1,
+    input2,
+    output,
+    prefix,
+    ini_section='basecall'):
+    
+    if input2:
+        inputs = [input1, input2]
+    else:
+        inputs = [input1]
+
+    return Job(
+        inputs,
+        [output],
+        [
+            [ini_section, 'module_basecall_t7'],
+            [ini_section, 'module_python']
+        ],
+        command="""\
+python summaryReport.py \\
+  {prefix} \\
+  {output} {mode} \\
+  --ref {ref} \\
+  -f1 {input1} {input2}""".format(
+      prefix=prefix,
+      output=output,
+      mode="--PE" if input2 else "",
+      ref="NULL",
+      input1=input2,
+      input2="-f2" + input2 if input2 else ""
+      )
+    )
+
 def parse_splitBarcode_metrics(
         input_metrics,
         samplesheet,
