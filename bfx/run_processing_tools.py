@@ -524,7 +524,7 @@ python summaryReport.py \\
       mode="--PE" if input2 else "",
       ref="NULL",
       input1=input2,
-      input2="-f2" + input2 if input2 else ""
+      input2="-f2 " + input2 if input2 else ""
       )
     )
 
