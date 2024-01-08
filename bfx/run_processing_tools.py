@@ -514,7 +514,7 @@ def mgi_summary_report(
             [ini_section, 'module_python']
         ],
         command="""\
-python summaryReport.py \\
+python $MGI_REPORT/summaryReport.py \\
   {prefix} \\
   {output} {mode} \\
   --ref {ref} \\
@@ -523,7 +523,7 @@ python summaryReport.py \\
       output=output,
       mode="--PE" if input2 else "",
       ref="NULL",
-      input1=input2,
+      input1=input1,
       input2="-f2 " + input2 if input2 else ""
       )
     )
