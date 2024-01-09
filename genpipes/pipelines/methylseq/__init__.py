@@ -27,11 +27,12 @@ import csv
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
-from ...core.job import Job, concat_jobs
+from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import dnaseq
 
 from ...bfx import (
     bash_cmd as bash,
+    bcftools,
     bedtools,
     bismark,
     bissnp,
@@ -280,7 +281,7 @@ Parameters:
         metadata_file = os.path.join(self.output_dir, "metadata.csv")
         gembs_config_file = os.path.join(self.output_dir, "gembs.config")
         index_dir = os.path.join(self.output_dirs["alignment_directory"], "index")
-        gembs_dir = os.path.join(self.output_dir, ".gemBS")
+       # gembs_dir = os.path.join(self.output_dir, ".gemBS")
 
         metadata_list = []
         
@@ -319,9 +320,7 @@ Parameters:
         jobs.append(
                 concat_jobs(
                     [
-                        #bash.rm(index_dir),
                         bash.mkdir(index_dir),
-                        bash.rm(gembs_dir),
                         gembs.make_metadata(
                             metadata_list,
                             metadata_file
@@ -337,7 +336,7 @@ Parameters:
                             )
                         ],
                     name="gembs_prepare",
-                    input_dependency=[metadata_file,gembs_config_file]
+                    input_dependency=[self.args.readsets.name]
                     )
                 )
 
@@ -1312,6 +1311,58 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                     )
         return jobs
 
+    def bedtools_intersect(self):
+        """
+        Create vcf of SNPs with bedtools intersect, by intersecting gemBS .bcf with SNP DB.
+        """
+        jobs = []
+
+        # decide on what to use for snp output
+        dbSNP = config.param('bedtools_intersect','known_snps')
+        # create vcf of snps instead of using gemBS snp output format
+
+        for sample in self.samples:
+            bcf_dir = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
+            bcf_prefix = os.path.join(bcf_dir, sample.name)
+            variants_dir = os.path.join(self.output_dirs["variants_directory"], sample.name)
+            snp_output = os.path.join(variants_dir, sample.name + "_snps.vcf")
+            input = bcf_prefix + ".bcf"
+
+            jobs.append(
+                concat_jobs(
+                    [
+                    pipe_jobs(
+                        [
+                            bash.mkdir(
+                                variants_dir
+                                ),
+                            bcftools.view(
+                                input,
+                                None,
+                                '-f.,PASS -Ov'
+                                ),
+                            bedtools.intersect(
+                                '-',
+                                snp_output,
+                                dbSNP,
+                                include_header=True
+                                )
+                        ]
+                            ),
+                        bash.gzip(
+                            snp_output,
+                            None
+                            )
+                    ],
+                    name = "bedtools_intersect." + sample.name,
+                    samples = [sample],
+                    input_dependency=[input],
+                    output_dependency=[snp_output + ".gz"]
+                        )
+                    )
+
+        return jobs
+
     def gembs_report(self):
         """
         GemBS report
@@ -1320,7 +1371,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
 
         # inputs are jsons generated for each sample during mapping and calling - not needed for command, but for dependencies
         report_dir = self.output_dirs["report_directory"]
-        report = os.path.join(report_dir, "gembs.report")
+        project = config.param("gembs_report", "project_name")
+        report = os.path.join(report_dir, project + "_QC_Report.html")
         inputs = []
 
         for sample in self.samples:
