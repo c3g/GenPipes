@@ -281,7 +281,6 @@ Parameters:
         metadata_file = os.path.join(self.output_dir, "metadata.csv")
         gembs_config_file = os.path.join(self.output_dir, "gembs.config")
         index_dir = os.path.join(self.output_dirs["alignment_directory"], "index")
-       # gembs_dir = os.path.join(self.output_dir, ".gemBS")
 
         metadata_list = []
         
@@ -349,7 +348,6 @@ Parameters:
 
         jobs = []
 
-        #metadata = os.path.join(self.output_dir, "metadata.csv") 
         gembs_config = os.path.join(self.output_dir, ".gemBS/gemBS.mp")
         index = os.path.join(self.output_dirs["alignment_directory"], "index", global_conf.global_get('default', 'scientific_name') + ".BS.gem")
 
@@ -1317,7 +1315,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         """
         jobs = []
 
-        # decide on what to use for snp output
+        # decide on what to use for snp output - dbSNP database?
         dbSNP = config.param('bedtools_intersect','known_snps')
         # create vcf of snps instead of using gemBS snp output format
 
@@ -1369,7 +1367,6 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         """
         jobs = []
 
-        # inputs are jsons generated for each sample during mapping and calling - not needed for command, but for dependencies
         report_dir = self.output_dirs["report_directory"]
         project = config.param("gembs_report", "project_name")
         report = os.path.join(report_dir, project + "_QC_Report.html")
@@ -1918,6 +1915,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.cram_output
             ], 'gembs':
             [
+<<<<<<< HEAD:genpipes/pipelines/methylseq/__init__.py
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
@@ -1940,6 +1938,30 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.multiqc,
                 self.cram_output
             ], 'hybrid': 
+=======
+            self.picard_sam_to_fastq,
+            self.trimmomatic,
+            self.merge_trimmomatic_stats,
+            self.gembs_prepare,
+            self.gembs_map,   
+        #    self.add_bam_umi, # important to include? Slightly annoying because merge step not needed for gemBS
+            self.picard_remove_duplicates,
+            self.metrics,
+            self.gembs_call,
+            self.bedtools_intersect,
+            self.gembs_format_cpg_report,
+            self.methylation_profile,
+            self.dragen_bedgraph,
+            self.wiggle_tracks,
+            self.ihec_sample_metrics_report,
+            self.gembs_report,
+            self.filter_snp_cpg,
+            self.prepare_methylkit,
+            self.methylkit_differential_analysis,
+            self.multiqc,
+            self.cram_output
+        ],
+>>>>>>> e3b0b419d (GenPipes methylseq : clean up):pipelines/methylseq/methylseq.py
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
