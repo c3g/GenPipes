@@ -662,7 +662,7 @@ pandoc \\
 
             job.name = "samtools_cram_output." + sample.name
             job.samples = [sample]
-            job.removable_files = input_bam
+            job.removable_files = [input_bam]
 
             jobs.append(job)
 
