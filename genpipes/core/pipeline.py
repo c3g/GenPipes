@@ -53,6 +53,7 @@ class Pipeline(object):
                  output_dir=None, job_scheduler=None, container=None, genpipes_file=None, no_json=False,
                  steps=None, report=False, clean=False, force=False):
 
+#        self._args = self.argparser.parse_args()
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
         self.config_parser = global_conf

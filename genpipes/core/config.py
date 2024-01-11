@@ -28,7 +28,7 @@ import io
 
 log = logging.getLogger(__name__)
 
-class Config(configparser.ConfigParser):
+class Config(configparser.RawConfigParser):
 
     # True only for continuous integration testing
     continuous_integration_testing = 'GENPIPES_CIT' in os.environ
