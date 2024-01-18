@@ -318,7 +318,9 @@ Depending on the data type pre-processed BAM files will be then use as inputs
 to the BAMixchekcer. 
 The output files can be found in sample_mixup_detection/BAMixChecker/projects/RUN_ID/SPECIES/BAMixChecker
 
-if the data source is human event file can retrieve all the information need to run the pipeline If the data is from another organism please specify the paths to following keys in the [DEFAULT] section of a custom ini file.
+if the data source is human event file can retrieve all the information need to
+run the pipeline If the data is from another organism please specify the paths
+to following keys in the [DEFAULT] section of a custom ini file.
 
     genome_dictionary
     known_gnomad
@@ -370,5 +372,4 @@ Use write_fastq software from MGI to perform the base calling.
 Takes the raw .cal files from the sequencer and produces fastq files.
 Demultiplexing with MGI splitBarcode while doing the basecalling can
 be perform if requested with --splitbarcode-demux
-
 
