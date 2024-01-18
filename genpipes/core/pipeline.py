@@ -51,7 +51,7 @@ class Pipeline(object):
 
     def __init__(self, config_files, sanity_check=False,
                  output_dir=None, job_scheduler=None, container=None, genpipes_file=None, no_json=False,
-                 steps=None, report=False, clean=False, force=False):
+                 json_pt=None, steps=None, report=False, clean=False, force=False):
 
 #        self._args = self.argparser.parse_args()
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -88,7 +88,7 @@ class Pipeline(object):
         self._json = not no_json
 
         self._project_tracking_json = False
-        if self.args.json_pt:
+        if json_pt:
             self._project_tracking_json = True
 
         step_counter = collections.Counter(self.step_list)
