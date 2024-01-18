@@ -607,7 +607,7 @@ def checkDuplicateReadsets(readset_file):
     duplicate_readsets = [readset_name for readset_name, readset_count in readset_dict.items() if readset_count > 1]
 
     # If duplicate readsets are found
-    execption_message = ""
+    exception_message = ""
     if len(duplicate_readsets) > 0:
         # Rebuild a readset file with unique readset IDs
         genpipes_proposed_readset_file = os.path.join(
