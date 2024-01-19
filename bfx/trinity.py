@@ -91,7 +91,8 @@ def trinity(input_files, trinity_fasta, output_directory, reads_option):
             ['trinity', 'module_java'],
             ['trinity', 'module_trinity'],
             ['trinity', 'module_bowtie'],
-            ['trinity', 'module_samtools']
+            ['trinity', 'module_salmon'],
+            ['trinity', 'module_python']
         ],
         command="""\
 Trinity {other_options} \\

@@ -25,125 +25,216 @@ from core.job import *
 from bfx import blast
 
 # Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.github.io/).
-def transdecoder(trinity_fasta, transdecoder_directory, transdecoder_subdirectory):
+def transdecoder_longorfs(
+    trinity_fasta,
+    output_directory):
 
-    return [concat_jobs([
-        Job(command="mkdir -p " + transdecoder_directory),
-        Job(command="cd " + transdecoder_directory),
-        Job(
+    return Job(
             [trinity_fasta],
-            [os.path.join(transdecoder_directory, os.path.basename(trinity_fasta) + ".transdecoder.pep")],
-            [['transdecoder', 'module_perl'],
-                ['transdecoder', 'module_blast'],
-                ['transdecoder', 'module_hmmer'],
+            [os.path.join(output_directory, "longest_orfs.pep")],
+            [
+                ['transdecoder', 'module_perl'],
                 ['transdecoder', 'module_trinotate'],
-                ['transdecoder', 'module_transdecoder']],
+                ['transdecoder', 'module_transdecoder']
+            ],
             command="""\
 TransDecoder.LongOrfs {other_options} \\
--t {transcripts} && \\
-blastp \\
--query {transdecoder_subdirectory}/longest_orfs.pep \\
--db {swissprot_db} \\
--max_target_seqs 1 -outfmt 6 -evalue 1e-5 -num_threads {cpu} \\
-> {transdecoder_subdirectory}/longest_orfs.blastp.outfmt6 && \\
-hmmscan --cpu {cpu} \\
---domtblout {transdecoder_subdirectory}/longest_orfs.pfam.domtblout \\
-{pfam_db} \\
-{transdecoder_subdirectory}/longest_orfs.pep && \\
-TransDecoder.Predict \\
--t {transcripts} \\
---retain_pfam_hits {transdecoder_subdirectory}/longest_orfs.pfam.domtblout \\
---retain_blastp_hits {transdecoder_subdirectory}/longest_orfs.blastp.outfmt6""".format(
-                other_options=config.param('transdecoder', 'other_options', required=False),
-                transcripts=os.path.relpath(trinity_fasta, transdecoder_directory),
-                transdecoder_subdirectory=transdecoder_subdirectory,
-                swissprot_db=config.param('transdecoder', 'swissprot_db', param_type='prefixpath'),
-                pfam_db=config.param('transdecoder', 'pfam_db', param_type='filepath'),
-                cpu=config.param('transdecoder', 'cpu', param_type='posint')
+  -t {transcripts} \\
+  -O {output_dir}""".format(
+                other_options=config.param('transdecoder', 'longorfs_options', required=False),
+                transcripts=trinity_fasta,
+                output_dir=output_directory
             )
-        ),
-        Job(command="cd " + os.path.join("..", "..")),
-    ], name="transdecoder")]
+        )
+
+def transdecoder_predict(
+    trinity_fasta,
+    longorf_dir,
+    pfam_hits,
+    blastp_hits):
+
+    outputs = [
+            trinity_fasta + ".transdecoder.bed",
+            trinity_fasta + ".transdecoder.pep",
+            trinity_fasta + ".transdecoder.cds",
+            trinity_fasta + ".transdecoder.gff3"
+            ]
+
+    return Job(
+            [trinity_fasta, pfam_hits, blastp_hits],
+            outputs,
+            [
+                ['transdecoder', 'module_perl'],
+                ['transdecoder', 'module_trinotate'],
+                ['transdecoder', 'module_transdecoder']
+            ],
+            command="""\
+TransDecoder.Predict {other_options} \\
+  -t {trinity_fasta} \\
+  -O {longorf_dir} \\
+  --retain_pfam_hits {pfam_hits} \\
+  --retain_blastp_hits {blastp_hits}""".format(
+      other_options=config.param('transdecoder', 'predict_options', required=False),
+      trinity_fasta=trinity_fasta,
+      longorf_dir=longorf_dir,
+      pfam_hits=pfam_hits,
+      blastp_hits=blastp_hits
+      )
+    )
 
 # Identifies protein domains using [HMMR](http://hmmer.janelia.org/).
-def hmmer(transdecoder_directory, transdecoder_fasta, transdecoder_pfam ):
-    return [concat_jobs([
-        Job(
-            [transdecoder_fasta],
-            [transdecoder_pfam],
-            [['hmmer', 'module_hmmer']],
-            command="""\
+def hmmer(
+    transdecoder_directory, 
+    transdecoder_fasta,
+    transdecoder_pfam):
+    
+    return Job(
+        [transdecoder_fasta],
+        [transdecoder_pfam],
+        [
+            ['hmmer', 'module_hmmer']
+        ],
+        command="""\
 hmmscan --cpu {cpu} \\
---domtblout {transdecoder_pfam} \\
-{pfam_db} \\
-{transdecoder_fasta}""".format(
-                cpu=config.param('hmmer', 'cpu', param_type='posint'),
-                transdecoder_pfam=transdecoder_pfam,
-                pfam_db=config.param('hmmer', 'pfam_db', param_type='filepath'),
-                transdecoder_fasta=transdecoder_fasta
+  --domtblout {transdecoder_pfam} \\
+  {pfam_db} \\
+  {transdecoder_fasta}""".format(
+            cpu=config.param('hmmer', 'cpu', param_type='posint'),
+            transdecoder_pfam=transdecoder_pfam,
+            pfam_db=config.param('hmmer', 'pfam_db', param_type='filepath'),
+            transdecoder_fasta=transdecoder_fasta
             )
-        ),
-    ], name="hmmer")]
+        )
 
 # Identify potential rRNA transcripts using [RNAmmer](http://www.cbs.dtu.dk/cgi-bin/sw_request?rnammer).
-def rnammer_transcriptome(trinity_fasta, rnammer_directory):
-    return [concat_jobs([
-        Job(command="mkdir -p " + rnammer_directory),
-        Job(command="cd " + rnammer_directory),
-        Job(
-            [trinity_fasta],
-            [os.path.join(rnammer_directory, "Trinity.fasta.rnammer.gff")],
-            [['rnammer_transcriptome', 'module_perl'],
-                ['rnammer_transcriptome', 'module_hmmer'],
-                ['rnammer_transcriptome', 'module_rnammer'],
-                ['rnammer_transcriptome', 'module_trinity'],
-                ['rnammer_transcriptome', 'module_trinotate']],
-            command="""\
-$TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
---transcriptome {transcriptome} \\
---path_to_rnammer `which rnammer`""".format(
-                other_options=config.param('rnammer_transcriptome', 'other_options', required=False),
-                transcriptome=os.path.relpath(trinity_fasta, rnammer_directory)
-            )
-        ),
-        Job(command="cd " + os.path.join("..", "..")),
-    ], name="rnammer_transcriptome")]
+#def rnammer_transcriptome(trinity_fasta, rnammer_directory):
+#    return [concat_jobs([
+#        Job(command="mkdir -p " + rnammer_directory),
+#        Job(command="cd " + rnammer_directory),
+#        Job(
+#            [trinity_fasta],
+#            [os.path.join(rnammer_directory, "Trinity.fasta.rnammer.gff")],
+#            [['rnammer_transcriptome', 'module_perl'],
+#                ['rnammer_transcriptome', 'module_hmmer'],
+#                ['rnammer_transcriptome', 'module_rnammer'],
+#                ['rnammer_transcriptome', 'module_trinity'],
+#                ['rnammer_transcriptome', 'module_trinotate']],
+#            command="""\
+#$TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
+#--transcriptome {transcriptome} \\
+#--path_to_rnammer `which rnammer`""".format(
+#                other_options=config.param('rnammer_transcriptome', 'other_options', required=False),
+#                transcriptome=os.path.relpath(trinity_fasta, rnammer_directory)
+#            )
+#        ),
+#        Job(command="cd " + os.path.join("..", "..")),
+#    ], name="rnammer_transcriptome")]
+
+# replace rnammer with infernal, as done in trinotate v.4
+# command: cmscan -Z 5 --cut_ga --rfam --nohmmonly --tblout infernal.out --fmt 2 --cpu 4 --clanin trinotate_data/Rfam.clanin trinotate_data/Rfam.cm trinity_out_dir/Trinity.fasta > infernal.log
+def infernal_cmscan(
+    input,
+    clan_file,
+    cm_db,
+    output,
+    infernal_log,
+    ini_section='infernal'
+    ):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['infernal', 'module_infernal']
+        ],
+        command="""\
+cmscan {options} \\
+  --tblout {output} \\
+  --cpu {threads} \\
+  --clanin {clan_file} \\
+  {cm_db} \\
+  {input} \\
+  > {infernal_log}""".format(
+    options=config.param('infernal', 'options'),
+    output=output,
+    threads=config.param('infernal', 'threads'),
+    clan_file=clan_file,
+    cm_db=cm_db,
+    input=input,
+    infernal_log=infernal_log
+    )
+  )
 
 # Search Transdecoder-predicted coding regions for sequence homologies on UniProt using [blastp](http://blast.ncbi.nlm.nih.gov/).
-def blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db):
-    jobs = []
-    cpu = config.param('blastp_transdecoder_uniprot', 'cpu')
-    program = "blastp"
-
-    if not glob.glob(db + ".*phr"):
-        raise Exception("Error: " + db + " BLAST db files do not exist!")
-
-    query = os.path.join(blast_directory, os.path.basename(transdecoder_fasta) + "_" + os.path.basename(db) + ".tsv")
-    blast_result = os.path.join(blast_directory, program + "_" + os.path.basename(query))
-    jobs.append(concat_jobs([
-        Job(command="mkdir -p " + blast_directory),
-        Job(command="ln -s -f " + os.path.relpath(transdecoder_fasta, os.path.dirname(query)) + " " + query, removable_files=[blast_directory]),
-        blast.parallel_blast(transdecoder_fasta, query, blast_result, program, db, cpu)        
-    ], name="blastp_transdecoder_uniprot." + os.path.basename(db)))
-
-    return jobs
+#def blastp_transdecoder_uniprot(
+#        blast_directory,
+#        transdecoder_fasta,
+#        db):
+#
+#    jobs = []
+#    cpu = config.param('blastp_transdecoder_uniprot', 'cpu')
+#    program = "blastp"
+#
+#    if not glob.glob(db + ".*phr"):
+#        raise Exception("Error: " + db + " BLAST db files do not exist!")
+#
+#    query = os.path.join(blast_directory, os.path.basename(transdecoder_fasta) + "_" + os.path.basename(db) + ".tsv")
+#    blast_result = os.path.join(blast_directory, program + "_" + os.path.basename(query))
+#    jobs.append(concat_jobs([
+#        Job(command="mkdir -p " + blast_directory),
+#        Job(command="ln -s -f " + os.path.relpath(transdecoder_fasta, os.path.dirname(query)) + " " + query, removable_files=[blast_directory]),
+#        blast.parallel_blast(transdecoder_fasta, query, blast_result, program, db, cpu)        
+#    ], name="blastp_transdecoder_uniprot." + os.path.basename(db)))
+#
+#    return jobs
 
 # Predict signal peptides using [SignalP](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp).
-def signalp(transdecoder_fasta, signalp_gff ):
-    return [Job(
+def signalp(
+        transdecoder_fasta,
+        signalp_gff):
+
+    return Job(
         [transdecoder_fasta],
         [signalp_gff],
-        [['signalp', 'module_perl'], ['signalp', 'module_signalp']],
+        [
+            ['signalp', 'module_perl'], 
+            ['signalp', 'module_signalp']
+        ],
         command="""\
 signalp -f short {other_options} \\
--T {tmp_directory} \\
--n {signalp_gff} \\
-{transdecoder_fasta}""".format(
+  -T {tmp_directory} \\
+  -n {signalp_gff} \\
+  {transdecoder_fasta}""".format(
             other_options=config.param('signalp', 'other_options', required=False),
             tmp_directory=os.path.dirname(signalp_gff),
             signalp_gff=signalp_gff,
             transdecoder_fasta=transdecoder_fasta
-        ), name="signalp")]
+        )
+     )
+
+def signalp6(
+        transdecoder_fasta,
+        output_directory,
+        signalp_gff):
+
+    return Job(
+        [transdecoder_fasta],
+        [signalp_gff],
+        [
+            ['signalp', 'module_perl'], 
+            ['signalp', 'module_signalp']
+        ],
+        command="""\
+signalp6 {other_options} \\
+  --output_dir {output_directory} \\
+  -n {signalp_gff} \\
+  --fastafile {transdecoder_fasta}""".format(
+            other_options=config.param('signalp', 'other_options', required=False),
+            output_directory=output_directory,
+            signalp_gff=signalp_gff,
+            transdecoder_fasta=transdecoder_fasta
+        )
+     )
 
 # Predict transmembrane regions using [TMHMM](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?tmhmm).
 def tmhmm(transdecoder_fasta, tmhmm_output):
@@ -170,7 +261,7 @@ def trinotate(
     transdecoder_pep,
     transdecoder_pfam,
     swissprot_blastp,
-    rnammer,
+    infernal,
     signalp,
     tmhmm,
     trinotate_sqlite,
@@ -183,7 +274,7 @@ def trinotate(
             transdecoder_pep,
             transdecoder_pfam,
             swissprot_blastp,
-            rnammer,
+            infernal,
             signalp,
             tmhmm
         ],
@@ -198,20 +289,17 @@ def trinotate(
         ],
         command="""\
 cp $TRINOTATE_SQLITE {trinotate_sqlite} && \\
-$TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl \\
-{trinity_fasta} \\
-> {trinity_fasta}.gene_trans_map && \\
-Trinotate {trinotate_sqlite} init \\
+Trinotate --db {trinotate_sqlite} --init \\
 --gene_trans_map {trinity_fasta}.gene_trans_map \\
---transcript {trinity_fasta} \\
+--transcript_fasta {trinity_fasta} \\
 --transdecoder_pep {transdecoder_pep} && \\
-Trinotate {trinotate_sqlite} LOAD_swissprot_blastx {swissprot_blastx} && \\
-Trinotate {trinotate_sqlite} LOAD_swissprot_blastp {swissprot_blastp} && \\
-Trinotate {trinotate_sqlite} LOAD_pfam {transdecoder_pfam} && \\
-Trinotate {trinotate_sqlite} LOAD_tmhmm {tmhmm} && \\
-Trinotate {trinotate_sqlite} LOAD_signalp {signalp} && \\
-Trinotate {trinotate_sqlite} LOAD_rnammer {rnammer} && \\
-Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} \\
+Trinotate --db {trinotate_sqlite} LOAD_swissprot_blastx {swissprot_blastx} && \\
+Trinotate --db {trinotate_sqlite} LOAD_swissprot_blastp {swissprot_blastp} && \\
+Trinotate --db {trinotate_sqlite} LOAD_pfam {transdecoder_pfam} && \\
+Trinotate --db {trinotate_sqlite} LOAD_tmhmmv2 {tmhmm} && \\
+Trinotate --db {trinotate_sqlite} LOAD_signalp {signalp} && \\
+Trinotate --db {trinotate_sqlite} LOAD_infernal {infernal} && \\
+Trinotate --db {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} \\
 > {trinotate_report}""".format(
             trinity_fasta=trinity_fasta,
             trinotate_sqlite=trinotate_sqlite,
@@ -221,7 +309,7 @@ Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} \\
             transdecoder_pfam=transdecoder_pfam,
             tmhmm=tmhmm,
             signalp=signalp,
-            rnammer=rnammer,
+            infernal=infernal,
             evalue=config.param('trinotate', 'evalue'),
             pfam_cutoff=config.param('trinotate', 'pfam_cutoff'),
             trinotate_report=trinotate_report
