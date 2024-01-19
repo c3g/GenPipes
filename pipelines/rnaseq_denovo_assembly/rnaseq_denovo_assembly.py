@@ -254,7 +254,9 @@ pandoc --to=markdown \\
 
         normalization_directory = os.path.join(self.output_dirs["insilico_read_normalization_directory"], "all")
         output_directory = self.output_dirs["trinity_out_directory"]
-        trinity_fasta = os.path.join(output_directory, "Trinity.fasta")
+      # new behaviour in trinity - fasta is output outside of the output_dir
+        trinity_fasta = os.path.join(output_directory + ".Trinity.fasta")
+        trinity_zip = os.path.join(output_directory, "Trinity.fasta.zip")
         trinity_stats_prefix = os.path.join(output_directory, "Trinity.stats")
 
         if self.run_type == "PAIRED_END":
@@ -274,8 +276,8 @@ pandoc --to=markdown \\
                     trinity.trinity(input_files, trinity_fasta, output_directory, reads_option),
                     Job(
                         [trinity_fasta],
-                        [trinity_fasta + ".zip"],
-                        command="zip -j " + trinity_fasta + ".zip " + trinity_fasta
+                        [trinity_zip],
+                        command="zip -j " + trinity_zip + " " + trinity_fasta
                     ),
                     Job(
                         [trinity_fasta],
@@ -292,19 +294,19 @@ pandoc --to=markdown \\
         report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.trinity.md")
         jobs.append(
             Job(
-                [trinity_fasta + ".zip", trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                [trinity_zip, trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
                 [report_file],
                 [['trinity', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
-cp {trinity_fasta}.zip {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
+cp {trinity_zip} {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
 assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable assembly_table="$assembly_table" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    trinity_fasta=trinity_fasta,
+                    trinity_zip=trinity_zip,
                     trinity_stats_prefix=trinity_stats_prefix,
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
@@ -325,7 +327,7 @@ pandoc --to=markdown \\
         """
 
         trinity_directory = self.output_dirs["trinity_out_directory"]
-        trinity_fasta = os.path.join(trinity_directory, "Trinity.fasta")
+        trinity_fasta = os.path.join(trinity_directory + ".Trinity.fasta")
         trinity_fasta_for_blast = os.path.join(trinity_directory, "Trinity.fa")
         trinity_chunks_directory = os.path.join(trinity_directory, "Trinity.fasta_chunks")
         num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
@@ -466,18 +468,66 @@ pandoc --to=markdown \\
         """
         Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.github.io/).
         """
+        jobs=[]
 
-        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta")
         transdecoder_directory = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder")
-        transdecoder_subdirectory = os.path.join(os.path.basename(trinity_fasta) + ".transdecoder_dir")
+        transdecoder_subdirectory = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder_dir")
+        longest_orfs = os.path.join(transdecoder_subdirectory, "longest_orfs.pep")
+        blast_result = os.path.join(transdecoder_subdirectory, "longest_orfs.blastp.outfmt6")
+        db = config.param("transdecoder_uniprot", "swissprot_db", param_type='prefixpath')
+        pfam_hits = os.path.join(transdecoder_subdirectory, "longest_orfs.pfam.domtblout")
 
-        jobs = trinotate.transdecoder(
-            trinity_fasta,
-            transdecoder_directory,
-            transdecoder_subdirectory
-        )
-        for job in jobs:
-            job.samples = self.samples
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            transdecoder_directory
+                            ),
+                        trinotate.transdecoder_longorfs(
+                            trinity_fasta,
+                            transdecoder_subdirectory
+                            ),
+                        blast.parallel_blast(
+                            trinity_fasta,
+                            longest_orfs,
+                            blast_result,
+                            "blastp",
+                            db,
+                            config.param('transdecoder', 'cpu')
+                            ),
+                        trinotate.hmmer(
+                            transdecoder_subdirectory,
+                            longest_orfs,
+                            pfam_hits
+                            ),
+                        trinotate.transdecoder_predict(
+                            trinity_fasta,
+                            transdecoder_subdirectory,
+                            pfam_hits,
+                            blast_result
+                            ),
+                        bash.mv(
+                            trinity_fasta + ".transdecoder.bed",
+                            os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.bed")
+                            ),
+                        bash.mv(
+                            trinity_fasta + ".transdecoder.pep",
+                            os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep")
+                            ),
+                        bash.mv(
+                            trinity_fasta + ".transdecoder.cds",
+                            os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.cds")
+                            ),
+                        bash.mv(
+                            trinity_fasta + ".transdecoder.gff3",
+                            os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.gff3")
+                            )
+                    ],
+                    name = "transdecoder",
+                    samples = self.samples
+                    )
+                )
 
         return jobs
 
@@ -485,18 +535,20 @@ pandoc --to=markdown \\
         """
         Identifies protein domains using [HMMR](http://hmmer.janelia.org/).
         """
+        jobs = []
 
         transdecoder_directory = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder")
         transdecoder_fasta = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep")
         transdecoder_pfam = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pfam")
 
-        jobs = trinotate.hmmer(
+        job = trinotate.hmmer(
             transdecoder_directory,
             transdecoder_fasta,
             transdecoder_pfam
         )
-        for job in jobs:
-            job.samples = self.samples
+        job.name = "hmmer"
+        job.samples = self.samples
+        jobs.append(job)
 
         return jobs
 
@@ -505,7 +557,7 @@ pandoc --to=markdown \\
         Identify potential rRNA transcripts using [RNAmmer](http://www.cbs.dtu.dk/cgi-bin/sw_request?rnammer).
         """
 
-        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta")
         rnammer_directory = os.path.join(self.output_dirs["trinotate_directory"], "rnammer")
 
         jobs = trinotate.rnammer_transcriptome(
@@ -517,22 +569,74 @@ pandoc --to=markdown \\
 
         return jobs
 
+    def infernal_transcriptome(self):
+        """
+        Identify structural RNAs using cmscan function from [infernal](http://eddylab.org/infernal)
+        """
+        jobs=[]
+
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta")
+        infernal_directory = os.path.join(self.output_dirs["trinotate_directory"], "infernal")
+        infernal_output = os.path.join(infernal_directory, "infernal.out")
+        infernal_log = os.path.join(infernal_directory, "infernal.log")
+        trinotate_data = config.param("trinotate", "trinotate_data")
+        clan_file = os.path.join(trinotate_data, "Rfam.clanin")
+        cm_db = os.path.join(trinotate_data, "Rfam.cm")
+
+        jobs.append(concat_jobs(
+                [
+                    bash.mkdir(
+                        infernal_directory
+                        ),
+                    trinotate.infernal_cmscan(
+                        trinity_fasta,
+                        clan_file,
+                        cm_db,
+                        infernal_output,
+                        infernal_log
+                        )
+                ],
+                name="infernal_cmscan"
+                )
+            )
+        return jobs
+
     def blastp_transdecoder_uniprot(self):
         """
         Search Transdecoder-predicted coding regions for sequence homologies on UniProt using [blastp](http://blast.ncbi.nlm.nih.gov/).
         """
+        jobs=[] 
 
         blast_directory = os.path.join(self.output_dirs["trinotate_directory"], "blastp")
         transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
         db = config.param("blastp_transdecoder_uniprot", "swissprot_db", param_type='prefixpath')
+        query = os.path.join(blast_directory, "Trinity.fasta.transdecoder.pep_" + os.path.basename(db) + ".tsv")
+        blast_result = os.path.join(blast_directory, "blastp_" + os.path.basename(query)) 
 
-        jobs = trinotate.blastp_transdecoder_uniprot(
-            blast_directory,
-            transdecoder_fasta,
-            db
-        )
-        for job in jobs:
-            job.samples = self.samples
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(
+                        blast_directory
+                        ),
+                    bash.ln(
+                        os.path.relpath(transdecoder_fasta, blast_directory),
+                        query,
+                        input=transdecoder_fasta
+                        ),
+                    blast.parallel_blast(
+                        transdecoder_fasta,
+                        query,
+                        blast_result,
+                        "blastp",
+                        db,
+                        config.param('blastp_transdecoder_uniprot', 'cpu')
+                        )
+                ],
+                name = "blastp_transdecoder_uniprot." + os.path.basename(db),
+                samples = self.samples
+                    )
+                ) 
 
         return jobs
 
@@ -540,16 +644,27 @@ pandoc --to=markdown \\
         """
         Predict signal peptides using [SignalP](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp).
         """
+        jobs=[]
 
         transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
-        signalp_gff = os.path.join(self.output_dirs["trinotate_directory"], "signalp", "signalp.gff")
+        signalp_directory = os.path.join(self.output_dirs["trinotate_directory"], "signalp")
+        signalp_gff = os.path.join(signalp_directory, "signalp.gff")
 
-        jobs = trinotate.signalp(
-            transdecoder_fasta,
-            signalp_gff
+        jobs.append(concat_jobs(
+            [
+                bash.mkdir(
+                    signalp_directory
+                    ),
+                trinotate.signalp6(
+                    transdecoder_fasta,
+                    signalp_directory,
+                    signalp_gff
+                    )
+            ],
+            name = "signalp",
+            samples = self.samples
+            )
         )
-        for job in jobs:
-            job.samples = self.samples
 
         return jobs
 
@@ -584,12 +699,12 @@ pandoc --to=markdown \\
             [
                 bash.mkdir(self.output_dirs["trinotate_directory"]),
                 trinotate.trinotate(
-                    trinity_fasta=os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta"),
+                    trinity_fasta=os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta"),
                     swissprot_blastx=os.path.join(self.output_dirs["blast_directory"], "blastx_Trinity_" + swissprot_db + ".tsv"),
                     transdecoder_pep=transdecoder_pep,
                     transdecoder_pfam=os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pfam"),
                     swissprot_blastp=os.path.join(self.output_dirs["trinotate_directory"], "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv"),
-                    rnammer=os.path.join(self.output_dirs["trinotate_directory"], "rnammer", "Trinity.fasta.rnammer.gff"),
+                    infernal=os.path.join(self.output_dirs["trinotate_directory"], "infernal", "infernal.out"),
                     signalp=os.path.join(self.output_dirs["trinotate_directory"], "signalp", "signalp.gff"),
                     tmhmm=os.path.join(self.output_dirs["trinotate_directory"], "tmhmm", "tmhmm.out"),
                     trinotate_sqlite=os.path.join(self.output_dirs["trinotate_directory"], "Trinotate.sqlite"),
@@ -621,7 +736,7 @@ pandoc --to=markdown \\
         Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
         """
 
-        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta")
         job = trinity.align_and_estimate_abundance(
             trinity_fasta,
             output_directory=self.output_dirs["trinity_out_directory"],
@@ -638,7 +753,7 @@ pandoc --to=markdown \\
         """
 
         jobs = []
-        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta")
 
         for sample in self.samples:
             trim_directory = os.path.join(self.output_dirs["trim_directory"], sample.name)
@@ -771,7 +886,7 @@ pandoc --to=markdown \\
 
         jobs = []
         output_directory = self.output_dirs["filtered_assembly_directory"]
-        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta")
         trinity_filtered = os.path.join(output_directory, "Trinity.fasta")
         trinity_filtered_prefix = os.path.join(output_directory, "Trinity")
         trinity_stats_prefix = os.path.join(output_directory, "trinity_filtered.stats")
@@ -1794,7 +1909,8 @@ awk -v OFS="\t" '{{ print $1,$0}}' \\
                 self.blastx_trinity_uniprot_merge,
                 self.transdecoder,
                 self.hmmer,
-                self.rnammer_transcriptome,
+                #self.rnammer_transcriptome,
+                self.infernal_transcriptome,
                 self.blastp_transdecoder_uniprot,
                 self.signalp,
                 self.tmhmm,
