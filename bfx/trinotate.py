@@ -53,12 +53,11 @@ def transdecoder_predict(
     pfam_hits,
     blastp_hits):
 
-    prefix = os.path.basename(trinity_fasta)
     outputs = [
-            prefix + ".transdecoder.bed",
-            prefix + ".transdecoder.pep",
-            prefix + ".transdecoder.cds",
-            prefix + ".transdecoder.gff3"
+            trinity_fasta + ".transdecoder.bed",
+            trinity_fasta + ".transdecoder.pep",
+            trinity_fasta + ".transdecoder.cds",
+            trinity_fasta + ".transdecoder.gff3"
             ]
 
     return Job(
@@ -107,63 +106,62 @@ hmmscan --cpu {cpu} \\
             )
         )
 
-def parse_assembly_size(
-    input
-    ):
+# Identify potential rRNA transcripts using [RNAmmer](http://www.cbs.dtu.dk/cgi-bin/sw_request?rnammer).
+#def rnammer_transcriptome(trinity_fasta, rnammer_directory):
+#    return [concat_jobs([
+#        Job(command="mkdir -p " + rnammer_directory),
+#        Job(command="cd " + rnammer_directory),
+#        Job(
+#            [trinity_fasta],
+#            [os.path.join(rnammer_directory, "Trinity.fasta.rnammer.gff")],
+#            [['rnammer_transcriptome', 'module_perl'],
+#                ['rnammer_transcriptome', 'module_hmmer'],
+#                ['rnammer_transcriptome', 'module_rnammer'],
+#                ['rnammer_transcriptome', 'module_trinity'],
+#                ['rnammer_transcriptome', 'module_trinotate']],
+#            command="""\
+#$TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
+#--transcriptome {transcriptome} \\
+#--path_to_rnammer `which rnammer`""".format(
+#                other_options=config.param('rnammer_transcriptome', 'other_options', required=False),
+#                transcriptome=os.path.relpath(trinity_fasta, rnammer_directory)
+#            )
+#        ),
+#        Job(command="cd " + os.path.join("..", "..")),
+#    ], name="rnammer_transcriptome")]
 
-    return Job(
-        [input],
-        [],
-        [],
-        command=f"""\
-export genome_size=`awk -F"," '$1 ~ "Total Transcripts Length" {{print $2/1000000 * 2}}' {input}`"""
-        )
-
+# replace rnammer with infernal, as done in trinotate v.4
+# command: cmscan -Z 5 --cut_ga --rfam --nohmmonly --tblout infernal.out --fmt 2 --cpu 4 --clanin trinotate_data/Rfam.clanin trinotate_data/Rfam.cm trinity_out_dir/Trinity.fasta > infernal.log
 def infernal_cmscan(
     input,
     clan_file,
     cm_db,
     output,
     infernal_log,
-    ini_section='infernal_cmscan'
+    ini_section='infernal'
     ):
 
     return Job(
         [input],
         [output],
         [
-            [ini_section, 'module_infernal']
+            ['infernal', 'module_infernal']
         ],
         command="""\
-cmscan -Z $genome_size {options} \\
+cmscan {options} \\
   --tblout {output} \\
+  --cpu {threads} \\
   --clanin {clan_file} \\
   {cm_db} \\
   {input} \\
   > {infernal_log}""".format(
-    options=config.param(ini_section, 'options'),
+    options=config.param('infernal', 'options'),
     output=output,
+    threads=config.param('infernal', 'threads'),
     clan_file=clan_file,
     cm_db=cm_db,
     input=input,
     infernal_log=infernal_log
-    )
-  )
-
-def infernal_merge(
-    input,
-    output
-    ):
-    return Job(
-        input,
-        [output],
-        [],
-        command="""
-head -n2 {input1} > {output}
-cat {input_chunks} | grep -v '^#' >> {output}""".format(
-    input1=input[0],
-    input_chunks=" \\\n".join(input),
-    output=output
     )
   )
 
@@ -216,23 +214,24 @@ signalp -f short {other_options} \\
 
 def signalp6(
         transdecoder_fasta,
-        output_directory):
-
-    output = os.path.join(output_directory, 'output.gff3')
+        output_directory,
+        signalp_gff):
 
     return Job(
         [transdecoder_fasta],
-        [output],
+        [signalp_gff],
         [
-            ['signalp', 'module_python'], 
+            ['signalp', 'module_perl'], 
             ['signalp', 'module_signalp']
         ],
         command="""\
 signalp6 {other_options} \\
   --output_dir {output_directory} \\
+  -n {signalp_gff} \\
   --fastafile {transdecoder_fasta}""".format(
             other_options=config.param('signalp', 'other_options', required=False),
             output_directory=output_directory,
+            signalp_gff=signalp_gff,
             transdecoder_fasta=transdecoder_fasta
         )
      )
@@ -291,17 +290,17 @@ def trinotate(
         command="""\
 cp $TRINOTATE_SQLITE {trinotate_sqlite} && \\
 Trinotate --db {trinotate_sqlite} --init \\
-  --gene_trans_map {trinity_fasta}.gene_trans_map \\
-  --transcript_fasta {trinity_fasta} \\
-  --transdecoder_pep {transdecoder_pep} && \\
-Trinotate --db {trinotate_sqlite} --LOAD_swissprot_blastx {swissprot_blastx} && \\
-Trinotate --db {trinotate_sqlite} --LOAD_swissprot_blastp {swissprot_blastp} && \\
-Trinotate --db {trinotate_sqlite} --LOAD_pfam {transdecoder_pfam} && \\
-Trinotate --db {trinotate_sqlite} --LOAD_tmhmmv2 {tmhmm} && \\
-Trinotate --db {trinotate_sqlite} --LOAD_signalp {signalp} && \\
-Trinotate --db {trinotate_sqlite} --LOAD_infernal {infernal} && \\
-Trinotate --db {trinotate_sqlite} --report -E {evalue} {other_options} \\
-  > {trinotate_report}""".format(
+--gene_trans_map {trinity_fasta}.gene_trans_map \\
+--transcript_fasta {trinity_fasta} \\
+--transdecoder_pep {transdecoder_pep} && \\
+Trinotate --db {trinotate_sqlite} LOAD_swissprot_blastx {swissprot_blastx} && \\
+Trinotate --db {trinotate_sqlite} LOAD_swissprot_blastp {swissprot_blastp} && \\
+Trinotate --db {trinotate_sqlite} LOAD_pfam {transdecoder_pfam} && \\
+Trinotate --db {trinotate_sqlite} LOAD_tmhmmv2 {tmhmm} && \\
+Trinotate --db {trinotate_sqlite} LOAD_signalp {signalp} && \\
+Trinotate --db {trinotate_sqlite} LOAD_infernal {infernal} && \\
+Trinotate --db {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} \\
+> {trinotate_report}""".format(
             trinity_fasta=trinity_fasta,
             trinotate_sqlite=trinotate_sqlite,
             transdecoder_pep=transdecoder_pep,
