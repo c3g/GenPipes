@@ -214,24 +214,23 @@ signalp -f short {other_options} \\
 
 def signalp6(
         transdecoder_fasta,
-        output_directory,
-        signalp_gff):
+        output_directory):
+
+    output = os.path.join(output_directory, 'output.gff3')
 
     return Job(
         [transdecoder_fasta],
-        [signalp_gff],
+        [output],
         [
-            ['signalp', 'module_perl'], 
+            ['signalp', 'module_python'], 
             ['signalp', 'module_signalp']
         ],
         command="""\
 signalp6 {other_options} \\
   --output_dir {output_directory} \\
-  -n {signalp_gff} \\
   --fastafile {transdecoder_fasta}""".format(
             other_options=config.param('signalp', 'other_options', required=False),
             output_directory=output_directory,
-            signalp_gff=signalp_gff,
             transdecoder_fasta=transdecoder_fasta
         )
      )
@@ -290,17 +289,17 @@ def trinotate(
         command="""\
 cp $TRINOTATE_SQLITE {trinotate_sqlite} && \\
 Trinotate --db {trinotate_sqlite} --init \\
---gene_trans_map {trinity_fasta}.gene_trans_map \\
---transcript_fasta {trinity_fasta} \\
---transdecoder_pep {transdecoder_pep} && \\
-Trinotate --db {trinotate_sqlite} LOAD_swissprot_blastx {swissprot_blastx} && \\
-Trinotate --db {trinotate_sqlite} LOAD_swissprot_blastp {swissprot_blastp} && \\
-Trinotate --db {trinotate_sqlite} LOAD_pfam {transdecoder_pfam} && \\
-Trinotate --db {trinotate_sqlite} LOAD_tmhmmv2 {tmhmm} && \\
-Trinotate --db {trinotate_sqlite} LOAD_signalp {signalp} && \\
-Trinotate --db {trinotate_sqlite} LOAD_infernal {infernal} && \\
-Trinotate --db {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} \\
-> {trinotate_report}""".format(
+  --gene_trans_map {trinity_fasta}.gene_trans_map \\
+  --transcript_fasta {trinity_fasta} \\
+  --transdecoder_pep {transdecoder_pep} && \\
+Trinotate --db {trinotate_sqlite} --LOAD_swissprot_blastx {swissprot_blastx} && \\
+Trinotate --db {trinotate_sqlite} --LOAD_swissprot_blastp {swissprot_blastp} && \\
+Trinotate --db {trinotate_sqlite} --LOAD_pfam {transdecoder_pfam} && \\
+Trinotate --db {trinotate_sqlite} --LOAD_tmhmmv2 {tmhmm} && \\
+Trinotate --db {trinotate_sqlite} --LOAD_signalp {signalp} && \\
+Trinotate --db {trinotate_sqlite} --LOAD_infernal {infernal} && \\
+Trinotate --db {trinotate_sqlite} --report -E {evalue} {other_options} \\
+  > {trinotate_report}""".format(
             trinity_fasta=trinity_fasta,
             trinotate_sqlite=trinotate_sqlite,
             transdecoder_pep=transdecoder_pep,
@@ -311,7 +310,7 @@ Trinotate --db {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff}
             signalp=signalp,
             infernal=infernal,
             evalue=config.param('trinotate', 'evalue'),
-            pfam_cutoff=config.param('trinotate', 'pfam_cutoff'),
+            other_options=config.param('trinotate', 'other_options', required=False),
             trinotate_report=trinotate_report
         )
     )
