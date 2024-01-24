@@ -24,6 +24,7 @@ import glob
 import logging
 import os
 import sys
+import re
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -525,7 +526,8 @@ pandoc --to=markdown \\
                             )
                     ],
                     name = "transdecoder",
-                    samples = self.samples
+                    samples = self.samples,
+                    output_dependency=[os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.bed"), os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep"),os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.cds"),os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.gff3")]
                     )
                 )
 
@@ -648,7 +650,6 @@ pandoc --to=markdown \\
 
         transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
         signalp_directory = os.path.join(self.output_dirs["trinotate_directory"], "signalp")
-        signalp_gff = os.path.join(signalp_directory, "signalp.gff")
 
         jobs.append(concat_jobs(
             [
@@ -657,8 +658,7 @@ pandoc --to=markdown \\
                     ),
                 trinotate.signalp6(
                     transdecoder_fasta,
-                    signalp_directory,
-                    signalp_gff
+                    signalp_directory
                     )
             ],
             name = "signalp",
@@ -705,7 +705,7 @@ pandoc --to=markdown \\
                     transdecoder_pfam=os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pfam"),
                     swissprot_blastp=os.path.join(self.output_dirs["trinotate_directory"], "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv"),
                     infernal=os.path.join(self.output_dirs["trinotate_directory"], "infernal", "infernal.out"),
-                    signalp=os.path.join(self.output_dirs["trinotate_directory"], "signalp", "signalp.gff"),
+                    signalp=os.path.join(self.output_dirs["trinotate_directory"], "signalp", "output.gff3"),
                     tmhmm=os.path.join(self.output_dirs["trinotate_directory"], "tmhmm", "tmhmm.out"),
                     trinotate_sqlite=os.path.join(self.output_dirs["trinotate_directory"], "Trinotate.sqlite"),
                     trinotate_report=os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
@@ -754,6 +754,7 @@ pandoc --to=markdown \\
 
         jobs = []
         trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta")
+        gene_trans_map = trinity_fasta + ".gene_trans_map"
 
         for sample in self.samples:
             trim_directory = os.path.join(self.output_dirs["trim_directory"], sample.name)
@@ -785,42 +786,50 @@ pandoc --to=markdown \\
         # Generate read files and matrix of estimated abundances, send to the differential_expression directory (God bless Joel)
         output_directory = self.output_dirs["differential_expression_directory"]
 
-        for item in "genes", "isoforms":
-            matrix = os.path.join(output_directory, item + ".counts.matrix")
-            count_files = os.path.join(output_directory, item + ".counts.files")
-            align_and_estimate_abundance_results = [os.path.join(self.output_dirs["align_and_estimate_abundance_directory"], sample.name, sample.name + "." + item + ".results") for sample in self.samples]
-            out_prefix = os.path.join(output_directory, item)
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(os.path.join(output_directory, item)),
-                        Job(
-                            align_and_estimate_abundance_results,
-                            [count_files],
-                            command="echo -e \"" + "\\n".join(align_and_estimate_abundance_results) + "\" > " + count_files,
-                            samples=self.samples
-                        ),
-                        # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
-                        trinity.abundance_estimates_to_matrix(
-                            count_files,
-                            matrix,
-                            out_prefix
-                        ),
-                        trinity.prepare_abundance_matrix_for_dge(
-                            matrix,
-                            item
-                        ),
-                        trinity.extract_lengths_from_RSEM_output(
-                            align_and_estimate_abundance_results[0],
-                            os.path.join(output_directory, item + ".lengths.tsv")
-                        )
-                    ],
-                    name="align_and_estimate_abundance." + item
+        #for item in "gene", "isoform":
+        matrix = os.path.join(output_directory, "RSEM.isoform.counts.matrix")
+        count_files = os.path.join(output_directory, "isoform.counts.files")
+        align_and_estimate_abundance_results = [os.path.join(self.output_dirs["align_and_estimate_abundance_directory"], sample.name, "RSEM.isoforms.results") for sample in self.samples]
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    Job(
+                        align_and_estimate_abundance_results,
+                        [count_files],
+                        command="echo -e \"" + "\\n".join(align_and_estimate_abundance_results) + "\" > " + count_files,
+                        samples=self.samples
+                    ),
+                    # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
+                    trinity.abundance_estimates_to_matrix(
+                        count_files,
+                        gene_trans_map,
+                        matrix,
+                        output_directory
+                    ),
+                    trinity.prepare_abundance_matrix_for_dge(
+                        matrix,
+                        "isoform"
+                    ),
+                    trinity.prepare_abundance_matrix_for_dge(
+                        re.sub("isoform", "gene", matrix),
+                        "gene"
+                    ),
+                    trinity.extract_lengths_from_RSEM_output(
+                        align_and_estimate_abundance_results[0],
+                        os.path.join(output_directory, "isoform.lengths.tsv")
+                    ),
+                    trinity.extract_lengths_from_RSEM_output(
+                        re.sub("isoform", "gene", align_and_estimate_abundance_results[0]),
+                        os.path.join(output_directory, "gene.lengths.tsv")
+                    )
+                ],
+                name="align_and_estimate_abundance.isoform_gene"
                 )
             )
 
         # Parse Trinotate results to obtain blast, go annotation and a filtered set of contigs
-        isoforms_lengths = os.path.join(output_directory, "isoforms.lengths.tsv")
+        isoforms_lengths = os.path.join(output_directory, "isoform.lengths.tsv")
         trinotate_annotation_report = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
         gene_id_column = "#gene_id" if not config.param('trinotate', 'gene_column', required=False) else config.param('trinotate', 'gene_column', required=False)
         transcript_id_column = "transcript_id" if not config.param('trinotate', 'transcript_column', required=False) else config.param('trinotate', 'gene_column', required=False)
@@ -854,8 +863,8 @@ pandoc --to=markdown \\
                 [
                     bash.mkdir(self.output_dirs["exploratory_directory"]),
                     gq_seq_utils.exploratory_analysis_rnaseq_denovo(
-                        os.path.join(self.output_dirs["differential_expression_directory"], "genes.counts.matrix"),
-                        os.path.join(self.output_dirs["differential_expression_directory"], "genes.lengths.tsv"),
+                        os.path.join(self.output_dirs["differential_expression_directory"], "RSEM.gene.counts.matrix"),
+                        os.path.join(self.output_dirs["differential_expression_directory"], "gene.lengths.tsv"),
                         self.output_dirs["exploratory_directory"]
                     )
                 ],
@@ -973,10 +982,10 @@ pandoc --to=markdown \\
         # Extract filtered components from counts file
         jobs = []
         exploratory_output_dir = os.path.join(self.output_dirs["filtered_assembly_directory"], "exploratory")
-        counts_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoforms.counts.matrix")
+        counts_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "RSEM.isoform.counts.matrix")
         trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered.tsv")
         trinotate_annotation_report_filtered_header = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered_header.tsv")
-        lengths_file = os.path.join(self.output_dirs["differential_expression_directory"], "isoforms.lengths.tsv")
+        lengths_file = os.path.join(self.output_dirs["differential_expression_directory"], "isoform.lengths.tsv")
         lengths_filtered_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoforms.lengths.tsv")
 
         jobs.append(
@@ -991,7 +1000,7 @@ pandoc --to=markdown \\
                     tools.py_parseMergeCsv(
                         [
                             trinotate_annotation_report_filtered_header,
-                            os.path.join(self.output_dirs["differential_expression_directory"], "isoforms.counts.matrix")
+                            os.path.join(self.output_dirs["differential_expression_directory"], "RSEM.isoform.counts.matrix")
                         ],
                         "\\\\t",
                         counts_file,
