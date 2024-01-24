@@ -114,15 +114,16 @@ def py_parseTrinotateOutput(trinotate_annotation_report, trinotate_report_genes_
         ],
         name=job_name,
         command="""\
-$PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trinotate_report_genes_prefix} -i \"{gene_id_column}\" -l {isoforms_lengths} &&
-$PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trinotate_report_transcripts_prefix} -i \"{transcript_id_column}\"{filters}""".format(
+$PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trinotate_report_genes_prefix} -i \"{gene_id_column}\" -l {isoforms_lengths} {other_options} &&
+$PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trinotate_report_transcripts_prefix} -i \"{transcript_id_column}\"{filters} {other_options}""".format(
             trinotate_annotation_report=trinotate_annotation_report,
             trinotate_report_genes_prefix=trinotate_report_genes_prefix,
             trinotate_report_transcripts_prefix=trinotate_report_transcripts_prefix,
             gene_id_column=gene_id_column,
             isoforms_lengths=isoforms_lengths_file,
             transcript_id_column=transcript_id_column,
-            filters="" if not filters else " -f " + ' and '.join(filters)
+            filters="" if not filters else " -f " + ' and '.join(filters),
+            other_options=config.param('parse_trinotate_output', 'other_options')
         )
     )
 
