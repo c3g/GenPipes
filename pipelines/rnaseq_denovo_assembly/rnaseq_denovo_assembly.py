@@ -546,7 +546,8 @@ pandoc --to=markdown \\
                             )
                     ],
                     name = "transdecoder",
-                    samples = self.samples
+                    samples = self.samples,
+                    output_dependency=[os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.bed"), os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep"),os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.cds"),os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.gff3")]
                     )
                 )
 
@@ -704,7 +705,6 @@ pandoc --to=markdown \\
 
         transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
         signalp_directory = os.path.join(self.output_dirs["trinotate_directory"], "signalp")
-        signalp_gff = os.path.join(signalp_directory, "signalp.gff")
 
         jobs.append(concat_jobs(
             [
@@ -713,8 +713,7 @@ pandoc --to=markdown \\
                     ),
                 trinotate.signalp6(
                     transdecoder_fasta,
-                    signalp_directory,
-                    signalp_gff
+                    signalp_directory
                     )
             ],
             name = "signalp",
@@ -776,7 +775,7 @@ pandoc --to=markdown \\
                     transdecoder_pfam=os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pfam"),
                     swissprot_blastp=os.path.join(self.output_dirs["trinotate_directory"], "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv"),
                     infernal=os.path.join(self.output_dirs["trinotate_directory"], "infernal", "infernal.out"),
-                    signalp=os.path.join(self.output_dirs["trinotate_directory"], "signalp", "signalp.gff"),
+                    signalp=os.path.join(self.output_dirs["trinotate_directory"], "signalp", "output.gff3"),
                     tmhmm=os.path.join(self.output_dirs["trinotate_directory"], "tmhmm", "tmhmm.out"),
                     trinotate_sqlite=os.path.join(self.output_dirs["trinotate_directory"], "Trinotate.sqlite"),
                     trinotate_report=os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
@@ -834,6 +833,7 @@ pandoc --to=markdown \\
 
         jobs = []
         trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta")
+        gene_trans_map = trinity_fasta + ".gene_trans_map"
 
         for sample in self.samples:
             trim_directory = os.path.join(self.output_dirs["trim_directory"], sample.name)
@@ -1062,10 +1062,10 @@ pandoc --to=markdown \\
         jobs = []
         exploratory_output_dir = os.path.join(self.output_dirs["filtered_assembly_directory"], "exploratory")
         counts_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "RSEM.isoform.counts.matrix")
-        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoform_filtered.tsv")
-        trinotate_annotation_report_filtered_header = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoform_filtered_header.tsv")
+        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered.tsv")
+        trinotate_annotation_report_filtered_header = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered_header.tsv")
         lengths_file = os.path.join(self.output_dirs["differential_expression_directory"], "isoform.lengths.tsv")
-        lengths_filtered_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoform.lengths.tsv")
+        lengths_filtered_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoforms.lengths.tsv")
 
         jobs.append(
             concat_jobs(
