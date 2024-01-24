@@ -121,14 +121,14 @@ def align_and_estimate_abundance(trinity_fasta, output_directory=None, prep_refe
                 trinity_fasta + ".RSEM.idx.fa"],
             [['align_and_estimate_abundance_prep_reference', 'module_perl'],
                 ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
-                ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
+                ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
                 ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
             command="""\
 align_and_estimate_abundance.pl \\
   --transcripts {transcripts} \\
   --seqType fa \\
   --est_method RSEM \\
-  --aln_method bowtie \\
+  --aln_method bowtie2 \\
   --trinity_mode \\
   --output_dir {output_directory} \\
   --prep_reference""".format(
@@ -140,20 +140,20 @@ align_and_estimate_abundance.pl \\
         # Run abundance estimates
         job = Job(
             [trinity_fasta, trinity_fasta + ".RSEM.transcripts.fa", trinity_fasta + ".RSEM.idx.fa"] + left_or_single_reads + right_reads,
-            [os.path.join(output_directory, sample_name + ".genes.results"),
-                os.path.join(output_directory, sample_name + ".isoforms.results")],
+            [os.path.join(output_directory, "RSEM.genes.results"),
+                os.path.join(output_directory, "RSEM.isoforms.results")],
             [['align_and_estimate_abundance_prep_reference', 'module_perl'],
                 ['align_and_estimate_abundance_prep_reference', 'module_bowtie'],
-                ['align_and_estimate_abundance_prep_reference', 'module_samtools'],
+                ['align_and_estimate_abundance_prep_reference', 'module_rsem'],
                 ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
             command="""\
 align_and_estimate_abundance.pl {other_options} \\
   --transcripts {transcripts} \\
   --seqType fq \\
   --est_method RSEM \\
-  --aln_method bowtie \\
+  --aln_method bowtie2 \\
   --trinity_mode \\
-  --output_prefix {sample_name} \\
+  --coordsort_bam \\
   --output_dir {output_directory} \\
   --thread_count {cpu} \\
   {left_or_single_reads}{right_reads}""".format(
@@ -167,7 +167,7 @@ align_and_estimate_abundance.pl {other_options} \\
             ),
             name="align_and_estimate_abundance." + sample_name,
             removable_files=[
-                os.path.join(output_directory, sample_name + ".bowtie.bam"),
+                os.path.join(output_directory, "bowtie2.bam"),
                 os.path.join(output_directory, sample_name + ".transcript.bam"),
                 os.path.join(output_directory, sample_name + ".transcript.sorted.bam"),
                 os.path.join(output_directory, sample_name + ".transcript.sorted.bam.bai"),
@@ -179,10 +179,15 @@ align_and_estimate_abundance.pl {other_options} \\
     return job
 
 
-def abundance_estimates_to_matrix(count_files, matrix, out_prefix):
+def abundance_estimates_to_matrix(
+        count_files,
+        gene_trans_map,
+        matrix,
+        out_dir):
+
     return Job(
-        [count_files],
-        [matrix],
+        [count_files, gene_trans_map],
+        [matrix, re.sub("isoform", "gene", matrix)],
         [
             ['align_and_estimate_abundance_prep_reference', 'module_perl'],
             ['align_and_estimate_abundance_prep_reference', 'module_trinity'],
@@ -191,9 +196,12 @@ def abundance_estimates_to_matrix(count_files, matrix, out_prefix):
         command="""\
 abundance_estimates_to_matrix.pl \\
   --est_method RSEM \\
-  --out_prefix {out_prefix} \\
-  {align_and_estimate_abundance_results}""".format(
-            out_prefix=out_prefix,
+  --gene_trans_map {gene_trans_map} \\
+  --name_sample_by_basedir \\
+  --out_prefix {out_dir}/RSEM \\
+  --quant_files {align_and_estimate_abundance_results}""".format(
+            gene_trans_map=gene_trans_map,
+            out_dir=out_dir,
             align_and_estimate_abundance_results=count_files
         )
     )
