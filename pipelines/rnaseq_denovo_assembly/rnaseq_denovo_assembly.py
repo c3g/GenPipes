@@ -274,7 +274,11 @@ pandoc --to=markdown \\
         jobs.append(
             concat_jobs(
                 [
-                    trinity.trinity(input_files, trinity_fasta, output_directory, reads_option),
+                    trinity.trinity(
+                        input_files,
+                        trinity_fasta,
+                        output_directory,
+                        reads_option),
                     Job(
                         [trinity_fasta],
                         [trinity_zip],
@@ -692,27 +696,51 @@ pandoc --to=markdown \\
         """
         jobs = []
 
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta")
+        trinotate_directory = self.output_dirs["trinotate_directory"]
         swissprot_db = os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath'))
-        transdecoder_pep = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
+        transdecoder_pep = os.path.join(trinotate_directory, "transdecoder", "Trinity.fasta.transdecoder.pep")
+        swissprot_blastx = os.path.join(self.output_dirs["blast_directory"], "blastx_Trinity_" + swissprot_db + ".tsv")
+        transdecoder_pfam = os.path.join(trinotate_directory, "transdecoder", "Trinity.fasta.transdecoder.pfam")
+        swissprot_blastp = os.path.join(trinotate_directory, "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv")
+        infernal_output = os.path.join(trinotate_directory, "infernal", "infernal.out"),
+        signalp_output = os.path.join(trinotate_directory, "signalp", "output.gff3")
+        tmhmm_output = os.path.join(trinotate_directory, "tmhmm", "tmhmm.out")
+        trinotate_sqlite = os.path.join(trinotate_directory, "Trinotate.sqlite")
+        trinotate_report = os.path.join(trinotate_directory, "trinotate_annotation_report.tsv")
 
         job = concat_jobs(
             [
-                bash.mkdir(self.output_dirs["trinotate_directory"]),
+                bash.mkdir(
+                    self.output_dirs["trinotate_directory"]
+                    ),
+                bash.rm(
+                    os.path.join(self.output_dir, "__init.ok")
+                    ),
                 trinotate.trinotate(
-                    trinity_fasta=os.path.join(self.output_dirs["trinity_out_directory"] + ".Trinity.fasta"),
-                    swissprot_blastx=os.path.join(self.output_dirs["blast_directory"], "blastx_Trinity_" + swissprot_db + ".tsv"),
+                    trinity_fasta=trinity_fasta,
+                    swissprot_blastx=swissprot_blastx,
                     transdecoder_pep=transdecoder_pep,
-                    transdecoder_pfam=os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pfam"),
-                    swissprot_blastp=os.path.join(self.output_dirs["trinotate_directory"], "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv"),
-                    infernal=os.path.join(self.output_dirs["trinotate_directory"], "infernal", "infernal.out"),
-                    signalp=os.path.join(self.output_dirs["trinotate_directory"], "signalp", "output.gff3"),
-                    tmhmm=os.path.join(self.output_dirs["trinotate_directory"], "tmhmm", "tmhmm.out"),
-                    trinotate_sqlite=os.path.join(self.output_dirs["trinotate_directory"], "Trinotate.sqlite"),
-                    trinotate_report=os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
-                )
+                    transdecoder_pfam=transdecoder_pfam,
+                    swissprot_blastp=swissprot_blastp,
+                    infernal=infernal_output,
+                    signalp=signalp_output,
+                    tmhmm=tmhmm_output,
+                    trinotate_sqlite=trinotate_sqlite,
+                    trinotate_report=trinotate_report
+                    )
             ],
             name="trinotate",
-            samples=self.samples
+            samples=self.samples,
+            input_dependency=[
+                trinity_fasta,
+                swissprot_blastx,
+                transdecoder_pep,
+                transdecoder_pfam,
+                swissprot_blastp,
+                infernal_output,
+                tmhmm_output
+                ]
         )
         jobs.append(job)
 
