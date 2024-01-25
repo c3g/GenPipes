@@ -865,8 +865,8 @@ pandoc --to=markdown \\
 
         job = tools.py_parseTrinotateOutput(
             trinotate_annotation_report,
-            trinotate_annotation_report + ".genes",
-            trinotate_annotation_report + ".isoforms",
+            trinotate_annotation_report + ".gene",
+            trinotate_annotation_report + ".isoform",
             gene_id_column,
             transcript_id_column,
             isoforms_lengths,
@@ -927,7 +927,7 @@ pandoc --to=markdown \\
         trinity_filtered = os.path.join(output_directory, "Trinity.fasta")
         trinity_filtered_prefix = os.path.join(output_directory, "Trinity")
         trinity_stats_prefix = os.path.join(output_directory, "trinity_filtered.stats")
-        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
+        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv" + ".isoform_filtered.tsv")
 
         # Use python  to extract selected headers
         jobs.append(
@@ -1011,10 +1011,10 @@ pandoc --to=markdown \\
         jobs = []
         exploratory_output_dir = os.path.join(self.output_dirs["filtered_assembly_directory"], "exploratory")
         counts_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "RSEM.isoform.counts.matrix")
-        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered.tsv")
-        trinotate_annotation_report_filtered_header = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered_header.tsv")
+        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoform_filtered.tsv")
+        trinotate_annotation_report_filtered_header = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoform_filtered_header.tsv")
         lengths_file = os.path.join(self.output_dirs["differential_expression_directory"], "isoform.lengths.tsv")
-        lengths_filtered_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoforms.lengths.tsv")
+        lengths_filtered_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoform.lengths.tsv")
 
         jobs.append(
             concat_jobs(
@@ -1101,7 +1101,7 @@ pandoc --to=markdown \\
         trinotate_columns_to_exclude = None if not config.param('differential_expression', 'trinotate_columns_to_exclude', required=False) else config.param('differential_expression', 'trinotate_columns_to_exclude', required=False)
 
         # Run DGE and merge dge results with annotations
-        matrix = os.path.join(output_directory, item + ".counts.matrix")
+        matrix = os.path.join(output_directory, "RSEM." + item + ".counts.matrix")
 
         # Perform edgeR
         edger_job = differential_expression.edger(
@@ -1192,7 +1192,7 @@ pandoc --to=markdown \\
         input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq.Rmd")
 
         # Run DGE and merge dge results with annotations
-        for item in "genes", "isoforms":
+        for item in "gene", "isoform":
             jobs.append(
                 concat_jobs(
                     self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report),
@@ -1235,11 +1235,11 @@ pandoc --to=markdown \\
         input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq_filtered.Rmd")
 
         # Filter input files
-        trinotate_annotation_report_filtered = trinotate_annotation_report + ".isoforms_filtered.tsv"
+        trinotate_annotation_report_filtered = trinotate_annotation_report + ".isoform_filtered.tsv"
         trinotate_annotation_report_filtered_header = {}
-        trinotate_annotation_report_filtered_header["isoforms"] = trinotate_annotation_report + ".isoforms_filtered_header.tsv"
-        trinotate_annotation_report_filtered_header["genes"] = trinotate_annotation_report + ".genes_filtered_header.tsv"
-        counts_ids = {'genes':"Genes", 'isoforms':"Isoforms"}
+        trinotate_annotation_report_filtered_header["isoform"] = trinotate_annotation_report + ".isoform_filtered_header.tsv"
+        trinotate_annotation_report_filtered_header["gene"] = trinotate_annotation_report + ".gene_filtered_header.tsv"
+        counts_ids = {'gene':"Genes", 'isoform':"Isoforms"}
         source_directory = self.output_dirs["differential_expression_directory"]
 
         # Create the files containing filtered isoforms and genes with headers
@@ -1249,13 +1249,13 @@ pandoc --to=markdown \\
                     bash.mkdir(output_directory),
                     Job(
                         [trinotate_annotation_report_filtered],
-                        [trinotate_annotation_report_filtered_header["genes"]],
-                        command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["genes"],
+                        [trinotate_annotation_report_filtered_header["gene"]],
+                        command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["gene"],
                     ),
                     Job(
                         [trinotate_annotation_report_filtered],
-                        [trinotate_annotation_report_filtered_header["isoforms"]],
-                        command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"]
+                        [trinotate_annotation_report_filtered_header["isoform"]],
+                        command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoform"]
                     )
                 ],
                 name="differential_expression_filtered_get_trinotate",
@@ -1264,12 +1264,12 @@ pandoc --to=markdown \\
         )
 
         # Run DGE and merge dge results with annotations
-        for item in "genes", "isoforms":
-            matrix = os.path.join(output_directory, item + ".counts.matrix.symbol")
+        for item in "gene", "isoform":
+            matrix = os.path.join(output_directory, "RSEM." + item + ".counts.matrix.symbol")
             job = tools.py_parseMergeCsv(
                 [
                     trinotate_annotation_report_filtered_header[item],
-                    os.path.join(source_directory, item + ".counts.matrix.symbol")
+                    os.path.join(source_directory, "RSEM." + item + ".counts.matrix.symbol")
                 ],
                 "\\\\t",
                 matrix,
@@ -1366,7 +1366,7 @@ pandoc --to=markdown \\
                             merge_readsets_fastq1.append(candidate_fastq1)
                     else:
                         _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                            "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
             # if readset is paired end then two jobs will be created for the read pairs
             # if readset is single end then one job will be created for the forward read
             if (merge_readsets_fastq2):
