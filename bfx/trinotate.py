@@ -53,11 +53,12 @@ def transdecoder_predict(
     pfam_hits,
     blastp_hits):
 
+    prefix = os.path.basename(trinity_fasta)
     outputs = [
-            trinity_fasta + ".transdecoder.bed",
-            trinity_fasta + ".transdecoder.pep",
-            trinity_fasta + ".transdecoder.cds",
-            trinity_fasta + ".transdecoder.gff3"
+            prefix + ".transdecoder.bed",
+            prefix + ".transdecoder.pep",
+            prefix + ".transdecoder.cds",
+            prefix + ".transdecoder.gff3"
             ]
 
     return Job(
@@ -106,32 +107,6 @@ hmmscan --cpu {cpu} \\
             )
         )
 
-# Identify potential rRNA transcripts using [RNAmmer](http://www.cbs.dtu.dk/cgi-bin/sw_request?rnammer).
-#def rnammer_transcriptome(trinity_fasta, rnammer_directory):
-#    return [concat_jobs([
-#        Job(command="mkdir -p " + rnammer_directory),
-#        Job(command="cd " + rnammer_directory),
-#        Job(
-#            [trinity_fasta],
-#            [os.path.join(rnammer_directory, "Trinity.fasta.rnammer.gff")],
-#            [['rnammer_transcriptome', 'module_perl'],
-#                ['rnammer_transcriptome', 'module_hmmer'],
-#                ['rnammer_transcriptome', 'module_rnammer'],
-#                ['rnammer_transcriptome', 'module_trinity'],
-#                ['rnammer_transcriptome', 'module_trinotate']],
-#            command="""\
-#$TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
-#--transcriptome {transcriptome} \\
-#--path_to_rnammer `which rnammer`""".format(
-#                other_options=config.param('rnammer_transcriptome', 'other_options', required=False),
-#                transcriptome=os.path.relpath(trinity_fasta, rnammer_directory)
-#            )
-#        ),
-#        Job(command="cd " + os.path.join("..", "..")),
-#    ], name="rnammer_transcriptome")]
-
-# replace rnammer with infernal, as done in trinotate v.4
-# command: cmscan -Z 5 --cut_ga --rfam --nohmmonly --tblout infernal.out --fmt 2 --cpu 4 --clanin trinotate_data/Rfam.clanin trinotate_data/Rfam.cm trinity_out_dir/Trinity.fasta > infernal.log
 def infernal_cmscan(
     input,
     clan_file,
