@@ -827,7 +827,7 @@ def parse_clarity_readset_file(
                 log.warning("Unable to access the reference file: '" + reference_file + "'")
 
         if readset.genomic_database:
-            if readset.bam is None and (readset.genomic_database is not None or len(readset.genomic_database) > 0) an
+            if readset.bam is None and (readset.genomic_database is not None or len(readset.genomic_database) > 0) and readset.genomic_database not in skipped_db:
                 skipped_db.append(readset.genomic_database)
 
         readsets.append(readset)
