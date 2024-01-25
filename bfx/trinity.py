@@ -85,7 +85,7 @@ def trinity(input_files, trinity_fasta, output_directory, reads_option):
 
     return Job(
         input_files,
-        [trinity_fasta],
+        [trinity_fasta, trinity_fasta + ".gene_trans_map"],
         [
             ['trinity', 'module_perl'],
             ['trinity', 'module_java'],
