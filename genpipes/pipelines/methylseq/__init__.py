@@ -1316,7 +1316,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         jobs = []
 
         # decide on what to use for snp output - dbSNP database?
-        dbSNP = config.param('bedtools_intersect','known_snps')
+        dbSNP = global_conf.global_get('bedtools_intersect','known_snps')
         # create vcf of snps instead of using gemBS snp output format
 
         for sample in self.samples:
@@ -1368,7 +1368,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         jobs = []
 
         report_dir = self.output_dirs["report_directory"]
-        project = config.param("gembs_report", "project_name")
+        project = global_conf.global_get("gembs_report", "project_name")
         report = os.path.join(report_dir, project + "_QC_Report.html")
         inputs = []
 
@@ -1915,7 +1915,6 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.cram_output
             ], 'gembs':
             [
-<<<<<<< HEAD:genpipes/pipelines/methylseq/__init__.py
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
@@ -1938,30 +1937,6 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.multiqc,
                 self.cram_output
             ], 'hybrid': 
-=======
-            self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.gembs_prepare,
-            self.gembs_map,   
-        #    self.add_bam_umi, # important to include? Slightly annoying because merge step not needed for gemBS
-            self.picard_remove_duplicates,
-            self.metrics,
-            self.gembs_call,
-            self.bedtools_intersect,
-            self.gembs_format_cpg_report,
-            self.methylation_profile,
-            self.dragen_bedgraph,
-            self.wiggle_tracks,
-            self.ihec_sample_metrics_report,
-            self.gembs_report,
-            self.filter_snp_cpg,
-            self.prepare_methylkit,
-            self.methylkit_differential_analysis,
-            self.multiqc,
-            self.cram_output
-        ],
->>>>>>> e3b0b419d (GenPipes methylseq : clean up):pipelines/methylseq/methylseq.py
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,

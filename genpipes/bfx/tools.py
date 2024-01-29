@@ -1190,6 +1190,50 @@ bedops --not-element-of \\
         )
     )
 
+def gembs_bcf_to_vcf(
+    input,
+    output,
+    ini_section='gembs_bcf_to_vcf'
+    ):
+
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_bcftools'],
+            [ini_section, 'module_bedtools']
+        ],
+        command="""\
+bcftools sort \\
+  -m {ram} \\
+  -T {tmp_dir} \\
+  -Ov -o {filter_sorted_bed} \\
+  {filter_file} && \\
+bcftools view {bcftools_options} \\
+  {input} \\
+  -o {tmp_output} && \\
+bcftools sort \\
+  -m {ram} \\
+  -T {tmp_dir} \\
+  -Ov -o {sorted_tmp_output} \\
+  {tmp_output} && \\
+bedtools intersect {bedtools_options} \\
+  -a {sorted_tmp_output} \\
+  -b {filter_sorted_bed} \\
+  > {output}""".format(
+        filter_file=global_conf.global_get(ini_section, 'known_variants'),
+        tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+        ram=global_conf.global_get(ini_section, 'ram'),
+        bcftools_options=global_conf.global_get(ini_section, 'bcftools_options'),
+        input=input,
+        tmp_output=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(input) + ".tmp.vcf"),
+        sorted_tmp_output=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(input) + ".sorted.tmp.vcf"),
+        bedtools_options=global_conf.global_get(ini_section, 'bedtools_options'),
+        filter_sorted_bed=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(global_conf.global_get('filter_snp_cpg', 'known_variants'))+".tmp.sorted.vcf"),
+        output=output
+      )
+    )
+
 def prepare_methylkit(
         input, 
         output,
