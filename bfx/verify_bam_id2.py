@@ -53,3 +53,14 @@ VerifyBamID {other_options} \\
             other_options=config.param('verify_bam_id2', 'options')
         )
     )
+
+def parse_contamination_freemix_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export contamination_freemix=`grep -v "^#" {input_file} | cut -f7`"""
+        )

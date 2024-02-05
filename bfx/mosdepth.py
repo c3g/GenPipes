@@ -93,3 +93,13 @@ mosdepth {other_options} \\
     input=input
         )
     )
+def parse_dedup_coverage_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export dedup_coverage=`awk '{{if ($0 ~ /total/) {{match($3,/[0-9]+.[0-9]+/,value); printf "%.2f", value[0]}}}}' {input_file}`"""
+        )

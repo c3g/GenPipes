@@ -867,24 +867,107 @@ END
                 metrics_directory,
                 remove=True
             )
-
+            job_name = f"picard_collect_multiple_metrics.{sample.name}"
+            output_prefix = os.path.join(metrics_directory, sample.name + ".all.metrics")
+            
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                        gatk4.parse_bases_over_q30_percent_metrics_pt(f"{output_prefix}.quality_distribution_metrics"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.quality_distribution_metrics",
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="bases_over_q30_percent=$bases_over_q30_percent"
+                        ),
+                        gatk4.parse_mean_insert_metrics(f"{output_prefix}.insert_size_metrics"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.insert_size_metrics",
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="mean_insert_size=$mean_insert_size"
+                        ),
+                        gatk4.parse_stdev_insert_metrics(f"{output_prefix}.insert_size_metrics"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.insert_size_metrics",
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="stdev_insert_size=$stdev_insert_size"
+                        ),
+                        gatk4.parse_mode_insert_metrics(f"{output_prefix}.insert_size_metrics"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.insert_size_metrics",
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="mode_insert_size=$mode_insert_size"
+                        ),
+                        gatk4.parse_total_read_pairs_metrics(f"{output_prefix}.alignment_summary_metrics"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.alignment_summary_metrics",
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="total_read_pairs=$total_read_pairs"
+                        ),
+                        gatk4.parse_aligned_pairs_metrics_pt(f"{output_prefix}.alignment_summary_metrics"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.alignment_summary_metrics",
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="aligned_pairs_percent=$aligned_pairs_percent"
+                        ),
+                        gatk4.parse_high_quality_read_pairs_metrics(f"{output_prefix}.alignment_summary_metrics"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.alignment_summary_metrics",
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="hq_read_pairs=$hq_read_pairs"
+                        ),
+                        gatk4.parse_chimeras_metrics_pt(f"{output_prefix}.alignment_summary_metrics"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.alignment_summary_metrics",
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="chimeras_percent=$chimeras_percent"
+                        ),
+                        
+                    ]
+                )
+            
             jobs.append(
                 concat_jobs(
                     [
                         mkdir_job,
                         gatk4.collect_multiple_metrics(
                             input,
-                            os.path.join(metrics_directory, sample.name + ".all.metrics"),
+                            output_prefix,
                             library_type=library[sample]
                         ),
+                        job_project_tracking_metrics,
                     ],
-                    name="picard_collect_multiple_metrics." + sample.name,
+                    name=job_name,
                     samples=[sample],
                     output_dependency=[
-                        os.path.join(metrics_directory, sample.name + ".all.metrics.alignment_summary_metrics"),
-                        os.path.join(metrics_directory, sample.name + ".all.metrics.insert_size_metrics"),
-                        os.path.join(metrics_directory, sample.name + ".all.metrics.quality_by_cycle_metrics"),
-                        os.path.join(metrics_directory, sample.name + ".all.metrics.quality_distribution_metrics")
+                        f"{output_prefix}.alignment_summary_metrics",
+                        f"{output_prefix}.insert_size_metrics",
+                        f"{output_prefix}.quality_by_cycle_metrics",
+                        f"{output_prefix}.quality_distribution_metrics"
                     ]
                     
                 )
@@ -897,13 +980,14 @@ END
                         #bash.mkdir(link_directory),
                         gatk4.collect_oxog_metrics(
                             input,
-                            os.path.join(metrics_directory, sample.name + ".oxog_metrics.txt")
+                            f"{output_prefix}.oxog_metrics.txt"
                         ),
                     ],
                     name="picard_collect_oxog_metrics." + sample.name,
                     samples=[sample],
                     output_dependency = [
-                        os.path.join(metrics_directory, sample.name + ".oxog_metrics.txt")]
+                        f"{output_prefix}.oxog_metrics.txt"
+                    ]
                 )
             )
             
@@ -913,24 +997,25 @@ END
                         mkdir_job,
                         gatk4.collect_gcbias_metrics(
                             input,
-                            os.path.join(metrics_directory, sample.name)
+                            output_prefix
                         ),
                     ],
                     name="picard_collect_gcbias_metrics." + sample.name,
                     samples=[sample],
                     output_dependency=[
-                        os.path.join(metrics_directory, sample.name + ".gcbias_metrics.txt")]
+                        f"{output_prefix}.gcbias_metrics.txt"
+                    ]
                     
                 )
             )
             self.multiqc_inputs[sample.name].extend(
                 [
-                    os.path.join(metrics_directory, sample.name + ".all.metrics.alignment_summary_metrics"),
-                    os.path.join(metrics_directory, sample.name + ".all.metrics.insert_size_metrics"),
-                    os.path.join(metrics_directory, sample.name + ".all.metrics.quality_by_cycle_metrics"),
-                    os.path.join(metrics_directory, sample.name + ".all.metrics.quality_distribution_metrics"),
-                    os.path.join(metrics_directory, sample.name + ".oxog_metrics.txt"),
-                    os.path.join(metrics_directory, sample.name + ".gcbias_metrics.txt")
+                    f"{output_prefix}.alignment_summary_metrics",
+                    f"{output_prefix}.insert_size_metrics",
+                    f"{output_prefix}.quality_by_cycle_metrics",
+                    f"{output_prefix}.quality_distribution_metrics",
+                    f"{output_prefix}.oxog_metrics.txt",
+                    f"{output_prefix}.gcbias_metrics.txt"
                 ]
             )
 
@@ -945,27 +1030,46 @@ END
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            metrics_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
             
             [input] = self.select_input_files(
                 [
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
                 ]
             )
+            metrics_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
+            output_prefix = os.path.join(metrics_directory, sample.name)
             region = None
-            output_dist = os.path.join(metrics_directory, sample.name + ".mosdepth.global.dist.txt")
-            output_summary = os.path.join(metrics_directory, sample.name + ".mosdepth.summary.txt")
+            output_dist = f"{output_prefix}.mosdepth.global.dist.txt"
+            output_summary = f"{output_prefix}.mosdepth.summary.txt"
             
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 sample.readsets[0]
             )
             if coverage_bed:
                 region = coverage_bed
-                output_dist = os.path.join(metrics_directory, sample.name + ".mosdepth.region.dist.txt")
-                output_summary = os.path.join(metrics_directory, sample.name + ".mosdepth.summary.txt")
+                output_dist = f"{output_prefix}.mosdepth.region.dist.txt"
+                output_summary = f"{output_prefix}.mosdepth.summary.txt"
+            
+            job_name = f"mosdepth.{sample.name}"
+            
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                        mosdepth.parse_dedup_coverage_metrics_pt(f"{output_prefix}.mosdepth.summary.txt"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.mosdepth.summary.txt",
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="dedup_coverage=$bdedup_coverage"
+                        )
+                    ]
+                )
 
                 
             jobs.append(
@@ -974,12 +1078,13 @@ END
                         bash.mkdir(metrics_directory),
                         mosdepth.run(
                             input,
-                            os.path.join(metrics_directory, sample.name),
+                            output_prefix,
                             True,
                             region
                         ),
+                        job_project_tracking_metrics
                     ],
-                    name="mosdepth." + sample.name,
+                    name=job_name,
                     samples=[sample],
                     output_dependency=[output_dist, output_summary]
                 )
@@ -1137,7 +1242,6 @@ END
 
         for sample in self.samples:
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
-            #link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
             
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
@@ -1157,31 +1261,114 @@ END
                 [input] = self.select_input_files(
                     [
                         [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                        # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                         [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                         [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
                     ]
                 )
+                job_name = f"gatk_calculate_hs_metrics.{sample.name}"
+                output = os.path.join(metrics_directory, sample.name + ".onTarget.tsv")
+                
+                job_project_tracking_metrics = []
+                if self.project_tracking_json:
+                    job_project_tracking_metrics = concat_jobs(
+                        [
+                            gatk4.parse_bed_bait_set_metrics(output),
+                            job2json_project_tracking.run(
+                                input_file=output,
+                                pipeline=self,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
+                                job_name=job_name,
+                                metrics="bed_bait_set=$bed_bait_set"
+                            ),
+                            gatk4.parse_off_target_metrics_pt(output),
+                            job2json_project_tracking.run(
+                                input_file=output,
+                                pipeline=self,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
+                                job_name=job_name,
+                                metrics="off_target_percent=$off_target_percent"
+                            ),
+                            gatk4.parse_total_reads_metrics(output),
+                            job2json_project_tracking.run(
+                                input_file=output,
+                                pipeline=self,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
+                                job_name=job_name,
+                                metrics="total_reads=$total_reads"
+                            ),
+                            gatk4.parse_dedup_reads_metrics(output),
+                            job2json_project_tracking.run(
+                                input_file=output,
+                                pipeline=self,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
+                                job_name=job_name,
+                                metrics="dedup_reads=$dedup_reads"
+                            ),
+                            gatk4.parse_mean_target_coverage_metrics(output),
+                            job2json_project_tracking.run(
+                                input_file=output,
+                                pipeline=self,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
+                                job_name=job_name,
+                                metrics="mean_target_coverage=$mean_target_coverage"
+                            ),
+                            gatk4.parse_median_target_coverage_metrics(output),
+                            job2json_project_tracking.run(
+                                input_file=output,
+                                pipeline=self,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
+                                job_name=job_name,
+                                metrics="median_target_coverage=$median_target_coverage"
+                            ),
+                            gatk4.parse_duplicate_rate_metrics_pt(output),
+                            job2json_project_tracking.run(
+                                input_file=output,
+                                pipeline=self,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
+                                job_name=job_name,
+                                metrics="duplicate_rate_percent=$duplicate_rate_percent"
+                            ),
+                            gatk4.parse_low_mapping_rate_metrics_pt(output),
+                            job2json_project_tracking.run(
+                                input_file=output,
+                                pipeline=self,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
+                                job_name=job_name,
+                                metrics="low_mapping_rate_percent=$low_mapping_rate_percent"
+                            ),
+                            gatk4.parse_read_overlap_metrics_pt(output),
+                            job2json_project_tracking.run(
+                                input_file=output,
+                                pipeline=self,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
+                                job_name=job_name,
+                                metrics="read_overlap_percent=$read_overlap_percent"
+                            ),
+                        
+                        ]
+                    )
+                    
                 jobs.append(
                     concat_jobs(
                         [
                             bash.mkdir(metrics_directory),
-                            #bash.mkdir(link_directory),
                             gatk4.calculate_hs_metrics(
                                 input,
                                 os.path.join(metrics_directory, sample.name + ".onTarget.tsv"),
                                 interval_list
                             ),
-                            # bash.ln(
-                            #     os.path.relpath(
-                            #         os.path.join(hs_directory, sample.name + ".onTarget.tsv"),
-                            #         link_directory
-                            #     ),
-                            #     os.path.join(link_directory, sample.name + ".onTarget.tsv"),
-                            #     os.path.join(hs_directory, sample.name + ".onTarget.tsv")
-                            # )
+                            job_project_tracking_metrics
                         ],
-                        name="gatk_calculate_hs_metrics." + sample.name,
+                        name=job_name,
                         samples=[sample],
                         output_dependency=[os.path.join(metrics_directory, sample.name + ".onTarget.tsv")]
                     )
@@ -1326,6 +1513,24 @@ END
             if coverage_bed is not None:
                 bed_file = coverage_bed
 
+            output = os.path.join(metrics_directory, sample.name + ".selfSM")
+            job_name = f"verify_bam_id2.{sample.name}"
+            
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                        verify_bam_id2.parse_contamination_freemix_metrics(output),
+                        job2json_project_tracking.run(
+                            input_file=output,
+                            pipeline=self,
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="contamination_freemix=$contamination_freemix"
+                        )
+                    ])
+
             jobs.append(
                 concat_jobs(
                     [
@@ -1338,14 +1543,15 @@ END
                             os.path.join(metrics_directory, sample.name),
                             bed_file
                         ),
+                        job_project_tracking_metrics
                     ],
-                    name="verify_bam_id2." + sample.name,
+                    name=job_name,
                     samples=[sample],
-                    output_dependency=[os.path.join(metrics_directory, sample.name + ".selfSM")]
+                    output_dependency=[output]
                 )
             )
             self.multiqc_inputs[sample.name].append(
-                    os.path.join(metrics_directory, sample.name + ".selfSM")
+                    output
             )
         return jobs
 

@@ -1378,6 +1378,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 def fix_mate_information(
     input,
     output,
+    create_index=True,
     ini_section='picard_fix_mate_information'
     ):
 
@@ -1397,14 +1398,19 @@ def fix_mate_information(
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  FixMateInformation \\
- --VALIDATION_STRINGENCY SILENT CREATE_INDEX true SORT_ORDER coordinate \\
+ --VALIDATION_STRINGENCY SILENT \\
+ {create_index} {other_options} \\
  --TMP_DIR {tmp_dir} \\
+ --REFERENCE_SEQUENCE {reference} \\
  --INPUT {input} \\
  --OUTPUT {output} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
                 tmp_dir=config.param(ini_section, 'tmp_dir'),
                 java_other_options=config.param(ini_section, 'gatk_java_options'),
-                ram=config.param(ini_section, 'ram'),
+                other_options=config.param(ini_section, 'other_options'),
+                create_index="--CREATE_INDEX true" if create_index else "",
+                ram=config.param(ini_section, 'ram'), 
+                reference=config.param(ini_section, 'genome_fasta'),
                 input=input,
                 output=output,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
@@ -2113,4 +2119,200 @@ def parse_bases_over_q30_percent_metrics_pt(input_file):
         [],
         command=f"""\
 export bases_over_q30_percent=`awk 'BEGIN {{FS="\t"}}; {{if ($1 ~ /^[0-9]+/) {{if ($1<30) {{below+=$2}} else if ($1>=30) {{above+=$2}}}}}} END {{printf "%.0f", 100*above/(above+below)}}' {input_file}`"""
+        )
+def parse_duplicate_rate_metrics_pt(input_file, library):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export duplication_percent_{library}=`grep -E "^{library}" {input_file} | cut -f9 | grep -vE "^$"`"""
+        )
+def parse_mean_insert_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export mean_insert_size=`grep -A1 "^MEDIAN" {input_file} | cut -f6 | grep -vE "MEAN|^$"`"""
+        )
+
+def parse_stdev_insert_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export stdev_insert_size=`grep -A1 "^MEDIAN" {input_file} | cut -f7 | grep -vE "STANDARD|^$"`"""
+        )
+
+def parse_mode_insert_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export mode_insert_size=`grep -A1 "^MEDIAN" {input_file} | cut -f2 | grep -vE "MODE|^$"`"""
+        )
+
+def parse_total_read_pairs_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export total_read_pairs=`grep "^PAIR" {input_file} | cut -f2`"""
+        )
+
+def parse_aligned_pairs_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export aligned_pairs_percent=`grep "^PAIR" {input_file} | cut -f7`"""
+        )
+
+def parse_high_quality_read_pairs_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export hq_read_pairs=`grep "^PAIR" {input_file} | cut -f9`"""
+        )
+
+def parse_chimeras_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export chimeras_percent=`grep "^PAIR" {input_file} | cut -f28`"""
+        )
+
+def parse_bed_bait_set_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export bed_bait_set=`grep -A1 "^BAIT" {input_file} | cut -f1 | grep -vE "BAIT|^$"`"""
+        )
+
+def parse_off_target_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export off_target_percent=`grep -A1 "^BAIT" {input_file} | cut -f8 | grep -vE "PCT|^$"`"""
+        )
+
+def parse_target_basepair_size_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export target_basepair_size=`grep -A1 "^BAIT" {input_file} | cut -f21 | grep -vE "TARGET|^$"`"""
+        )
+
+def parse_total_reads_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export total_reads=`grep -A1 "^BAIT" {input_file} | cut -f23 | grep -vE "TOTAL|^$"`"""
+        )
+
+def parse_dedup_reads_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export dedup_reads=`grep -A1 "^BAIT" {input_file} | cut -f26 | grep -vE "PF|^$"`"""
+        )
+
+def parse_mean_target_coverage_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export mean_target_coverage=`grep -A1 "^BAIT" {input_file} | cut -f34 | grep -vE "MEAN|^$"`"""
+        )
+
+def parse_median_target_coverage_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export median_target_coverage=`grep -A1 "^BAIT" {input_file} | cut -f35 | grep -vE "MEDIAN|^$"`"""
+        )
+
+def parse_duplicate_rate_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export duplicate_rate_percent=`grep -A1 "^BAIT" {input_file} | cut -f39 | grep -vE "PCT|^$"`"""
+        )
+
+def parse_low_mapping_rate_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export low_mapping_rate_percent=`grep -A1 "^BAIT" {input_file} | cut -f41 | grep -vE "PCT|^$"`"""
+        )
+
+def parse_read_overlap_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export read_overlap_percent=`grep -A1 "^BAIT" {input_file} | cut -f43 | grep -vE "PCT|^$"`"""
         )

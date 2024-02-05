@@ -117,3 +117,58 @@ fastp -V \\
             html = "  --html "              + output_html_path if output_html_path else "",
         )
     )
+
+def parse_quality_thirty_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export bases_over_q30_percent=`jq -r '.summary.after_filtering.q30_rate' {input_file}`"""
+        )
+
+def parse_pre_length_r1_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export pre_mean_length_r1=`jq -r '.summary.before_filtering.read1_mean_length' {input_file}`"""
+        )
+
+def parse_post_length_r1_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export post_mean_length_r1=`jq -r '.summary.after_filtering.read1_mean_length' {input_file}`"""
+        )
+
+def parse_pre_length_r2_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export pre_mean_length_r2=`jq -r '.summary.before_filtering.read2_mean_length' {input_file}`"""
+        )
+
+def parse_post_length_r2_metrics(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export post_mean_length_r2=`jq -r '.summary.after_filtering.read2_mean_length' {input_file}`"""
+        )

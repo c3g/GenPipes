@@ -35,20 +35,24 @@ from core.design import parse_design_file
 from core.readset import parse_illumina_readset_file
 from core.sample_tumor_pairs import *
 
-from bfx import bvatools
-from bfx import verify_bam_id
-from bfx import picard
-from bfx import adapters
-from bfx import trimmomatic
-from bfx import skewer
-from bfx import fastp
-from bfx import bwa2
-from bfx import gatk4
-from bfx import variantBam
-from bfx import samtools
-from bfx import rmarkdown
-from bfx import sambamba
-from bfx import bash_cmd as bash
+from bfx import (
+    adapters,
+    bash_cmd as bash,
+    bvatools,
+    bwa2,
+    fastp,
+    gatk4,
+    job2json_project_tracking,
+    picard,
+    rmarkdown,
+    samtools,
+    sambamba,
+    skewer,
+    trimmomatic,
+    variantBam,
+    verify_bam_id
+)
+
 
 log = logging.getLogger(__name__)
 
@@ -733,6 +737,58 @@ END
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
+            job_name = f"trim_fastp.{readset.name}"
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                        fastp.parse_quality_thirty_metrics_pt(trim_json),
+                        job2json_project_tracking.run(
+                            input_file=trim_json,
+                            pipeline=self,
+                            samples=readset.sample.name,
+                            readsets=readset.name,
+                            job_name=job_name,
+                            metrics="bases_over_q30_percent=$bases_over_q30_percent"
+                        ),
+                        fastp.parse_pre_length_r1_metrics(trim_json),
+                        job2json_project_tracking.run(
+                            input_file=trim_json,
+                            pipeline=self,
+                            samples=readset.sample.name,
+                            readsets=readset.name,
+                            job_name=job_name,
+                            metrics="pre_mean_length_r1=$pre_mean_length_r1"
+                        ),
+                        fastp.parse_post_length_r1_metrics(trim_json),
+                        job2json_project_tracking.run(
+                            input_file=trim_json,
+                            pipeline=self,
+                            samples=readset.sample.name,
+                            readsets=readset.name,
+                            job_name=job_name,
+                            metrics="post_mean_length_r1=$post_mean_length_r1"
+                        ),
+                        fastp.parse_pre_length_r2_metrics(trim_json),
+                        job2json_project_tracking.run(
+                            input_file=trim_json,
+                            pipeline=self,
+                            samples=readset.sample.name,
+                            readsets=readset.name,
+                            job_name=job_name,
+                            metrics="pre_mean_length_r2=$pre_mean_length_r2"
+                        ),
+                        fastp.parse_post_length_r1_metrics(trim_json),
+                        job2json_project_tracking.run(
+                            input_file=trim_json,
+                            pipeline=self,
+                            samples=readset.sample.name,
+                            readsets=readset.name,
+                            job_name=job_name,
+                            metrics="post_mean_length_r2=$post_mean_length_r2"
+                        ),
+                    ])
+
             jobs.append(
                 concat_jobs(
                     [
@@ -752,8 +808,9 @@ END
                             trim_html,
                             ini_section='trim_fastp'
                         ),
+                        job_project_tracking_metrics
                     ],
-                    name="trim_fastp." + readset.name,
+                    name=job_name,
                     removable_files=[output_dir],
                     samples=[readset.sample],
                     output_dependency=[output1, output2, trim_json, trim_html]
@@ -963,12 +1020,30 @@ END
 
             if config.param("gatk_mark_duplicates", 'compression') == "cram":
                 output = os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")
-                output_index = output + ".crai"
+                output_index = f"{output}.crai"
             else:
                 output =os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")
-                output_index = output + ".bai"
+                output_index = f"{output}.bai"
 
             metrics_file = os.path.join(metrics_directory, sample.name + ".sorted.dup.metrics")
+
+            job_name = f"gatk_mark_duplicates.{sample.name}"
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                for readset in self.readsets:
+                    job_name = f"gatk_mark_duplicates.{readset.sample.name}.{readset.name}"
+                    job_project_tracking_metrics = concat_jobs(
+                        [
+                            gatk4.parse_duplicate_rate_metrics_pt(metrics_file, readset.library),
+                            job2json_project_tracking.run(
+                                input_file=metrics_file,
+                                pipeline=self,
+                                samples=readset.sample.name,
+                                readsets=readset.name,
+                                job_name=job_name,
+                                metrics="duplication_percent=$duplication_percent"
+                            ),
+                        ])
 
             jobs.append(
                 concat_jobs(
@@ -988,7 +1063,7 @@ END
                             ini_section='samtools_index_cram'
                         ),
                     ],
-                    name="gatk_mark_duplicates." + sample.name,
+                    name=job_name,
                     samples=[sample],
                     output_dependency= [output, output_index, metrics_file]
                 )
