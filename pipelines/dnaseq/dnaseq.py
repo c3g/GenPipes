@@ -41,7 +41,6 @@ import utils.utils
 
 from bfx import (
     amber,
-    annotations,
     bash_cmd as bash,
     bcbio_variation_recall,
     bcftools,
@@ -153,35 +152,27 @@ class DnaSeqRaw(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
-            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
-            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir,"raw_reads"), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, "trim"), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, "alignment"), self.output_dir),
             'metrics_directory': {}, #os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
-            'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
-            'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'pairedVariants'), self.output_dir),
-            'sv_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir),
-            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
+            'variants_directory': os.path.relpath(os.path.join(self.output_dir, "variants"), self.output_dir),
+            'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir," pairedVariants"), self.output_dir),
+            'sv_variants_directory': os.path.relpath(os.path.join(self.output_dir, "SVariants"), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, "report"), self.output_dir)
         }
         # Somatic protocol properties only
         if 'somatic' in self.get_protocol() and 'tumor_only' not in self.get_protocol():
             for tumor_pair in self.tumor_pairs.values():
                 dirs['metrics_directory'][tumor_pair.name] = os.path.relpath(
-                    os.path.join(
-                        self.output_dir,
-                        'metrics',
-                        tumor_pair.name
-                    ),
+                    os.path.join(self.output_dir, "metrics", tumor_pair.name),
                     self.output_dir
                 )
                 
         # Sample-level properties used for both germline and somatic protocols
         for sample in self.samples:
             dirs['metrics_directory'][sample.name] = os.path.relpath(
-                os.path.join(
-                    self.output_dir,
-                    'metrics',
-                    sample.name
-                ),
+                os.path.join(f"{self.output_dir}/metrics/{sample.name}"),
                 self.output_dir
             )
         return dirs
@@ -223,7 +214,7 @@ class DnaSeqRaw(common.Illumina):
 
             for sequence in self.sequence_dictionary:
                 for start, end in [[pos, min(pos + approximate_window_size - 1, sequence['length'])] for pos in range(1, sequence['length'] + 1, approximate_window_size)]:
-                    windows.append(sequence['name'] + ":" + str(start) + "-" + str(end))
+                    windows.append(f"{sequence['name']}:{str(start)}-{str(end)}")
             return windows
     
     def is_gz_file(self, name):
@@ -254,7 +245,7 @@ class DnaSeqRaw(common.Illumina):
                         readset.sample.name,
                         readset.name
                     )
-                    candidate_input_files.append([prefix + ".pair1.fastq.gz", prefix + ".pair2.fastq.gz"])
+                    candidate_input_files.append([f"{prefix}.pair1.fastq.gz", f"{prefix}.pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
                 sym_link_job = concat_jobs(
@@ -273,7 +264,7 @@ class DnaSeqRaw(common.Illumina):
                         )
                     ]
                 )
-                sym_link_job.name = "sym_link_fastq.paired_end." + readset.name
+                sym_link_job.name = f"sym_link_fastq.paired_end.{readset.name}"
 
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
@@ -283,7 +274,7 @@ class DnaSeqRaw(common.Illumina):
                         readset.sample.name,
                         readset.name
                         )
-                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                    candidate_input_files.append([f"{prefix}.single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
 
                 sym_link_job = deliverables.sym_link(
@@ -292,11 +283,10 @@ class DnaSeqRaw(common.Illumina):
                     self.output_dir,
                     type="raw_reads"
                 )
-                sym_link_job.name = "sym_link_fastq.single_end." + readset.name
+                sym_link_job.name = f"sym_link_fastq.single_end.{readset.name}"
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"Error: run type {readset.run_type} is invalid for readset {readset.name} (should be PAIRED_END or SINGLE_END)!"))
 
             sym_link_job.samples = [readset.sample]
             jobs.append(sym_link_job)
@@ -316,8 +306,12 @@ class DnaSeqRaw(common.Illumina):
                             readset.fastq2
                         ],
                         [
-                            os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair1.fastq.gz"),
-                            os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair2.fastq.gz")
+                            os.path.join(
+                                self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair1.fastq.gz"
+                            ),
+                            os.path.join(
+                                self.output_dirs['raw_reads_directory'],readset.sample.name, f"{readset.name}.pair2.fastq.gz"
+                            )
                         ]
                     ]
                 ) for readset in tumor_pair.readsets[tumor_pair.normal.name]
@@ -331,8 +325,12 @@ class DnaSeqRaw(common.Illumina):
                             readset.fastq2
                         ],
                         [
-                            os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair1.fastq.gz"),
-                            os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair2.fastq.gz")
+                            os.path.join(
+                                self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair1.fastq.gz"
+                            ),
+                            os.path.join(
+                                self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair2.fastq.gz"
+                            )
                         ]
                     ]
                 ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
@@ -352,7 +350,7 @@ class DnaSeqRaw(common.Illumina):
                     # do not compute md5sum in the readset input directory
                     md5sum_job = deliverables.md5sum(
                         symlink_pair_job.output_files[0],
-                        file_name + ".md5",
+                        f"{file_name}.md5",
                         dir_name
                     )
                     jobs.append(
@@ -361,7 +359,7 @@ class DnaSeqRaw(common.Illumina):
                                 symlink_pair_job,
                                 md5sum_job
                             ],
-                            name="sym_link_fastq.pairs." + str(read) + "." + tumor_pair.name + "." + key,
+                            name=f"sym_link_fastq.pairs.{str(read)}.{tumor_pair.name}.{key}",
                             samples=[tumor_pair.tumor, tumor_pair.normal],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
@@ -384,7 +382,7 @@ END
                     )
                 )
             else:
-                raise Exception("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_file parameter in config file!")
+                raise Exception(f"Error: missing adapter1 for SINGLE_END readset {readset.name} or missing adapter_file parameter in config file!")
 
         elif readset.run_type == "PAIRED_END":
             if readset.adapter1 and readset.adapter2:
@@ -417,16 +415,16 @@ END
 
         jobs = []
         for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, f"{readset.name}.trim")
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-            index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
+            readset_bam = os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam")
+            index_bam = os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam.bai")
 
             fastq1 = ""
             fastq2 = ""
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                candidate_input_files = [[f"{trim_file_prefix}.pair1.fastq.gz", f"{trim_file_prefix}.pair2.fastq.gz"]]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
@@ -435,11 +433,11 @@ END
                         readset.sample.name,
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
                     )
-                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                    candidate_input_files.append([f"{prefix}.pair1.fastq.gz", f"{prefix}.pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
             elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                candidate_input_files = [[f"{trim_file_prefix}.single.fastq.gz"]]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
@@ -448,13 +446,12 @@ END
                         readset.sample.name,
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
                     )
-                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                    candidate_input_files.append([f"{prefix}.single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"Error: run type {readset.run_type} is invalid for readset {readset.name} (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
                 concat_jobs(
@@ -494,7 +491,7 @@ END
                             index_bam
                         )
                     ],
-                    name="bwa_mem_sambamba_sort_sam." + readset.name,
+                    name=f"bwa_mem_sambamba_sort_sam.{readset.name}",
                     samples=[readset.sample]
                 )
             )
@@ -512,21 +509,21 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             picard_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
-            alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
+            alignment_file_prefix = os.path.join(alignment_directory,sample.name)
             readset = sample.readsets[0]
 
             [input] = self.select_input_files(
                 [
-                    [alignment_file_prefix + "sorted.matefixed.bam"],
-                    [alignment_file_prefix + "sorted.realigned.bam"],
-                    [alignment_file_prefix + "sorted.bam"],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
+                    [f"{alignment_file_prefix}.sorted.matefixed.bam"],
+                    [f"{alignment_file_prefix}.sorted.realigned.bam"],
+                    [f"{alignment_file_prefix}.sorted.bam"],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam")]
                 ]
             )
-            output = alignment_file_prefix + "sorted.dup.bam"
-            output_index = alignment_file_prefix + "sorted.dup.bam.bai"
-            metrics_file = alignment_file_prefix + "sorted.dup.metrics"
+            output = f"{alignment_file_prefix}.sorted.dup.bam"
+            output_index = f"{alignment_file_prefix}.sorted.dup.bam.bai"
+            metrics_file = f"{alignment_file_prefix}.sorted.dup.metrics"
 
             jobs.append(
                 concat_jobs(
@@ -548,11 +545,11 @@ END
                         ),
                         Job(
                             [metrics_file],
-                            [os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")],
-                            command="sed -e 's#.realigned##g' " + metrics_file + " > " + os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")
+                            [os.path.join(f"{picard_directory}/{sample.name}.sorted.dup.metrics")],
+                            command=f"sed -e 's#.realigned##g' {metrics_file} > {os.path.join(picard_directory, sample.name + '.sorted.dup.metrics')}"
                         )
                     ],
-                    name="mark_duplicates." + sample.name,
+                    name=f"mark_duplicates.{sample.name}",
                     samples=[sample]
                 )
             )
@@ -566,29 +563,29 @@ END
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
+            alignment_file_prefix = os.path.join(alignment_directory, sample.name)
             readset = sample.readsets[0]
 
             [input_bam] = self.select_input_files(
                 [
-                    [alignment_file_prefix + "sorted.dup.cram"],
-                    [alignment_file_prefix + "sorted.dup.bam"],
-                    [alignment_file_prefix + "sorted.bam"],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
+                    [f"{alignment_file_prefix}.sorted.dup.cram"],
+                    [f"{alignment_file_prefix}.sorted.dup.bam"],
+                    [f"{alignment_file_prefix}.sorted.bam"],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam")]
                 ]
             )
             [input_bai] = self.select_input_files(
                 [
-                    [alignment_file_prefix + "sorted.dup.cram.crai"],
-                    [alignment_file_prefix + "sorted.dup.bam.bai"],
-                    [alignment_file_prefix + "sorted.dup.bai"],
-                    [alignment_file_prefix + "sorted.bam.bai"],
-                    [alignment_file_prefix + "sorted.bai"],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam.bai")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bai")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bai")]
+                    [f"{alignment_file_prefix}.sorted.dup.cram.crai"],
+                    [f"{alignment_file_prefix}.sorted.dup.bam.bai"],
+                    [f"{alignment_file_prefix}.sorted.dup.bai"],
+                    [f"{alignment_file_prefix}.sorted.bam.bai"],
+                    [f"{alignment_file_prefix}.sorted.bai"],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.filtered.bam.bai")],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.filtered.bai")],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam.bai")],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bai")]
                 ]
             )
             jobs.append(
@@ -596,7 +593,7 @@ END
                     [
                         deliverables.md5sum(
                             input_bam,
-                            input_bam + ".md5",
+                            f"{input_bam}.md5",
                             self.output_dir
                         ),
                         deliverables.sym_link(
@@ -612,13 +609,13 @@ END
                             type="alignment"
                         ),
                         deliverables.sym_link(
-                            input_bam + ".md5",
+                            f"{input_bam}.md5",
                             sample,
                             self.output_dir,
                             type="alignment"
                         )
                     ],
-                    name="sym_link_final_bam." + sample.name,
+                    name=f"sym_link_final_bam.{sample.name}",
                     samples=[sample]
                 )
             )
@@ -645,12 +642,12 @@ END
                 self.select_input_files(
                     [
                         [
-                            os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam"),
-                            os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bai")
+                            os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam"),
+                            os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bai")
                         ],
                         [
-                            os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam"),
-                            os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam.bai")
+                            os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam"),
+                            os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam.bai")
                         ]
                     ]
                 )
@@ -660,12 +657,12 @@ END
                 self.select_input_files(
                     [
                         [
-                            os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam"),
-                            os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bai")
+                            os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam"),
+                            os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bai")
                         ],
                         [
-                            os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam"),
-                            os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam.bai")
+                            os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam"),
+                            os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam.bai")
                         ]
                     ]
                 )
@@ -678,7 +675,7 @@ END
                             [
                                 deliverables.md5sum(
                                     input_file,
-                                    input_file + ".md5",
+                                    f"{input_file}.md5",
                                     self.output_dir
                                 ),
                                 deliverables.sym_link_pair(
@@ -690,7 +687,7 @@ END
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    input_file + ".md5",
+                                    f"{input_file}.md5",
                                     tumor_pair,
                                     self.output_dir,
                                     type="alignment",
@@ -698,7 +695,7 @@ END
                                     profyle=self.args.profyle
                                 )
                             ],
-                            name="sym_link_final_bam.pairs." + str(idx) + "." + tumor_pair.name + "." + key,
+                            name=f"sym_link_final_bam.pairs.{str(idx)}.{tumor_pair.name}.{key}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
@@ -719,20 +716,21 @@ END
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'],
                                                           tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'],
-                                                          tumor_pair.normal.name)
+                normal_alignment_directory = (
+                    os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                )
             
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
             metrics_directory = self.output_dirs['metrics_directory'][tumor_pair.name]
             
-            input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")
-            input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")
-            pileup_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".gatkPileup")
-            pileup_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".gatkPileup")
+            input_normal = os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")
+            input_tumor = os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")
+            pileup_normal = os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.gatkPileup")
+            pileup_tumor = os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.gatkPileup")
             
-            concordance_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".concordance.tsv")
-            contamination_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".contamination.tsv")
+            concordance_out = os.path.join(metrics_directory, f"{tumor_pair.tumor.name}.concordance.tsv")
+            contamination_out = os.path.join(metrics_directory,f"{tumor_pair.tumor.name}.contamination.tsv")
             
             samples = [tumor_pair.normal, tumor_pair.tumor]
             job_name = f"conpair_concordance_contamination.{tumor_pair.name}"
@@ -777,7 +775,7 @@ END
                             pileup_normal
                         )
                     ],
-                    name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.normal.name,
+                    name=f"conpair_concordance_contamination.pileup.{tumor_pair.name}.{tumor_pair.normal.name}",
                     samples=[tumor_pair.normal],
                     readsets=list(tumor_pair.normal.readsets)
                 )
@@ -790,7 +788,7 @@ END
                             pileup_tumor
                         )
                     ],
-                    name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.tumor.name,
+                    name=f"conpair_concordance_contamination.pileup.{tumor_pair.name}.{tumor_pair.tumor.name}",
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets)
                 )
@@ -854,13 +852,12 @@ END
 
             [input] = self.select_input_files(
                 [
-                    # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam")]
                 ]
             )
             mkdir_job = bash.mkdir(
@@ -868,7 +865,7 @@ END
                 remove=True
             )
             job_name = f"picard_collect_multiple_metrics.{sample.name}"
-            output_prefix = os.path.join(metrics_directory, sample.name + ".all.metrics")
+            output_prefix = os.path.join(metrics_directory, f"{sample.name}.all.metrics")
             
             job_project_tracking_metrics = []
             if self.project_tracking_json:
@@ -983,7 +980,7 @@ END
                             f"{output_prefix}.oxog_metrics.txt"
                         ),
                     ],
-                    name="picard_collect_oxog_metrics." + sample.name,
+                    name=f"picard_collect_oxog_metrics.{sample.name}",
                     samples=[sample],
                     output_dependency = [
                         f"{output_prefix}.oxog_metrics.txt"
@@ -1000,7 +997,7 @@ END
                             output_prefix
                         ),
                     ],
-                    name="picard_collect_gcbias_metrics." + sample.name,
+                    name=f"picard_collect_gcbias_metrics.{sample.name}",
                     samples=[sample],
                     output_dependency=[
                         f"{output_prefix}.gcbias_metrics.txt"
@@ -1033,10 +1030,10 @@ END
             
             [input] = self.select_input_files(
                 [
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")],
                 ]
             )
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
@@ -1112,13 +1109,13 @@ END
             
             [input] = self.select_input_files(
                 [
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.primerTrim.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]
                 ]
             )
-            output = os.path.join(metrics_directory, sample.name + ".flagstat")
+            output = os.path.join(metrics_directory, f"{sample.name}.flagstat")
 
             jobs.append(
                 concat_jobs(
@@ -1132,15 +1129,15 @@ END
                             output
                         ),
                     ],
-                    name="dna_samtools_flagstat." + sample.name,
+                    name=f"dna_samtools_flagstat.{sample.name}",
                     samples=[sample],
                     output_dependency=[
-                        os.path.join(metrics_directory, sample.name + ".flagstat")
+                        os.path.join(metrics_directory, f"{sample.name}.flagstat")
                     ]
                 )
             )
             self.multiqc_inputs[sample.name].append(
-                os.path.join(metrics_directory, sample.name + ".flagstat")
+                os.path.join(metrics_directory, f"{sample.name}.flagstat")
             )
             
         return jobs
@@ -1190,13 +1187,13 @@ END
                         self.multiqc_inputs[tumor_pair.tumor.name]):
                     multiqc_input_paths.append(metrics)
                 
-                output = os.path.join(report_directory, tumor_pair.name + ".multiqc")
+                output = os.path.join(report_directory, f"{tumor_pair.name}.multiqc")
                 job = multiqc.run(
                     patient_folders,
                     output
                 )
                 
-                job.name = "multiqc." + tumor_pair.name
+                job.name = f"multiqc.{tumor_pair.name}"
                 job.samples = [tumor_pair.normal, tumor_pair.tumor]
                 job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 job.input_files = multiqc_input_paths
@@ -1210,7 +1207,7 @@ END
         
         inputs = {}
         for tumor_pair in self.tumor_pairs.values():
-            inputs["Tumor"] = [os.path.join(self.output_dirs['report_directory'], tumor_pair.name + ".multiqc.html")]
+            inputs["Tumor"] = [os.path.join(self.output_dirs['report_directory'], f"{tumor_pair.name}.multiqc.html")]
             
             for key, input_files in inputs.items():
                 for idx, report_file in enumerate(input_files):
@@ -1226,7 +1223,7 @@ END
                                     profyle=self.args.profyle
                                 )
                             ],
-                            name="sym_link_fastq.report." + str(idx) + "." + tumor_pair.name + "." + key,
+                            name=f"sym_link_fastq.report.{str(idx)}.{tumor_pair.name}.{key}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
@@ -1260,13 +1257,13 @@ END
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
                 [input] = self.select_input_files(
                     [
-                        [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                        [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                        [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                        [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
+                        [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                        [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]
                     ]
                 )
                 job_name = f"gatk_calculate_hs_metrics.{sample.name}"
-                output = os.path.join(metrics_directory, sample.name + ".onTarget.tsv")
+                output = os.path.join(metrics_directory, f"{sample.name}.onTarget.tsv")
                 
                 job_project_tracking_metrics = []
                 if self.project_tracking_json:
@@ -1363,18 +1360,18 @@ END
                             bash.mkdir(metrics_directory),
                             gatk4.calculate_hs_metrics(
                                 input,
-                                os.path.join(metrics_directory, sample.name + ".onTarget.tsv"),
+                                os.path.join(metrics_directory, f"{sample.name}.onTarget.tsv"),
                                 interval_list
                             ),
                             job_project_tracking_metrics
                         ],
                         name=job_name,
                         samples=[sample],
-                        output_dependency=[os.path.join(metrics_directory, sample.name + ".onTarget.tsv")]
+                        output_dependency=[os.path.join(metrics_directory, f"{sample.name}.onTarget.tsv")]
                     )
                 )
                 self.multiqc_inputs[sample.name].append(
-                        os.path.join(metrics_directory, sample.name + ".onTarget.tsv")
+                        os.path.join(metrics_directory, f"{sample.name}.onTarget.tsv")
                 )
         return jobs
 
@@ -1389,8 +1386,8 @@ END
 
         input_prefix = os.path.join(self.output_dirs['variants_directory'], "allSamples")
 
-        job = vcftools.missing_indv(input_prefix + ".hc.vcf.gz", input_prefix)
-        job.name = "vcftools_depth." + "allSamples"
+        job = vcftools.missing_indv(f"{input_prefix}.hc.vcf.gz", input_prefix)
+        job.name = f"vcftools_depth.allSamples"
         jobs.append(job)
 
         return jobs
@@ -1406,8 +1403,8 @@ END
     
         input_prefix = os.path.join(self.output_dirs['variants_directory'], "allSamples")
     
-        job = vcftools.depth(input_prefix + ".hc.vcf.gz", input_prefix)
-        job.name = "vcftools_depth." + "allSamples"
+        job = vcftools.depth(f"{input_prefix}.hc.vcf.gz", input_prefix)
+        job.name = f"vcftools_depth.allSamples"
         jobs.append(job)
 
         return jobs
@@ -1427,10 +1424,10 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files(
                 [
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")]
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.hc.vcf.gz")]
                 ]
             )
             inputs.append(input)
@@ -1448,7 +1445,7 @@ END
                         output,
                     )
                 ],
-                name="gatk_crosscheck_fingerprint.sample.AllSamples",
+                name=f"gatk_crosscheck_fingerprint.sample.AllSamples",
                 samples=self.samples
             )
         )
@@ -1480,7 +1477,7 @@ END
                         output,
                     ),
                 ],
-                name="gatk_cluster_crosscheck_metrics.allSamples",
+                name=f"gatk_cluster_crosscheck_metrics.allSamples",
                 samples=self.samples
             )
         )
@@ -1501,9 +1498,9 @@ END
 
             [input] = self.select_input_files(
                 [
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]
                 ]
             )
             
@@ -1513,7 +1510,7 @@ END
             if coverage_bed is not None:
                 bed_file = coverage_bed
 
-            output = os.path.join(metrics_directory, sample.name + ".selfSM")
+            output = os.path.join(metrics_directory, f"{sample.name}.selfSM")
             job_name = f"verify_bam_id2.{sample.name}"
             
             job_project_tracking_metrics = []
@@ -1568,13 +1565,13 @@ END
 
         for readset in self.readsets:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name, readset.name)
-            input = os.path.join(alignment_directory, readset.sample.name, readset.name + ".sorted.bam")
+            input = os.path.join(alignment_directory, readset.sample.name, f"{readset.name}.sorted.bam")
             inputs.append(input)
 
-            output = os.path.join(self.output_dirs['metrics_directory'][readset.sample.name], readset.name + ".fingerprint")
+            output = os.path.join(self.output_dirs['metrics_directory'][readset.sample.name], f"{readset.name}.fingerprint")
 
         job = gatk4.crosscheck_fingerprint(inputs, output)
-        job.name = "gatk_crosscheck_fingerprint.readset"
+        job.name = f"gatk_crosscheck_fingerprint.readset"
 
         jobs.append(job)
 
@@ -1597,10 +1594,9 @@ END
 
             [input_bam] = self.select_input_files(
                 [
-                    # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]
                 ]
             )
 
@@ -1628,11 +1624,11 @@ END
                             ),
                             gatk4.haplotype_caller(
                                 input_bam,
-                                os.path.join(haplotype_directory, sample.name + ".hc.g.vcf.gz"),
+                                os.path.join(haplotype_directory, f"{sample.name}.hc.g.vcf.gz"),
                                 interval_list
                             )
                         ],
-                        name="gatk_haplotype_caller." + sample.name,
+                        name=f"gatk_haplotype_caller.{sample.name}",
                         samples=[sample]
                     )
                 )
@@ -1653,11 +1649,11 @@ END
                                 ),
                                 gatk4.haplotype_caller(
                                     input_bam,
-                                    os.path.join(haplotype_directory, sample.name + "." + str(idx) + ".hc.g.vcf.gz"),
+                                    os.path.join(haplotype_directory, f"{sample.name}.{str(idx)}.hc.g.vcf.gz"),
                                     intervals
                                 )
                             ],
-                            name="gatk_haplotype_caller." + sample.name + "." + str(idx),
+                            name=f"gatk_haplotype_caller.{sample.name}.{str(idx)}",
                             samples=[sample]
                         )
                     )
@@ -1698,42 +1694,44 @@ END
                     concat_jobs(
                         [
                             bash.ln(
-                                os.path.relpath(haplotype_file_prefix + ".hc.g.vcf.gz", os.path.dirname(output_haplotype_file_prefix + ".hc.g.vcf.gz")),
-                                output_haplotype_file_prefix + ".hc.g.vcf.gz",
-                                input=haplotype_file_prefix + ".hc.g.vcf.gz"
+                                os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz",
+                                                os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz")),
+                                f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
+                                input=f"{haplotype_file_prefix}.hc.g.vcf.gz"
                             ),
                             bash.ln(
-                                os.path.relpath(haplotype_file_prefix + ".hc.g.vcf.gz.tbi", os.path.dirname(output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi")),
-                                output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
-                                input=haplotype_file_prefix + ".hc.g.vcf.gz.tbi"
+                                os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi",
+                                                os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi")),
+                                f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi",
+                                input=f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi"
                             ),
                             gatk4.genotype_gvcf(
-                                output_haplotype_file_prefix + ".hc.g.vcf.gz",
-                                output_haplotype_file_prefix + ".hc.vcf.gz",
+                                f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
+                                f"{output_haplotype_file_prefix}.hc.vcf.gz",
                                 config.param('gatk_genotype_gvcf', 'options')
                             )
                         ],
-                        name="merge_and_call_individual_gvcf.call." + sample.name,
+                        name=f"merge_and_call_individual_gvcf.call.{sample.name}",
                         samples=[sample]
                     )
                 )
             else:
-                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in range(scatter_jobs)]
+                gvcfs_to_merge = [f"{haplotype_file_prefix}.{str(idx)}.hc.g.vcf.gz" for idx in range(scatter_jobs)]
 
                 job = gatk4.cat_variants(
                     gvcfs_to_merge,
-                    output_haplotype_file_prefix + ".hc.g.vcf.gz"
+                    f"{output_haplotype_file_prefix}.hc.g.vcf.gz"
                 )
-                job.name = "merge_and_call_individual_gvcf.merge." + sample.name
+                job.name = f"merge_and_call_individual_gvcf.merge.{sample.name}"
                 job.samples = [sample]
                 jobs.append(job)
 
                 job = gatk4.genotype_gvcf(
-                    output_haplotype_file_prefix + ".hc.g.vcf.gz",
-                    output_haplotype_file_prefix + ".hc.vcf.gz",
+                    f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
+                    f"{output_haplotype_file_prefix}.hc.vcf.gz",
                     config.param('gatk_genotype_gvcf', 'options')
                 )
-                job.name = "merge_and_call_individual_gvcf.call." + sample.name
+                job.name = f"merge_and_call_individual_gvcf.call.{sample.name}"
                 job.samples = [sample]
                 jobs.append(job)
 
@@ -1755,7 +1753,7 @@ END
             interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
         mkdir_job = bash.mkdir(self.output_dirs['variants_directory'])
-
+        
         # merge all sample in one shot
         if nb_maxbatches_jobs == 1:
             if nb_haplotype_jobs == 1 or interval_list is not None:
@@ -1764,11 +1762,11 @@ END
                         [
                             mkdir_job,
                             gatk4.combine_gvcf(
-                                [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
+                                [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name) +".hc.g.vcf.gz" for sample in self.samples],
                                 os.path.join(self.output_dirs['variants_directory'], "allSamples.hc.g.vcf.gz")
                             )
                         ],
-                        name="gatk_combine_gvcf.AllSamples",
+                        name=f"gatk_combine_gvcf.AllSamples",
                         samples=self.samples
                     )
                 )
@@ -1782,12 +1780,12 @@ END
                             [
                                 mkdir_job,
                                 gatk4.combine_gvcf(
-                                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
+                                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name) + ".hc.g.vcf.gz" for sample in self.samples],
                                     os.path.join(self.output_dirs['variants_directory'], "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                                     intervals=sequences
                                 )
                             ],
-                            name="gatk_combine_gvcf.AllSample" + "." + str(idx),
+                            name=f"gatk_combine_gvcf.AllSample.{str(idx)}",
                             samples=self.samples,
                             removable_files=[
                                 os.path.join(self.output_dirs['variants_directory'], "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
@@ -1798,7 +1796,7 @@ END
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job = gatk4.combine_gvcf(
-                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
+                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name) + ".hc.g.vcf.gz" for sample in self.samples],
                     os.path.join(self.output_dirs['variants_directory'], "allSamples.others.hc.g.vcf.gz"),
                     exclude_intervals=unique_sequences_per_job_others
                 )
@@ -1822,7 +1820,7 @@ END
                             [
                                 mkdir_job,
                                 gatk4.combine_gvcf(
-                                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
+                                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name) + ".hc.g.vcf.gz" for sample in batch],
                                     os.path.join(self.output_dirs['variants_directory'], "allSamples.batch" + str(cpt)+".hc.g.vcf.gz")
                                 )
                             ],
@@ -1943,15 +1941,15 @@ END
 
         if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
-            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in range(len(unique_sequences_per_job))]
+            gvcfs_to_merge = [f"{haplotype_file_prefix}.{str(idx)}.hc.g.vcf.gz" for idx in range(len(unique_sequences_per_job))]
 
-            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
+            gvcfs_to_merge.append(f"{haplotype_file_prefix}.others.hc.g.vcf.gz")
 
             job = gatk4.cat_variants(
                 gvcfs_to_merge,
                 output_haplotype
             )
-            job.name = "merge_and_call_combined_gvcf.merge.AllSample"
+            job.name = f"merge_and_call_combined_gvcf.merge.AllSample"
             job.samples = self.samples
             jobs.append(job)
 
@@ -1960,7 +1958,7 @@ END
             output_haplotype_genotyped,
             config.param('gatk_genotype_gvcf', 'options')
         )
-        job.name = "merge_and_call_combined_gvcf.call.AllSample"
+        job.name = f"merge_and_call_combined_gvcf.call.AllSample"
         job.samples = self.samples
         jobs.append(job)
 
@@ -2016,7 +2014,7 @@ END
                         small_sample_check=True
                     )
                 ],
-                name="variant_recalibrator.tranch.allSamples",
+                name=f"variant_recalibrator.tranch.allSamples",
                 samples=self.samples
             )
         )
@@ -2046,7 +2044,7 @@ END
                         os.path.join(output_directory, "allSamples.hc.vqsr.vcf.gz")
                     )
                 ],
-                name="variant_recalibrator.apply.allSamples",
+                name=f"variant_recalibrator.apply.allSamples",
                 samples=self.samples
             )
         )
@@ -2054,9 +2052,9 @@ END
 
     def vt_decompose_and_normalize(
         self,
-        input_vcf="variants/allSamples.merged.flt.vcf",
-        output_vcf="variants/allSamples.merged.flt.vt.vcf.gz",
-        job_name="decompose_and_normalize"
+        input_vcf=f"variants/allSamples.merged.flt.vcf",
+        output_vcf=f"variants/allSamples.merged.flt.vt.vcf.gz",
+        job_name=f"decompose_and_normalize"
         ):
         """
         Variants with multiple alternate alleles will not be handled correctly by gemini (or by the tools used to annotate the variants).
@@ -2097,9 +2095,9 @@ END
 
     def filter_nstretches(
         self,
-        input_vcf="variants/allSamples.merged.flt.vcf",
-        output_vcf="variants/allSamples.merged.flt.NFiltered.vcf",
-        job_name="filter_nstretches"
+        input_vcf=f"variants/allSamples.merged.flt.vcf",
+        output_vcf=f"variants/allSamples.merged.flt.NFiltered.vcf",
+        job_name=f"filter_nstretches"
         ):
         """
         The final .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive
@@ -2135,7 +2133,7 @@ END
         self,
         input_vcf="variants/allSamples.merged.flt.vt.vcf",
         output_vcf="variants/allSamples.merged.flt.vt.mil.vcf",
-        job_name="flag_mappability"
+        job_name=f"flag_mappability"
         ):
         """
         Mappability annotation. An in-house database identifies regions in which reads are confidently mapped
@@ -2164,15 +2162,15 @@ END
         job = self.flag_mappability(
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.vcf.gz",
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.vcf.gz",
-            "haplotype_caller_flag_mappability"
+            f"haplotype_caller_flag_mappability"
         )
         return job
 
     def snp_id_annotation(
         self,
-        input_vcf="variants/allSamples.merged.flt.vt.mil.vcf.gz",
-        output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz",
-        job_name="snp_id_annotation"
+        input_vcf=f"variants/allSamples.merged.flt.vt.mil.vcf.gz",
+        output_vcf=f"variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz",
+        job_name=f"snp_id_annotation"
         ):
         """
         dbSNP annotation. The .vcf files are annotated for dbSNP using the software SnpSift (from the [SnpEff suite](http://snpeff.sourceforge.net/)).
@@ -2205,16 +2203,16 @@ END
         job = self.snp_id_annotation(
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.vcf.gz",
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.snpId.vcf.gz",
-            "haplotype_caller_snp_id_annotation"
+            f"haplotype_caller_snp_id_annotation"
         )
 
         return job
 
     def snp_effect(
         self,
-        input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz",
-        snpeff_file="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf",
-        job_name="snp_effect"
+        input_vcf=f"variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz",
+        snpeff_file=f"variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf",
+        job_name=f"snp_effect"
         ):
         """
         Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
@@ -2254,17 +2252,17 @@ END
         jobs = self.snp_effect(
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.snpId.vcf.gz",
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.snpId.snpeff.vcf",
-            "haplotype_caller_snp_effect"
+            f"haplotype_caller_snp_effect"
         )
 
         return jobs
 
     def dbnsfp_annotation(
             self,
-            input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
-            output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
+            input_vcf=f"variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
+            output_vcf=f"variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
             ini_section='dbnsfp_annotation',
-            job_name="dbnsfp_annotation"
+            job_name=f"dbnsfp_annotation"
         ):
         """
         Additional SVN annotations. Provides extra information about SVN by using numerous published databases.
@@ -2286,7 +2284,7 @@ END
                     ),
                     htslib.bgzip_tabix(
                         output_vcf,
-                        output_vcf + ".gz"
+                        f"{output_vcf}.gz"
                     )
                 ],
                 name=job_name,
@@ -2355,7 +2353,7 @@ END
 
         [input] = self.select_input_files([[f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.vcf.gz"]])
         output = f"{self.output_dirs['variants_directory']}/split"
-        output_files = [os.path.join(output, sample.name + ".vcf.gz") for sample in self.samples]
+        output_files = [os.path.join(output, f"{sample.name}.vcf.gz") for sample in self.samples]
         options = config.param('split_tumor_only', 'options')
         
         jobs.append(
@@ -2368,7 +2366,7 @@ END
                         options
                     )
                 ],
-                name="split_tumor_only",
+                name=f"split_tumor_only",
                 samples=self.samples,
                 output_dependency=output_files
             )
@@ -2387,11 +2385,11 @@ END
         for sample in self.samples:
             input = os.path.join(
                 output_directory,
-                sample.name + ".vcf.gz"
+                f"{sample.name}.vcf.gz"
             )
             output = os.path.join(
                 output_directory,
-                sample.name + ".annot.vcf.gz"
+                f"{sample.name}.annot.vcf.gz"
             )
             
             jobs.append(
@@ -2410,7 +2408,7 @@ END
                             options="-pvcf"
                         )
                     ],
-                    name="filter_tumor_only." + sample.name,
+                    name=f"filter_tumor_only.{sample.name}",
                     samples=[sample]
                 )
             )
@@ -2431,13 +2429,13 @@ END
             ini_section = 'report_cpsr_tumor_only'
             
             for sample in self.samples:
-                job_name = "report_cpsr_tumor_only." + sample.name
+                job_name = f"report_cpsr_tumor_only.{sample.name}"
                 sample_name = sample.name
                 samples = [sample]
                 
                 input = os.path.join(
                     output_directory,
-                    sample.name + ".annot.vcf.gz"
+                    f"{sample.name}.annot.vcf.gz"
                 )
                 cpsr_directory = os.path.join(
                     output_directory,
@@ -2474,7 +2472,7 @@ END
                     
                     input = os.path.join(
                         panel_directory,
-                        tumor_pair.name + ".varscan2.germline.annot.flt.vcf.gz"
+                        f"{tumor_pair.name}.varscan2.germline.annot.flt.vcf.gz"
                     )
                     cpsr_directory = os.path.join(
                         panel_directory,
@@ -2484,14 +2482,14 @@ END
                 elif 'ensemble' in self.get_protocol():
                     ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
                     ini_section = 'report_cpsr'
-                    job_name = "report_cpsr." + tumor_pair.name
+                    job_name = f"report_cpsr.{tumor_pair.name}"
                     sample_name = tumor_pair.name
                     samples = [tumor_pair.normal, tumor_pair.tumor]
 
                     input = os.path.join(
                         ensemble_directory,
                         tumor_pair.name,
-                        tumor_pair.name + ".ensemble.germline.vt.annot.2caller.flt.vcf.gz"
+                        f"{tumor_pair.name}.ensemble.germline.vt.annot.2caller.flt.vcf.gz"
                     )
                     cpsr_directory = os.path.join(
                         ensemble_directory,
@@ -2542,22 +2540,22 @@ END
                 )
                 input_cpsr = os.path.join(
                     cpsr_directory,
-                    sample.name + ".cpsr." + assembly + ".json.gz"
+                    f"{sample.name}.cpsr.{assembly}.json.gz"
                 )
                 input = os.path.join(
                     output_directory,
-                    sample.name + ".annot.vcf.gz"
+                    f"{sample.name}.annot.vcf.gz"
                 )
                 
                 input_cna = os.path.join(
                     self.output_dirs['sv_variants_directory'],
-                    sample.name + ".cnvkit.cna.tsv"
+                    f"{sample.name}.cnvkit.cna.tsv"
                 )
                 
-                if input_cna + ".pass":
+                if f"{input_cna}.pass":
                     output_cna = os.path.join(
                         self.output_dirs['sv_variants_directory'],
-                        sample.name + ".cnvkit.cna.tsv"
+                        f"{sample.name}.cnvkit.cna.tsv"
                     )
                 else:
                     output_cna = None
@@ -2569,7 +2567,7 @@ END
                 )
                 output = os.path.join(
                     pcgr_directory,
-                    sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"
+                    f"{sample.name}.pcgr_acmg.{assembly}.flexdb.html"
                 )
                 
                 jobs.append(
@@ -2588,7 +2586,7 @@ END
                             ),
                             bash.ls(output)
                         ],
-                        name="report_pcgr_tumor_only." + sample.name,
+                        name=f"report_pcgr_tumor_only.{sample.name}",
                         samples=[sample],
                         input_dependency=[input, input_cpsr, output_cna],
                         output_dependency=[output]
@@ -2605,7 +2603,7 @@ END
                     )
                     assembly = config.param('report_pcgr_fastpass', 'assembly')
                     ini_section = 'report_pcgr_fastpass'
-                    job_name="report_pcgr_fastpass." + tumor_pair.name
+                    job_name=f"report_pcgr_fastpass.{tumor_pair.name}"
                     
                     cpsr_directory = os.path.join(
                         panel_directory,
@@ -2613,7 +2611,7 @@ END
                     )
                     input = os.path.join(
                         panel_directory,
-                        tumor_pair.name + ".varscan2.somatic.annot.flt.vcf.gz"
+                        f"{tumor_pair.name}.varscan2.somatic.annot.flt.vcf.gz"
                     )
                     pcgr_directory = os.path.join(
                         panel_directory,
@@ -2627,7 +2625,7 @@ END
                     )
                     assembly = config.param('report_pcgr', 'assembly')
                     ini_section = 'report_pcgr'
-                    job_name = "report_pcgr." + tumor_pair.name
+                    job_name = f"report_pcgr.{tumor_pair.name}"
                     
                     cpsr_directory = os.path.join(
                         ensemble_directory,
@@ -2637,7 +2635,7 @@ END
                     input = os.path.join(
                         ensemble_directory,
                         tumor_pair.name,
-                        tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz"
+                        f"{tumor_pair.name}.ensemble.somatic.vt.annot.2caller.flt.vcf.gz"
                     )
      
                     pcgr_directory = os.path.join(
@@ -2648,25 +2646,25 @@ END
                     
                 input_cpsr = os.path.join(
                     cpsr_directory,
-                    tumor_pair.name + ".cpsr." + assembly + ".json.gz"
+                    f"{tumor_pair.name}.cpsr.{assembly}.json.gz"
                 )
                 
                 input_cna = os.path.join(
                     self.output_dirs['sv_variants_directory'],
-                    tumor_pair.name + ".cnvkit.cna.tsv"
+                    f"{tumor_pair.name}.cnvkit.cna.tsv"
                 )
 
                 if input_cna + ".pass":
                     output_cna = os.path.join(
                         self.output_dirs['sv_variants_directory'],
-                        tumor_pair.name + ".cnvkit.cna.tsv"
+                        f"{tumor_pair.name}.cnvkit.cna.tsv"
                     )
                 else:
                     output_cna = None
                     
                 output = os.path.join(
                     pcgr_directory,
-                    tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"
+                    f"{tumor_pair.name}.pcgr_acmg.{assembly}.flexdb.html"
                 )
                 
                 jobs.append(
@@ -2697,8 +2695,8 @@ END
     
     def metrics_vcf_stats(
         self,
-        variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff",
-        job_name="metrics_change_rate"
+        variants_file_prefix=f"variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff",
+        job_name=f"metrics_change_rate"
         ):
         """
         Metrics SNV. Multiple metrics associated to annotations and effect prediction are generated at this step:
@@ -2708,9 +2706,9 @@ END
         """
 
         job = metrics.vcf_stats(
-            variants_file_prefix + ".dbnsfp.vcf.gz",
-            variants_file_prefix + ".dbnsfp.vcf.part_changeRate.tsv",
-            variants_file_prefix + ".vcf.stats.csv"
+            f"{variants_file_prefix}.dbnsfp.vcf.gz",
+            f"{variants_file_prefix}.dbnsfp.vcf.part_changeRate.tsv",
+            f"{variants_file_prefix}.vcf.stats.csv"
         )
         job.name = job_name
         job.samples = self.samples
@@ -2734,8 +2732,8 @@ END
 
     def metrics_snv_graph_metrics(
         self,
-        variants_file_prefix="variants/allSamples.merged.flt.mil.snpId",
-        snv_metrics_prefix="metrics/allSamples.SNV",
+        variants_file_prefix=f"variants/allSamples.merged.flt.mil.snpId",
+        snv_metrics_prefix=f"metrics/allSamples.SNV",
         job_name="metrics_snv_graph"
         ):
         """
@@ -2743,13 +2741,13 @@ END
 
         report_file = f"{self.output_dirs['report_directory']}/DnaSeq.metrics_snv_graph_metrics.md"
         snv_metrics_files = [
-            snv_metrics_prefix + ".SummaryTable.tsv",
-            snv_metrics_prefix + ".EffectsFunctionalClass.tsv",
-            snv_metrics_prefix + ".EffectsImpact.tsv"
+            f"{snv_metrics_prefix}.SummaryTable.tsv",
+            f"{snv_metrics_prefix}.EffectsFunctionalClass.tsv",
+            f"{snv_metrics_prefix}.EffectsImpact.tsv"
         ]
 
         job = metrics.snv_graph_metrics(
-            variants_file_prefix + ".snpeff.vcf.statsFile.txt",
+            f"{snv_metrics_prefix}.snpeff.vcf.statsFile.txt",
             snv_metrics_prefix
         )
         job.output_files = snv_metrics_files
@@ -3378,9 +3376,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 inputNormal = None
                 [inputTumor] = self.select_input_files(
                     [
-                        [input_prefix + ".sorted.dup.cram"],
-                        [input_prefix + ".sorted.dup.bam"],
-                        [input_prefix + ".sorted.bam"],
+                        [f"{input_prefix}.sorted.dup.cram"],
+                        [f"{input_prefix}.sorted.dup.bam"],
+                        [f"{input_prefix}.sorted.bam"],
                     ]
                 )
                 sample_name = sample.name
@@ -3389,11 +3387,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
                 input_vcf = os.path.join(self.output_dirs['alignment_directory'],
                                          sample.name,
-                                         sample.name + ".hc.vcf.gz"
+                                         f"{sample.name}.hc.vcf.gz"
                                          )
                 flt_vcf = os.path.join(self.output_dirs['alignment_directory'],
                                        sample.name,
-                                       sample.name + ".hc.flt.vcf.gz"
+                                       f"{sample.name}.hc.flt.vcf.gz"
                                        )
                 
                 #Set sample_id for cnvkit export function
@@ -3402,8 +3400,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
                 pair_directory = os.path.join(self.output_dirs["sv_variants_directory"], sample.name)
                 cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-                tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.targetcoverage.cnn")
-                antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.antitargetcoverage.cnn")
+                tarcov_cnn = os.path.join(cnvkit_dir, f"{sample.name}.sorted.dup.targetcoverage.cnn")
+                antitarcov_cnn = os.path.join(cnvkit_dir, f"{sample.name}.sorted.dup.antitargetcoverage.cnn")
                 
                 ## Set coverage bed if using exome
                 coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
@@ -3423,7 +3421,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 else:
                     pool_ref_cnn = None
                 
-                vcf_gz = os.path.join(pair_directory, sample_name + ".cnvkit.vcf.gz")
+                vcf_gz = os.path.join(pair_directory, f"{sample.name}.cnvkit.vcf.gz")
                 
                 jobs.append(
                     pipe_jobs(
@@ -3450,26 +3448,26 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 )
                 
                 call_cns = os.path.join(
-                    cnvkit_dir, sample_name + ".call.cns")
+                    cnvkit_dir, f"{sample.name}.call.cns")
                 
                 input_cna = os.path.join(
                     self.output_dirs['sv_variants_directory'],
                     sample_name,
-                    sample_name + ".cnvkit.vcf.gz"
+                    f"{sample.name}.cnvkit.vcf.gz"
                 )
                 header = os.path.join(
                     self.output_dirs['sv_variants_directory'],
-                    sample_name + ".header"
+                    f"{sample.name}.header"
                 )
                 output_cna_body = os.path.join(
                     self.output_dirs['sv_variants_directory'],
-                    sample_name + ".cnvkit.body.tsv"
+                    f"{sample.name}.cnvkit.body.tsv"
                 )
                 output_cna = os.path.join(
                     self.output_dirs['sv_variants_directory'],
-                    sample_name + ".cnvkit.cna.tsv"
+                    f"{sample.name}.cnvkit.cna.tsv"
                 )
-                output_check = output_cna + ".pass"
+                output_check = f"{output_cna}.pass"
                 
                 jobs.append(
                     concat_jobs(
@@ -3489,7 +3487,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 output_cnn=ref_cnn
                             )
                         ],
-                        name="cnvkit_batch." + sample_name,
+                        name=f"cnvkit_batch.{sample_name}",
                         samples=samples,
                         readsets=readsets
                     )
@@ -3505,24 +3503,24 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             cnvkit.fix(
                                 tarcov_cnn,
                                 antitarcov_cnn,
-                                os.path.join(cnvkit_dir, sample_name + ".cnr"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
                                 reference=pool_ref_cnn,
                                 ref_cnn=ref_cnn
                             ),
                             cnvkit.segment(
-                                os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                                os.path.join(cnvkit_dir, sample_name + ".cns"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.cns"),
                                 vcf=flt_vcf,
                                 sample_id=sample_id,
                                 normal_id=normal_id
                             ),
                             cnvkit.segmetrics(
-                                os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                                os.path.join(cnvkit_dir, sample_name + ".cns"),
-                                os.path.join(cnvkit_dir, sample_name + ".seg.cns"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.cns"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.seg.cns"),
                             ),
                         ],
-                        name="cnvkit_batch.correction." + sample_name,
+                        name=f"cnvkit_batch.correction.{sample_name}",
                         samples=samples,
                         readsets=readsets
                     )
@@ -3536,13 +3534,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 remove=True
                             ),
                             cnvkit.call(
-                                os.path.join(cnvkit_dir, sample_name + ".seg.cns"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.seg.cns"),
                                 call_cns
                             ),
                             pipe_jobs(
                                 [
                                     cnvkit.export(
-                                        os.path.join(cnvkit_dir, sample_name + ".call.cns"),
+                                        os.path.join(cnvkit_dir, f"{sample.name}.call.cns"),
                                         None,
                                         sample_id=sample_id
                                     ),
@@ -3553,7 +3551,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ]
                             ),
                         ],
-                        name="cnvkit_batch.call." + sample_name,
+                        name=f"cnvkit_batch.call.{sample.name}",
                         samples=samples,
                         readsets=readsets
                     )
@@ -3582,7 +3580,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 output_check
                             )
                         ],
-                        name="cnvkit_batch.cna." + sample_name,
+                        name=f"cnvkit_batch.cna.{sample_name}",
                         samples=samples,
                         readsets=readsets,
                         input_dependency=[input_cna, output_cna],
@@ -3598,25 +3596,25 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 remove=True
                             ),
                             cnvkit.metrics(
-                                os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                                os.path.join(cnvkit_dir, sample_name + ".call.cns"),
-                                os.path.join(metrics, sample_name + ".metrics.tsv")
+                                os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.call.cns"),
+                                os.path.join(metrics, f"{sample.name}.metrics.tsv")
                             ),
                             cnvkit.scatter(
-                                os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                                os.path.join(cnvkit_dir, sample_name + ".call.cns"),
-                                os.path.join(cnvkit_dir, sample_name + ".scatter.pdf"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.call.cns"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.scatter.pdf"),
                                 vcf=flt_vcf,
                                 normal=normal_id,
                                 tumor=sample_id
                             ),
                             cnvkit.diagram(
-                                os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                                os.path.join(cnvkit_dir, sample_name + ".call.cns"),
-                                os.path.join(cnvkit_dir, sample_name + ".diagram.pdf")
+                                os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.call.cns"),
+                                os.path.join(cnvkit_dir, f"{sample.name}.diagram.pdf")
                             )
                         ],
-                        name="cnvkit_batch.metrics." + sample_name,
+                        name=f"cnvkit_batch.metrics.{sample_name}",
                         samples=samples,
                         readsets=readsets
                     )
@@ -3635,14 +3633,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
                 [inputNormal] = self.select_input_files(
                     [
-                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.cram")],
-                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
+                        [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")],
+                        [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")]
                     ]
                 )
                 [inputTumor] = self.select_input_files(
                     [
-                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.cram")],
-                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
+                        [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")],
+                        [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")]
                     ]
                 )
                 
@@ -3654,21 +3652,21 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     input_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
                                              tumor_pair.name,
                                              "panel",
-                                             tumor_pair.name + ".varscan2.germline.vt.vcf.gz"
+                                             f"{tumor_pair.name}.varscan2.germline.vt.vcf.gz"
                                              )
                     flt_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
                                            tumor_pair.name,
                                            "panel",
-                                           tumor_pair.name + ".varscan2.germline.flt.vcf.gz"
+                                           f"{tumor_pair.name}.varscan2.germline.flt.vcf.gz"
                                            )
                 else:
                     input_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
                                              tumor_pair.name,
-                                             tumor_pair.name + ".vardict.germline.vt.vcf.gz"
+                                             f"{tumor_pair.name}.vardict.germline.vt.vcf.gz"
                                              )
                     flt_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
                                              tumor_pair.name,
-                                             tumor_pair.name + ".vardict.germline.flt.vcf.gz"
+                                             f"{tumor_pair.name}.vardict.germline.flt.vcf.gz"
                                              )
                 
                 sample_id = tumor_pair.tumor.name
@@ -3676,8 +3674,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
                 pair_directory = os.path.join(self.output_dirs["sv_variants_directory"], sample_name)
                 cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-                tarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".sorted.dup.targetcoverage.cnn")
-                antitarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".sorted.dup.antitargetcoverage.cnn")
+                tarcov_cnn = os.path.join(cnvkit_dir, f"{tumor_pair.tumor.name}.sorted.dup.targetcoverage.cnn")
+                antitarcov_cnn = os.path.join(cnvkit_dir, f"{tumor_pair.tumor.name}.sorted.dup.antitargetcoverage.cnn")
                 
                 ## Set coverage bed if using exome
                 coverage_bed = bvatools.resolve_readset_coverage_bed(
@@ -3688,7 +3686,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 if coverage_bed:
                     bed = coverage_bed
                 
-            ref_cnn = os.path.join(cnvkit_dir, sample_name + ".reference.cnn")
+            ref_cnn = os.path.join(cnvkit_dir, f"{sample_name}.reference.cnn")
             metrics = os.path.join(self.output_dirs['sv_variants_directory'], "cnvkit_reference")
             pool_ref = os.path.join(self.output_dir, metrics, "pooledReference.cnn")
             
@@ -3699,7 +3697,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             else:
                 pool_ref_cnn = None
     
-            vcf_gz = os.path.join(pair_directory, sample_name + ".cnvkit.vcf.gz")
+            vcf_gz = os.path.join(pair_directory, f"{sample_name}.cnvkit.vcf.gz")
             
             jobs.append(
                 pipe_jobs(
@@ -3726,26 +3724,26 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             )
     
             call_cns = os.path.join(
-                cnvkit_dir, sample_name + ".call.cns")
+                cnvkit_dir, f"{sample_name}.call.cns")
             
             input_cna = os.path.join(
                 self.output_dirs['sv_variants_directory'],
                 sample_name,
-                sample_name + ".cnvkit.vcf.gz"
+                f"{sample_name}.cnvkit.vcf.gz"
             )
             header = os.path.join(
                 self.output_dirs['sv_variants_directory'],
-                sample_name + ".header"
+                f"{sample_name}.header"
             )
             output_cna_body = os.path.join(
                 self.output_dirs['sv_variants_directory'],
-                sample_name + ".cnvkit.body.tsv"
+                f"{sample_name}.cnvkit.body.tsv"
             )
             output_cna = os.path.join(
                 self.output_dirs['sv_variants_directory'],
-                sample_name + ".cnvkit.cna.tsv"
+                f"{sample_name}.cnvkit.cna.tsv"
             )
-            output_check = output_cna + ".pass"
+            output_check = f"{output_cna}.pass"
             
             jobs.append(
                 concat_jobs(
@@ -3765,7 +3763,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             output_cnn=ref_cnn
                         )
                     ],
-                    name="cnvkit_batch." + sample_name,
+                    name=f"cnvkit_batch.{sample_name}",
                     samples=samples,
                     readsets=readsets
                 )
@@ -3781,24 +3779,24 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         cnvkit.fix(
                             tarcov_cnn,
                             antitarcov_cnn,
-                            os.path.join(cnvkit_dir, sample_name + ".cnr"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
                             reference=pool_ref_cnn,
                             ref_cnn=ref_cnn
                         ),
                         cnvkit.segment(
-                            os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                            os.path.join(cnvkit_dir, sample_name + ".cns"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.cns"),
                             vcf=flt_vcf,
                             sample_id=sample_id,
                             normal_id=normal_id
                         ),
                         cnvkit.segmetrics(
-                            os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                            os.path.join(cnvkit_dir, sample_name + ".cns"),
-                            os.path.join(cnvkit_dir, sample_name + ".seg.cns"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.cns"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
                         )
                     ],
-                    name="cnvkit_batch.correction." + sample_name,
+                    name=f"cnvkit_batch.correction.{sample_name}",
                     samples=samples,
                     readsets=readsets
                 )
@@ -3812,13 +3810,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             remove=True
                         ),
                         cnvkit.call(
-                            os.path.join(cnvkit_dir, sample_name + ".seg.cns"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
                             call_cns
                         ),
                         pipe_jobs(
                             [
                                 cnvkit.export(
-                                    os.path.join(cnvkit_dir, sample_name + ".call.cns"),
+                                    os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
                                     None,
                                     sample_id=sample_id
                                 ),
@@ -3829,7 +3827,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             ]
                         ),
                     ],
-                    name="cnvkit_batch.call." + sample_name,
+                    name=f"cnvkit_batch.call.{sample_name}",
                     samples=samples,
                     readsets=readsets
                 )
@@ -3858,7 +3856,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             output_check
                             )
                     ],
-                    name="cnvkit_batch.cna." + sample_name,
+                    name=f"cnvkit_batch.cna.{sample_name}",
                     samples=samples,
                     readsets=readsets,
                     input_dependency=[input_cna, output_cna],
@@ -3874,25 +3872,25 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             remove=True
                         ),
                         cnvkit.metrics(
-                            os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                            os.path.join(cnvkit_dir, sample_name + ".call.cns"),
-                            os.path.join(metrics, sample_name + ".metrics.tsv")
+                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
+                            os.path.join(metrics, f"{sample_name}.metrics.tsv")
                         ),
                         cnvkit.scatter(
-                            os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                            os.path.join(cnvkit_dir, sample_name + ".call.cns"),
-                            os.path.join(cnvkit_dir, sample_name + ".scatter.pdf"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.scatter.pdf"),
                             vcf=flt_vcf,
                             normal=normal_id,
                             tumor=sample_id
                         ),
                         cnvkit.diagram(
-                            os.path.join(cnvkit_dir, sample_name + ".cnr"),
-                            os.path.join(cnvkit_dir, sample_name + ".call.cns"),
-                            os.path.join(cnvkit_dir, sample_name + ".diagram.pdf")
+                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
+                            os.path.join(cnvkit_dir, f"{sample_name}.diagram.pdf")
                         )
                     ],
-                    name="cnvkit_batch.metrics." + sample_name,
+                    name=f"cnvkit_batch.metrics.{sample_name}",
                     samples=samples,
                     readsets=readsets
                 )
@@ -3914,9 +3912,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             jobs.append(
                 concat_jobs(
                     [
-                        snpeff.compute_effects(pair_directory + ".cnvkit.vcf.gz", pair_directory + ".cnvkit.snpeff.vcf"),
+                        snpeff.compute_effects(
+                            f"{pair_directory}.cnvkit.vcf.gz",
+                            f"{pair_directory}.cnvkit.snpeff.vcf"),
                     ],
-                    name="sv_annotation.cnvkit." + sample.name,
+                    name=f"sv_annotation.cnvkit.{sample.name}",
                     samples=[sample]
                 )
             )
@@ -4146,7 +4146,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     ]
                                 ),
                             ],
-                            name="gatk_scatterIntervalsByNs." + sample.name,
+                            name=f"gatk_scatterIntervalsByNs.{sample.name}",
                             samples=[sample]
                         )
                     )
@@ -4184,7 +4184,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                                                                      '.bed'))
                                 ),
                             ],
-                            name="gatk_scatterIntervalsByNs." + sample.name,
+                            name=f"gatk_scatterIntervalsByNs.{sample.name}",
                             samples=[sample]
                         )
                     )
@@ -4220,7 +4220,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
                                 )
                             ],
-                            name="gatk_scatterIntervalsByNs." + sample.name,
+                            name=f"gatk_scatterIntervalsByNs.{sample.name}",
                             samples=[sample]
                         )
                     )
@@ -4280,7 +4280,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                                                                   '.noALT.bed'))
                                 ),
                             ],
-                            name="gatk_scatterIntervalsByNs." + tumor_pair.name,
+                            name=f"gatk_scatterIntervalsByNs.{tumor_pair.name}",
                             samples=[tumor_pair.tumor, tumor_pair.normal]
                         )
                     )
@@ -4318,7 +4318,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                                                                      '.ACGT.noALT.bed'))
                                 ),
                             ],
-                            name="gatk_scatterIntervalsByNs." + tumor_pair.name,
+                            name=f"gatk_scatterIntervalsByNs.{tumor_pair.name}",
                             samples=[tumor_pair.tumor, tumor_pair.normal]
                         )
                     )
@@ -4362,7 +4362,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
                                 )
                             ],
-                            name="gatk_scatterIntervalsByNs." + tumor_pair.name,
+                            name=f"gatk_scatterIntervalsByNs.{tumor_pair.name}",
                             samples=[tumor_pair.tumor, tumor_pair.normal]
                         )
                     )
@@ -4391,20 +4391,20 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
                 ]
             )
 
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
                 ]
             )
 
-            raw_output = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".")
-            output = os.path.join(sequenza_directory, tumor_pair.name + ".")
+            raw_output = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name)
+            output = os.path.join(sequenza_directory, tumor_pair.name)
 
             if nb_jobs == 1:
                 jobs.append(
@@ -4418,15 +4418,15 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 input_normal,
                                 input_tumor,
                                 config.param('sequenza', 'gc_file'),
-                                raw_output + "all.seqz.gz",
+                                f"{raw_output}.all.seqz.gz",
                                 None
                             ),
                             sequenza.bin(
-                                raw_output + "all.seqz.gz",
-                                output + "all.binned.seqz.gz",
+                                f"{raw_output}all.seqz.gz",
+                                f"{output}.all.binned.seqz.gz",
                             )
                         ],
-                        name="sequenza.create_seqz." + tumor_pair.name,
+                        name=f"sequenza.create_seqz.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -4440,12 +4440,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 remove=True
                             ),
                             sequenza.main(
-                                output + "all.binned.seqz.gz",
+                                f"{output}.all.binned.seqz.gz",
                                 sequenza_directory,
                                 tumor_pair.name
                             )
                         ],
-                        name="sequenza." + tumor_pair.name,
+                        name=f"sequenza.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -4466,21 +4466,21 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                         input_normal,
                                         input_tumor,
                                         config.param('sequenza', 'gc_file'),
-                                        raw_output + "seqz." + sequence['name'] + ".gz",
+                                        f"{raw_output}.seqz.{sequence['name']}.gz",
                                         sequence['name']
                                     ),
                                     sequenza.bin(
-                                        raw_output + "seqz." + sequence['name'] + ".gz",
-                                        raw_output + "binned.seqz." + sequence['name'] + ".gz",
+                                        f"{raw_output}.seqz.{sequence['name']}.gz",
+                                        f"{raw_output}.binned.seqz.{sequence['name']}.gz",
                                     )
                                 ],
-                                name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name,
+                                name=f"sequenza.create_seqz.{sequence['name']}.{tumor_pair.name}",
                                 samples=[tumor_pair.normal, tumor_pair.tumor],
                                 readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                             )
                         )
 
-                seqz_outputs = [raw_output + "binned.seqz." + sequence['name'] + ".gz" for sequence in self.sequence_dictionary_variant() if sequence['type'] == 'primary']
+                seqz_outputs = [f"{raw_output}.binned.seqz.{sequence['name']}.gz" for sequence in self.sequence_dictionary_variant() if sequence['type'] == 'primary']
 
                 jobs.append(
                     concat_jobs(
@@ -4503,13 +4503,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     ),
                                     bash.gzip(
                                         None,
-                                        output + "binned.merged.seqz.gz",
+                                        f"{output}.binned.merged.seqz.gz",
                                         options="-cf"
                                     )
                                 ]
                             )
                         ],
-                        name="sequenza.merge_binned_seqz." + tumor_pair.name,
+                        name=f"sequenza.merge_binned_seqz.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -4523,12 +4523,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 remove=True
                             ),
                             sequenza.main(
-                                output + "binned.merged.seqz.gz",
+                                f"{output}.binned.merged.seqz.gz",
                                 sequenza_directory,
                                 tumor_pair.name
                             )
                         ],
-                        name="sequenza." + tumor_pair.name,
+                        name=f"sequenza.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -4546,13 +4546,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
-            print(pair_directory)
+
             inputs["Tumor"] = [
-                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_chromosome_view.pdf"),
-                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_genome_view.pdf"),
-                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CN_bars.pdf"),
-                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CP_contours.pdf"),
-                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_ploidy_celularity.tsv")
+                os.path.join(pair_directory, "sequenza", f"{tumor_pair.name}_chromosome_view.pdf"),
+                os.path.join(pair_directory, "sequenza", f"{tumor_pair.name}_genome_view.pdf"),
+                os.path.join(pair_directory, "sequenza", f"{tumor_pair.name}_CN_bars.pdf"),
+                os.path.join(pair_directory, "sequenza", f"{tumor_pair.name}_CP_contours.pdf"),
+                os.path.join(pair_directory, "sequenza", f"{tumor_pair.name}_ploidy_celularity.tsv")
             ]
 
             for key, input_files in inputs.items():
@@ -4569,418 +4569,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     profyle=self.args.profyle
                                 )
                             ],
-                            name="sym_link.sequenza." + str(idx) + "." + tumor_pair.name + "." + key,
+                            name=f"sym_link.sequenza.{str(idx)}.{tumor_pair.name}.{key}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
         return jobs
-    
-    def rawmpileup_panel(self):
-        """
-        Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format.
-        One packaged mpileup file is created per sample/chromosome.
-        """
-        
-        jobs = []
-        for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'],
-                                                          tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'],
-                                                          tumor_pair.normal.name)
-            
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
-            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
-            
-            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
-            bedfile = config.param('rawmpileup_panel', 'panel')
-            
-            if nb_jobs == 1:
-                input_pair = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
-                
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                varscan_directory,
-                                remove=True
-                            ),
-                            samtools.mpileup(
-                                [
-                                    os.path.join(normal_alignment_directory,
-                                                 tumor_pair.normal.name + ".sorted.dup.bam"),
-                                    os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name,
-                                                 tumor_pair.tumor.name + ".sorted.dup.bam")
-                                ],
-                                input_pair,
-                                config.param('rawmpileup_panel', 'mpileup_other_options'),
-                                regionFile=bedfile
-                            )
-                        ],
-                        name="rawmpileup_panel." + tumor_pair.name + ".all",
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
-            
-            else:
-                for sequence in self.sequence_dictionary_variant():
-                    if sequence['type'] == 'primary':
-                        pair_output = os.path.join(varscan_directory,
-                                                   tumor_pair.name + "." + sequence['name'] + ".mpileup")
-                        
-                        jobs.append(
-                            concat_jobs(
-                                [
-                                    bash.mkdir(
-                                        varscan_directory,
-                                        remove=True
-                                    ),
-                                    samtools.mpileup(
-                                        [
-                                            os.path.join(normal_alignment_directory,
-                                                         tumor_pair.normal.name + ".sorted.dup.bam"),
-                                            os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name,
-                                                         tumor_pair.tumor.name + ".sorted.dup.bam")
-                                        ],
-                                        pair_output,
-                                        config.param('rawmpileup_panel', 'mpileup_other_options'),
-                                        region=sequence['name'],
-                                        regionFile=bedfile
-                                    )
-                                ],
-                                name="rawmpileup_panel." + tumor_pair.name + "." + sequence['name'],
-                                samples=[tumor_pair.tumor, tumor_pair.normal],
-                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                            )
-                        )
-        return jobs
-    
-    def paired_varscan2_panel(self):
-        """
-        Variant calling and somatic mutation/CNV detection for next-generation sequencing data.
-        Koboldt et al., 2012. VarScan 2: Somatic mutation and copy number alteration discovery in cancer by exome sequencing.
-        """
-        
-        jobs = []
-        for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
-            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
-            
-            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
-            
-            if nb_jobs == 1:
-                input_pair = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
-                
-                output = os.path.join(varscan_directory, tumor_pair.name)
-                output_snp = os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf")
-                output_indel = os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf")
-                output_vcf_gz = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")
-                
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                varscan_directory,
-                                remove=True
-                            ),
-                            varscan.somatic(
-                                input_pair,
-                                output,
-                                config.param('varscan2_somatic_panel', 'other_options'),
-                                output_vcf_dep=output_vcf_gz,
-                                output_snp_dep=output_snp,
-                                output_indel_dep=output_indel
-                            ),
-                            htslib.bgzip_tabix(
-                                output_snp,
-                                os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz")
-                            ),
-                            htslib.bgzip_tabix(
-                                output_indel,
-                                os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")
-                            ),
-                            pipe_jobs(
-                                [
-                                    bcftools.concat(
-                                        [
-                                            os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz"),
-                                            os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")
-                                        ],
-                                        None
-                                    ),
-                                    pipe_jobs(
-                                        [
-                                            bash.sed(
-                                                None,
-                                                None,
-                                                "'s/TUMOR/" + tumor_pair.tumor.name + "/g'"
-                                            ),
-                                            bash.sed(
-                                                None,
-                                                None,
-                                                "'s/NORMAL/" + tumor_pair.normal.name + "/g'"
-                                            )
-                                        ]
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        output_vcf_gz
-                                    )
-                                ]
-                            )
-                        ],
-                        name="varscan2_somatic_panel." + tumor_pair.name + ".all",
-                        samples=[tumor_pair.tumor, tumor_pair.normal],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
-            
-            else:
-                
-                for sequence in self.sequence_dictionary_variant():
-                    if sequence['type'] == 'primary':
-                        input_pair = os.path.join(varscan_directory,
-                                                  tumor_pair.name + "." + sequence['name'] + ".mpileup")
-                        
-                        output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'])
-                        output_snp = os.path.join(varscan_directory,
-                                                  tumor_pair.name + "." + sequence['name'] + ".snp.vcf")
-                        output_indel = os.path.join(varscan_directory,
-                                                    tumor_pair.name + "." + sequence['name'] + ".indel.vcf")
-                        output_vcf_gz = os.path.join(varscan_directory,
-                                                     tumor_pair.name + ".varscan2." + sequence['name'] + ".vcf.gz")
-                        
-                        jobs.append(
-                            concat_jobs(
-                                [
-                                    bash.mkdir(
-                                        varscan_directory,
-                                        remove=True
-                                    ),
-                                    varscan.somatic(
-                                        input_pair,
-                                        output,
-                                        config.param('varscan2_somatic_panel', 'other_options'),
-                                        output_vcf_dep=output_vcf_gz,
-                                        output_snp_dep=output_snp,
-                                        output_indel_dep=output_indel
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        output_snp,
-                                        os.path.join(varscan_directory,
-                                                     tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz")
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        output_indel,
-                                        os.path.join(varscan_directory,
-                                                     tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")
-                                    ),
-                                    pipe_jobs(
-                                        [
-                                            bcftools.concat(
-                                                [
-                                                    os.path.join(varscan_directory,
-                                                                 tumor_pair.name + ".snp." + sequence[
-                                                                     'name'] + ".vcf.gz"),
-                                                    os.path.join(varscan_directory,
-                                                                 tumor_pair.name + ".indel." + sequence[
-                                                                     'name'] + ".vcf.gz")
-                                                ],
-                                                None
-                                            ),
-                                            pipe_jobs(
-                                                [
-                                                    bash.sed(
-                                                        None,
-                                                        None,
-                                                        "'s/TUMOR/" + tumor_pair.tumor.name + "/g'"
-                                                    ),
-                                                    bash.sed(
-                                                        None,
-                                                        None,
-                                                        "'s/NORMAL/" + tumor_pair.normal.name + "/g'"
-                                                    )
-                                                ]
-                                            ),
-                                            htslib.bgzip_tabix(
-                                                None,
-                                                output_vcf_gz
-                                            )
-                                        ]
-                                    )
-                                ],
-                                name="varscan2_somatic_panel." + tumor_pair.name + "." + sequence['name'],
-                                samples=[tumor_pair.tumor, tumor_pair.normal],
-                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                            )
-                        )
-        return jobs
-    
-    def merge_varscan2_panel(self):
-        """
-        Merge mpileup files per sample/chromosome into one compressed gzip file per sample.
-        """
-        
-        jobs = []
-        for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
-            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
-            
-            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
-            
-            if nb_jobs == 1:
-                jobs.append(
-                    concat_jobs(
-                        [
-                            pipe_jobs(
-                                [
-                                    bash.cat(
-                                        os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                                        None,
-                                        zip=True
-                                    ),
-                                    tools.fix_varscan_output(
-                                        None,
-                                        None,
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                                    )
-                                ]
-                            ),
-                            bcftools.view(
-                                os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                                os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
-                                config.param('merge_varscan2', 'somatic_filter_options')
-                            ),
-                            htslib.tabix(
-                                os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
-                                config.param('merge_varscan2', 'tabix_options', required=False)
-                            ),
-                            pipe_jobs(
-                                [
-                                    bcftools.view(
-                                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                                        None,
-                                        config.param('merge_varscan2', 'germline_filter_options')
-                                    ),
-                                    bcftools.view(
-                                        None,
-                                        None,
-                                        config.param('merge_varscan2', 'genotype_filter_options')
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                                    )
-                                ]
-                            )
-                        ],
-                        name="merge_varscan2." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
-            
-            else:
-                all_inputs = [
-                    os.path.join(varscan_directory, tumor_pair.name + ".varscan2." + sequence['name'] + ".vcf.gz")
-                    for sequence in self.sequence_dictionary_variant() if sequence['type'] == 'primary'
-                ]
-                
-                for input_vcf in all_inputs:
-                    if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
-                        log.error(f"Incomplete panel varscan2 vcf: {input_vcf}\n")
-                
-                jobs.append(
-                    concat_jobs(
-                        [
-                            pipe_jobs(
-                                [
-                                    bcftools.concat(
-                                        all_inputs,
-                                        None
-                                    ),
-                                    tools.fix_varscan_output(
-                                        None,
-                                        None
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                                    )
-                                ]
-                            ),
-                            bcftools.view(
-                                os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                                os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
-                                config.param('merge_varscan2', 'somatic_filter_options')
-                            ),
-                            htslib.tabix(
-                                os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
-                                config.param('merge_varscan2', 'tabix_options', required=False)
-                            ),
-                            pipe_jobs(
-                                [
-                                    bcftools.view(
-                                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                                        None,
-                                        config.param('merge_varscan2', 'germline_filter_options')
-                                    ),
-                                    bcftools.view(
-                                        None,
-                                        None,
-                                        config.param('merge_varscan2', 'genotype_filter_options')
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                                    )
-                                ]
-                            )
-                        ],
-                        name="merge_varscan2." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
-        return jobs
-    
+     
     def preprocess_vcf_panel(self):
         """
         Preprocess vcf for loading into an annotation database - Gemini : http://gemini.readthedocs.org/en/latest/index.html
@@ -5188,14 +4784,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         concat_jobs(
                             [
                                 deliverables.sym_link_pair(
-                                    os.path.join(sample_prefix, tumor_pair.name + ".varscan2.vcf.gz"),
+                                    os.path.join(sample_prefix, f"{tumor_pair.name}.varscan2.vcf.gz"),
                                     tumor_pair, self.output_dir,
                                     type="snv/panel",
                                     sample=key,
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    os.path.join(sample_prefix, tumor_pair.name + ".varscan2.vcf.gz.tbi"),
+                                    os.path.join(sample_prefix, f"{tumor_pair.name}.varscan2.vcf.gz.tbi"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -5203,7 +4799,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    os.path.join(sample_prefix, tumor_pair.name + ".varscan2.somatic.annot.flt.vcf.gz"),
+                                    os.path.join(sample_prefix, f"{tumor_pair.name}.varscan2.somatic.annot.flt.vcf.gz"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -5212,7 +4808,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix,
-                                                 tumor_pair.name + ".varscan2.somatic.annot.flt.vcf.gz.tbi"),
+                                                 f"{tumor_pair.name}.varscan2.somatic.annot.flt.vcf.gz.tbi"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -5220,7 +4816,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     profyle=self.args.profyle),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix,
-                                                 tumor_pair.name + ".varscan2.germline.annot.flt.vcf.gz"),
+                                                 f"{tumor_pair.name}.varscan2.germline.annot.flt.vcf.gz"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -5229,7 +4825,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix,
-                                                 tumor_pair.name + ".varscan2.germline.annot.flt.vcf.gz.tbi"),
+                                                 f"{tumor_pair.name}.varscan2.germline.annot.flt.vcf.gz.tbi"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -5238,7 +4834,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix, "cpsr",
-                                                 tumor_pair.name + ".cpsr." + assembly + ".html"),
+                                                 f"{tumor_pair.name}.cpsr.{assembly}.html"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -5247,7 +4843,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix, "pcgr",
-                                                 tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                                                 f"{tumor_pair.name}.pcgr_acmg.{assembly}.flexdb.html"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -5255,7 +4851,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     profyle=self.args.profyle
                                 )
                             ],
-                            name="sym_link_panel." + str(idx) + "." + tumor_pair.name + "." + key,
+                            name=f"sym_link_panel.{str(idx)}.{tumor_pair.name}.{key}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
@@ -5286,22 +4882,21 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
             pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
-            interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name,
-                                              "intervals")
+            interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "intervals")
             
             manta_directory = os.path.join(pair_directory, "rawManta")
             output_prefix = os.path.join(pair_directory, tumor_pair.name)
             
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.cram")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.cram")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")]
                 ]
             )
             manta_somatic_output = os.path.join(manta_directory, "results/variants/somaticSV.vcf.gz")
@@ -5321,13 +4916,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             
             if interval_bed:
                 local_coverage_bed = os.path.join(manta_directory, os.path.basename(interval_bed))
-                bed_file = local_coverage_bed + ".gz"
+                bed_file = f"{local_coverage_bed}.gz"
             
             output_dep = [
                 manta_somatic_output,
-                manta_somatic_output + ".tbi",
+                f"{manta_somatic_output}.tbi",
                 manta_germline_output,
-                manta_germline_output + ".tbi"
+                f"{manta_germline_output}.tbi"
             ]
             
             sed_cmd = Job(
@@ -5373,26 +4968,26 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ),
                         bash.ln(
                             os.path.relpath(manta_somatic_output, os.path.dirname(output_prefix)),
-                            output_prefix + ".manta.somatic.vcf.gz",
+                            f"{output_prefix}.manta.somatic.vcf.gz",
                             input=manta_somatic_output,
                         ),
                         bash.ln(
                             os.path.relpath(manta_somatic_output + ".tbi", os.path.dirname(output_prefix)),
-                            output_prefix + ".manta.somatic.vcf.gz.tbi",
-                            input=manta_somatic_output + ".tbi"
+                            f"{output_prefix}.manta.somatic.vcf.gz.tbi",
+                            input=f"{manta_somatic_output}.tbi"
                         ),
                         bash.ln(
                             os.path.relpath(manta_germline_output, os.path.dirname(output_prefix)),
-                            output_prefix + ".manta.germline.vcf.gz",
+                            f"{output_prefix}.manta.germline.vcf.gz",
                             input=manta_germline_output
                         ),
                         bash.ln(
                             os.path.relpath(manta_germline_output + ".tbi", os.path.dirname(output_prefix)),
-                            output_prefix + ".manta.germline.vcf.gz.tbi",
-                            input=manta_germline_output + ".tbi"
+                            f"{output_prefix}.manta.germline.vcf.gz.tbi",
+                            input=f"{manta_germline_output}.tbi"
                         )
                     ],
-                    name="manta_sv." + tumor_pair.name,
+                    name=f"manta_sv.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[input_normal, input_tumor, interval_bed]
@@ -5429,15 +5024,15 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
                 ]
             )
             
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
                 ]
             )
             
@@ -5458,7 +5053,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             
             if interval_bed:
                 local_coverage_bed = os.path.join(somatic_dir, os.path.basename(interval_bed))
-                bed_file = local_coverage_bed + ".gz"
+                bed_file = f"{local_coverage_bed}.gz"
             
             output_dep = [
                 os.path.join(somatic_dir, "results/variants/somatic.snvs.vcf.gz"),
@@ -5507,7 +5102,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ini_section='strelka2_paired_somatic'
                         )
                     ],
-                    name="strelka2_paired_somatic.call." + tumor_pair.name,
+                    name=f"strelka2_paired_somatic.call.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[input_normal, input_tumor, manta_indels, interval_bed],
@@ -5545,35 +5140,35 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ),
                                 htslib.bgzip_tabix(
                                     None,
-                                    output_prefix + ".strelka2.vcf.gz"
+                                    f"{output_prefix}.strelka2.vcf.gz"
                                 )
                             ]
                         ),
                         pipe_jobs(
                             [
                                 vt.decompose_and_normalize_mnps(
-                                    output_prefix + ".strelka2.vcf.gz",
+                                    f"{output_prefix}.strelka2.vcf.gz",
                                     None
                                 ),
                                 htslib.bgzip_tabix(
                                     None,
-                                    output_prefix + ".strelka2.vt.vcf.gz"
+                                    f"{output_prefix}.strelka2.vt.vcf.gz"
                                 )
                             ]
                         ),
                         tools.fix_genotypes_strelka(
-                            output_prefix + ".strelka2.vt.vcf.gz",
-                            output_prefix + ".strelka2.somatic.gt.vcf.gz",
+                            f"{output_prefix}.strelka2.vt.vcf.gz",
+                            f"{output_prefix}.strelka2.somatic.gt.vcf.gz",
                             tumor_pair.normal.name,
                             tumor_pair.tumor.name
                         ),
                         bcftools.view(
-                            output_prefix + ".strelka2.somatic.gt.vcf.gz",
-                            output_prefix + ".strelka2.somatic.vt.vcf.gz",
+                            f"{output_prefix}.strelka2.somatic.gt.vcf.gz",
+                            f"{output_prefix}.strelka2.somatic.vt.vcf.gz",
                             config.param('strelka2_paired_somatic', 'filter_options')
                         )
                     ],
-                    name="strelka2_paired_somatic.filter." + tumor_pair.name,
+                    name=f"strelka2_paired_somatic.filter.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
@@ -5609,15 +5204,15 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
                 ]
             )
             
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
                 ]
             )
             
@@ -5652,12 +5247,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         bash.mkdir(germline_dir),
                         bash.sort(
                             interval_bed,
-                            local_coverage_bed + ".sort",
+                            f"{local_coverage_bed}.sort",
                             "-V -k1,1 -k2,2n -k3,3n",
                             extra="; sleep 15"
                         ),
                         htslib.bgzip(
-                            local_coverage_bed + ".sort",
+                            f"{local_coverage_bed}.sort",
                             bed_file
                         ),
                         htslib.tabix(
@@ -5676,7 +5271,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ini_section='strelka2_paired_germline'
                         )
                     ],
-                    name="strelka2_paired_germline.call." + tumor_pair.name,
+                    name=f"strelka2_paired_germline.call.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[input_normal, input_tumor, interval_bed],
@@ -5715,29 +5310,29 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ),
                                 htslib.bgzip_tabix(
                                     None,
-                                    output_prefix + ".strelka2.germline.vcf.gz"
+                                    f"{output_prefix}.strelka2.germline.vcf.gz"
                                 )
                             ]
                         ),
                         pipe_jobs(
                             [
                                 vt.decompose_and_normalize_mnps(
-                                    output_prefix + ".strelka2.germline.vcf.gz",
+                                    f"{output_prefix}.strelka2.germline.vcf.gz",
                                     None
                                 ),
                                 htslib.bgzip_tabix(
                                     None,
-                                    output_prefix + ".strelka2.germline.gt.vcf.gz"
+                                    f"{output_prefix}.strelka2.germline.gt.vcf.gz"
                                 )
                             ]
                         ),
                         bcftools.view(
-                            output_prefix + ".strelka2.germline.gt.vcf.gz",
-                            output_prefix + ".strelka2.germline.vt.vcf.gz",
+                            f"{output_prefix}.strelka2.germline.gt.vcf.gz",
+                            f"{output_prefix}.strelka2.germline.vt.vcf.gz",
                             config.param('strelka2_paired_germline', 'filter_options')
                         )
                     ],
-                    name="strelka2_paired_germline.filter." + tumor_pair.name,
+                    name=f"strelka2_paired_germline.filter.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
@@ -5745,7 +5340,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         
         return jobs
         
-    def strelka2_paired_germline_snpeff(self):
+    def strelka2_paired_snpeff(self):
         """
         [Strelka2](https://github.com/Illumina/strelka) is a fast and accurate small variant caller optimized for analysis of germline variation in small
         cohorts and somatic variation in tumor/normal sample pairs.
@@ -5760,18 +5355,18 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 concat_jobs(
                     [
                         bcftools.split(
-                            os.path.join(pair_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz"),
+                            os.path.join(pair_directory, f"{tumor_pair.name}.strelka2.germline.vt.vcf.gz"),
                             pair_directory,
                             config.param('strelka2_paired_germline_snpeff', 'split_options'),
                         )
                     ],
                     name="strelka2_paired_germline_snpeff.split." + tumor_pair.name,
                     input_dependency=[
-                        os.path.join(pair_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz")
+                        os.path.join(pair_directory, f"{tumor_pair.name}.strelka2.germline.vt.vcf.gz")
                     ],
                     output_dependency=[
-                        os.path.join(pair_directory, tumor_pair.normal.name + ".vcf.gz"),
-                        os.path.join(pair_directory, tumor_pair.tumor.name + ".vcf.gz")
+                        os.path.join(pair_directory, f"{tumor_pair.normal.name}.vcf.gz"),
+                        os.path.join(pair_directory, f"{tumor_pair.tumor.name}.vcf.gz")
                     ],
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
@@ -5782,16 +5377,16 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 concat_jobs(
                     [
                         snpeff.compute_effects(
-                            os.path.join(pair_directory, tumor_pair.normal.name + ".vcf.gz"),
-                            os.path.join(pair_directory, tumor_pair.normal.name + ".snpeff.vcf"),
-                            options=config.param('strelka2_paired_germline_snpeff', 'options')
+                            os.path.join(pair_directory, f"{tumor_pair.normal.name}.vcf.gz"),
+                            os.path.join(pair_directory, f"{tumor_pair.normal.name}.snpeff.vcf"),
+                            options=config.param('strelka2_paired_snpeff', 'options')
                         ),
                         htslib.bgzip_tabix(
-                            os.path.join(pair_directory, tumor_pair.normal.name + ".snpeff.vcf"),
-                            os.path.join(pair_directory, tumor_pair.normal.name + ".snpeff.vcf.gz")
+                            os.path.join(pair_directory, f"{tumor_pair.normal.name}.snpeff.vcf"),
+                            os.path.join(pair_directory, f"{tumor_pair.normal.name}.snpeff.vcf.gz")
                         )
                     ],
-                    name="strelka2_paired_germline_snpeff.normal." + tumor_pair.name,
+                    name="strelka2_paired_snpeff.normal." + tumor_pair.name,
                     samples=[tumor_pair.normal],
                     readsets=list(tumor_pair.normal.readsets)
                 )
@@ -5803,14 +5398,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         snpeff.compute_effects(
                             os.path.join(pair_directory, tumor_pair.tumor.name + ".vcf.gz"),
                             os.path.join(pair_directory, tumor_pair.tumor.name + ".snpeff.vcf"),
-                            options=config.param('strelka2_paired_germline_snpeff', 'options')
+                            options=config.param('strelka2_paired_snpeff', 'options')
                         ),
                         htslib.bgzip_tabix(
                             os.path.join(pair_directory, tumor_pair.tumor.name + ".snpeff.vcf"),
                             os.path.join(pair_directory, tumor_pair.tumor.name + ".snpeff.vcf.gz")
                         )
                     ],
-                    name="strelka2_paired_germline_snpeff.tumor." + tumor_pair.name,
+                    name="strelka2_paired_snpeff.tumor." + tumor_pair.name,
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets)
                 )
@@ -5838,30 +5433,30 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
                 ]
             )
 
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
                 ]
             )
 
             somatic_snv = None
-            if os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz"):
-                somatic_snv = os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz")
+            if os.path.join(pair_dir, f"{tumor_pair.name}.strelka2.somatic.vt.vcf.gz"):
+                somatic_snv = os.path.join(pair_dir, f"{tumor_pair.name}.strelka2.somatic.purple.vcf.gz")
                 jobs.append(
                     concat_jobs(
                         [
                         purple.strelka2_convert(
-                            os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz"),
+                            os.path.join(pair_dir, f"{tumor_pair.name}.strelka2.somatic.vt.vcf.gz"),
                             somatic_snv,
                         )
                     ],
-                    name="purple.convert_strelka2." + tumor_pair.name,
+                    name=f"purple.convert_strelka2.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
@@ -5876,8 +5471,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             if sv:
                 pair_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
                 gridss_directory = os.path.join(pair_dir, "gridss")
-                gripss_vcf = os.path.join(gridss_directory, tumor_pair.tumor.name + ".gripss.somatic.vcf.gz")
-                gripss_filtered_vcf = os.path.join(gridss_directory, tumor_pair.tumor.name + ".gripss.filtered.somatic.vcf.gz")
+                gripss_vcf = os.path.join(gridss_directory, f"{tumor_pair.tumor.name}.gripss.somatic.vcf.gz")
+                gripss_filtered_vcf = os.path.join(gridss_directory, f"{tumor_pair.tumor.name}.gripss.filtered.somatic.vcf.gz")
                 somatic_hotspots = config.param('purple', 'somatic_hotspots', param_type='filepath')
                 germline_hotspots = config.param('purple', 'germline_hotspots', param_type='filepath')
                 driver_gene_panel = config.param('purple', 'driver_gene_panel', param_type='filepath')
@@ -5927,8 +5522,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
-            purple_purity_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
-            purple_qc_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.qc")
+            purple_purity_output = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.purity.tsv")
+            purple_qc_output = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.qc")
             samples = [tumor_pair.normal, tumor_pair.tumor]
             job_name = f"purple.purity.{tumor_pair.name}"
             job_project_tracking_metrics = []
@@ -6024,37 +5619,49 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
-            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
-            
-            interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name,
-                                              "intervals")
-            bed_file = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
-                                                                                            '.ACGT.noALT.bed'))
-            
-            coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsets[0]
-            )
-            
-            if coverage_bed:
-                bed_file = coverage_bed
-            
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
                 ]
             )
             
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
                 ]
             )
             
+            if 'fastpass' in self.get_protocol():
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
+                
+                scatter_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
+                bed_file = config.param('rawmpileup_panel', 'panel')
+                mpileup_options = config.param('rawmpileup_panel', 'mpileup_other_options'),
+                job_name = f"rawmpileup_panel.{tumor_pair.name}"
+            
+            else:
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                
+                interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "intervals")
+                bed_file = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                '.ACGT.noALT.bed'))
+                
+                mpileup_options = config.param('rawmpileup', 'mpileup_other_options'),
+                job_name = f"rawmpileup.{tumor_pair.name}"
+                
+                coverage_bed = bvatools.resolve_readset_coverage_bed(
+                    tumor_pair.normal.readsets[0]
+                )
+                
+                if coverage_bed:
+                    bed_file = coverage_bed
+            
+            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
+            
             if scatter_jobs == 1:
-                pair_output = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
+                pair_output = os.path.join(varscan_directory, f"{tumor_pair.name}.mpileup")
                 jobs.append(
                     concat_jobs(
                         [
@@ -6068,11 +5675,11 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     input_tumor
                                 ],
                                 pair_output,
-                                config.param('rawmpileup', 'mpileup_other_options'),
+                                mpileup_options,
                                 regionFile=bed_file
                             )
                         ],
-                        name="rawmpileup." + tumor_pair.name,
+                        name=job_name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                         input_dependency=[input_normal, input_tumor, bed_file]
@@ -6083,7 +5690,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 for sequence in self.sequence_dictionary_variant():
                     if sequence['type'] == 'primary':
                         pair_output = os.path.join(varscan_directory,
-                                                   tumor_pair.name + "." + sequence['name'] + ".mpileup")
+                                                   f"{tumor_pair.name}.{sequence['name']}.mpileup")
                         
                         jobs.append(
                             concat_jobs(
@@ -6098,12 +5705,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                             input_tumor
                                         ],
                                         pair_output,
-                                        config.param('rawmpileup', 'mpileup_other_options'),
+                                        mpileup_options,
                                         region=sequence['name'],
                                         regionFile=bed_file
                                     )
                                 ],
-                                name="rawmpileup." + tumor_pair.name + "." + sequence['name'],
+                                name=f"{job_name}.{sequence['name']}",
                                 samples=[tumor_pair.normal, tumor_pair.tumor],
                                 readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                                 input_dependency=[input_normal, input_tumor, bed_file]
@@ -6128,17 +5735,28 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
         
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+            if 'fastpass' in self.get_protocol():
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
+
+                varscan_options = config.param('varscan2_somatic_panel', 'other_options'),
+                job_name = f"varscan2_somatic_panel.{tumor_pair.name}"
+            
+            else:
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                
+                varscan_options = config.param('varscan2_somatic', 'other_options'),
+                job_name = f"varscan2_somatic.{tumor_pair.name}"
+                
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
             output = os.path.join(varscan_directory, tumor_pair.name)
             
             if scatter_jobs == 1:
-                input_pair = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
+                input_pair = os.path.join(varscan_directory, f"{tumor_pair.name}.mpileup")
                 
-                output_snp = os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf")
-                output_indel = os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf")
-                output_vcf = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf")
-                output_vcf_gz = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")
+                output_snp = os.path.join(varscan_directory, f"{tumor_pair.name}.snp.vcf")
+                output_indel = os.path.join(varscan_directory, f"{tumor_pair.name}.indel.vcf")
+                output_vcf = os.path.join(varscan_directory, f"{tumor_pair.name}.varscan2.vcf")
+                output_vcf_gz = os.path.join(varscan_directory, f"{tumor_pair.name}.varscan2.vcf.gz")
                 
                 jobs.append(
                     concat_jobs(
@@ -6150,25 +5768,25 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             varscan.somatic(
                                 input_pair,
                                 output,
-                                config.param('varscan2_somatic', 'other_options'),
+                                varscan_options,
                                 output_vcf_dep=output_vcf,
                                 output_snp_dep=output_snp,
                                 output_indel_dep=output_indel
                             ),
                             htslib.bgzip_tabix(
                                 output_snp,
-                                os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz")
+                                os.path.join(varscan_directory, f"{tumor_pair.name}.snp.vcf.gz")
                             ),
                             htslib.bgzip_tabix(
                                 output_indel,
-                                os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")
+                                os.path.join(varscan_directory, f"{tumor_pair.name}.indel.vcf.gz")
                             ),
                             pipe_jobs(
                                 [
                                     bcftools.concat(
                                         [
-                                            os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz"),
-                                            os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")
+                                            os.path.join(varscan_directory, f"{tumor_pair.name}.snp.vcf.gz"),
+                                            os.path.join(varscan_directory, f"{tumor_pair.name}.indel.vcf.gz")
                                         ],
                                         None
                                     ),
@@ -6203,7 +5821,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 output_vcf_gz
                             )
                         ],
-                        name="varscan2_somatic." + tumor_pair.name,
+                        name=job_name,
                         samples=[tumor_pair.tumor, tumor_pair.normal],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -6213,17 +5831,17 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 for sequence in self.sequence_dictionary_variant():
                     if sequence['type'] == 'primary':
                         input_pair = os.path.join(varscan_directory,
-                                                  tumor_pair.name + "." + sequence['name'] + ".mpileup")
+                                                  f"{tumor_pair.name}.{sequence['name']}.mpileup")
                         
-                        output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'])
+                        output = os.path.join(varscan_directory, f"{tumor_pair.name}.{sequence['name']}")
                         output_snp = os.path.join(varscan_directory,
-                                                  tumor_pair.name + "." + sequence['name'] + ".snp.vcf")
+                                                  f"{tumor_pair.name}.{sequence['name']}.snp.vcf")
                         output_indel = os.path.join(varscan_directory,
-                                                    tumor_pair.name + "." + sequence['name'] + ".indel.vcf")
+                                                    f"{tumor_pair.name}.{sequence['name']}.indel.vcf")
                         output_vcf = os.path.join(varscan_directory,
-                                                  tumor_pair.name + "." + sequence['name'] + ".varscan2.vcf")
+                                                  f"{tumor_pair.name}.{sequence['name']}.varscan2.vcf")
                         output_vcf_gz = os.path.join(varscan_directory,
-                                                     tumor_pair.name + "." + sequence['name'] + ".varscan2.vcf.gz")
+                                                     f"{tumor_pair.name}.{sequence['name']}.varscan2.vcf.gz")
                         
                         jobs.append(
                             concat_jobs(
@@ -6235,7 +5853,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     varscan.somatic(
                                         input_pair,
                                         output,
-                                        config.param('varscan2_somatic', 'other_options'),
+                                        varscan_options,
                                         output_vcf_dep=output_vcf,
                                         output_snp_dep=output_snp,
                                         output_indel_dep=output_indel
@@ -6243,21 +5861,21 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     htslib.bgzip_tabix(
                                         output_snp,
                                         os.path.join(varscan_directory,
-                                                     tumor_pair.name + "." + sequence['name'] + ".snp.vcf.gz")
+                                                     f"{tumor_pair.name}.{sequence['name']}.snp.vcf.gz")
                                     ),
                                     htslib.bgzip_tabix(
                                         output_indel,
                                         os.path.join(varscan_directory,
-                                                     tumor_pair.name + "." + sequence['name'] + ".indel.vcf.gz")
+                                                     f"{tumor_pair.name}.{sequence['name']}.indel.vcf.gz")
                                     ),
                                     pipe_jobs(
                                         [
                                             bcftools.concat(
                                                 [
-                                                    os.path.join(varscan_directory, tumor_pair.name + "." + sequence[
-                                                        'name'] + ".snp.vcf.gz"),
-                                                    os.path.join(varscan_directory, tumor_pair.name + "." + sequence[
-                                                        'name'] + ".indel.vcf.gz")
+                                                    os.path.join(varscan_directory,
+                                                                 f"{tumor_pair.name}.{sequence['name']}.snp.vcf.gz"),
+                                                    os.path.join(varscan_directory,
+                                                                 f"{tumor_pair.name}.{sequence['name']}.indel.vcf.gz")
                                                 ],
                                                 None
                                             ),
@@ -6292,7 +5910,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                         output_vcf_gz
                                     )
                                 ],
-                                name="varscan2_somatic." + tumor_pair.name + "." + sequence['name'],
+                                name=f"{job_name}.{sequence['name']}",
                                 samples=[tumor_pair.tumor, tumor_pair.normal],
                                 readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                             )
@@ -6312,15 +5930,23 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
         
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+            if 'fastpass' in self.get_protocol():
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
+                scatter_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
+                job_name = f"merge_varscan2_panel.{tumor_pair.name}"
+            
+            else:
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                job_name = f"merge_varscan2.{tumor_pair.name}"
+            
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
             
             if scatter_jobs == 1:
-                all_inputs = [os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")]
+                all_inputs = [os.path.join(varscan_directory, f"{tumor_pair.name}.varscan2.vcf.gz")]
             
             else:
                 all_inputs = [
-                    os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.vcf.gz")
+                    os.path.join(varscan_directory, f"{tumor_pair.name}.{sequence['name']}.varscan2.vcf.gz")
                     for sequence in self.sequence_dictionary_variant() if sequence['type'] == 'primary'
                 ]
             
@@ -6328,11 +5954,11 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                     log.error(f"Incomplete varscan2 vcf: {input_vcf}\n")
             
-            all_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz")
-            all_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.vt.vcf.gz")
+            all_output = os.path.join(pair_directory, f"{tumor_pair.name}.varscan2.vcf.gz")
+            all_output_vt = os.path.join(pair_directory, f"{tumor_pair.name}.varscan2.vt.vcf.gz")
             
-            somtic_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
-            germline_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vt.vcf.gz")
+            somtic_output_vt = os.path.join(pair_directory, f"{tumor_pair.name}.varscan2.somatic.vt.vcf.gz")
+            germline_output_vt = os.path.join(pair_directory, f"{tumor_pair.name}.varscan2.germline.vt.vcf.gz")
             
             if scatter_jobs == 1:
                 jobs.append(
@@ -6410,7 +6036,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ]
                             )
                         ],
-                        name="merge_varscan2." + tumor_pair.name,
+                        name=job_name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -6445,14 +6071,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                         None,
                                         "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
                                     ),
-                                    # vt.sort("-", all_output, "-m full"),
                                     htslib.bgzip_tabix(
                                         None,
                                         all_output
                                     )
                                 ]
                             ),
-                            # htslib.tabix(all_output),
                             pipe_jobs(
                                 [
                                     vt.decompose_and_normalize_mnps(
@@ -6497,7 +6121,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ]
                             )
                         ],
-                        name="merge_varscan2." + tumor_pair.name,
+                        name=job_name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -6534,15 +6158,15 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
                 ]
             )
             
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
                 ]
             )
             
@@ -6570,12 +6194,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 tumor_pair.normal.name,
                                 input_tumor,
                                 tumor_pair.tumor.name,
-                                os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
-                                os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz"),
+                                os.path.join(mutect_directory, f"{tumor_pair.name}.mutect2.vcf.gz"),
+                                os.path.join(mutect_directory, f"{tumor_pair.name}.f1r2.tar.gz"),
                                 interval_list=interval_list[0]
                             )
                         ],
-                        name="gatk_mutect2." + tumor_pair.name,
+                        name=f"gatk_mutect2.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                         input_dependency=[input_normal, input_tumor, interval_list[0]]
@@ -6602,12 +6226,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     input_tumor,
                                     tumor_pair.tumor.name,
                                     os.path.join(mutect_directory,
-                                                 tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz"),
-                                    os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"),
+                                                 f"{tumor_pair.name}.{str(idx)}.mutect2.vcf.gz"),
+                                    os.path.join(mutect_directory, f"{tumor_pair.name}.{str(idx)}.f1r2.tar.gz"),
                                     interval_list=intervals
                                 )
                             ],
-                            name="gatk_mutect2." + tumor_pair.name + "." + str(idx),
+                            name=f"gatk_mutect2.{tumor_pair.name}.{str(idx)}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                             input_dependency=[input_normal, input_tumor, intervals]
@@ -6632,10 +6256,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             output_prefix = os.path.join(mutect_directory, tumor_pair.name)
             
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            output_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz")
-            output_flt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.flt.vcf.gz")
-            output_vt_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vt.vcf.gz")
-            output_somatic_vt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
+            output_gz = os.path.join(pair_directory, f"{tumor_pair.name}.mutect2.vcf.gz")
+            output_flt = os.path.join(pair_directory, f"{tumor_pair.name}.mutect2.flt.vcf.gz")
+            output_vt_gz = os.path.join(pair_directory, f"{tumor_pair.name}.mutect2.vt.vcf.gz")
+            output_somatic_vt = os.path.join(pair_directory, f"{tumor_pair.name}.mutect2.somatic.vt.vcf.gz")
             
             if scatter_jobs == 1:
                 if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
@@ -6643,13 +6267,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         concat_jobs(
                             [
                                 gatk4.learn_read_orientation_model(
-                                    [os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz")],
-                                    os.path.join(pair_directory, tumor_pair.name + ".f1r2.tar.gz")
+                                    [os.path.join(mutect_directory, f"{tumor_pair.name}.f1r2.tar.gz")],
+                                    os.path.join(pair_directory, f"{tumor_pair.name}.f1r2.tar.gz")
                                 ),
                                 gatk4.filter_mutect_calls(
-                                    os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
+                                    os.path.join(mutect_directory, f"{tumor_pair.name}.mutect2.vcf.gz"),
                                     output_flt,
-                                    read_orientation=os.path.join(pair_directory, tumor_pair.name + ".f1r2.tar.gz")
+                                    read_orientation=os.path.join(pair_directory, f"{tumor_pair.name}.f1r2.tar.gz")
                                 ),
                                 pipe_jobs(
                                     [
@@ -6701,14 +6325,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     ]
                                 )
                             ],
-                            name="merge_filter_mutect2." + tumor_pair.name,
+                            name=f"merge_filter_mutect2.{tumor_pair.name}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
                 
                 else:
-                    input_vcf = os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz")
+                    input_vcf = os.path.join(mutect_directory, f"{tumor_pair.name}.mutect2.vcf.gz")
                     jobs.append(
                         concat_jobs(
                             [
@@ -6755,7 +6379,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     ]
                                 )
                             ],
-                            name="symlink_mutect_vcf." + tumor_pair.name,
+                            name=f"symlink_mutect_vcf.{tumor_pair.name}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
@@ -6769,16 +6393,16 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         log.error(f"Incomplete mutect2 vcf: {input_vcf}\n")
                 
                 if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
-                    output_stats = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz.stats")
-                    output_models = os.path.join(pair_directory, tumor_pair.name + ".read-orientation-model.tar.gz")
+                    output_stats = os.path.join(pair_directory, f"{tumor_pair.name}.mutect2.vcf.gz.stats")
+                    output_models = os.path.join(pair_directory, f"{tumor_pair.name}.read-orientation-model.tar.gz")
                     
                     stats = []
                     models = []
                     for idx, vcf in enumerate(merge_list):
                         stats.append(
-                            os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz.stats"))
+                            os.path.join(mutect_directory, f"{tumor_pair.name}.{str(idx)}.mutect2.vcf.gz.stats"))
                         models.append(
-                            os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"))
+                            os.path.join(mutect_directory, f"{tumor_pair.name}.{str(idx)}.f1r2.tar.gz"))
                     
                     jobs.append(
                         concat_jobs(
@@ -6835,7 +6459,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     ]
                                 )
                             ],
-                            name="merge_filter_mutect2." + tumor_pair.name,
+                            name=f"merge_filter_mutect2.{tumor_pair.name}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
@@ -6904,7 +6528,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     ]
                                 )
                             ],
-                            name="merge_filter_mutect2." + tumor_pair.name,
+                            name=f"merge_filter_mutect2.{tumor_pair.name}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
@@ -6943,15 +6567,15 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
                 ]
             )
             
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
                 ]
             )
             
@@ -6995,7 +6619,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ]
                             )
                         ],
-                        name="vardict_paired." + tumor_pair.name,
+                        name=f"vardict_paired.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         input_dependency=[input_normal, input_tumor, coverage_bed]
                     )
@@ -7018,7 +6642,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 bed_file
                             ),
                         ],
-                        name="vardict.genome.beds." + tumor_pair.name,
+                        name=f"vardict.genome.beds.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor]
                     )
                 )
@@ -7057,7 +6681,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ]
                             )
                         ],
-                        name="vardict_paired." + tumor_pair.name,
+                        name=f"vardict_paired.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         input_dependency=[input_normal, input_tumor, bed_file]
                     )
@@ -7129,7 +6753,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     ]
                                 )
                             ],
-                            name="vardict_paired." + tumor_pair.name + "." + str(idx),
+                            name=f"vardict_paired.{tumor_pair.name}.{str(idx)}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
@@ -7152,14 +6776,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             vardict_directory = os.path.join(pair_directory, "rawVardict")
             output_prefix = os.path.join(vardict_directory, tumor_pair.name)
             
-            output_tmp = os.path.join(pair_directory, tumor_pair.name + ".vardict.tmp.vcf.gz")
-            output = os.path.join(pair_directory, tumor_pair.name + ".vardict.vcf.gz")
-            output_vt = os.path.join(pair_directory, tumor_pair.name + ".vardict.vt.vcf.gz")
-            output_somatic = os.path.join(pair_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
-            output_germline_loh = os.path.join(pair_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
+            output_tmp = os.path.join(pair_directory, f"{tumor_pair.name}.vardict.tmp.vcf.gz")
+            output = os.path.join(pair_directory, f"{tumor_pair.name}.vardict.vcf.gz")
+            output_vt = os.path.join(pair_directory, f"{tumor_pair.name}.vardict.vt.vcf.gz")
+            output_somatic = os.path.join(pair_directory, f"{tumor_pair.name}.vardict.somatic.vt.vcf.gz")
+            output_germline_loh = os.path.join(pair_directory, f"{tumor_pair.name}.vardict.germline.vt.vcf.gz")
             
             if scatter_jobs == 1:
-                input = os.path.join(vardict_directory, tumor_pair.name + ".vardict.vcf.gz")
+                input = os.path.join(vardict_directory, f"{tumor_pair.name}.vardict.vcf.gz")
                 jobs.append(
                     concat_jobs(
                         [
@@ -7240,7 +6864,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ]
                             )
                         ],
-                        name="symlink_vardict_vcf." + tumor_pair.name,
+                        name=f"symlink_vardict_vcf.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -7326,7 +6950,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ]
                             )
                         ],
-                        name="merge_filter_paired_vardict." + tumor_pair.name,
+                        name=f"merge_filter_paired_vardict.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -7347,17 +6971,17 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             
-            input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
-            input_strelka2 = os.path.join(input_directory, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz")
-            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
-            input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
+            input_mutect2 = os.path.join(input_directory, f"{tumor_pair.name}.mutect2.somatic.vt.vcf.gz")
+            input_strelka2 = os.path.join(input_directory, f"{tumor_pair.name}.strelka2.somatic.purple.vcf.gz")
+            input_vardict = os.path.join(input_directory, f"{tumor_pair.name}.vardict.somatic.vt.vcf.gz")
+            input_varscan2 = os.path.join(input_directory, f"{tumor_pair.name}.varscan2.somatic.vt.vcf.gz")
             inputs_somatic = [input_mutect2, input_strelka2, input_vardict, input_varscan2]
             
             for input_vcf in inputs_somatic:
                 if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                     log.error(f"Incomplete ensemble vcf: {input_vcf}\n")
             
-            output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
+            output_ensemble = os.path.join(paired_ensemble_directory, f"{tumor_pair.name}.ensemble.somatic.vt.vcf.gz")
             
             jobs.append(
                 concat_jobs(
@@ -7375,7 +6999,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             output_ensemble + ".tbi"
                         ),
                         bash.rm(
-                            os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt-work")
+                            os.path.join(paired_ensemble_directory, f"{tumor_pair.name}.ensemble.somatic.vt-work")
                         ),
                         bcbio_variation_recall.ensemble(
                             inputs_somatic,
@@ -7383,7 +7007,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             config.param('bcbio_ensemble_somatic', 'options')
                         )
                     ],
-                    name="bcbio_ensemble_somatic." + tumor_pair.name,
+                    name=f"bcbio_ensemble_somatic.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=inputs_somatic
@@ -7405,9 +7029,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             
-            input_strelka2 = os.path.join(input_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz")
-            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
-            input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.germline.vt.vcf.gz")
+            input_strelka2 = os.path.join(input_directory, f"{tumor_pair.name}.strelka2.germline.vt.vcf.gz")
+            input_vardict = os.path.join(input_directory, f"{tumor_pair.name}.vardict.germline.vt.vcf.gz")
+            input_varscan2 = os.path.join(input_directory, f"{tumor_pair.name}.varscan2.germline.vt.vcf.gz")
             
             inputs_germline = [input_strelka2, input_vardict, input_varscan2]
             
@@ -7415,13 +7039,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                     log.error(f"Incomplete ensemble vcf: {input_vcf}\n")
             
-            output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
-            
-            # if os.path.isdir(os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")):
-            #     rm_job = bash.rm(
-            #         os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")
-            #     )
-            #     jobs.append(rm_job)
+            output_ensemble = os.path.join(paired_ensemble_directory, f"{tumor_pair.name}.ensemble.germline.vt.vcf.gz")
             
             jobs.append(
                 concat_jobs(
@@ -7439,7 +7057,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             output_ensemble + ".tbi"
                         ),
                         bash.rm(
-                            os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")
+                            os.path.join(paired_ensemble_directory, f"{tumor_pair.name}.ensemble.germline.vt-work")
                         ),
                         bcbio_variation_recall.ensemble(
                             inputs_germline,
@@ -7447,7 +7065,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             config.param('bcbio_ensemble_germline', 'options')
                         )
                     ],
-                    name="bcbio_ensemble_germline." + tumor_pair.name,
+                    name=f"bcbio_ensemble_germline.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=inputs_germline
@@ -7483,22 +7101,22 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                            "rawAnnotation")
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.cram")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.cram")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")]
                 ]
             )
             input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name,
-                                                  tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
+                                                  f"{tumor_pair.name}.ensemble.somatic.vt.vcf.gz")
             
             if nb_jobs == 1:
                 output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name,
-                                                       tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
+                                                       f"{tumor_pair.name}.ensemble.somatic.vt.annot.vcf.gz")
                 
                 jobs.append(
                     concat_jobs(
@@ -7515,7 +7133,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 config.param('gatk_variant_annotator_somatic', 'other_options')
                             )
                         ],
-                        name="gatk_variant_annotator_somatic." + tumor_pair.name,
+                        name=f"gatk_variant_annotator_somatic.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -7526,8 +7144,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     output_somatic_variants = os.path.join(annot_directory,
-                                                           tumor_pair.name + ".ensemble.somatic.vt.annot." + str(
-                                                               idx) + ".vcf.gz")
+                                                           f"{tumor_pair.name}.ensemble.somatic.vt.annot.{str(idx)}.vcf.gz")
                     
                     jobs.append(
                         concat_jobs(
@@ -7552,7 +7169,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     )
                 
                 output_somatic_variants = os.path.join(annot_directory,
-                                                       tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz")
+                                                       f"{tumor_pair.name}.ensemble.somatic.vt.annot.others.vcf.gz")
                 
                 jobs.append(
                     concat_jobs(
@@ -7570,7 +7187,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 exclude_intervals=unique_sequences_per_job_others
                             )
                         ],
-                        name="gatk_variant_annotator_somatic.others." + tumor_pair.name,
+                        name=f"gatk_variant_annotator_somatic.others.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -7605,22 +7222,22 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                            "rawAnnotation")
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.cram")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.cram")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")]
                 ]
             )
             input_germline_variants = os.path.join(ensemble_directory, tumor_pair.name,
-                                                   tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
+                                                   f"{tumor_pair.name}.ensemble.germline.vt.vcf.gz")
             
             if nb_jobs == 1:
                 output_germline_variants = os.path.join(ensemble_directory, tumor_pair.name,
-                                                        tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
+                                                        f"{tumor_pair.name}.ensemble.germline.vt.annot.vcf.gz")
                 
                 jobs.append(
                     concat_jobs(
@@ -7637,7 +7254,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 config.param('gatk_variant_annotator_germline', 'other_options'),
                             )
                         ],
-                        name="gatk_variant_annotator_germline." + tumor_pair.name,
+                        name=f"gatk_variant_annotator_germline.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -7648,8 +7265,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     output_germline_variants = os.path.join(annot_directory,
-                                                            tumor_pair.name + ".ensemble.germline.vt.annot." + str(
-                                                                idx) + ".vcf.gz")
+                                                            f"{tumor_pair.name}.ensemble.germline.vt.annot.{str(idx)}.vcf.gz")
                     
                     jobs.append(
                         concat_jobs(
@@ -7667,14 +7283,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     intervals=sequences
                                 )
                             ],
-                            name="gatk_variant_annotator_germline." + str(idx) + "." + tumor_pair.name,
+                            name=f"gatk_variant_annotator_germline.{str(idx)}.{tumor_pair.name}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
                 
                 output_germline_variants = os.path.join(annot_directory,
-                                                        tumor_pair.name + ".ensemble.germline.vt.annot.others.vcf.gz")
+                                                        f"{tumor_pair.name}.ensemble.germline.vt.annot.others.vcf.gz")
                 
                 jobs.append(
                     concat_jobs(
@@ -7692,7 +7308,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 exclude_intervals=unique_sequences_per_job_others
                             )
                         ],
-                        name="gatk_variant_annotator_germline.others." + tumor_pair.name,
+                        name=f"gatk_variant_annotator_germline.others.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -7713,16 +7329,16 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         for tumor_pair in self.tumor_pairs.values():
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
             output_somatic = os.path.join(ensemble_directory, tumor_pair.name,
-                                          tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
+                                          f"{tumor_pair.name}.ensemble.somatic.vt.annot.vcf.gz")
             if nb_jobs > 1:
                 unique_sequences_per_job, _ = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(),
                                                                                 nb_jobs - 1, variant=True)
                 vcfs_to_merge = [os.path.join(annot_directory,
-                                              tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) + ".vcf.gz")
+                                              f"{tumor_pair.name}.ensemble.somatic.vt.annot.{str(idx)}.vcf.gz")
                                  for idx in range(len(unique_sequences_per_job))]
                 
                 vcfs_to_merge.append(
-                    os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz"))
+                    os.path.join(annot_directory, f"{tumor_pair.name}.ensemble.somatic.vt.annot.others.vcf.gz"))
                 
                 jobs.append(
                     pipe_jobs(
@@ -7736,7 +7352,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 output_somatic
                             )
                         ],
-                        name="merge_gatk_variant_annotator.somatic." + tumor_pair.name,
+                        name=f"merge_gatk_variant_annotator.somatic.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -7757,17 +7373,17 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         for tumor_pair in self.tumor_pairs.values():
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
             output_germline = os.path.join(ensemble_directory, tumor_pair.name,
-                                           tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
+                                           f"{tumor_pair.name}.ensemble.germline.vt.annot.vcf.gz")
             
             if nb_jobs > 1:
                 unique_sequences_per_job, _ = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(),
                                                                                 nb_jobs - 1, variant=True)
                 vcfs_to_merge = [os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation",
-                                              tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
+                                              f"{tumor_pair.name}.ensemble.germline.vt.annot.{str(idx)}.vcf.gz")
                                  for idx in range(len(unique_sequences_per_job))]
                 
                 vcfs_to_merge.append(
-                    os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot.others.vcf.gz"))
+                    os.path.join(annot_directory, f"{tumor_pair.name}.ensemble.germline.vt.annot.others.vcf.gz"))
                 
                 jobs.append(
                     pipe_jobs(
@@ -7781,7 +7397,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 output_germline
                             )
                         ],
-                        name="merge_gatk_variant_annotator.germline." + tumor_pair.name,
+                        name=f"merge_gatk_variant_annotator.germline.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -7789,49 +7405,76 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         
         return jobs
     
-    def filter_ensemble_germline(self):
+    def filter_germline(self):
         """
         Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
         the filter on those generated fields.
         """
         jobs = []
         
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        
         for tumor_pair in self.tumor_pairs.values():
-            input = os.path.join(
-                ensemble_directory,
-                tumor_pair.name,
-                tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz"
-            )
-            output_2caller = os.path.join(
-                ensemble_directory,
-                tumor_pair.name,
-                tumor_pair.name + ".ensemble.germline.vt.annot.2caller.vcf.gz"
-            )
-            output_filter = os.path.join(
-                ensemble_directory,
-                tumor_pair.name,
-                tumor_pair.name + ".ensemble.germline.vt.annot.2caller.flt.vcf.gz"
-            )
+            if 'fastpass' in self.get_protocol():
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
+                
+                input = os.path.join(
+                    pair_directory,
+                    f"{tumor_pair.name}.varscan2.germline.vt.vcf.gz"
+                )
+                output = os.path.join(
+                    pair_directory,
+                    f"{tumor_pair.name}.varscan2.germline.annot.vcf.gz"
+                )
+                output_filter = os.path.join(
+                    pair_directory,
+                    f"{tumor_pair.name}.varscan2.germline.annot.flt.vcf.gz"
+                )
+                
+                ini_section = 'filter_fastpass'
+                caller_filter = config.param('filter_fastpass', 'call_filter'),
+                variant_filter = config.param('filter_fastpass', 'germline_filter_options')
+                job_name = f"filter_fastpass_germline.{tumor_pair.name}"
+            
+            else:
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                
+                input = os.path.join(
+                    pair_directory,
+                    tumor_pair.name,
+                    f"{tumor_pair.name}.ensemble.germline.vt.annot.vcf.gz"
+                )
+                output = os.path.join(
+                    pair_directory,
+                    tumor_pair.name,
+                    f"{tumor_pair.name}.ensemble.germline.vt.annot.2caller.vcf.gz"
+                )
+                output_filter = os.path.join(
+                    pair_directory,
+                    tumor_pair.name,
+                    f"{tumor_pair.name}.ensemble.germline.vt.annot.2caller.flt.vcf.gz"
+                )
+                
+                ini_section = 'filter_ensemble'
+                caller_filter = config.param('filter_ensemble', 'call_filter'),
+                variant_filter = config.param('filter_ensemble', 'germline_filter_options')
+                job_name = f"filter_ensemble.germline.{tumor_pair.name}"
             
             jobs.append(
                 concat_jobs(
                     [
                         tools.format2pcgr(
                             input,
-                            output_2caller,
-                            config.param('filter_ensemble', 'call_filter'),
+                            output,
+                            caller_filter,
                             "germline",
                             tumor_pair.tumor.name,
-                            ini_section='filter_ensemble'
+                            ini_section=ini_section
                         ),
                         pipe_jobs(
                             [
                                 bcftools.view(
-                                    output_2caller,
+                                    output,
                                     None,
-                                    filter_options=config.param('filter_ensemble', 'germline_filter_options'),
+                                    filter_options=variant_filter,
                                 ),
                                 bcftools.view(
                                     None,
@@ -7850,7 +7493,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             options="-pvcf"
                         )
                     ],
-                    name="filter_ensemble.germline." + tumor_pair.name,
+                    name=job_name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
@@ -7858,54 +7501,80 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         
         return jobs
         
-    def filter_ensemble_somatic(self):
+    def filter_somatic(self):
         """
         Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
         the filter on those generated fields.
         """
         jobs = []
-        
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        
         for tumor_pair in self.tumor_pairs.values():
-            input = os.path.join(
-                ensemble_directory,
-                tumor_pair.name,
-                tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz"
-            )
-            output_2caller = os.path.join(
-                ensemble_directory,
-                tumor_pair.name,
-                tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.vcf.gz"
-            )
-            output_filter = os.path.join(
-                ensemble_directory,
-                tumor_pair.name,
-                tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz"
-            )
+            if 'fastpass' in self.get_protocol():
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
+                
+                input = os.path.join(
+                    pair_directory,
+                    f"{tumor_pair.name}.varscan2.somatic.vt.vcf.gz"
+                )
+                output = os.path.join(
+                    pair_directory,
+                    f"{tumor_pair.name}.varscan2.somatic.annot.vcf.gz"
+                )
+                output_filter = os.path.join(
+                    pair_directory,
+                    f"{tumor_pair.name}.varscan2.somatic.annot.flt.vcf.gz"
+                )
+                
+                ini_section = 'filter_fastpass'
+                caller_filter = config.param('filter_fastpass', 'call_filter'),
+                variant_filter = config.param('filter_fastpass', 'somatic_filter_options')
+                job_name = f"filter_fastpass_somatic.{tumor_pair.name}"
+            
+            else:
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                
+                input = os.path.join(
+                    pair_directory,
+                    tumor_pair.name,
+                    f"{tumor_pair.name}.ensemble.somatic.vt.annot.vcf.gz"
+                )
+                output = os.path.join(
+                    pair_directory,
+                    tumor_pair.name,
+                    f"{tumor_pair.name}.ensemble.somatic.vt.annot.2caller.vcf.gz"
+                )
+                output_filter = os.path.join(
+                    pair_directory,
+                    tumor_pair.name,
+                    f"{tumor_pair.name}.ensemble.somatic.vt.annot.2caller.flt.vcf.gz"
+                )
+                
+                ini_section = 'filter_ensemble'
+                caller_filter = config.param('filter_ensemble', 'call_filter'),
+                variant_filter = config.param('filter_ensemble', 'somatic_filter_options')
+                job_name = f"filter_ensemble.somatic.{tumor_pair.name}"
             
             jobs.append(
                 concat_jobs(
                     [
                         tools.format2pcgr(
                             input,
-                            output_2caller,
-                            config.param('filter_ensemble', 'call_filter'),
+                            output,
+                            caller_filter,
                             "somatic",
                             tumor_pair.tumor.name,
-                            ini_section='filter_ensemble'
+                            ini_section=ini_section
                         ),
                         bcftools.view(
-                            output_2caller,
+                            output,
                             output_filter,
-                            filter_options=config.param('filter_ensemble', 'somatic_filter_options'),
+                            filter_options=variant_filter,
                         ),
                         htslib.tabix(
                             output_filter,
                             options="-pvcf"
                         )
                     ],
-                    name="filter_ensemble.somatic." + tumor_pair.name,
+                    name=job_name,
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets)
                 )
@@ -7930,12 +7599,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         concat_jobs(
                             [
                                 deliverables.md5sum(
-                                    sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz",
-                                    sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz.md5",
+                                    f"{sample_prefix}.ensemble.somatic.vt.annot.vcf.gz",
+                                    f"{sample_prefix}.ensemble.somatic.vt.annot.vcf.gz.md5",
                                     self.output_dir
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz.md5",
+                                    f"{sample_prefix}.ensemble.somatic.vt.annot.vcf.gz.md5",
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/ensemble",
@@ -7943,7 +7612,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz",
+                                    f"{sample_prefix}.ensemble.somatic.vt.annot.vcf.gz",
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/ensemble",
@@ -7951,7 +7620,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz.tbi",
+                                    f"{sample_prefix}.ensemble.somatic.vt.annot.vcf.gz.tbi",
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/ensemble",
@@ -7959,12 +7628,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.md5sum(
-                                    sample_prefix + ".ensemble.germline.vt.annot.vcf.gz",
-                                    sample_prefix + ".ensemble.germline.vt.annot.vcf.gz.md5",
+                                    f"{sample_prefix}.ensemble.germline.vt.annot.vcf.gz",
+                                    f"{sample_prefix}.ensemble.germline.vt.annot.vcf.gz.md5",
                                     self.output_dir
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".ensemble.germline.vt.annot.vcf.gz.md5",
+                                    f"{sample_prefix}.ensemble.germline.vt.annot.vcf.gz.md5",
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/ensemble",
@@ -7972,7 +7641,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".ensemble.germline.vt.annot.vcf.gz",
+                                    f"{sample_prefix}.ensemble.germline.vt.annot.vcf.gz",
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/ensemble",
@@ -7980,7 +7649,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".ensemble.germline.vt.annot.vcf.gz.tbi",
+                                    f"{sample_prefix}.ensemble.germline.vt.annot.vcf.gz.tbi",
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/ensemble",
@@ -7988,7 +7657,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     profyle=self.args.profyle
                                 )
                             ],
-                            name="sym_link_ensemble." + str(idx) + "." + tumor_pair.name + "." + key,
+                            name=f"sym_link_ensemble.{str(idx)}.{tumor_pair.name}.{key}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
@@ -8014,15 +7683,15 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             [input_normal] = self.select_input_files(
                 [
                     # [os.path.join(svprep_directory, tumor_pair.normal.name + ".sv_prep.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
                     # [os.path.join(svprep_directory, tumor_pair.tumor.name + ".sv_prep.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
                 ]
             )
             
@@ -8030,8 +7699,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             gridss_directory = os.path.join(pair_directory, "gridss")
             normal_output_prefix = os.path.join(gridss_directory, tumor_pair.normal.name)
             tumor_output_prefix = os.path.join(gridss_directory, tumor_pair.tumor.name)
-            gridss_vcf_output = tumor_output_prefix + ".gridss.vcf.gz"
-            gridds_bam_output = tumor_output_prefix + ".assembly.bam"
+            gridss_vcf_output = f"{tumor_output_prefix}.gridss.vcf.gz"
+            gridds_bam_output = f"{tumor_output_prefix}.assembly.bam"
             
             jobs.append(
                 concat_jobs(
@@ -8049,15 +7718,15 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             gridds_bam_output
                         )
                     ],
-                    name="gridss_paired_somatic." + tumor_pair.name,
+                    name=f"gridss_paired_somatic.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[input_normal, input_tumor]
                 )
             )
             
-            gripss_vcf_output = tumor_output_prefix + ".gripss.somatic.vcf.gz"
-            gripss_filter_vcf_output = tumor_output_prefix + ".gripss.filtered.somatic.vcf.gz"
+            gripss_vcf_output = f"{tumor_output_prefix}.gripss.somatic.vcf.gz"
+            gripss_filter_vcf_output = f"{tumor_output_prefix}.gripss.filtered.somatic.vcf.gz"
             jobs.append(
                 concat_jobs(
                     [
@@ -8070,14 +7739,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             reference=tumor_pair.normal.name,
                         )
                     ],
-                    name="gripss_filter.somatic." + tumor_pair.name,
+                    name=f"gripss_filter.somatic.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                 )
             )
             
-            gripss_vcf_output = normal_output_prefix + ".gripss.germline.vcf.gz"
-            gripss_filter_vcf_output = normal_output_prefix + ".gripss.filtered.germline.vcf.gz"
+            gripss_vcf_output = f"{normal_output_prefix}.gripss.germline.vcf.gz"
+            gripss_filter_vcf_output = f"{normal_output_prefix}.gripss.filtered.germline.vcf.gz"
             jobs.append(
                 concat_jobs(
                     [
@@ -8090,7 +7759,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             reference=tumor_pair.tumor.name
                         )
                     ],
-                    name="gripss_filter.germline." + tumor_pair.name,
+                    name=f"gripss_filter.germline.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                 )
@@ -8111,7 +7780,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         for tumor_pair in self.tumor_pairs.values():
             pair_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             purple_dir = os.path.join(pair_dir, "purple")
-            purple_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.sv.vcf.gz")
+            purple_vcf = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.sv.vcf.gz")
             linx_output_dir = os.path.join(pair_dir, "linx")
             jobs.append(
                 concat_jobs(
@@ -8125,7 +7794,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ini_section="linx_annotations_somatic"
                         )
                     ],
-                    name="linx_annotations_somatic." + tumor_pair.name,
+                    name=f"linx_annotations_somatic.{tumor_pair.name}",
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets)
                 )
@@ -8140,7 +7809,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         for tumor_pair in self.tumor_pairs.values():
             pair_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             purple_dir = os.path.join(pair_dir, "purple")
-            purple_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.sv.vcf.gz")
+            purple_vcf = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.sv.vcf.gz")
             linx_output_dir = os.path.join(pair_dir, "linx")
             jobs.append(
                 concat_jobs(
@@ -8153,7 +7822,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ini_section="linx_annotations_germline"
                         )
                     ],
-                    name="linx_annotations_germline." + tumor_pair.name,
+                    name=f"linx_annotations_germline.{tumor_pair.name}",
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets)
                 )
@@ -8178,12 +7847,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             linx_output_dir,
                             ini_section="linx_plot"
                         ),
-                        bash.touch(os.path.join(linx_output_dir, "linx_plot." + tumor_pair.name + ".Done"))
+                        bash.touch(os.path.join(linx_output_dir, f"linx_plot.{tumor_pair.name}.Done"))
                     ],
                     name="linx_plot." + tumor_pair.name,
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets),
-                    output_dependency=[os.path.join(linx_output_dir, "linx_plot." + tumor_pair.name + ".Done")]
+                    output_dependency=[os.path.join(linx_output_dir, f"linx_plot.{tumor_pair.name}.Done")]
                 )
             )
         return jobs
@@ -8281,9 +7950,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.gatk_mark_duplicates,
                 self.set_interval_list,
                 self.sequenza,
-                self.rawmpileup_panel,
-                self.paired_varscan2_panel,
-                self.merge_varscan2_panel,
+                self.rawmpileup,
+                self.paired_varscan2,
+                self.merge_varscan2,
                 self.preprocess_vcf_panel,
                 self.cnvkit_batch,
                 self.filter_fastpass_germline,
@@ -8311,7 +7980,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.manta_sv_calls,  # 15
                 self.strelka2_paired_somatic,
                 self.strelka2_paired_germline,
-                self.strelka2_paired_germline_snpeff,
+                self.strelka2_paired_snpeff,
                 self.purple,
                 self.rawmpileup,  # 20
                 self.paired_varscan2,
@@ -8327,9 +7996,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.gatk_variant_annotator_germline,
                 self.merge_gatk_variant_annotator_germline,
                 self.cnvkit_batch,
-                self.filter_ensemble_germline,
-                self.filter_ensemble_somatic,  # 35
-                self.report_cpsr,
+                self.filter_germline,
+                self.report_cpsr,# 35
+                self.filter_somatic,
                 self.report_pcgr,
                 self.run_multiqc,
                 self.sym_link_fastq_pair,

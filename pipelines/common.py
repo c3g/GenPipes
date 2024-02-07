@@ -679,10 +679,10 @@ END
 
         for readset in self.readsets:
             output_dir = os.path.join(self.output_dirs['trim_directory'], readset.sample.name)
-            metrics_directory = os.path.join(self.output_dirs["metrics_directory"][readset.sample.name])
+            metrics_directory = os.path.join(self.output_dirs['metrics_directory'][readset.sample.name])
             
-            trim_json = os.path.join(metrics_directory, readset.name + ".trim.json")
-            trim_html = os.path.join(metrics_directory, readset.name + ".trim.html")
+            trim_json = os.path.join(metrics_directory, f"{readset.name}.trim.json")
+            trim_html = os.path.join(metrics_directory, f"{readset.name}.trim.html")
             
             adapter_file = config.param('trim_fastp', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
@@ -708,16 +708,16 @@ END
                         readset.sample.name,
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
                     )
-                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                    candidate_input_files.append([f"{prefix}.pair1.fastq.gz", f"{prefix}.pair2.fastq.gz"])
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
                         readset.name + "."
                     )
-                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                    candidate_input_files.append([f"{prefix}.pair1.fastq.gz", f"{prefix}.pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                output1 = trim_file_prefix + ".trim.pair1.fastq.gz"
-                output2 = trim_file_prefix + ".trim.pair2.fastq.gz"
+                output1 = f"{trim_file_prefix}.trim.pair1.fastq.gz"
+                output2 = f"{trim_file_prefix}.trim.pair2.fastq.gz"
 
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
@@ -727,15 +727,14 @@ END
                         readset.sample.name,
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
                     )
-                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                    candidate_input_files.append([f"{prefix}.single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
-                output1 = trim_file_prefix + ".trim.single.fastq.gz"
+                output1 = f"{trim_file_prefix}.trim.single.fastq.gz"
                 output2 = None
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"Error: run type {readset.run_type} is invalid for readset {readset.name} (should be PAIRED_END or SINGLE_END)!"))
 
             job_name = f"trim_fastp.{readset.name}"
             job_project_tracking_metrics = []
@@ -817,7 +816,7 @@ END
                 )
             )
             self.multiqc_inputs[readset.sample.name].append(
-                os.path.join(metrics_directory, readset.name + ".trim.json")
+                os.path.join(metrics_directory, f"{readset.name}.trim.json")
             )
             
         return jobs
@@ -836,7 +835,7 @@ END
 
         jobs = []
         for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, f"{readset.name}.trim")
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
             compression_postfix = config.param("bwa_mem2_samtools_sort", 'compression')
             readset_prefix = os.path.join(alignment_directory, readset.name, readset.name + ".sorted." + compression_postfix)
@@ -845,7 +844,7 @@ END
             fastq2 = ""
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                candidate_input_files = [[f"{trim_file_prefix}.pair1.fastq.gz", f"{trim_file_prefix}.pair2.fastq.gz"]]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
@@ -854,11 +853,11 @@ END
                         readset.sample.name,
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
                     )
-                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                    candidate_input_files.append([f"{prefix}.pair1.fastq.gz", f"{prefix}.pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
             elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                candidate_input_files = [[f"{trim_file_prefix}.single.fastq.gz"]]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
@@ -867,7 +866,7 @@ END
                         readset.sample.name,
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
                     )
-                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                    candidate_input_files.append([f"{prefix}.single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
 
@@ -906,7 +905,7 @@ END
                             ini_section='samtools_index_cram'
                         )
                     ],
-                    name="bwa_mem2_samtools_sort." + readset.name,
+                    name=f"bwa_mem2_samtools_sort.{readset.name}",
                     samples=[readset.sample]
                 )
             )
@@ -929,13 +928,13 @@ END
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
             # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in
-                 sample.readsets],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in
-                 sample.readsets], [readset.bam for readset in sample.readsets if readset.bam]]
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.UMI.bam") for readset in sample.readsets],
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam") for readset in sample.readsets],
+                [readset.bam for readset in sample.readsets if readset.bam]]
+            
             readset_bams = self.select_input_files(candidate_readset_bams)
 
-            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            sample_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
             mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
@@ -967,7 +966,7 @@ END
                                 input=readset_index
                             )
                         ],
-                        name="symlink_readset_sample_bam." + sample.name,
+                        name=f"symlink_readset_sample_bam.{sample.name}",
                         samples=[sample],
                         readsets=list(sample.readsets)
                     )
@@ -1009,23 +1008,23 @@ END
             
             # Find input readset CRAMs/BAMs first from previous bwa_mem2_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.UMI.bam") for readset in
                  sample.readsets],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.cram") for readset in
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.cram") for readset in
                  sample.readsets], [readset.bam for readset in sample.readsets if readset.bam],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam") for readset in
                  sample.readsets], [readset.bam for readset in sample.readsets if readset.bam]
             ]
             input = self.select_input_files(candidate_readset_bams)
 
             if config.param("gatk_mark_duplicates", 'compression') == "cram":
-                output = os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")
+                output = os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")
                 output_index = f"{output}.crai"
             else:
-                output =os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")
+                output =os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")
                 output_index = f"{output}.bai"
 
-            metrics_file = os.path.join(metrics_directory, sample.name + ".sorted.dup.metrics")
+            metrics_file = os.path.join(metrics_directory, f"{sample.name}.sorted.dup.metrics")
 
             job_name = f"gatk_mark_duplicates.{sample.name}"
             job_project_tracking_metrics = []
@@ -1099,16 +1098,16 @@ END
             Job(
                 [known_variants_annotated],
                 [variants_directory, verify_bam_id_directory],
-                command="mkdir -p " + variants_directory + " " + verify_bam_id_directory,
-                name="verify_bam_id_create_directories"
+                command=f"mkdir -p {variants_directory} {verify_bam_id_directory}",
+                name=f"verify_bam_id_create_directories"
         ))
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
-                                     [os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")],
-                                     [os.path.join(alignment_directory, sample.name + ".sorted.mdup.bam")]]
+            candidate_input_files = [[os.path.join(alignment_directory, f"{sample.name}.sorted.dup.recal.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.mdup.bam")]]
             [input_bam] = self.select_input_files(candidate_input_files)
 
             output_prefix = os.path.join(verify_bam_id_directory, sample.name)
@@ -1120,12 +1119,12 @@ END
                 input_bam,
                 output_prefix
             )
-            job.name = "verify_bam_id." + sample.name
+            job.name = f"verify_bam_id.{sample.name}"
             job.samples = [sample]
 
             jobs.append(job)
 
-            verify_bam_results.extend([output_prefix + ".selfSM" ])
+            verify_bam_results.extend([f"{output_prefix}.selfSM" ])
 
         # Coverage bed is null if whole genome experiment
         target_bed=coverage_bed if coverage_bed else ""
@@ -1134,7 +1133,7 @@ END
         jobs.append(
             rmarkdown.render(
                 job_input=verify_bam_results ,
-                job_name="verify_bam_id_report",
+                job_name=f"verify_bam_id_report",
                 input_rmarkdown_file=os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd"),
                 samples=self.samples,
                 readsets=self.readsets,
@@ -1155,20 +1154,21 @@ END
         jobs = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")]] #DNAseq; TumorPair
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]) #DNAseq; ChIPseq; MethylSeq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.mdup.bam")]) # RnaSeq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")]) # TumorPair
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".merded.mdup.bam")]) # ChIPseq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + "matefixed.sorted.bam")]) # DNAseq_high_coverage
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")]) # TumorPair; DNAseq_high_coverage
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".merged.bam")]) # ChIPSeq; HiCseq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")]) # ChIPseq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted_noRG.bam")]) # MethylSeq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.UMI.bam")]) # MethylSeq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")]) # raw bam
+            candidate_input_files = [[os.path.join(alignment_directory, f"{sample.name}.sorted.dup.recal.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.mdup.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.merded.mdup.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.matefixed.sorted.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.realigned.sorted.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.merged.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted_noRG.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.UMI.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]]  #DNAseq; TumorPair
+            
             input_bam = self.select_input_files(candidate_input_files)[0]
 
             output_cram = re.sub("\.bam$", ".cram", input_bam)
@@ -1187,7 +1187,7 @@ END
                     removable=False
                 )
 
-            job.name = "samtools_cram_output." + sample.name
+            job.name = f"samtools_cram_output.{sample.name}"
             job.samples = [sample]
             job.removable_files = [input_bam]
 
