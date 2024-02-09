@@ -5316,7 +5316,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         bcftools.split(
                             os.path.join(pair_directory, f"{tumor_pair.name}.strelka2.germline.vt.vcf.gz"),
                             pair_directory,
-                            config.param('strelka2_paired_germline_snpeff', 'split_options'),
+                            config.param('strelka2_paired_snpeff', 'split_options'),
                         )
                     ],
                     name="strelka2_paired_germline_snpeff.split." + tumor_pair.name,
