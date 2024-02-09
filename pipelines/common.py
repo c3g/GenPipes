@@ -226,7 +226,6 @@ class Illumina(MUGQICPipeline):
         if FASTQ files are not already specified in the readset file. Do nothing otherwise.
         """
         jobs = []
-        analyses_dir = os.path.join("analyses")
 
         for readset in self.readsets:
             # If readset FASTQ files are available, skip this step
@@ -238,7 +237,7 @@ class Illumina(MUGQICPipeline):
                         self.output_dir,
                         "temporary_bams",
                         readset.sample.name,
-                        readset.name + ".sorted.bam"
+                        f"{readset.name}.sorted.bam"
                     )
                     candidate_input_files = [
                         [sortedBam],
@@ -251,10 +250,10 @@ class Illumina(MUGQICPipeline):
                         readset.sample.name,
                     )
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".pair1.fastq.gz")
-                        fastq2 = os.path.join(rawReadsDirectory, readset.name + ".pair2.fastq.gz")
+                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.pair1.fastq.gz")
+                        fastq2 = os.path.join(rawReadsDirectory, f"{readset.name}.pair2.fastq.gz")
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".single.fastq.gz")
+                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.single.fastq.gz")
                         fastq2 = None
                     else:
                         _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -276,7 +275,7 @@ class Illumina(MUGQICPipeline):
                             )
                         )
                 else:
-                    _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
+                    _raise(SanitycheckError(f"Error: BAM file not available for readset {readset.name}!"))
         return jobs
 
     def gatk_sam_to_fastq(self):
@@ -297,7 +296,7 @@ class Illumina(MUGQICPipeline):
                         self.output_dir,
                         "temporary_bams",
                         readset.sample.name,
-                        readset.name + ".sorted.bam"
+                        f"{readset.name}.sorted.bam"
                     )
                     candidate_input_files = [
                         [sortedBam],
@@ -310,10 +309,10 @@ class Illumina(MUGQICPipeline):
                         readset.sample.name,
                     )
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".pair1.fastq.gz")
-                        fastq2 = os.path.join(rawReadsDirectory, readset.name + ".pair2.fastq.gz")
+                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.pair1.fastq.gz")
+                        fastq2 = os.path.join(rawReadsDirectory, f"{readset.name}.pair2.fastq.gz")
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".single.fastq.gz")
+                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.single.fastq.gz")
                         fastq2 = None
                     else:
                         _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -328,10 +327,12 @@ class Illumina(MUGQICPipeline):
                                 fastq1,
                                 fastq2
                             )
-                        ], name="gatk_sam_to_fastq."+readset.name, samples=[readset.sample])
+                        ],
+                            name=f"gatk_sam_to_fastq.{readset.name}",
+                            samples=[readset.sample])
                     )
                 else:
-                    _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
+                    _raise(SanitycheckError(f"Error: BAM file not available for readset {readset.name} !"))
         return jobs
 
     def trimmomatic(self):
@@ -706,13 +707,13 @@ END
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                        re.sub("\.bam$", "", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([f"{prefix}.pair1.fastq.gz", f"{prefix}.pair2.fastq.gz"])
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
-                        readset.name + "."
+                        readset.name
                     )
                     candidate_input_files.append([f"{prefix}.pair1.fastq.gz", f"{prefix}.pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
@@ -725,7 +726,7 @@ END
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                        re.sub("\.bam$", "", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([f"{prefix}.single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
