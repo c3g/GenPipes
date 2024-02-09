@@ -91,7 +91,7 @@ class Config(configparser.RawConfigParser):
 
     # Retrieve param in config files with optional definition check and type validation
     # By default, parameter is required to be defined in one of the config file
-    def get(self, section, option, required=True, param_type='string'):
+    def get(self, section, option, required=True, param_type='string', **kwargs):
         # Store original section for future error message, in case 'DEFAULT' section is used eventually
         original_section = section
         # Keep that if block first, it is only evaluated in testing mode
@@ -99,7 +99,8 @@ class Config(configparser.RawConfigParser):
             # hack because this class becomes a global
             try:
                 return super().get(section, '{}{}'.format(self.cit_prefix, option))
-            except configparser.Error:
+            except configparser.Error as e:
+                _raise(SanitycheckError(e))
                 pass
 
             from utils import utils
@@ -132,16 +133,16 @@ class Config(configparser.RawConfigParser):
                 elif param_type == 'boolean':
                     return self.getboolean(section, option)
                 elif param_type == 'filepath':
-                    value = os.path.expandvars(self.get(section, option))
+                    value = os.path.expandvars(self.gmpliconseq_qiimeet(section, option))
                     if not value and not required:
                         return None
                     if os.path.isfile(value):
                         return value
                     else:
-                        log.debug(required)
+                        log.debug(f"{required=}")
                         _raise(SanitycheckError(f"File path \"{value}\" provided in section [{section}] for option {option} does not exist or is not a valid regular file!"))
                 elif param_type == 'dirpath':
-                    value = os.path.expandvars(self.get(section, option))
+                    value = os.path.expandvars(super().get(section, option))
                     if not value and not required:
                         return None
                     if os.path.isdir(value):
@@ -162,7 +163,7 @@ class Config(configparser.RawConfigParser):
                 else:
                     _raise(SanitycheckError("Unknown parameter type '" + param_type + "'"))
             except Exception as e:
-                _raise(SanitycheckError("Error found :\n  " + str(e)))
+                _raise(SanitycheckError("Error found :\n  " + str(e) + f"\n{section=}, {option=}"))
         elif required:
             _raise(SanitycheckError("Error: REQUIRED parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!"))
         # Returning empty string instead of None if nothing catched before as error
