@@ -24,7 +24,7 @@ To access them, add the following lines to your *$HOME/.bash_profile*:
 
 ```
 #!bash
-umask 0002
+umask 0006
 
 ## MUGQIC genomes and modules
 
@@ -37,7 +37,7 @@ For MUGQIC analysts, add the following lines to your *$HOME/.bash_profile*:
 
 ```
 #!bash
-umask 0002
+umask 0006
 
 ## MUGQIC genomes and modules for MUGQIC analysts
 

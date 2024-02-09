@@ -1817,6 +1817,29 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             collect_oxog_metrics_normal_job.readsets = list(tumor_pair.normal.readsets)
             tumor_pair_jobs.append(collect_oxog_metrics_normal_job)
 
+            collect_wgs_metrics_normal_job = concat_jobs(
+                    [
+                        mkdir_job_normal,
+                        gatk4.collect_wgs_metrics(
+                            normal_input,
+                            os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt")
+                            ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
+                            ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt"), self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.normal.name + ".wgs_metrics.txt"),
+                            input=os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt")
+                            )
+                    ]
+            )
+            self.multiqc_inputs[tumor_pair.name].append(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt"))
+            collect_wgs_metrics_normal_job.name = "picard_collect_wgs_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
+            collect_wgs_metrics_normal_job.samples = [tumor_pair.normal]
+            collect_wgs_metrics_normal_job.readsets = list(tumor_pair.normal.readsets)
+            tumor_pair_jobs.append(collect_wgs_metrics_normal_job)
+
             collect_gcbias_metrics_normal_job = concat_jobs(
                 [
                     mkdir_job_normal,
@@ -1922,6 +1945,29 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             collect_oxog_metrics_tumor_job.samples = [tumor_pair.tumor]
             collect_oxog_metrics_tumor_job.readsets = list(tumor_pair.tumor.readsets)
             tumor_pair_jobs.append(collect_oxog_metrics_tumor_job)
+
+            collect_wgs_metrics_tumor_job = concat_jobs(
+                    [
+                        mkdir_job_tumor,
+                        gatk4.collect_wgs_metrics(
+                            tumor_input,
+                            os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt")
+                            ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
+                            ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt"), self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.tumor.name + ".wgs_metrics.txt"),
+                            input=os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt")
+                            )
+                    ]
+            )
+            self.multiqc_inputs[tumor_pair.name].append(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt"))
+            collect_wgs_metrics_tumor_job.name = "picard_collect_wgs_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
+            collect_wgs_metrics_tumor_job.samples = [tumor_pair.tumor]
+            collect_wgs_metrics_tumor_job.readsets = list(tumor_pair.tumor.readsets)
+            tumor_pair_jobs.append(collect_wgs_metrics_tumor_job)
 
             collect_gcbias_metrics_tumor_job = concat_jobs(
                 [
@@ -2107,23 +2153,17 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         options
                     ),
                     bash.mkdir(
-                        self.output_dirs['report'][tumor_pair.name]
+                       os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")
+                    ),
+                    bash.ln(
+                        os.path.relpath(normal_qualimap_directory, os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")),
+                        os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap", tumor_pair.normal.name),
+                        input=normal_qualimap_directory
                     ),
                     normal_job_project_tracking_metrics
                 ]
             )
-            for outfile in qualimap_normal_job.report_files:
-                self.multiqc_inputs[tumor_pair.name].append(outfile)
-                qualimap_normal_job = concat_jobs(
-                    [
-                        qualimap_normal_job,
-                        bash.ln(
-                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.normal.name + "." + os.path.basename(outfile)),
-                            input=outfile
-                        )
-                    ]
-                )
+            self.multiqc_inputs[tumor_pair.name].append(normal_qualimap_directory)
             qualimap_normal_job.name = normal_job_name
             qualimap_normal_job.samples = normal_samples
             qualimap_normal_job.readsets = list(tumor_pair.normal.readsets)
@@ -2186,23 +2226,17 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         options
                     ),
                     bash.mkdir(
-                        self.output_dirs['report'][tumor_pair.name]
+                       os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")
+                    ),
+                    bash.ln(
+                        os.path.relpath(tumor_qualimap_directory, os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")),
+                        os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap", tumor_pair.tumor.name),
+                        input=tumor_qualimap_directory
                     ),
                     tumor_job_project_tracking_metrics
                 ]
             )
-            for outfile in qualimap_tumor_job.report_files:
-                self.multiqc_inputs[tumor_pair.name].append(outfile)
-                qualimap_tumor_job = concat_jobs(
-                    [
-                        qualimap_tumor_job,
-                        bash.ln(
-                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.tumor.name + "." + os.path.basename(outfile)),
-                            input=outfile
-                        )
-                    ]
-                )
+            self.multiqc_inputs[tumor_pair.name].append(tumor_qualimap_directory)
             qualimap_tumor_job.name = tumor_job_name
             qualimap_tumor_job.samples = tumor_samples
             qualimap_tumor_job.readsets = list(tumor_pair.tumor.readsets)
@@ -4881,10 +4915,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 tumor_pair.name,
                 "pcgr"
             )
-            output = os.path.join(
-                pcgr_directory,
-                tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"
-            )
+            output = [
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".cna_segments.tsv.gz")
+                ]
 
             jobs.append(
                 concat_jobs(
@@ -4914,13 +4950,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             tumor_pair.name,
                             input_cna=output_cna
                         ),
-                        bash.ls(output)
+                        bash.ls(output[0])
                     ],
                     name="report_pcgr." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency = [header, input, input_cna, input_cpsr, output_cna_body],
-                    output_dependency = [header, output_cna_body, output_cna, output]
+                    output_dependency = [header, output_cna_body, output_cna] + output
                 )
             )
 

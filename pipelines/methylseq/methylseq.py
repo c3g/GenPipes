@@ -1246,6 +1246,16 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
                 # dragen output file name
                 dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+                dragen_report_files = [
+                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.mapping_metrics.csv"),
+                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.wgs_coverage_metrics.csv"),
+                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.wgs_fine_hist.csv"),
+                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.wgs_contig_mean_cov.csv"),
+                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.fragment_length_hist.csv"),
+                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.trimmer_metrics.csv"),
+                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.time_metrics.csv"),
+                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.fastqc_metrics.csv")
+                        ]
                 #output_bam = dragen_bam
                 index_bam = dragen_bam + ".bai"
 
@@ -1310,9 +1320,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                     ),
                     bash.cp(dragen_workfolder, os.path.abspath(alignment_directory) + "/", recursive=True),
                     bash.rm(dragen_workfolder, recursive=True, force=True),
-                    # bash.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
                     rm_dragen_fastq_job
-                ], name="dragen_align." + readset.name, samples=[readset.sample], input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam])
+                ], name="dragen_align." + readset.name, samples=[readset.sample], input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam] + dragen_report_files)
                 jobs.append(
                     dragen_align
                 )
@@ -1330,14 +1339,14 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
                 symlink_job = bash.mkdir(link_directory)
                 for outfile in dragen_align.report_files:
-                    self.multiqc_inputs.append(os.path.join(alignment_directory, readset.sample.name, outfile))
+                    self.multiqc_inputs.append(os.path.join(alignment_directory, readset.name, outfile))
                     symlink_job = concat_jobs(
                             [
                                 symlink_job,
                                 bash.ln(
-                                    os.path.relpath(os.path.join(alignment_directory, readset.sample.name, outfile), link_directory),
+                                    os.path.relpath(os.path.join(alignment_directory, readset.name, outfile), link_directory),
                                     os.path.join(link_directory, outfile),
-                                    input=os.path.join(alignment_directory, readset.sample.name, outfile)
+                                    input=os.path.join(alignment_directory, readset.name, outfile)
                                     )
                                 ]
                             )
