@@ -1379,7 +1379,7 @@ def fix_mate_information(
     input,
     output,
     create_index=True,
-    ini_section='picard_fix_mate_information'
+    ini_section='gatk_fix_mate_information'
     ):
 
     if config.param(ini_section, 'module_gatk').split("/")[2] < "4":

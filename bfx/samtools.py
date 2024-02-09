@@ -108,21 +108,30 @@ samtools mpileup {other_options} \\
             )
         )
 
-def merge(sample_output, input_bams):
+def merge(
+        sample_output,
+        input_bams,
+        ini_section='hicup_align'
+):
     """
     merges an array of bams into a single bam
     """
-
+    postfix = sample_output.split('.')[-1].upper()
+    
     return Job(
         input_bams,
         [sample_output],
         [
-            ['hicup_align', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
-samtools merge \\
-  {sample_output} \\
+samtools merge -f --write-index \\
+  --output-fmt {output_format} \\
+  {threads} \\
+  -o {sample_output} \\
   {input_bams}""".format(
+            output_format=postfix,
+            threads="--threads " + config.param(ini_section, 'threads'),
             sample_output=sample_output,
             input_bams=" ".join(map(str.strip, input_bams))
         )

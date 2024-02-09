@@ -993,6 +993,99 @@ END
                 )
 
         return jobs
+    
+    def samtools_merge_files(self):
+        """
+        BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+
+        This step takes as input files:
+
+        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+        2. Else, BAM files from the readset file
+        """
+        
+        jobs = []
+        compression_postfix = config.param('bwa_mem2_samtools_sort', 'compression')
+        
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+            # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
+            candidate_readset_bams = [
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.UMI.{compression_postfix}") for readset in
+                 sample.readsets],
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.{compression_postfix}") for readset in
+                 sample.readsets],
+                [readset.bam for readset in sample.readsets if readset.bam]]
+            
+            readset_bams = self.select_input_files(candidate_readset_bams)
+            
+            sample_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.{compression_postfix}")
+            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
+            
+            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+            if len(sample.readsets) == 1:
+                readset_bam = readset_bams[0]
+                if compression_postfix == 'bam':
+                    readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
+                    sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
+                    
+                elif compression_postfix == 'cram':
+                    readset_index = re.sub("\.cram$", ".cram.crai", readset_bam)
+                    sample_index = re.sub("\.cram$", ".cram.crai", sample_bam)
+                
+                if alignment_directory in readset_bam:
+                    bam_link = os.path.relpath(readset_bam, alignment_directory)
+                    index_link = os.path.relpath(readset_index, alignment_directory)
+                
+                else:
+                    bam_link = os.path.relpath(readset_bam,
+                                               os.path.join(self.output_dir, self.output_dirs['alignment_directory'],
+                                                            sample.name))
+                    index_link = os.path.relpath(readset_index,
+                                                 os.path.join(self.output_dir, self.output_dirs['alignment_directory'],
+                                                              sample.name))
+                
+                jobs.append(
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            bash.ln(
+                                bam_link,
+                                sample_bam,
+                                input=readset_bam
+                            ),
+                            bash.ln(
+                                index_link,
+                                sample_index,
+                                input=readset_index
+                            )
+                        ],
+                        name=f"symlink_readset_sample_bam.{sample.name}",
+                        samples=[sample],
+                        readsets=list(sample.readsets)
+                    )
+                )
+                
+            elif len(sample.readsets) > 1:
+                jobs.append(
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            sambamba.merge(
+                                readset_bams,
+                                sample_bam,
+                                ini_section='samtools_merge_bams'
+                            )
+                        ],
+                        name="sambamba_merge_sam_files." + sample.name,
+                        samples=[sample],
+                        input_dependency=readset_bams
+                    )
+                )
+        
+        return jobs
+
 
     def gatk_mark_duplicates(self):
         """

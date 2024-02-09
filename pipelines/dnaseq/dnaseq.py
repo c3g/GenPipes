@@ -497,6 +497,41 @@ END
             )
 
         return jobs
+    
+    def gatk_fixmate(self):
+        """
+        Verify mate-pair information between mates and fix if needed.
+        This ensures that all mate-pair information is in sync between each read and its mate pair.
+        Fix is done using [Picard](http://broadinstitute.github.io/picard/).
+        """
+        jobs = []
+        
+        compression_postfix = config.param('bwa_mem2_samtools_sort', 'compression')
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            input = os.path.join(alignment_directory, f"{sample.name}.sorted.{compression_postfix}")
+            output = os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.{compression_postfix}")
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            alignment_directory,
+                            remove=False,
+                        ),
+                        gatk4.fix_mate_information(
+                            input,
+                            output,
+                            create_index=True,
+                            ini_section='gatk_fix_mate_information'
+                        ),
+                    ],
+                    name=f"gatk_fixmate.{sample.name}",
+                    samples=[sample]
+                )
+            )
+
+        return jobs
 
     def mark_duplicates(self):
         """
@@ -4577,7 +4612,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
      
-    def preprocess_vcf_panel(self):
+    def preprocess_vcf(self):
         """
         Preprocess vcf for loading into an annotation database - Gemini : http://gemini.readthedocs.org/en/latest/index.html
         Processes include normalization and decomposition of MNPs by vt (http://genome.sph.umich.edu/wiki/Vt) and
@@ -4586,186 +4621,110 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         
         jobs = []
         
-        for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
-            
-            prefix = os.path.join(pair_directory, tumor_pair.name)
-            output_somatic = prefix + ".varscan2.somatic.vt.vcf.gz"
-            
-            output_germline = prefix + ".varscan2.germline.vt.vcf.gz"
+        if 'fastpass' in self.get_protocol():
+            for tumor_pair in self.tumor_pairs.values():
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
+                
+                prefix = os.path.join(pair_directory, tumor_pair.name)
+                output_somatic = prefix + ".varscan2.somatic.vt.vcf.gz"
+                
+                output_germline = prefix + ".varscan2.germline.vt.vcf.gz"
+                
+                jobs.append(
+                    concat_jobs(
+                        [
+                            pipe_jobs(
+                                [
+                                    vt.decompose_and_normalize_mnps(
+                                        prefix + ".varscan2.somatic.vcf.gz",
+                                        None
+                                    ),
+                                    htslib.bgzip_tabix(
+                                        None,
+                                        prefix + "varscan2.somatic.prep.vt.vcf.gz"
+                                    )
+                                ]
+                            ),
+                            tools.preprocess_varscan(
+                                prefix + "varscan2.somatic.prep.vt.vcf.gz",
+                                output_somatic
+                            )
+                        ],
+                        name="preprocess_vcf.panel.somatic." + tumor_pair.name,
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    )
+                )
+                
+                jobs.append(
+                    concat_jobs(
+                        [
+                            pipe_jobs(
+                                [
+                                    vt.decompose_and_normalize_mnps(
+                                        prefix + ".varscan2.germline.vcf.gz",
+                                        None
+                                    ),
+                                    htslib.bgzip_tabix(
+                                        None,
+                                        prefix + "varscan2.germline.prep.vt.vcf.gz"
+                                    )
+                                ]
+                            ),
+                            tools.preprocess_varscan(
+                                prefix + "varscan2.germline.prep.vt.vcf.gz",
+                                output_germline
+                            )
+                        ],
+                        name="preprocess_vcf.panel.germline." + tumor_pair.name,
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    )
+                )
+                
+        if 'high_coverage' in self.get_protocol():
+            prefix = os.path.join(self.output_dirs['variants_directory'], "allSamples")
+            outputPreprocess = f"{prefix}.prep.vt.vcf.gz"
+            outputFix = f"{prefix}.prep.vt.fix.vcf.gz"
             
             jobs.append(
                 concat_jobs(
                     [
+                        tools.preprocess_varscan(
+                            f"{prefix}.vcf.gz",
+                            f"{prefix}.prep.vcf.gz"
+                        ),
                         pipe_jobs(
                             [
                                 vt.decompose_and_normalize_mnps(
-                                    prefix + ".varscan2.somatic.vcf.gz",
+                                    f"{prefix}.prep.vcf.gz",
                                     None
                                 ),
                                 htslib.bgzip_tabix(
                                     None,
-                                    prefix + "varscan2.somatic.prep.vt.vcf.gz"
-                                )
+                                    f"{prefix}.prep.vt.vcf.gz"
+                                ),
                             ]
+                        ),
+                        Job(
+                            [outputPreprocess],
+                            [outputFix],
+                            command="zless " + outputPreprocess +
+                                    " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " +
+                                    outputFix,
                         ),
                         tools.preprocess_varscan(
-                            prefix + "varscan2.somatic.prep.vt.vcf.gz",
-                            output_somatic
+                            outputFix,
+                            f"{prefix}.vt.vcf.gz"
                         )
                     ],
-                    name="preprocess_vcf_panel.somatic." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    name="preprocess_vcf.germline.allSamples",
+                    samples=self.samples
                 )
             )
             
-            jobs.append(
-                concat_jobs(
-                    [
-                        pipe_jobs(
-                            [
-                                vt.decompose_and_normalize_mnps(
-                                    prefix + ".varscan2.germline.vcf.gz",
-                                    None
-                                ),
-                                htslib.bgzip_tabix(
-                                    None,
-                                    prefix + "varscan2.germline.prep.vt.vcf.gz"
-                                )
-                            ]
-                        ),
-                        tools.preprocess_varscan(
-                            prefix + "varscan2.germline.prep.vt.vcf.gz",
-                            output_germline
-                        )
-                    ],
-                    name="preprocess_vcf_panel.germline." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                )
-            )
-        
         return jobs
-    
-    def filter_fastpass_germline(self):
-        """
-        Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
-        the filter on those generated fields.
-        """
-        jobs = []
         
-        for tumor_pair in self.tumor_pairs.values():
-            panel_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
-            
-            input = os.path.join(
-                panel_directory,
-                tumor_pair.name + ".varscan2.germline.vt.vcf.gz"
-            )
-            output = os.path.join(
-                panel_directory,
-                tumor_pair.name + ".varscan2.germline.annot.vcf.gz"
-            )
-            output_filter = os.path.join(
-                panel_directory,
-                tumor_pair.name + ".varscan2.germline.annot.flt.vcf.gz"
-            )
-            
-            jobs.append(
-                concat_jobs(
-                    [
-                        tools.format2pcgr(
-                            input,
-                            output,
-                            config.param('filter_fastpass', 'call_filter'),
-                            "germline",
-                            tumor_pair.tumor.name,
-                            ini_section='filter_fastpass'
-                        ),
-                        pipe_jobs(
-                            [
-                                bcftools.view(
-                                    output,
-                                    None,
-                                    filter_options=config.param('filter_fastpass', 'germline_filter_options'),
-                                ),
-                                bcftools.view(
-                                    None,
-                                    None,
-                                    filter_options="-Oz -s ^" + tumor_pair.normal.name
-                                ),
-                                bcftools.sort(
-                                    None,
-                                    output_filter,
-                                    sort_options="-Oz"
-                                )
-                            ]
-                        ),
-                        htslib.tabix(
-                            output_filter,
-                            options="-pvcf"
-                        )
-                    ],
-                    name="filter_fastpass.germline." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    output_dependency=[output, output_filter, output_filter + ".tbi"]
-                )
-            )
-        
-        return jobs
-    
-    def filter_fastpass_somatic(self):
-        """
-        Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
-        the filter on those generated fields.
-        """
-        jobs = []
-        
-        for tumor_pair in self.tumor_pairs.values():
-            panel_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
-            
-            input = os.path.join(
-                panel_directory,
-                tumor_pair.name + ".varscan2.somatic.vt.vcf.gz"
-            )
-            output = os.path.join(
-                panel_directory,
-                tumor_pair.name + ".varscan2.somatic.annot.vcf.gz"
-            )
-            output_filter = os.path.join(
-                panel_directory,
-                tumor_pair.name + ".varscan2.somatic.annot.flt.vcf.gz"
-            )
-            
-            jobs.append(
-                concat_jobs(
-                    [
-                        tools.format2pcgr(
-                            input,
-                            output,
-                            config.param('filter_fastpass', 'call_filter'),
-                            "somatic",
-                            tumor_pair.tumor.name,
-                            ini_section='filter_fastpass'
-                        ),
-                        bcftools.view(
-                            output,
-                            output_filter,
-                            filter_options=config.param('filter_fastpass', 'somatic_filter_options'),
-                        ),
-                        htslib.tabix(
-                            output_filter,
-                            options="-pvcf"
-                        )
-                    ],
-                    name="filter_fastpass.somatic." + tumor_pair.name,
-                    samples=[tumor_pair.tumor],
-                    output_dependency=[output, output_filter, output_filter + ".tbi"]
-                )
-            )
-        
-        return jobs
-    
     def sym_link_panel(self):
         """
         Create sym links of panel variants for deliverables to the clients.
@@ -5593,6 +5552,98 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 ]
             )
 
+        return jobs
+    def germline_varscan2(self):
+        """
+        VarScan caller for insertions and deletions.
+        """
+        
+        jobs = []
+        
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+        if scatter_jobs > 50:
+            log.warning(
+                "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+
+        variants_directory = os.path.join(self.output_dirs["variants_directory"])
+        varscan_directory = os.path.join(variants_directory, "rawVarScan")
+     
+        samples_file = os.path.join(varscan_directory, 'sample_list.tsv')
+        sample_list = open(samples_file, 'w')
+        bam_list = [os.path.join(self.output_dirs["alignment_directory"], sample.name,
+                                 f"{sample.name}.sorted.dup.cram") for sample in self.samples]
+        bed_file = ""
+        for sample in self.samples:
+            sample_list.write("%s\n" % sample.name)
+            bed_file = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+        
+        if bed_file and scatter_jobs == 1:
+            output = os.path.join(variants_directory, "allSamples.vcf")
+            job = concat_jobs(
+                [
+                    bash.mkdir(varscan_directory),
+                    pipe_jobs(
+                        [
+                            samtools.mpileup(
+                                bam_list,
+                                None,
+                                config.param('germline_varscan2', 'mpileup_other_options'),
+                                regionFile=bed_file
+                            ),
+                            varscan.mpileupcns(
+                                None,
+                                output,
+                                sample_list
+                            )
+                        ]),
+                        htslib.bgzip_tabix(
+                            output,
+                            f"{output}.gz"
+                        )
+                ],
+                name= "germline_varscan2.bed",
+                samples=self.samples
+            )
+            jobs.append(job)
+
+        else:
+            output_vcfs = []
+            for sequence in self.sequence_dictionary_variant():
+                if sequence['type'] == 'primary':
+                    output = os.path.join(varscan_directory,
+                                               f"allSamples.{sequence['name']}.vcf.gz")
+                    
+                    output_vcfs.append(output)
+                    
+                    job = pipe_jobs(
+                        [
+                            samtools.mpileup(
+                                bam_list,
+                                None,
+                                config.param('germline_varscan2', 'mpileup_other_options'),
+                                region=sequence['name'],
+                                regionFile=None
+                            ),
+                            varscan.mpileupcns(
+                                None,
+                                None, 
+                                sample_list, 
+                            ),
+                            htslib.bgzip_tabix(
+                                None, 
+                                output
+                            )
+                        ],
+                        name = f"germline_varscan2.{sequence['name']}",
+                        samples= self.samples
+                    )
+                    jobs.append(job)
+
+            job = gatk4.cat_variants(output_vcfs, os.path.join(variants_directory, "allSamples.vcf.gz"))
+            job.name="gatk_cat_germline_varscan2"
+            job.samples = self.samples
+            jobs.append(job)
+            
         return jobs
     
     def rawmpileup(self):
@@ -7919,6 +7970,23 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.metasv_sv_annotation
             ],
             [
+                self.picard_sam_to_fastq,
+                self.trim_fastp,
+                self.bwa_mem2_samtools_sort,
+                self.samtools_merge_files,
+                self.gatk_fixmate,
+                self.metrics_dna_picard_metrics,
+                self.metrics_dna_sample_mosdepth,
+                self.metrics_dna_samtools_flagstat,
+                self.metrics_picard_calculate_hs,
+                self.metrics_verify_bam_id,
+                self.germline_varscan2,
+                self.preprocess_vcf,
+                self.snp_effect,
+                self.gemini_annotations,
+                self.cram_output
+            ],
+            [
                 self.gatk_sam_to_fastq,
                 self.trim_fastp,
                 self.bwa_mem2_samtools_sort,
@@ -7953,11 +8021,11 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.rawmpileup,
                 self.paired_varscan2,
                 self.merge_varscan2,
-                self.preprocess_vcf_panel,
+                self.preprocess_vcf,
                 self.cnvkit_batch,
-                self.filter_fastpass_germline,
+                self.filter_germline,
                 self.report_cpsr,
-                self.filter_fastpass_somatic,
+                self.filter_somatic,
                 self.report_pcgr,
                 self.conpair_concordance_contamination,
                 self.metrics_dna_picard_metrics,
@@ -8027,7 +8095,7 @@ class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=['germline_snv', 'germline_sv', 'somatic_tumor_only', 'somatic_fastpass', 'somatic_ensemble', 'somatic_sv'], default="germline_snv")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=['germline_snv', 'germline_sv', 'germline_high_cov', 'somatic_tumor_only', 'somatic_fastpass', 'somatic_ensemble', 'somatic_sv'], default="germline_snv")
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
@@ -8035,4 +8103,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        DnaSeq(protocol=['germline_snv', 'germline_sv', 'somatic_tumor_only', 'somatic_fastpass', 'somatic_ensemble', 'somatic_sv'])
+        DnaSeq(protocol=['germline_snv', 'germline_sv', 'germline_high_cov', 'somatic_tumor_only', 'somatic_fastpass', 'somatic_ensemble', 'somatic_sv'])

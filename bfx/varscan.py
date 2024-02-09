@@ -24,38 +24,49 @@ import os
 from core.config import *
 from core.job import *
 
-def mpileupcns(input, output, sampleNamesFile, other_options=None):
+def mpileupcns(
+        input,
+        output,
+        sample_list
+):
 
     return Job(
-        [input, sampleNamesFile],
+        [input, sample_list],
         [output],
         [
-            ['varscan', 'module_java'],
-            ['varscan', 'module_varscan'],
+            ['germline_varscan2', 'module_java'],
+            ['germline_varscan2', 'module_varscan'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR mpileup2cns {other_options} \\
   {input} \\
   --output-vcf 1 \\
   --vcf-sample-list {sampleNames}{output}""".format(
-        tmp_dir=config.param('varscan', 'tmp_dir'),
-        java_other_options=config.param('varscan', 'java_other_options'),
-        ram=config.param('varscan', 'ram'),
-        other_options=other_options,
+        tmp_dir=config.param('germline_varscan2', 'tmp_dir'),
+        java_other_options=config.param('germline_varscan2', 'java_other_options'),
+        ram=config.param('germline_varscan2', 'ram'),
+        other_options=config.param('germline_varscan2', 'mpileup_other_options'),
         input=" \\\n " + input if input else "",
-        sampleNames=sampleNamesFile,
+        sampleNames=sample_list,
         output=" \\\n  > " + output if output else ""
         )
     )
 
-def somatic(input_pair, output, other_options=None, output_vcf_dep=[], output_snp_dep=[], output_indel_dep=[]):
+def somatic(
+        input_pair,
+        output,
+        other_options=None,
+        output_vcf_dep=[],
+        output_snp_dep=[],
+        output_indel_dep=[]
+):
 
     return Job(
         [input_pair],
         [output_vcf_dep, output_snp_dep, output_indel_dep],
         [
-            ['varscan', 'module_java'],
-            ['varscan', 'module_varscan'],
+            ['varscan2_somatic', 'module_java'],
+            ['varscan2_somatic', 'module_varscan'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR somatic \\
@@ -78,8 +89,8 @@ def fpfilter_somatic(input_vcf, input_readcount, output=None):
         [input_vcf, input_readcount],
         [output],
         [
-            ['varscan', 'module_java'],
-            ['varscan', 'module_varscan'],
+            ['varscan2_somatic', 'module_java'],
+            ['varscan2_somatic', 'module_varscan'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR fpfilter \\
@@ -87,10 +98,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
   {input_readcount} \\
   {options} \\
   {output}""".format(
-        tmp_dir=config.param('varscan2_readcount_fpfilter', 'tmp_dir'),
-        java_other_options=config.param('varscan2_readcount_fpfilter', 'java_other_options'),
-        ram=config.param('varscan2_readcount_fpfilter', 'ram'),
-        options=config.param('varscan2_readcount_fpfilter', 'fpfilter_options'),
+        tmp_dir=config.param('varscan2_somatic', 'tmp_dir'),
+        java_other_options=config.param('varscan2_somatic', 'java_other_options'),
+        ram=config.param('varscan2_somatic', 'ram'),
+        options=config.param('varscan2_somatic', 'fpfilter_options'),
         input_vcf=input_vcf,
         input_readcount=input_readcount,
         output="--output-file " + output if output else ""
