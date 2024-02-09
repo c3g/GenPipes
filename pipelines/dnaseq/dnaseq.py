@@ -4457,7 +4457,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 None
                             ),
                             sequenza.bin(
-                                f"{raw_output}all.seqz.gz",
+                                f"{raw_output}.all.seqz.gz",
                                 f"{output}.all.binned.seqz.gz",
                             )
                         ],
