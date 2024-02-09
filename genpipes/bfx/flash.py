@@ -21,6 +21,7 @@
 import logging
 import os
 import gzip
+import re
 
 # MUGQIC Modules
 from ..core.config import global_conf
