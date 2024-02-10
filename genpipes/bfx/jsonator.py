@@ -97,8 +97,9 @@ def create(pipeline, sample):
             }
         )
 
-    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r') as version_file:
-        general_info['pipeline_version'] = re.sub("\n?$", "", version_file.readlines()[0])
+    #with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r') as version_file:
+    #    general_info['pipeline_version'] = re.sub("\n?$", "", version_file.readlines()[0])
+    general_info['pipeline_version'] = pipeline.version
 
     # Check if 'force_jobs' is 'True'
     # Or    if the json file has not been created yet :
@@ -264,7 +265,7 @@ def create_json(
                 'step': []
             }
         }
-    for step in pipeline.step_range:
+    for step in pipeline.step_to_execute:
         # First verify if the step is meant to be "jsonified"
         jsonify_step = False
         for job in step.jobs:
@@ -320,7 +321,7 @@ def update_json(
     # Finally check if the requested steps/jobs are already in the JSON :
     #   if so  : update them with the current information
     #   if not : add them to the json object
-    for step in pipeline.step_range:
+    for step in pipeline.step_to_execute:
         # First make sure the step is meant to be "jsonified"
         jsonify_step = False
         if step.jobs:
