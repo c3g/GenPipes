@@ -133,7 +133,7 @@ class Config(configparser.RawConfigParser):
                 elif param_type == 'boolean':
                     return self.getboolean(section, option)
                 elif param_type == 'filepath':
-                    value = os.path.expandvars(self.gmpliconseq_qiimeet(section, option))
+                    value = os.path.expandvars(super().get(section, option))
                     if not value and not required:
                         return None
                     if os.path.isfile(value):
