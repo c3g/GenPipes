@@ -101,7 +101,7 @@ class Scheduler:
         raise ValueError(f'{dep_str} not part of cluster_dependency_arg supported value {supported}')
 
     def cpu(self, job_name_prefix):
-        cpu_str = global_conf.parambal_config_parser.get(job_name_prefix, 'cluster_cpu', required=True)
+        cpu_str = global_conf.get(job_name_prefix, 'cluster_cpu', required=True)
         try:
             if "ppn" in cpu_str or '-c' in cpu_str:
                 # to be back compatible
@@ -404,12 +404,15 @@ class PBSScheduler(Scheduler):
         condition = super().dependency_arg(job_name_prefix)
         return f'-W depend={condition}:'
 
-    def memory(self, job_name_prefix):
+    def memory(self, job_name_prefix, adapt=None, info=False):
         mem_str = global_conf.get(job_name_prefix, 'cluster_mem', required=False)
         try:
             mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
         except AttributeError:
             return " "
+
+        if adapt is not None:
+            return ''
 
         if 'per' in mem_str.lower() and 'cpu' in mem_str.lower():
             option = '-l pmem='
@@ -446,6 +449,9 @@ class PBSScheduler(Scheduler):
                             job_dependencies += "\nJOB_DEPENDENCIES=$JOB_DEPENDENCIES:" + ":".join(["$" + dependency_job.id for dependency_job in dependency_chunk])
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
+
+                    job_name_prefix = job.name.split(".")[0]
+                    config_step_wrapper = global_conf.get(job_name_prefix, 'step_wrapper', required=False)
 
                     #sleepTime = random.randint(10, 100)
                     self.genpipes_file.write("""
@@ -487,6 +493,9 @@ exit \$GenPipes_STATE" | \\
                         job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE'),
+                        step_wrapper=config_step_wrapper,
+                        fail_on_pattern0=self.fail_on_pattern(job_name_prefix)[0],
+                        fail_on_pattern1=self.fail_on_pattern(job_name_prefix)[1]
                     )
                         #sleep_time=sleepTime
 
@@ -569,6 +578,9 @@ module unload {module_python} {command_separator}
             if step.jobs:
                 self.print_step(step)
                 for job in step.jobs:
+                    job_name_prefix = job.name.split(".")[0]
+                    config_step_wrapper = global_conf.get(job_name_prefix, 'step_wrapper', required=False)
+
                     self.genpipes_file.write("""
 {separator_line}
 # JOB: {job.name}
@@ -600,7 +612,8 @@ if [ $GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $GenPipes_STATE 
                             job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
                             job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
                             job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                            job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE')
+                            job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE'),
+                            step_wrapper=config_step_wrapper
                         )
                     )
 
@@ -676,6 +689,9 @@ class SlurmScheduler(Scheduler):
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
+                    job_name_prefix = job.name.split(".")[0]
+                    config_step_wrapper = global_conf.get(job_name_prefix, 'step_wrapper', required=False)
+
                     self.genpipes_file.write("""
 {separator_line}
 # JOB: {job.id}: {job.name}
@@ -726,7 +742,10 @@ exit \$GenPipes_STATE" | \\
                         job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE') ,
-                        container_line=self.container_line
+                        container_line=self.container_line,
+                        step_wrapper=config_step_wrapper,
+                        fail_on_pattern0=self.fail_on_pattern(job_name_prefix)[0],
+                        fail_on_pattern1=self.fail_on_pattern(job_name_prefix)[1]
 )
 
                     # Cluster settings section must match job name prefix before first "."
