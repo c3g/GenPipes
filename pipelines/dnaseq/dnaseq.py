@@ -2132,7 +2132,7 @@ END
         self,
         input_vcf=f"variants/allSamples.merged.flt.vcf",
         output_vcf=f"variants/allSamples.merged.flt.NFiltered.vcf",
-        job_name=f"filter_nstretches"
+        job_name="filter_nstretches"
         ):
         """
         The final .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive
@@ -2168,7 +2168,7 @@ END
         self,
         input_vcf="variants/allSamples.merged.flt.vt.vcf",
         output_vcf="variants/allSamples.merged.flt.vt.mil.vcf",
-        job_name=f"flag_mappability"
+        job_name="flag_mappability"
         ):
         """
         Mappability annotation. An in-house database identifies regions in which reads are confidently mapped
@@ -2205,7 +2205,7 @@ END
         self,
         input_vcf=f"variants/allSamples.merged.flt.vt.mil.vcf.gz",
         output_vcf=f"variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz",
-        job_name=f"snp_id_annotation"
+        job_name="snp_id_annotation"
         ):
         """
         dbSNP annotation. The .vcf files are annotated for dbSNP using the software SnpSift (from the [SnpEff suite](http://snpeff.sourceforge.net/)).
@@ -2238,39 +2238,46 @@ END
         job = self.snp_id_annotation(
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.vcf.gz",
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.snpId.vcf.gz",
-            f"haplotype_caller_snp_id_annotation"
+            "haplotype_caller_snp_id_annotation"
         )
 
         return job
 
-    def snp_effect(
-        self,
-        input_vcf=f"variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz",
-        snpeff_file=f"variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf",
-        job_name=f"snp_effect"
-        ):
+    def snp_effect(self):
         """
         Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
         """
-
-        report_file = f"{self.output_dirs['report_directory']}/DnaSeq.snp_effect.md"
+        
         jobs = []
+        
+        [input] = self.select_input_files(
+            [
+                ["variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz"],
+                ["variants/allSamples.vt.prep.vcf.gz"]
+            ]
+        )
+
+        if "high_cov" in self.get_protocol():
+            snpeff_file = "variants/allSamples.vt.snpeff.vcf"
+            
+        else:
+            snpeff_file = "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf"
 
         jobs.append(
             concat_jobs(
                 [
                     snpeff.compute_effects(
-                        input_vcf,
+                        input,
                         snpeff_file,
                         options=config.param('compute_effects', 'options', required=False)
                     ),
                     htslib.bgzip_tabix(
                         snpeff_file,
-                        snpeff_file+".gz"
+                        f"{snpeff_file}.gz"
                     )
                 ],
-                name=job_name,
+                name="snp_effect",
                 samples=self.samples
             )
         )
@@ -2294,10 +2301,10 @@ END
 
     def dbnsfp_annotation(
             self,
-            input_vcf=f"variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
-            output_vcf=f"variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
+            input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
+            output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
             ini_section='dbnsfp_annotation',
-            job_name=f"dbnsfp_annotation"
+            job_name="dbnsfp_annotation"
         ):
         """
         Additional SVN annotations. Provides extra information about SVN by using numerous published databases.
@@ -2350,18 +2357,19 @@ END
         self,
         input="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
         output="variants/allSamples.gemini.db",
-        temp_dir="config.param('DEFAULT', 'tmp_dir')",
         job_name="gemini_annotations"
         ):
         """
         Load functionally annotated vcf file into a mysql lite annotation database :
         http://gemini.readthedocs.org/en/latest/index.html
         """
-
+        
+        if "high_cov" in self.get_protocol():
+            input= f"variants/allSamples.vt.snpeff.vcf.gz"
+            
         job = gemini.gemini_annotations(
             input,
             output,
-            temp_dir
         )
         job.name = job_name
         job.samples = self.samples
@@ -2370,11 +2378,9 @@ END
 
     def haplotype_caller_gemini_annotations(self):
         
-        tmp_dir = config.param('DEFAULT', 'tmp_dir')
         job = self.gemini_annotations(
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
             f"{self.output_dirs['variants_directory']}/allSamples.gemini.db",
-            temp_dir=tmp_dir,
             job_name="gemini_annotations"
         )
         return job
@@ -4624,33 +4630,17 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         if 'fastpass' in self.get_protocol():
             for tumor_pair in self.tumor_pairs.values():
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
-                
                 prefix = os.path.join(pair_directory, tumor_pair.name)
-                output_somatic = prefix + ".varscan2.somatic.vt.vcf.gz"
-                
-                output_germline = prefix + ".varscan2.germline.vt.vcf.gz"
                 
                 jobs.append(
                     concat_jobs(
                         [
-                            pipe_jobs(
-                                [
-                                    vt.decompose_and_normalize_mnps(
-                                        prefix + ".varscan2.somatic.vcf.gz",
-                                        None
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        prefix + "varscan2.somatic.prep.vt.vcf.gz"
-                                    )
-                                ]
-                            ),
                             tools.preprocess_varscan(
-                                prefix + "varscan2.somatic.prep.vt.vcf.gz",
-                                output_somatic
+                                f"{prefix}.varscan2.somatic.vt.vcf.gz",
+                                f"{prefix}.varscan2.somatic.vt.prep.vcf.gz",
                             )
                         ],
-                        name="preprocess_vcf.panel.somatic." + tumor_pair.name,
+                        name=f"preprocess_vcf.panel.somatic.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
@@ -4659,67 +4649,46 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 jobs.append(
                     concat_jobs(
                         [
-                            pipe_jobs(
-                                [
-                                    vt.decompose_and_normalize_mnps(
-                                        prefix + ".varscan2.germline.vcf.gz",
-                                        None
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        prefix + "varscan2.germline.prep.vt.vcf.gz"
-                                    )
-                                ]
-                            ),
                             tools.preprocess_varscan(
-                                prefix + "varscan2.germline.prep.vt.vcf.gz",
-                                output_germline
+                                f"{prefix}.varscan2.germline.vt.vcf.gz",
+                                f"{prefix}.varscan2.germline.vt.prep.vcf.gz"
                             )
                         ],
-                        name="preprocess_vcf.panel.germline." + tumor_pair.name,
+                        name=f"preprocess_vcf.panel.germline.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
                 
-        if 'high_coverage' in self.get_protocol():
+        if 'high_cov' in self.get_protocol():
             prefix = os.path.join(self.output_dirs['variants_directory'], "allSamples")
-            outputPreprocess = f"{prefix}.prep.vt.vcf.gz"
-            outputFix = f"{prefix}.prep.vt.fix.vcf.gz"
+            outputPreprocess = f"{prefix}.vt.tmp.vcf.gz"
+            outputFix = f"{prefix}.vt.fix.vcf.gz"
             
             jobs.append(
                 concat_jobs(
                     [
                         tools.preprocess_varscan(
-                            f"{prefix}.vcf.gz",
-                            f"{prefix}.prep.vcf.gz"
-                        ),
-                        pipe_jobs(
-                            [
-                                vt.decompose_and_normalize_mnps(
-                                    f"{prefix}.prep.vcf.gz",
-                                    None
-                                ),
-                                htslib.bgzip_tabix(
-                                    None,
-                                    f"{prefix}.prep.vt.vcf.gz"
-                                ),
-                            ]
+                            f"{prefix}.vt.vcf.gz",
+                            outputPreprocess
                         ),
                         Job(
                             [outputPreprocess],
                             [outputFix],
-                            command="zless " + outputPreprocess +
-                                    " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " +
-                                    outputFix,
+                            command="zless " +
+                                    outputPreprocess +
+                                    " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  "
+                                    + outputFix
                         ),
                         tools.preprocess_varscan(
-                            outputFix,
-                            f"{prefix}.vt.vcf.gz"
+                        outputFix,
+                        f"{prefix}.vt.prep.vcf.gz"
                         )
                     ],
                     name="preprocess_vcf.germline.allSamples",
-                    samples=self.samples
+                    samples=self.samples,
+                    input_dependency=[f"{prefix}.vt.vcf.gz"],
+                    output_dependency=[outputFix, f"{prefix}.vt.prep.vcf.gz"]
                 )
             )
             
@@ -5567,8 +5536,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
         variants_directory = os.path.join(self.output_dirs["variants_directory"])
         varscan_directory = os.path.join(variants_directory, "rawVarScan")
+        initial_output = os.path.join(variants_directory, "allSamples.vcf")
+        output = os.path.join(variants_directory, "allSamples.vt.vcf.gz")
      
-        samples_file = os.path.join(varscan_directory, 'sample_list.tsv')
+        samples_file = 'sample_list.tsv'
         sample_list = open(samples_file, 'w')
         bam_list = [os.path.join(self.output_dirs["alignment_directory"], sample.name,
                                  f"{sample.name}.sorted.dup.cram") for sample in self.samples]
@@ -5577,9 +5548,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             sample_list.write("%s\n" % sample.name)
             bed_file = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
         
-        if bed_file and scatter_jobs == 1:
-            output = os.path.join(variants_directory, "allSamples.vcf")
-            job = concat_jobs(
+        if bed_file or scatter_jobs == 1:
+            jobs.append(
+                concat_jobs(
                 [
                     bash.mkdir(varscan_directory),
                     pipe_jobs(
@@ -5592,30 +5563,35 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ),
                             varscan.mpileupcns(
                                 None,
-                                output,
-                                sample_list
+                                initial_output,
+                                samples_file
                             )
-                        ]),
-                        htslib.bgzip_tabix(
-                            output,
-                            f"{output}.gz"
-                        )
+                        ]
+                    ),
+                    vt.decompose_and_normalize_mnps(
+                        initial_output,
+                        output,
+                    ),
+                    htslib.tabix(
+                        output,
+                    )
                 ],
                 name= "germline_varscan2.bed",
                 samples=self.samples
+                )
             )
-            jobs.append(job)
 
         else:
-            output_vcfs = []
+            input_vcfs = []
             for sequence in self.sequence_dictionary_variant():
                 if sequence['type'] == 'primary':
                     output = os.path.join(varscan_directory,
                                                f"allSamples.{sequence['name']}.vcf.gz")
+                    input_vcfs.append(output)
+                    merged_vcf = os.path.join(varscan_directory, f"allSamples.vcf.gz")
                     
-                    output_vcfs.append(output)
-                    
-                    job = pipe_jobs(
+                    jobs.append(
+                        pipe_jobs(
                         [
                             samtools.mpileup(
                                 bam_list,
@@ -5636,13 +5612,30 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name = f"germline_varscan2.{sequence['name']}",
                         samples= self.samples
+                        )
                     )
-                    jobs.append(job)
-
-            job = gatk4.cat_variants(output_vcfs, os.path.join(variants_directory, "allSamples.vcf.gz"))
-            job.name="gatk_cat_germline_varscan2"
-            job.samples = self.samples
-            jobs.append(job)
+            jobs.append(
+                concat_jobs(
+                    [
+                        gatk4.cat_variants(
+                            input_vcfs,
+                            merged_vcf
+                        ),
+                        pipe_jobs(
+                            [
+                                vt.decompose_and_normalize_mnps(
+                                merged_vcf,
+                                output,
+                            ),
+                            htslib.tabix(
+                                output,
+                            )
+                        ]),
+                    ],
+                    name = "gatk_cat_germline_varscan2",
+                    samples = self.samples
+                )
+            )
             
         return jobs
     
@@ -6040,7 +6033,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                         None,
                                         "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
                                     ),
-                                    # vt.sort("-", all_output, "-m full"),
                                     htslib.bgzip_tabix(
                                         None,
                                         all_output
@@ -7469,7 +7461,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 
                 input = os.path.join(
                     pair_directory,
-                    f"{tumor_pair.name}.varscan2.germline.vt.vcf.gz"
+                    f"{tumor_pair.name}.varscan2.germline.vt.prep.vcf.gz"
                 )
                 output = os.path.join(
                     pair_directory,
@@ -7481,32 +7473,29 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 )
                 
                 ini_section = 'filter_fastpass'
-                caller_filter = config.param('filter_fastpass', 'call_filter'),
-                variant_filter = config.param('filter_fastpass', 'germline_filter_options')
                 job_name = f"filter_fastpass_germline.{tumor_pair.name}"
             
             else:
-                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                pair_directory = os.path.join(
+                    self.output_dirs['paired_variants_directory'],
+                    "ensemble",
+                    tumor_pair.name
+                )
                 
                 input = os.path.join(
                     pair_directory,
-                    tumor_pair.name,
                     f"{tumor_pair.name}.ensemble.germline.vt.annot.vcf.gz"
                 )
                 output = os.path.join(
                     pair_directory,
-                    tumor_pair.name,
                     f"{tumor_pair.name}.ensemble.germline.vt.annot.2caller.vcf.gz"
                 )
                 output_filter = os.path.join(
                     pair_directory,
-                    tumor_pair.name,
                     f"{tumor_pair.name}.ensemble.germline.vt.annot.2caller.flt.vcf.gz"
                 )
                 
                 ini_section = 'filter_ensemble'
-                caller_filter = config.param('filter_ensemble', 'call_filter'),
-                variant_filter = config.param('filter_ensemble', 'germline_filter_options')
                 job_name = f"filter_ensemble.germline.{tumor_pair.name}"
             
             jobs.append(
@@ -7515,7 +7504,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         tools.format2pcgr(
                             input,
                             output,
-                            caller_filter,
+                            config.param(ini_section, 'call_filter'),
                             "germline",
                             tumor_pair.tumor.name,
                             ini_section=ini_section
@@ -7525,12 +7514,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 bcftools.view(
                                     output,
                                     None,
-                                    filter_options=variant_filter,
+                                    filter_options=config.param(ini_section, 'germline_filter_options'),
                                 ),
                                 bcftools.view(
                                     None,
                                     None,
-                                    filter_options="-Oz -s ^" + tumor_pair.normal.name
+                                    filter_options=f"-Oz -s ^{tumor_pair.normal.name}"
                                 ),
                                 bcftools.sort(
                                     None,
@@ -7576,32 +7565,30 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 )
                 
                 ini_section = 'filter_fastpass'
-                caller_filter = config.param('filter_fastpass', 'call_filter'),
-                variant_filter = config.param('filter_fastpass', 'somatic_filter_options')
                 job_name = f"filter_fastpass_somatic.{tumor_pair.name}"
             
             else:
-                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                pair_directory = os.path.join(
+                    self.output_dirs['paired_variants_directory'],
+                    "ensemble",
+                    tumor_pair.name
+                )
                 
                 input = os.path.join(
                     pair_directory,
-                    tumor_pair.name,
                     f"{tumor_pair.name}.ensemble.somatic.vt.annot.vcf.gz"
                 )
                 output = os.path.join(
                     pair_directory,
-                    tumor_pair.name,
                     f"{tumor_pair.name}.ensemble.somatic.vt.annot.2caller.vcf.gz"
                 )
                 output_filter = os.path.join(
                     pair_directory,
-                    tumor_pair.name,
+
                     f"{tumor_pair.name}.ensemble.somatic.vt.annot.2caller.flt.vcf.gz"
                 )
                 
                 ini_section = 'filter_ensemble'
-                caller_filter = config.param('filter_ensemble', 'call_filter'),
-                variant_filter = config.param('filter_ensemble', 'somatic_filter_options')
                 job_name = f"filter_ensemble.somatic.{tumor_pair.name}"
             
             jobs.append(
@@ -7610,7 +7597,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         tools.format2pcgr(
                             input,
                             output,
-                            caller_filter,
+                            config.param(ini_section, 'call_filter'),
                             "somatic",
                             tumor_pair.tumor.name,
                             ini_section=ini_section
@@ -7618,7 +7605,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         bcftools.view(
                             output,
                             output_filter,
-                            filter_options=variant_filter,
+                            filter_options=config.param(ini_section, 'somatic_filter_options'),
                         ),
                         htslib.tabix(
                             output_filter,
@@ -7970,7 +7957,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.metasv_sv_annotation
             ],
             [
-                self.picard_sam_to_fastq,
+                self.gatk_sam_to_fastq,
                 self.trim_fastp,
                 self.bwa_mem2_samtools_sort,
                 self.samtools_merge_files,

@@ -22,7 +22,10 @@
 from core.job import *
 
 
-def gemini_annotations(variants, gemini_output, tmp_dir):
+def gemini_annotations(
+        variants,
+        gemini_output
+):
     return Job(
         [variants],
         [gemini_output],
@@ -38,7 +41,7 @@ gemini load -v {variants} \\
             options=config.param('gemini_annotations', 'options'),
             variants=variants,
             output=gemini_output,
-            temp=tmp_dir
+            temp=config.param('DEFAULT', 'tmp_dir')
         )
     )
 

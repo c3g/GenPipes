@@ -236,7 +236,8 @@ python3 $PYTHON_TOOLS/dict2BEDs.py \\
 
 def preprocess_varscan(
         input,
-        output):
+        output=None
+):
     
     return Job(
         [input],
@@ -249,9 +250,9 @@ def preprocess_varscan(
 python $PYTHON_TOOLS/preprocess.py \\
   --ref-depth RD --alt-depth AD \\
   {input} \\
-  | bgzip -cf > {output}""".format(
+  {output}""".format(
             input=input,
-            output=output
+            output=" | bgzip -cf > " + output if output else "",
         )
     )
 

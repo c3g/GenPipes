@@ -23,12 +23,27 @@
 from core.config import *
 from core.job import *
 
-def compute_effects(input, output, split=False, cancer_sample_file=[], options=[], ini_section='compute_effects'):
-    output_stats = output + ".stats.csv"
-    output_stats_html = output + ".stats.html"
+def compute_effects(
+        input,
+        output,
+        split=False,
+        cancer_sample_file=None,
+        options=[],
+        ini_section='compute_effects'
+):
+    
+    output_stats = f"{output}.stats.csv"
+    output_stats_html = f"{output}.stats.html"
+    
+    outputs = []
+    if not isinstance(output, list):
+        outputs = [output]
+    
+    outputs += [output_stats, output_stats_html]
+    
     job = Job(
         [input],
-        [output, output_stats],
+        outputs,
         [
             ['compute_effects', 'module_java'],
             ['compute_effects', 'module_snpeff']
