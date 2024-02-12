@@ -147,7 +147,7 @@ wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${
     def submit_jobs(self):
         super(GenPipesPipeline, self).submit_jobs()
         if self.jobs and self.job_scheduler.name.lower() in ["pbs", "batch", "slurm"]:
-            self.mugqic_log()
+            self.genpipes_log()
 
 
 
