@@ -86,8 +86,8 @@ class GenPipesPipeline(Pipeline):
     @property
     def design_file(self):
         if self._design_file is None:
-            raise MissingInputError("Design file is required for this pipeline/protocol "
-                                    "look at help for details")
+            raise MissingInputError("Design file is required for this pipeline/protocol. "
+                                    "Look at help for details")
         return self._design_file
 
     @property
