@@ -1239,7 +1239,7 @@ pandoc --to=markdown \\
         trinotate_annotation_report_filtered_header = {}
         trinotate_annotation_report_filtered_header["isoform"] = trinotate_annotation_report + ".isoform_filtered_header.tsv"
         trinotate_annotation_report_filtered_header["gene"] = trinotate_annotation_report + ".gene_filtered_header.tsv"
-        counts_ids = {'gene':"Genes", 'isoform':"Isoforms"}
+        counts_ids = {'gene':"Gene", 'isoform':"Isoform"}
         source_directory = self.output_dirs["differential_expression_directory"]
 
         # Create the files containing filtered isoforms and genes with headers
@@ -1250,7 +1250,7 @@ pandoc --to=markdown \\
                     Job(
                         [trinotate_annotation_report_filtered],
                         [trinotate_annotation_report_filtered_header["gene"]],
-                        command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["gene"],
+                        command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2,$3,$4}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["gene"],
                     ),
                     Job(
                         [trinotate_annotation_report_filtered],
