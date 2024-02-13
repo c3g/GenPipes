@@ -55,10 +55,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
 def somatic(
         input_pair,
         output,
-        other_options=None,
         output_vcf_dep=[],
         output_snp_dep=[],
-        output_indel_dep=[]
+        output_indel_dep=[],
+        ini_section='varscan2_somatic'
 ):
 
     return Job(
@@ -74,10 +74,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
   {output} \\
   {other_options} \\
   --output-vcf 1 --mpileup 1""".format(
-        tmp_dir=config.param('varscan2_somatic', 'tmp_dir'),
-        java_other_options=config.param('varscan2_somatic', 'java_other_options'),
-        ram=config.param('varscan2_somatic', 'ram'),
-        other_options=other_options,
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
+        other_options=config.param(ini_section, 'other_options'),
         input_pair=input_pair,
         output=output,
         )

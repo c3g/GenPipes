@@ -5506,13 +5506,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name=job_name,
                     samples=samples,
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    # output_dependency=[
-                    #     os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name],
-                    #                  os.path.basename(purple_purity_output)),
-                    #     os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name],
-                    #                  os.path.basename(purple_qc_output))
-                    # ]
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
             self.multiqc_inputs[tumor_pair.name].extend(
@@ -5562,8 +5556,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             samtools.mpileup(
                                 bam_list,
                                 None,
-                                config.param('germline_varscan2', 'mpileup_other_options'),
-                                regionFile=bed_file
+                                regionFile=bed_file,
+                                ini_section='germline_varscan2'
                             ),
                             varscan.mpileupcns(
                                 None,
@@ -5572,12 +5566,17 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             )
                         ]
                     ),
-                    vt.decompose_and_normalize_mnps(
-                        initial_output,
-                        output,
-                    ),
-                    htslib.tabix(
-                        output,
+                    pipe_jobs(
+                        [
+                            vt.decompose_and_normalize_mnps(
+                                initial_output,
+                                None,
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
+                                output,
+                            )
+                        ],
                     )
                 ],
                 name= "germline_varscan2.bed",
@@ -5629,9 +5628,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             [
                                 vt.decompose_and_normalize_mnps(
                                 merged_vcf,
-                                output,
+                                None,
                             ),
-                            htslib.tabix(
+                            htslib.bgzip_tabix(
+                                None,
                                 output,
                             )
                         ]),
@@ -5683,10 +5683,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             
             if 'fastpass' in self.get_protocol():
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
-                
-                scatter_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
-                bed_file = config.param('rawmpileup_panel', 'panel')
-                mpileup_options = config.param('rawmpileup_panel', 'mpileup_other_options'),
+                ini_section = 'rawmpileup_panel'
+                scatter_jobs = config.param(ini_section, 'nb_jobs', param_type='posint')
+                bed_file = config.param(ini_section, 'panel')
                 job_name = f"rawmpileup_panel.{tumor_pair.name}"
             
             else:
@@ -5696,7 +5695,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 bed_file = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
                                                                                                 '.ACGT.noALT.bed'))
                 
-                mpileup_options = config.param('rawmpileup', 'mpileup_other_options'),
                 job_name = f"rawmpileup.{tumor_pair.name}"
                 
                 coverage_bed = bvatools.resolve_readset_coverage_bed(
@@ -5723,8 +5721,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     input_tumor
                                 ],
                                 pair_output,
-                                mpileup_options,
-                                regionFile=bed_file
+                                regionFile = bed_file,
+                                ini_section = ini_section
                             )
                         ],
                         name=job_name,
@@ -5753,9 +5751,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                             input_tumor
                                         ],
                                         pair_output,
-                                        mpileup_options,
-                                        region=sequence['name'],
-                                        regionFile=bed_file
+                                        regionFile=bed_file,
+                                        region=sequence['name']
                                     )
                                 ],
                                 name=f"{job_name}.{sequence['name']}",
@@ -5785,14 +5782,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         for tumor_pair in self.tumor_pairs.values():
             if 'fastpass' in self.get_protocol():
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
-
-                varscan_options = config.param('varscan2_somatic_panel', 'other_options'),
+                ini_section = 'varscan2_somatic_panel'
                 job_name = f"varscan2_somatic_panel.{tumor_pair.name}"
             
             else:
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
-                
-                varscan_options = config.param('varscan2_somatic', 'other_options'),
+                ini_section = 'varscan2_somatic'
                 job_name = f"varscan2_somatic.{tumor_pair.name}"
                 
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
@@ -5816,10 +5811,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             varscan.somatic(
                                 input_pair,
                                 output,
-                                varscan_options,
                                 output_vcf_dep=output_vcf,
                                 output_snp_dep=output_snp,
-                                output_indel_dep=output_indel
+                                output_indel_dep=output_indel,
+                                ini_section=ini_section
                             ),
                             htslib.bgzip_tabix(
                                 output_snp,
@@ -5901,10 +5896,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     varscan.somatic(
                                         input_pair,
                                         output,
-                                        varscan_options,
                                         output_vcf_dep=output_vcf,
                                         output_snp_dep=output_snp,
-                                        output_indel_dep=output_indel
+                                        output_indel_dep=output_indel,
+                                        ini_section=ini_section
                                     ),
                                     htslib.bgzip_tabix(
                                         output_snp,
