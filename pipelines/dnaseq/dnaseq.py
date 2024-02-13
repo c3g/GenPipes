@@ -887,6 +887,7 @@ END
 
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
@@ -1065,6 +1066,7 @@ END
             
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
@@ -1144,6 +1146,7 @@ END
             
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.primerTrim.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
@@ -1292,6 +1295,7 @@ END
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
                 [input] = self.select_input_files(
                     [
+                        [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
                         [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
                         [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
                         [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]
@@ -1459,6 +1463,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")],
@@ -1533,6 +1538,7 @@ END
 
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]
@@ -5530,7 +5536,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         if scatter_jobs > 50:
             log.warning(
                 "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
-
+            
+        compression_postfix = config.param('bwa_mem2_samtools_sort', 'compression')
         variants_directory = os.path.join(self.output_dirs["variants_directory"])
         varscan_directory = os.path.join(variants_directory, "rawVarScan")
         initial_output = os.path.join(variants_directory, "allSamples.vcf")
@@ -5539,7 +5546,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         samples_file = 'sample_list.tsv'
         sample_list = open(samples_file, 'w')
         bam_list = [os.path.join(self.output_dirs["alignment_directory"], sample.name,
-                                 f"{sample.name}.sorted.dup.cram") for sample in self.samples]
+                                 f"{sample.name}.sorted.fixmate.{compression_postfix}") for sample in self.samples]
         bed_file = ""
         for sample in self.samples:
             sample_list.write("%s\n" % sample.name)

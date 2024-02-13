@@ -1073,13 +1073,13 @@ END
                     concat_jobs(
                         [
                             mkdir_job,
-                            sambamba.merge(
-                                readset_bams,
+                            samtools.merge(
                                 sample_bam,
+                                readset_bams,
                                 ini_section='samtools_merge_bams'
                             )
                         ],
-                        name="sambamba_merge_sam_files." + sample.name,
+                        name="samtools_merge_sam_files." + sample.name,
                         samples=[sample],
                         input_dependency=readset_bams
                     )

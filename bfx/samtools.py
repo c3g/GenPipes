@@ -133,7 +133,7 @@ samtools merge -f --write-index \\
             output_format=postfix,
             threads="--threads " + config.param(ini_section, 'threads'),
             sample_output=sample_output,
-            input_bams=" ".join(map(str.strip, input_bams))
+            input_bams="".join([" \\\n  " + input_bam for input_bam in input_bams]),
         )
     )
 
