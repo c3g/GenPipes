@@ -109,7 +109,7 @@ class Scheduler:
             else:
                 cpu = re.search("[0-9]+", cpu_str).group()
         except AttributeError:
-            raise ValueError(f'"{cpu_str}" is not a valid entry for "cluster_cpu"')
+            raise ValueError(f'"{cpu_str}" is not a valid entry for "cluster_cpu" ({job_name_prefix=})')
         return cpu
 
     def node(self, job_name_prefix):
