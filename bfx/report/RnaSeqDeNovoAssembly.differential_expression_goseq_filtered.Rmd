@@ -23,7 +23,7 @@ file.copy(from = source_dir, to = report_dir, overwrite = T, recursive = T)
 # Create GoSeq results tables
 goseq.results=data.frame(NULL)
 dge.results=data.frame(NULL)
-for (item in c("genes","isoforms")){
+for (item in c("gene","isoform")){
     for (contrast in contrasts){
         summary = file.path(report_dir,"differential_expression",item,contrast,"gene_ontology_results.csv") %>% read.delim(header=T,check.names=F,colClasses="character",stringsAsFactors=F,comment.char='')
         # table is sorted by default, take the first 7 lines    
@@ -44,7 +44,7 @@ The differential analysis results are filtered to extract differential expressio
 
 ```{r summary_table, results='asis', echo=F,message=F,warning=F}
 
-for (item in c("genes","isoforms")){    
+for (item in c("gene","isoform")){    
     for (contrast in contrasts){
         subset.dge=try(subset(dge.results, fileID == paste(item,contrast,sep="_"), select=-fileID))
         if (!inherits(subset.dge,'try-error') && nrow(subset.dge) > 0){            

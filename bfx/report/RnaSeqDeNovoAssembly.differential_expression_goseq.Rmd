@@ -36,8 +36,8 @@ goseq.results=data.frame(NULL)
 dge.results=data.frame(NULL)
 counts.results=data.frame(NULL)
 flist <-c()
-for (item in c("genes","isoforms")){
-    summary = file.path(source_dir,paste(item,".counts.matrix.symbol",sep="")) %>% read.delim(header=T,check.names=F,colClasses="character",stringsAsFactors=F,comment.char='')
+for (item in c("gene","isoform")){
+    summary = file.path(source_dir,paste("RSEM.",item,".counts.matrix.symbol",sep="")) %>% read.delim(header=T,check.names=F,colClasses="character",stringsAsFactors=F,comment.char='')
     summary = summary[c(1:min(top_n_results,nrow(summary))),c(1:min(ncol(summary),8))]
     names(summary)[1]="id"
     counts.results = rbind(counts.results, cbind(fileID=item, summary))    
@@ -73,11 +73,11 @@ A primary task in the analysis of RNA-Seq data is the detection of differentiall
 Gene abundance estimation is performed using [RSEM]\ [@rsem] and is represented as a table which reports, for each sample (columns), the number of reads mapped to a given gene (rows).
 
 ```{r counts_table, results='asis', echo=F,message=F,warning=F}
-for (item in c("genes","isoforms")){        
+for (item in c("gene","isoform")){        
     subset.counts=try(subset(counts.results, fileID == item, select=-fileID))
     if (!inherits(subset.counts,'try-error') && nrow(subset.counts) > 0){            
         print(kable(subset.counts, row.names=F, caption=paste("<br>","Matrix of Raw Read Counts per ",item," per Sample ",  
-                                                              " (**partial table**; [download full table](","differential_expression/",item,".counts.matrix.symbol))",sep=""), 
+                                                              " (**partial table**; [download full table](","differential_expression/RSEM.",item,".counts.matrix.symbol))",sep=""), 
         padding = 10, align=NULL))
         }else  print(paste("<br>","No abundance estimation ",item," results are available .",sep=""))    
 }        
@@ -106,7 +106,7 @@ The following sections provide the results of the differential gene expresssion 
 
 ```{r summary_table, results='asis', echo=F,message=F,warning=F}
 
-for (item in c("genes","isoforms")){    
+for (item in c("gene","isoform")){    
     for (contrast in contrasts){
         subset.dge=try(subset(dge.results, fileID == paste(item,contrast,sep="_"), select=-fileID))
         if (!inherits(subset.dge,'try-error') && nrow(subset.dge) > 0){            
