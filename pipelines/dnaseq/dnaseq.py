@@ -2243,7 +2243,12 @@ END
 
         return job
 
-    def snp_effect(self):
+    def snp_effect(
+            self,
+            input="variants/allSamples.hc.vqsr.vt.mil.snpId.vcf.gz",
+            output="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.vcf",
+            job_name="snp_effect.hc"
+    ):
         """
         Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
@@ -2251,33 +2256,25 @@ END
         
         jobs = []
         
-        [input] = self.select_input_files(
-            [
-                ["variants/allSamples.merged.flt.vt.mil.snpId.vcf.gz"],
-                ["variants/allSamples.vt.prep.vcf.gz"]
-            ]
-        )
-
         if "high_cov" in self.get_protocol():
-            snpeff_file = "variants/allSamples.vt.snpeff.vcf"
+            [input] = ["variants/allSamples.vt.prep.vcf.gz"]
+            [output] = ["variants/allSamples.vt.snpeff.vcf"]
+            job_name = "snp_effect.high_cov"
             
-        else:
-            snpeff_file = "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf"
-
         jobs.append(
             concat_jobs(
                 [
                     snpeff.compute_effects(
                         input,
-                        snpeff_file,
+                        output,
                         options=config.param('compute_effects', 'options', required=False)
                     ),
                     htslib.bgzip_tabix(
-                        snpeff_file,
-                        f"{snpeff_file}.gz"
+                        output,
+                        f"{output}.gz"
                     )
                 ],
-                name="snp_effect",
+                name=job_name,
                 samples=self.samples
             )
         )
