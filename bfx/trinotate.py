@@ -113,26 +113,24 @@ def infernal_cmscan(
     cm_db,
     output,
     infernal_log,
-    ini_section='infernal'
+    ini_section='infernal_cmscan'
     ):
 
     return Job(
         [input],
         [output],
         [
-            ['infernal', 'module_infernal']
+            [ini_section, 'module_infernal']
         ],
         command="""\
 cmscan {options} \\
   --tblout {output} \\
-  --cpu {threads} \\
   --clanin {clan_file} \\
   {cm_db} \\
   {input} \\
   > {infernal_log}""".format(
-    options=config.param('infernal', 'options'),
+    options=config.param(ini_section, 'options'),
     output=output,
-    threads=config.param('infernal', 'threads'),
     clan_file=clan_file,
     cm_db=cm_db,
     input=input,
