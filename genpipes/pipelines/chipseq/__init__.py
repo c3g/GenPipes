@@ -102,7 +102,7 @@ class ChipSeq(common.Illumina):
     @property
     def contrasts(self):
         if getattr(self, "_contrasts") is None:
-                self._contrasts = parse_chipseq_design_file(self.design_file, self.samples)
+            self._contrasts = parse_chipseq_design_file(self.design_file, self.samples)
         return self._contrasts
 
 
@@ -137,8 +137,8 @@ class ChipSeq(common.Illumina):
     def contrasts(self):
         flag = False
 
-        if self.args.design:
-            self._contrast = parse_chipseq_design_file(self.args.design.name, self.samples)
+        if self.design_file:
+            self._contrast = parse_chipseq_design_file(self.design_file.name, self.samples)
         else:
             self.argparser.error("argument -d/--design is required!")
 
@@ -481,21 +481,22 @@ pandoc \\
                     sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
 
                     jobs.append(
-                        concat_jobs([
-                            bash.mkdir(
-                                os.path.dirname(sample_bam)
-                            ),
-                            bash.ln(
-                                readset_bam,
-                                sample_bam,
-                                self.output_dir
-                            ),
-                            bash.ln(
-                                readset_index,
-                                sample_index,
-                                self.output_dir
-                            )
-                        ],
+                        concat_jobs(
+                            [
+                                bash.mkdir(
+                                    os.path.dirname(sample_bam)
+                                ),
+                                bash.ln(
+                                    os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
+                                    sample_bam,
+                                    input=readset_bam
+                                ),
+                                bash.ln(
+                                    os.path.relpath(readset_index, os.path.dirname(sample_index)),
+                                    sample_index,
+                                    input=readset_index
+                                )
+                            ],
                             name="symlink_readset_sample_bam." + sample.name + "." + mark_name,
                             samples=[sample]
                         )
