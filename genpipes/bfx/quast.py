@@ -18,6 +18,7 @@
 ################################################################################
 
 # Python Standard Modules
+import os
 import logging
 
 # MUGQIC Modules

@@ -39,7 +39,8 @@ def realigner_target_creator(
     output_dir=[],
     input2=[],
     intervals=[],
-    exclude_intervals=[]
+    exclude_intervals=[],
+    fix_encoding=[]
     ):
 
     return gatk.realigner_target_creator(
@@ -48,7 +49,8 @@ def realigner_target_creator(
         output_dir,
         input2,
         intervals,
-        exclude_intervals
+        exclude_intervals,
+        fix_encoding
     )
 
 # only in GATK3
@@ -62,7 +64,8 @@ def indel_realigner(
     output_tum_dep=[],
     intervals=[],
     exclude_intervals=[],
-    optional=[]
+    optional=[],
+    fix_encoding=[]
     ):
 
     return gatk.indel_realigner(
@@ -75,7 +78,8 @@ def indel_realigner(
         output_tum_dep,
         intervals,
         exclude_intervals,
-        optional
+        optional,
+        fix_encoding
     )
 
 def split_n_cigar_reads(
@@ -142,6 +146,7 @@ def mark_duplicates_spark(
             [ini_section, 'module_gatk']
         ],
         command="""\
+rm -rf {output}.part && \\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  MarkDuplicatesSpark \\
  --remove-all-duplicates {remove_duplicates} --read-validation-stringency SILENT --create-output-bam-index true \\
@@ -557,7 +562,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
                 exclude_intervals="".join(
                     " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
-        ))
+            )
+        )
 
 def GenomicsDBImport(
     inputs,
@@ -590,7 +596,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 input="".join(" \\\n  --variant " + input for input in inputs),
                 output=output,
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        ))
+            )
+        )
 
 def genotype_gvcf(
     variants,
@@ -849,15 +856,6 @@ def variant_recalibrator(
             small_sample_check=small_sample_check
             )
     else:
-        
-        if small_sample_check:
-            try:
-                small_sample_option = global_conf.get(ini_section, 'small_sample_option')
-            except core.config.Error:
-                small_sample_option = ''
-            else:
-                small_sample_option = ''
-            
         return Job(
             variants,
             [recal_output, tranches_output],
@@ -939,7 +937,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 recal_input=recal_input,
                 tranches_input=tranches_input,
                 output=apply_recal_output
-        ))
+            )
+        )
 
 def variant_filtration(
     input,
@@ -1051,7 +1050,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 ram=global_conf.get(ini_section, 'ram'),
                 input=input,
                 output=output,
-        ))
+            )
+        )
 
 def calculate_hs_metrics(
     input,
@@ -1308,9 +1308,9 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 def collect_gcbias_metrics(
     input,
-    output,
-    chart,
-    summary_file,
+    output_prefix,
+    chart=None,
+    summary_file=None,
     annotation_flat=None,
     reference_sequence=None,
     ini_section='picard_collect_gcbias_metrics'
@@ -1339,7 +1339,7 @@ def collect_gcbias_metrics(
     else:
         return Job(
             [input],
-            [output],
+            outputs,
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_gatk'],
@@ -1411,7 +1411,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             ]
         )
 
-def picard_mark_duplicates(
+def mark_duplicates(
     inputs,
     output,
     metrics_file,
@@ -1440,10 +1440,11 @@ def picard_mark_duplicates(
             inputs,
             outputs,
             [
-                ['picard_mark_duplicates', 'module_java'],
-                ['picard_mark_duplicates', 'module_gatk']
+                [ini_section, 'module_java'],
+                [ini_section, 'module_gatk']
             ],
             command="""\
+rm -rf {output}.part && \\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  MarkDuplicates \\
  --REMOVE_DUPLICATES {remove_duplicates} \\
@@ -1454,15 +1455,15 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --OUTPUT {output} \\
  --METRICS_FILE {metrics_file} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=global_conf.get('picard_mark_duplicates', 'tmp_dir'),
-                java_other_options=global_conf.get('picard_mark_duplicates', 'gatk4_java_options'),
-                ram=global_conf.get('picard_mark_duplicates', 'ram'),
+                tmp_dir=global_conf.get(ini_section, 'tmp_dir'),
+                java_other_options=global_conf.get(ini_section, 'gatk4_java_options'),
+                ram=global_conf.get(ini_section, 'ram'),
                 remove_duplicates=remove_duplicates,
                 create_index="--CREATE_INDEX true," if create_index else "",
                 inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
                 output=output,
                 metrics_file=metrics_file,
-                max_records_in_ram=global_conf.get('picard_mark_duplicates', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=global_conf.get(ini_section, 'max_records_in_ram', param_type='int')
             ),
             removable_files=[
                 output,
@@ -1581,7 +1582,6 @@ def merge_sam_files(
             output
         )
     else:
-        
         return Job(
             inputs,
             [
@@ -1829,7 +1829,6 @@ def crosscheck_fingerprint(
     ):
 
     matrix=output + ".matrix"
-        
     return Job(
         inputs,
         [output],
@@ -1994,9 +1993,7 @@ def splitInterval(
 
     interval_list = []
     for idx in range(jobs):
-     interval_list.append(
-         os.path.join(output, str(idx).zfill(4) + "-scattered.interval_list")
-         )
+        interval_list.append(os.path.join(output, str(idx).zfill(4) + "-scattered.interval_list"))
 
     return Job(
         [intervals],
@@ -2023,6 +2020,47 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             output=output
         )
     )
+
+def collect_wgs_metrics(
+    input,
+    output,
+    reference_sequence=None,
+    ini_section='picard_collect_wgs_metrics'
+    ):
+
+    if global_conf.get(ini_section, 'module_gatk').split("/")[2] < "4":
+        return picard2.collect_wgs_metrics(
+            input,
+            output,
+            reference_sequence
+        )
+    else:
+        return Job(
+            [input],
+            [output],
+            [
+                [ini_section, 'module_java'],
+                [ini_section, 'module_gatk'],
+            ],
+            command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  CollectWgsMetrics {options} \\
+  --VALIDATION_STRINGENCY SILENT  \\
+  --TMP_DIR {tmp_dir} \\
+  --INPUT {input} \\
+  --OUTPUT {output} \\
+  --REFERENCE_SEQUENCE {reference} \\
+  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
+                tmp_dir=global_conf.get(ini_section, 'tmp_dir'),
+                java_other_options=global_conf.get(ini_section, 'gatk4_java_options'),
+                ram=global_conf.get(ini_section, 'ram'),
+                options=global_conf.get(ini_section, 'options'),
+                input=input,
+                output=output,
+                reference=reference_sequence if reference_sequence else global_conf.get(ini_section, 'genome_fasta'),
+                max_records_in_ram=global_conf.get(ini_section, 'max_records_in_ram', param_type='int')
+            )
+        )
 
 def parse_bases_over_q30_percent_metrics_pt(input_file):
     """
