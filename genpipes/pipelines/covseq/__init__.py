@@ -1298,8 +1298,8 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         modules = []
         # Retrieve all unique module version values in config files
         # assuming that all module key names start with "module_"
-        for section in config.sections():
-            for name, value in config.items(section):
+        for section in global_conf.sections():
+            for name, value in global_conf.items(section):
                 if re.search("^module_", name) and value not in modules:
                     modules.append(value)
 
@@ -1750,3 +1750,29 @@ module load {R_covseqtools}""".format(
             self.run_multiqc
         ]}
 
+def main(parsed_args):
+    """
+    The function that will call this pipeline!
+    """
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    pipeline = CoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                      clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                      design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()

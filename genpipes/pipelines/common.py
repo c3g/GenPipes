@@ -46,6 +46,7 @@ from ..bfx import picard
 from ..bfx import trimmomatic
 from ..bfx import variantBam
 from ..bfx import samtools
+from ..bfx import sambamba
 from ..bfx import rmarkdown
 from ..bfx import bash_cmd as bash
 
@@ -529,7 +530,6 @@ pandoc \\
                 else:
                     bam_link = os.path.relpath(readset_bam, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
                     index_link = os.path.relpath(readset_index, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
-
                 jobs.append(
                     concat_jobs(
                         [
@@ -550,7 +550,6 @@ pandoc \\
                         readsets=list(sample.readsets)
                     )
                 )
-
 
             # Sambamba merge fails if a file/symlink with the merged sample name already exists. Remove any existing file before merging.
             elif len(sample.readsets) > 1:
