@@ -4636,11 +4636,15 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 prefix = os.path.join(pair_directory, tumor_pair.name)
                 
                 jobs.append(
-                    concat_jobs(
+                    pipe_jobs(
                         [
                             tools.preprocess_varscan(
                                 f"{prefix}.varscan2.somatic.vt.vcf.gz",
-                                f"{prefix}.varscan2.somatic.vt.prep.vcf.gz",
+                                None,
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
+                                f"{prefix}.varscan2.somatic.vt.prep.vcf.gz"
                             )
                         ],
                         name=f"preprocess_vcf.panel.somatic.{tumor_pair.name}",
@@ -4650,10 +4654,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 )
                 
                 jobs.append(
-                    concat_jobs(
+                    pipe_jobs(
                         [
                             tools.preprocess_varscan(
                                 f"{prefix}.varscan2.germline.vt.vcf.gz",
+                                None
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
                                 f"{prefix}.varscan2.germline.vt.prep.vcf.gz"
                             )
                         ],
@@ -5695,6 +5703,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 bed_file = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
                                                                                                 '.ACGT.noALT.bed'))
                 
+                ini_section='rawmpileup'
                 job_name = f"rawmpileup.{tumor_pair.name}"
                 
                 coverage_bed = bvatools.resolve_readset_coverage_bed(
@@ -5752,7 +5761,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                         ],
                                         pair_output,
                                         regionFile=bed_file,
-                                        region=sequence['name']
+                                        region=sequence['name'],
+                                        ini_section=ini_section
                                     )
                                 ],
                                 name=f"{job_name}.{sequence['name']}",

@@ -252,7 +252,7 @@ python $PYTHON_TOOLS/preprocess.py \\
   {input} \\
   {output}""".format(
             input=input,
-            output=" | bgzip -cf > " + output if output else "",
+            output=output if output else "",
         )
     )
 
