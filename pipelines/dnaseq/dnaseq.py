@@ -5369,6 +5369,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+            metrics_dir = self.output_dirs['metrics_directory'][tumor_pair.name]
 
             [input_normal] = self.select_input_files(
                 [
@@ -5498,16 +5499,16 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             driver_gene_panel
                         ),
                         bash.mkdir(
-                            self.output_dirs['metrics_directory'][tumor_pair.name]
+                            metrics_dir
                         ),
                         bash.ln(
-                            os.path.relpath(purple_purity_output, self.output_dirs['metrics_directory'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name], os.path.basename(purple_purity_output)),
+                            os.path.relpath(purple_purity_output.strip(), metrics_dir),
+                            os.path.join(metrics_dir, os.path.basename(purple_purity_output)),
                             input=purple_purity_output
                         ),
                         bash.ln(
-                            os.path.relpath(purple_qc_output, self.output_dirs['metrics_directory'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['metrics_directory'][tumor_pair.name], os.path.basename(purple_qc_output)),
+                            os.path.relpath(purple_qc_output.strip(), metrics_dir),
+                            os.path.join(metrics_dir, os.path.basename(purple_qc_output)),
                             input=purple_qc_output
                         ),
                         job_project_tracking_metrics
