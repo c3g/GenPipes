@@ -67,6 +67,7 @@ from bfx import (
     metrics,
     metric_tools,
     multiqc,
+    pave,
     pcgr,
     purple,
     mosdepth,
@@ -5385,18 +5386,26 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 ]
             )
 
-            somatic_snv = None
+            annotate_snv = None
             if os.path.join(pair_dir, f"{tumor_pair.name}.strelka2.somatic.vt.vcf.gz"):
                 somatic_snv = os.path.join(pair_dir, f"{tumor_pair.name}.strelka2.somatic.purple.vcf.gz")
+                annotate_snv = os.path.join(pair_dir, f"{tumor_pair.name}.strelka2.somatic.pave.vcf.gz")
                 jobs.append(
                     concat_jobs(
                         [
-                        purple.strelka2_convert(
+                            purple.strelka2_convert(
                             os.path.join(pair_dir, f"{tumor_pair.name}.strelka2.somatic.vt.vcf.gz"),
-                            somatic_snv,
-                        )
-                    ],
-                    name=f"purple.convert_strelka2.{tumor_pair.name}",
+                            somatic_snv
+                            ),
+                            pave.run(
+                                somatic_snv,
+                                tumor_pair.tumor.name,
+                                pair_dir,
+                                annotate_snv,
+                                ini_section='pave_annotate'
+                            )
+                        ],
+                    name=f"purple.annotate_strelka2.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
@@ -5404,18 +5413,16 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             gripss_vcf = None
             gripss_filtered_vcf = None
-            somatic_hotspots = None
             germline_hotspots = None
-            driver_gene_panel = None
+            somatic_hotspots = config.param('purple', 'somatic_hotspots', param_type='filepath')
+            driver_gene_panel = config.param('purple', 'driver_gene_panel', param_type='filepath')
 
             if sv:
                 pair_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
                 gridss_directory = os.path.join(pair_dir, "gridss")
                 gripss_vcf = os.path.join(gridss_directory, f"{tumor_pair.tumor.name}.gripss.somatic.vcf.gz")
                 gripss_filtered_vcf = os.path.join(gridss_directory, f"{tumor_pair.tumor.name}.gripss.filtered.somatic.vcf.gz")
-                somatic_hotspots = config.param('purple', 'somatic_hotspots', param_type='filepath')
                 germline_hotspots = config.param('purple', 'germline_hotspots', param_type='filepath')
-                driver_gene_panel = config.param('purple', 'driver_gene_panel', param_type='filepath')
 
             purple_dir = os.path.join(pair_dir, "purple")
             amber_dir = os.path.join(purple_dir, "rawAmber")
@@ -5491,7 +5498,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             tumor_pair.tumor.name,
                             purple_dir,
                             ensembl_data_dir,
-                            somatic_snv,
+                            annotate_snv,
                             gripss_vcf,
                             gripss_filtered_vcf,
                             somatic_hotspots,
