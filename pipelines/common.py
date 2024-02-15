@@ -405,7 +405,8 @@ END
                             perl_command=perl_command,
                             readset_merge_trim_stats=readset_merge_trim_stats
                         ),
-                        samples=[readset.sample]
+                        samples=[readset.sample],
+                        readsets=[readset]
                     )
                 ]
             )
