@@ -2434,12 +2434,16 @@ END
             )
             output = os.path.join(
                 output_directory,
+                sample.name,
                 f"{sample.name}.annot.vcf.gz"
             )
             
             jobs.append(
                 concat_jobs(
                     [
+                        bash.mkdir(
+                            os.path.join(output_directory, sample.name)
+                        ),
                         tools.format2pcgr(
                             input,
                             output,
@@ -2480,12 +2484,13 @@ END
                 
                 input = os.path.join(
                     output_directory,
+                    sample.name,
                     f"{sample.name}.annot.vcf.gz"
                 )
                 cpsr_directory = os.path.join(
                     output_directory,
+                    sample.name,
                     "cpsr",
-                    sample.name
                 )
                 jobs.append(
                     concat_jobs(
@@ -2580,8 +2585,8 @@ END
             for sample in self.samples:
                 cpsr_directory = os.path.join(
                     output_directory,
-                    "cpsr",
-                    sample.name
+                    sample.name,
+                    "cpsr"
                 )
                 input_cpsr = os.path.join(
                     cpsr_directory,
@@ -2589,6 +2594,7 @@ END
                 )
                 input = os.path.join(
                     output_directory,
+                    sample.name,
                     f"{sample.name}.annot.vcf.gz"
                 )
                 
@@ -2607,8 +2613,8 @@ END
                 
                 pcgr_directory = os.path.join(
                     output_directory,
-                    "pcgr",
-                    sample.name
+                    sample.name,
+                    "pcgr"
                 )
                 output = os.path.join(
                     pcgr_directory,
@@ -5394,8 +5400,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     concat_jobs(
                         [
                             purple.strelka2_convert(
-                            os.path.join(pair_dir, f"{tumor_pair.name}.strelka2.somatic.vt.vcf.gz"),
-                            somatic_snv
+                                os.path.join(pair_dir, f"{tumor_pair.name}.strelka2.somatic.vt.vcf.gz"),
+                                somatic_snv
                             ),
                             pave.run(
                                 somatic_snv,
