@@ -80,7 +80,6 @@ def run(
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR \\
   {other_options} \\
-  {run_drivers} \\
   -threads {threads} \\
   -ref_genome_version {reference_sequence_version} \\
   -ref_genome {reference_sequence} \\
@@ -107,7 +106,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
             cobalt=cobalt,
             ensembl_data_dir=ensembl_data_dir,
             somatic_snv=somatic_snv,
-            structural_sv=" \\\n  -structural_vcf " +  structural_sv if structural_sv else "",
+            structural_sv=" \\\n  -somatic_sv_vcf " +  structural_sv if structural_sv else "",
             sv_recovery=" \\\n  -sv_recovery_vcf " +  sv_recovery if sv_recovery else "",
             somatic_hotspots=" \\\n  -somatic_hotspots " + somatic_hotspots if somatic_hotspots else "",
             germline_hotspots=" \\\n  -germline_hotspots " + germline_hotspots if germline_hotspots else "",

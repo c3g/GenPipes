@@ -7738,7 +7738,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                                           tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             # svprep_directory = os.path.join(pair_directory, "gridss", "sv_prep")
             
             [input_normal] = self.select_input_files(
