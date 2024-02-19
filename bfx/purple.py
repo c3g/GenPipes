@@ -111,7 +111,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
             somatic_hotspots=" \\\n  -somatic_hotspots " + somatic_hotspots if somatic_hotspots else "",
             germline_hotspots=" \\\n  -germline_hotspots " + germline_hotspots if germline_hotspots else "",
             driver_gene_panel=" \\\n  -driver_gene_panel " + driver_gene_panel if driver_gene_panel else "",
-            circos="\\\n  -circos circos" if structural_sv else "",
+            circos="\\\n  -circos `which circos`" if structural_sv else "",
             output_dir=output_dir
         )
     )
