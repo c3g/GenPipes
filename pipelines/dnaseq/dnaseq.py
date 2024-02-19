@@ -5583,8 +5583,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ),
                             varscan.mpileupcns(
                                 None,
-                                initial_output,
+                                None,
                                 samples_file
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
+                                initial_output
                             )
                         ]
                     ),
