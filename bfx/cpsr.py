@@ -29,16 +29,16 @@ def report(
     input,
     output_dir,
     tumor_id,
-    ini_section = None
+    ini_section ='report_cpsr'
     ):
 
-    assembly = config.param('report_cpsr', 'assembly')
+    assembly = config.param(ini_section, 'assembly')
     output = [
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html")
     ]
 
-    if config.param('report_cpsr', 'module_pcgr').split("/")[2] >= "1":
+    if config.param(ini_section, 'module_pcgr').split("/")[2] >= "1":
         call = 'cpsr'
         module = 'module_pcgr'
     else:
