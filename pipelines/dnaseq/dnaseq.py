@@ -2579,8 +2579,7 @@ END
         if 'tumor_only' in self.get_protocol():
             output_directory = f"{self.output_dirs['variants_directory']}/split"
             ini_section = 'report_pcgr_tumor_only'
-            
-            assembly = config.param('report_pcgr', 'assembly')
+            assembly = config.param(ini_section, 'assembly')
             
             for sample in self.samples:
                 cpsr_directory = os.path.join(
@@ -2652,8 +2651,8 @@ END
                         tumor_pair.name,
                         "panel"
                     )
-                    assembly = config.param('report_pcgr_fastpass', 'assembly')
                     ini_section = 'report_pcgr_fastpass'
+                    assembly = config.param(ini_section, 'assembly')
                     job_name=f"report_pcgr_fastpass.{tumor_pair.name}"
                     
                     cpsr_directory = os.path.join(
@@ -2674,8 +2673,8 @@ END
                         self.output_dirs['paired_variants_directory'],
                         "ensemble"
                     )
-                    assembly = config.param('report_pcgr', 'assembly')
                     ini_section = 'report_pcgr'
+                    assembly = config.param( ini_section, 'assembly')
                     job_name = f"report_pcgr.{tumor_pair.name}"
                     
                     cpsr_directory = os.path.join(
