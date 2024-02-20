@@ -28,11 +28,10 @@ import io
 
 log = logging.getLogger(__name__)
 
-class Config(configparser.RawConfigParser):
+class Config(configparser.ConfigParser):
 
     # True only for continuous integration testing
     continuous_integration_testing = 'GENPIPES_CIT' in os.environ
-    # All the option that will be forces to default value if
     # continuous_integration_testing = True
     cluster_walltime = "cluster_walltime"
     cit_options = [cluster_walltime]
