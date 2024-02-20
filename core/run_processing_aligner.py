@@ -35,6 +35,7 @@ from bfx import star
 from bfx import cellranger
 from bfx import tools
 from bfx import bash_cmd as bash
+from bfx import samtools
 
 import logging
 log = logging.getLogger(__name__)
@@ -242,7 +243,10 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                             "coordinate"
                         )
                     ]
-                )
+                ),
+                samtools.quickcheck(
+                    output
+                    ) 
             ],
             name="bwa_mem_picard_sort_sam." + readset.name + "." + readset.run + "." + readset.lane,
             samples=[readset.sample]
