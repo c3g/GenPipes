@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -31,31 +31,32 @@ def run(inputs, output, ini_section='multiqc'):
         inputs,
         [output],
         [
-            [ini_section, 'module_python'],
-            [ini_section, 'module_multiqc'],
+            [ini_section, 'module_multiqc']
         ],
         command="""\
 multiqc -f {options} \\
 {input} \\
 -n {output}""".format(
-            options=global_conf.get(ini_section, 'options', required=False)
-            if global_conf.get(ini_section, 'options', required=False) else "",
+            options=global_conf.get(ini_section, 'options', required=False),
             input=" ".join([" \\\n  " + input for input in inputs]),
             output=output,
-            )
         )
+    )
 
-def mutliqc_run(yamlFile, input_files):
-
-
-    command = """export MULTIQC_CONFIG_PATH={yamlFile} && \\
-    multiqc .""".format(
-        yamlFile = yamlFile)
-    ## for now multiqc will run after hicup alignments are complete. Once Homer is added to mutliqc, the input must change to refect homer tag dirs
-
-    return Job(input_files = input_files,
-            output_files = ["Analysis_Summary_Report.html"],
-            module_entries = [["multiqc_report", "module_multiqc"]],
-            name = "multiqc_report",
-            command = command
-            )
+def multiqc_run(
+    yamlFile,
+    input_files
+    ):
+    ## for now multiqc will run after hicup alignments are complete. Once Homer is added to multiqc, the input must change to refect homer tag dirs
+    return Job(
+        input_files,
+        ["Analysis_Summary_Report.html"],
+        module_entries = [
+            ["multiqc_report", "module_multiqc"]
+        ],
+        command = """\
+export MULTIQC_CONFIG_PATH={yamlFile} && \\
+  multiqc .""".format(
+            yamlFile = yamlFile
+        )
+    )
