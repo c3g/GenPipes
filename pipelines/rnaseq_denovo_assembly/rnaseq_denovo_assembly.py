@@ -578,10 +578,13 @@ pandoc --to=markdown \\
     def infernal_transcriptome(self):
         """
         Identify structural RNAs using cmscan function from [infernal](http://eddylab.org/infernal)
+        Run in parallel, using chunks created by exonerate. 
         """
         jobs=[]
 
         trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
+        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
+        trinity_chunks_directory = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta_chunks") 
         infernal_directory = os.path.join(self.output_dirs["trinotate_directory"], "infernal")
         infernal_output = os.path.join(infernal_directory, "infernal.out")
         infernal_log = os.path.join(infernal_directory, "infernal.log")
@@ -589,20 +592,30 @@ pandoc --to=markdown \\
         clan_file = os.path.join(trinotate_data, "Rfam.clanin")
         cm_db = os.path.join(trinotate_data, "Rfam.cm")
 
-        jobs.append(concat_jobs(
+        for i in range(num_fasta_chunks):
+            trinity_chunk = os.path.join(trinity_chunks_directory, "Trinity.fa_chunk_{:07d}".format(i))
+            infernal_output = os.path.join(infernal_directory, "infernal.chunk_{:07d}.out".format(i))
+            infernal_log = os.path.join(infernal_directory, "infernal.chunk_{:07d}.log".format(i))
+            
+            jobs.append(concat_jobs(
                 [
                     bash.mkdir(
                         infernal_directory
                         ),
+                    trinotate.parse_assembly_size(
+                        re.sub('fasta', 'stats.csv', trinity_fasta)
+                        ),
                     trinotate.infernal_cmscan(
-                        trinity_fasta,
+                        trinity_chunk,
                         clan_file,
                         cm_db,
                         infernal_output,
                         infernal_log
                         )
                 ],
-                name="infernal_cmscan"
+                name="infernal_cmscan.chunk_{:07d}".format(i),
+                samples=self.samples,
+                removable_files=[infernal_output,infernal_log]
                 )
             )
         return jobs
