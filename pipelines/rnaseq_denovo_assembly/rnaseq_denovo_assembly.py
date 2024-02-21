@@ -586,8 +586,6 @@ pandoc --to=markdown \\
         num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         trinity_chunks_directory = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta_chunks") 
         infernal_directory = os.path.join(self.output_dirs["trinotate_directory"], "infernal")
-        infernal_output = os.path.join(infernal_directory, "infernal.out")
-        infernal_log = os.path.join(infernal_directory, "infernal.log")
         trinotate_data = config.param("trinotate", "trinotate_data")
         clan_file = os.path.join(trinotate_data, "Rfam.clanin")
         cm_db = os.path.join(trinotate_data, "Rfam.cm")
@@ -618,6 +616,20 @@ pandoc --to=markdown \\
                 removable_files=[infernal_output,infernal_log]
                 )
             )
+
+        # merge chunked infernal outputs into one file
+        infernal_chunks = [os.path.join(infernal_directory, "infernal.chunk_{:07d}.out".format(i)) for i in range(num_fasta_chunks)]
+        infernal_output = os.path.join(infernal_directory, "infernal.out")
+        
+        job = trinotate.infernal_merge(
+                infernal_chunks,
+                infernal_output
+                )
+        job.name = "infernal_merge"
+        job.samples=self.samples
+
+        jobs.append(job)
+
         return jobs
 
     def blastp_transdecoder_uniprot(self):
