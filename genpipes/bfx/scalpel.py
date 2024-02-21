@@ -41,11 +41,11 @@ scalpel-discovery --somatic \\
   --dir {outputDir} \\
   --numprocs {cores_per_job} \\
   --bed {bed}""".format(
-        reference_sequence=global_conf.get('scalpel', 'genome_fasta', param_type='filepath'),
+        reference_sequence=global_conf.global_get('scalpel', 'genome_fasta', param_type='filepath'),
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputDir=outputDir,
-        cores_per_job=global_conf.get('scalpel', 'cores_per_job'),
+        cores_per_job=global_conf.global_get('scalpel', 'cores_per_job'),
         bed=bed
         )
     )
@@ -67,11 +67,11 @@ scalpel-discovery --somatic --two-pass \\
   --dir {outputDir} \\
   --numprocs {cores_per_job} \\
   --bed {bed}""".format(
-        reference_sequence=global_conf.get('scalpel', 'genome_fasta', param_type='filepath'),
+        reference_sequence=global_conf.global_get('scalpel', 'genome_fasta', param_type='filepath'),
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputDir=outputDir,
-        cores_per_job=global_conf.get('scalpel', 'cores_per_job'),
+        cores_per_job=global_conf.global_get('scalpel', 'cores_per_job'),
         bed=bed
         )
     )

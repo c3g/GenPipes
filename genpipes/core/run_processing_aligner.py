@@ -65,8 +65,8 @@ class RunProcessingAligner(object):
                "\tSM:" + readset.sample.name + \
                "\tLB:" + readset.library + \
                "\tPU:run" + readset.run + "_" + readset.lane + \
-               ("\tCN:" + global_conf.get(ini_section, 'sequencing_center')
-                if global_conf.get(ini_section, 'sequencing_center', required=False) else "") + \
+               ("\tCN:" + global_conf.global_getget(ini_section, 'sequencing_center')
+                if global_conf.global_getget(ini_section, 'sequencing_center', required=False) else "") + \
                "\tPL:Illumina" + \
                "'"
 
@@ -95,8 +95,8 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
             if genome_config.has_option(section, dbsnp_option_name) and\
                     genome_config.has_option(section, af_option_name):
-                dbsnp_version = genome_config.get(section, dbsnp_option_name)
-                af_name = genome_config.get(section, af_option_name)
+                dbsnp_version = genome_global_conf.global_get(section, dbsnp_option_name)
+                af_name = genome_global_conf.global_get(section, af_option_name)
                 return [
                     os.path.join(self.genome_folder,
                                  "annotations",
@@ -148,7 +148,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             if (not os.path.exists(full_coverage_bed)) and \
                     (coverage_bed not in BwaRunProcessingAligner.downloaded_bed_files):
                 # Download the bed file
-                command = global_conf.get('DEFAULT', 'fetch_bed_file_command').format(
+                command = global_conf.global_get('DEFAULT', 'fetch_bed_file_command').format(
                     output_directory=self.output_dir,
                     filename=coverage_bed
                 )
@@ -177,7 +177,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             input,
             input_file_prefix + "metrics.targetCoverage.txt",
             full_coverage_bed,
-            other_options=global_conf.get('bvatools_depth_of_coverage', 'other_options', required=False),
+            other_options=global_conf.global_get('bvatools_depth_of_coverage', 'other_options', required=False),
             reference_genome=readset.reference_file
         )
         job.name = "bvatools_depth_of_coverage." + readset.name + ".doc" + "." + readset.run + "." + readset.lane
@@ -237,8 +237,8 @@ class StarRunProcessingAligner(RunProcessingAligner):
             genome_config = configparser.ConfigParser()
             genome_config.read(ini_file)
 
-            source = genome_config.get("DEFAULT", "source")
-            version = genome_config.get("DEFAULT", "version")
+            source = genome_global_conf.global_get("DEFAULT", "source")
+            version = genome_global_conf.global_get("DEFAULT", "version")
 
             return os.path.join(self.genome_folder,
                                 "genome",
@@ -254,8 +254,8 @@ class StarRunProcessingAligner(RunProcessingAligner):
             genome_config = configparser.ConfigParser()
             genome_config.read(ini_file)
 
-            source = genome_config.get("DEFAULT", "source")
-            version = genome_config.get("DEFAULT", "version")
+            source = genome_global_conf.global_get("DEFAULT", "source")
+            version = genome_global_conf.global_get("DEFAULT", "version")
 
             return [
                 os.path.join(self.genome_folder,
@@ -277,7 +277,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
     def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
 
-        rg_center = global_conf.get('star_align', 'sequencing_center', required=False)
+        rg_center = global_conf.global_get('star_align', 'sequencing_center', required=False)
 
         # We can't set the exact bam filename for STAR, so we output the result in a specific directory, and move the
         # bam to the expected place with the right name.

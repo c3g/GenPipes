@@ -43,9 +43,9 @@ WHAM-GRAPHENING \\
     -a {genome} \\
     -f {input_tumor}{input_normal} \\
     {output}""".format(
-            exclude=global_conf.get('wham_call_sv', 'exclude'),
-            cores=global_conf.get('wham_call_sv', 'cores'),
-            genome=global_conf.get('wham_call_sv', 'genome_fasta', param_type='filepath'),
+            exclude=global_conf.global_get('wham_call_sv', 'exclude'),
+            cores=global_conf.global_get('wham_call_sv', 'cores'),
+            genome=global_conf.global_get('wham_call_sv', 'genome_fasta', param_type='filepath'),
             input_tumor=input_tumor + "," if input_tumor else "",
             input_normal=input_normal,
             output=" \\\n  > " + output if output else ""
@@ -90,8 +90,8 @@ WHAM-GRAPHENING \\
     -f {input_tumor}{input_normal} \\
     {output}""".format(
             input_vcf=input_vcf,
-            cores=global_conf.get('wham_call_sv', 'cores'),
-            genome=global_conf.get('wham_call_sv', 'genome_fasta', param_type='filepath'),
+            cores=global_conf.global_get('wham_call_sv', 'cores'),
+            genome=global_conf.global_get('wham_call_sv', 'genome_fasta', param_type='filepath'),
             input_tumor=input_tumor + "," if input_tumor else "",
             input_normal=input_normal,
             output=" \\\n  > " + output if output else ""

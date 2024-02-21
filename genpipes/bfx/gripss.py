@@ -54,13 +54,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GRIPSS_JAR 
   -output_dir {outdir} \\
   -sample {sample} \\
   -reference {reference}""".format(
-            tmp_dir=global_conf.get('gripss_filter', 'tmp_dir'),
-            java_other_options=global_conf.get('gripss_filter', 'java_other_options'),
-            ram=global_conf.get('gripss_filter', 'ram'),
-            reference_sequence=global_conf.get('gripss_filter', 'genome_fasta', param_type='filepath'),
-            known_hotspot=global_conf.get('gripss_filter', 'known_hotspot', param_type='filepath'),
-            pon_sgl=global_conf.get('gripss_filter', 'pon_sgl', param_type='filepath'),
-            pon_sv=global_conf.get('gripss_filter', 'pon_sv', param_type='filepath'),
+            tmp_dir=global_conf.global_get('gripss_filter', 'tmp_dir'),
+            java_other_options=global_conf.global_get('gripss_filter', 'java_other_options'),
+            ram=global_conf.global_get('gripss_filter', 'ram'),
+            reference_sequence=global_conf.global_get('gripss_filter', 'genome_fasta', param_type='filepath'),
+            known_hotspot=global_conf.global_get('gripss_filter', 'known_hotspot', param_type='filepath'),
+            pon_sgl=global_conf.global_get('gripss_filter', 'pon_sgl', param_type='filepath'),
+            pon_sv=global_conf.global_get('gripss_filter', 'pon_sv', param_type='filepath'),
             gridss_vcf=gridss_vcf,
             output_id=output_id,
             outdir=os.path.dirname(gripss_vcf),

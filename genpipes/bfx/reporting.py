@@ -39,6 +39,6 @@ python $PYTHONTOOLS/format2pcgr.py {options} \\
         -o {output}""".format(
             input=input_vcf,
 			output=output_vcf,
-            options=global_conf.get('format_vcf', 'options'),
+            options=global_conf.global_get('format_vcf', 'options'),
         )
     )

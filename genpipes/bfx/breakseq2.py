@@ -43,10 +43,10 @@ run_breakseq2.py {options} --bwa "$bwa_path" --samtools "$samtools_path" \\
     --bams {input} \\
     --sample {sample} \\
     --work {output}""".format(
-            options=global_conf.get('run_breakseq2','options'),
-            threads=global_conf.get('run_breakseq2','threads'),
-            genome=global_conf.get('run_breakseq2','genome_fasta', param_type='filepath'),
-	        gff=global_conf.get('run_breakseq2','gff', param_type='filepath'),
+            options=global_conf.global_get('run_breakseq2','options'),
+            threads=global_conf.global_get('run_breakseq2','threads'),
+            genome=global_conf.global_get('run_breakseq2','genome_fasta', param_type='filepath'),
+	        gff=global_conf.global_get('run_breakseq2','gff', param_type='filepath'),
 	        output=output_dir,
 	        input=input,
 	        sample=sample_name

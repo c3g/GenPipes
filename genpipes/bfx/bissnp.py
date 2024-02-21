@@ -41,14 +41,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $BISSNP_JAR 
   --vcf_file_name_1 {cpg_output} \\
   --vcf_file_name_2 {snp_output} \\
   --num_threads {threads}""".format(
-            tmp_dir=global_conf.get('bissnp', 'tmp_dir'),
-            java_other_options=global_conf.get('bissnp', 'java_other_options'),
-            ram=global_conf.get('bissnp', 'ram'),
-            reference_genome=global_conf.get('bissnp', 'genome_fasta'),
+            tmp_dir=global_conf.global_get('bissnp', 'tmp_dir'),
+            java_other_options=global_conf.global_get('bissnp', 'java_other_options'),
+            ram=global_conf.global_get('bissnp', 'ram'),
+            reference_genome=global_conf.global_get('bissnp', 'genome_fasta'),
             input=input,
-            dbsnp=global_conf.get('bissnp', 'known_variants'),
+            dbsnp=global_conf.global_get('bissnp', 'known_variants'),
             cpg_output=cpg_output,
             snp_output=snp_output,
-            threads=global_conf.get('bissnp', 'threads'),
+            threads=global_conf.global_get('bissnp', 'threads'),
         )
     )

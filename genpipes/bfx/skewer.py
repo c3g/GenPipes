@@ -52,8 +52,8 @@ $SKEWER_HOME/./skewer --threads {threads} {options} \\
   {inputs} \\
   {outputs} \\
   -f {quality_offset}""".format(
-        threads=global_conf.get('skewer_trimming', 'threads', param_type='posint'),
-        options=global_conf.get('skewer_trimming', 'options'),
+        threads=global_conf.global_get('skewer_trimming', 'threads', param_type='posint'),
+        options=global_conf.global_get('skewer_trimming', 'options'),
         adapter_file="-x " + adapter_file, 
         inputs=" \\\n  ".join(inputs),
         outputs="-o " + prefix,

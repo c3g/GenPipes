@@ -61,7 +61,7 @@ show-snps -rlTC \\
   -x {x} \\
   {infile2} \\
   > {outfile2}""".format(
-        c=global_conf.get('mummer_reference', 'c', param_type='posint'),
+        c=global_conf.global_get('mummer_reference', 'c', param_type='posint'),
         prefix1=prefix1,
         fasta_reference=fasta_reference,
         fasta_consensus=fasta_consensus,
@@ -69,14 +69,14 @@ show-snps -rlTC \\
         prefix2=prefix2,
         outfile=outfile,
         prefix3=prefix3,
-        x=global_conf.get('mummer_reference', 'x', param_type='posint'),
+        x=global_conf.global_get('mummer_reference', 'x', param_type='posint'),
         infile2=infile2,
         outfile2=outfile2
     ))
 
     # Mammouth does not have libgd by default. Module must be loaded explicitely
-    if global_conf.get('mummer_reference', 'module_libgd', required=False):
-        job.modules.append(global_conf.get('mummer_reference', 'module_libgd', required=False))
+    if global_conf.global_get('mummer_reference', 'module_libgd', required=False):
+        job.modules.append(global_conf.global_get('mummer_reference', 'module_libgd', required=False))
 
     return job
 
@@ -106,7 +106,7 @@ mummerplot --png --layout --filter \\
   --title {title} \\
   --prefix {prefix2} \\
   {outfile}""".format(
-        c=global_conf.get('mummer_self', 'c', param_type='posint'),
+        c=global_conf.global_get('mummer_self', 'c', param_type='posint'),
         prefix1=prefix1,
         fasta_consensus=fasta_consensus,
         title=title,
@@ -115,7 +115,7 @@ mummerplot --png --layout --filter \\
     ))
 
     # Mammouth does not have libgd by default. Module must be loaded explicitely
-    if global_conf.get('mummer_self', 'module_libgd', required=False):
-        job.modules.append(global_conf.get('mummer_self', 'module_libgd', required=False))
+    if global_conf.global_get('mummer_self', 'module_libgd', required=False):
+        job.modules.append(global_conf.global_get('mummer_self', 'module_libgd', required=False))
 
     return job

@@ -92,7 +92,7 @@ samtools mpileup {other_options} \\
   {input_bams} \\
   {output}""".format(
             other_options=other_options,
-            reference_fasta="-f " + global_conf.get('samtools_mpileup', 'genome_fasta', param_type='filepath') if global_conf.get('samtools_mpileup', 'genome_fasta', param_type='filepath') else "",
+            reference_fasta="-f " + global_conf.global_get('samtools_mpileup', 'genome_fasta', param_type='filepath') if global_conf.global_get('samtools_mpileup', 'genome_fasta', param_type='filepath') else "",
             region="-r " + region if region else "",
             regionFile="-l " + regionFile if regionFile else "",
             input_bams=" \\\n  ".join([input_bam for input_bam in inputs]),
@@ -132,7 +132,7 @@ def bcftools_mpileup(inputs, output, options, region=None, regionFile=None, ini_
 bcftools mpileup {options} \\
   -f {reference_fasta}{region}{regionFile}{inputs}{output}""".format(
         options=options if options else "",
-        reference_fasta=global_conf.get('samtools_mpileup', 'genome_fasta', param_type='filepath'),
+        reference_fasta=global_conf.global_get('samtools_mpileup', 'genome_fasta', param_type='filepath'),
         regionFile=" \\\n  -l " + regionFile if regionFile else "",
         region=" \\\n  -r " + region if region else "",
         inputs="".join([" \\\n  " + input for input in inputs]),
@@ -153,10 +153,10 @@ samtools sort \\
   {other_options} {sort_by_name} \\
   {input_bam} \\
   {output_prefix}""".format(
-            other_options=global_conf.get('samtools_sort', 'other_options', required=False),
+            other_options=global_conf.global_get('samtools_sort', 'other_options', required=False),
             sort_by_name="-n " if sort_by_name else " ",
             input_bam=input_bam,
-            output_prefix=output_prefix if global_conf.get('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_bam
+            output_prefix=output_prefix if global_conf.global_get('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_bam
             ),
         removable_files=[output_bam]
         )
@@ -359,8 +359,8 @@ samtools bam2fq {other_options} \\
   {nthread} \\
   {output_pair1}{output_pair2}{output_single}{output_other} \\
   {input_bam}""".format(
-          other_options=global_conf.get(ini_section, 'samtools_bam2fq_other_options', required=False),
-          nthread="-@ " + global_conf.get(ini_section, 'samtools_bam2fq_threads', required=False),
+          other_options=global_conf.global_get(ini_section, 'samtools_bam2fq_other_options', required=False),
+          nthread="-@ " + global_conf.global_get(ini_section, 'samtools_bam2fq_threads', required=False),
           output_pair1="-1 " + output_pair1 if output_pair2 else "",
           output_pair2="-2 " + output_pair2 if output_pair2 else "",
           output_single= " -s " + output_single if output_pair2 else "",

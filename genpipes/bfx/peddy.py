@@ -36,8 +36,8 @@ def run(input, ped, output_dir):
 python -m peddy --plot {options} \\
     --procs {threads} \\
     --prefix {output} {input} {ped}""".format(
-            options=global_conf.get('run_peddy', 'options'),
-	        threads=global_conf.get('run_peddy', 'threads'),
+            options=global_conf.global_get('run_peddy', 'options'),
+	        threads=global_conf.global_get('run_peddy', 'threads'),
 	        input=input,
 	        ped=ped,
 	        output=output_dir,

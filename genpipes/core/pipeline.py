@@ -430,7 +430,7 @@ class Pipeline(object):
         # Now create the json dump for all the samples if not already done
         if self.json:
             # Check if portal_output_dir is set from a valid environment variable
-            self.portal_output_dir = global_conf.get('DEFAULT', 'portal_output_dir', required=False)
+            self.portal_output_dir = global_conf.global_get('DEFAULT', 'portal_output_dir', required=False)
             if self.portal_output_dir.startswith("$") and (os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
                 if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
                     self.portal_output_dir = ""

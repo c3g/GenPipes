@@ -41,7 +41,7 @@ def covid_collect_metrics(readset_file, covid_collect_metrics_inputs, ini_sectio
 echo "Collecting metrics..." && \\
 covid_collect_metrics.sh -r {readset_file}{threads}""".format(
             readset_file=readset_file,
-            threads=" -t " + global_conf.get(ini_section, 'threads', required=False) if global_conf.get(ini_section, 'threads', required=False) else ""
+            threads=" -t " + global_conf.global_get(ini_section, 'threads', required=False) if global_conf.global_get(ini_section, 'threads', required=False) else ""
         )
     )
 

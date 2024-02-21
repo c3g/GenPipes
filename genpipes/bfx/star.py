@@ -46,11 +46,11 @@ def align(
     ):
 
     if not genome_index_folder:
-        genome_index_folder = global_conf.get('star_align', 'genome_index_folder', required=True).format(
-            star_version=global_conf.get('star_align', 'module_star').split('/')[-1]
+        genome_index_folder = global_conf.global_get('star_align', 'genome_index_folder', required=True).format(
+            star_version=global_conf.global_get('star_align', 'module_star').split('/')[-1]
         )
         if not os.path.exists(os.path.expandvars(genome_index_folder)):
-            genome_index_folder = global_conf.get('star_align', 'genome_index_folder', required=True).format(
+            genome_index_folder = global_conf.global_get('star_align', 'genome_index_folder', required=True).format(
             star_version=''
         )
 
@@ -64,14 +64,14 @@ def align(
         removable_files=[os.path.join(output_directory, bam_name)]
     )
     ## Get param from config file
-    num_threads = global_conf.get('star_align', 'threads', param_type='int')
-    ram_limit = global_conf.get('star_align', 'ram')
+    num_threads = global_conf.global_get('star_align', 'threads', param_type='int')
+    ram_limit = global_conf.global_get('star_align', 'ram')
     max_ram = int(utils.number_symbol_converter(ram_limit))
-    io_limit = global_conf.get('star_align', 'io_buffer')
+    io_limit = global_conf.global_get('star_align', 'io_buffer')
     io_max = int(utils.number_symbol_converter(io_limit))
-    stranded = global_conf.get('star_align', 'strand_info')
-    wig_prefix = global_conf.get('star_align', 'wig_prefix')
-    chimere_segment_min = global_conf.get('star_align', 'chimere_segment_min', param_type='int', required=False)
+    stranded = global_conf.global_get('star_align', 'strand_info')
+    wig_prefix = global_conf.global_get('star_align', 'wig_prefix')
+    chimere_segment_min = global_conf.global_get('star_align', 'chimere_segment_min', param_type='int', required=False)
     ## Wiggle information
     if create_wiggle_track:
         wig_cmd = "--outWigType wiggle read1_5p"
@@ -103,7 +103,7 @@ def align(
     else:
         cuff_cmd = ""
 
-    other_options = global_conf.get('star_align', 'other_options', required=False)
+    other_options = global_conf.global_get('star_align', 'other_options', required=False)
 
     job.command = """\
 mkdir -p {output_directory} && \\
@@ -138,7 +138,7 @@ STAR --runMode alignReads \\
         wig_param=" \\\n  " + wig_cmd if wig_cmd else "",
         chim_param=" \\\n  " + chim_cmd if chim_cmd else "",
         cuff_cmd=" \\\n  " + cuff_cmd if cuff_cmd else "",
-        tmp_dir=global_conf.get('star_align', 'tmp_dir', required=True),
+        tmp_dir=global_conf.global_get('star_align', 'tmp_dir', required=True),
         other_options=" \\\n  " + other_options if other_options else ""
     )
 
@@ -148,7 +148,7 @@ STAR --runMode alignReads \\
 def index(
     genome_index_folder,
     junction_file,
-    gtf = global_conf.get('star_align', 'gtf', param_type='filepath', required=False),
+    gtf = global_conf.global_get('star_align', 'gtf', param_type='filepath', required=False),
     ):
     #STAR --runMode genomeGenerate --genomeDir $odir --genomeFastaFiles $genome --runThreadN $runThreadN --limitGenomeGenerateRAM $limitGenomeGenerateRAM --sjdbOverhang $sjdbOverhang  --sjdbFileChrStartEnd "
 
@@ -160,14 +160,14 @@ def index(
     )
 
     ## get get from config filepath
-    reference_fasta = global_conf.get('star_index', 'genome_fasta', param_type='filepath')
-    num_threads = global_conf.get('star_index', 'threads', param_type='int')
-    ram_limit = global_conf.get('star_index', 'ram')
+    reference_fasta = global_conf.global_get('star_index', 'genome_fasta', param_type='filepath')
+    num_threads = global_conf.global_get('star_index', 'threads', param_type='int')
+    ram_limit = global_conf.global_get('star_index', 'ram')
     max_ram = int(utils.number_symbol_converter(ram_limit))
-    io_limit = global_conf.get('star_index', 'io_buffer')
+    io_limit = global_conf.global_get('star_index', 'io_buffer')
     io_max = int(utils.number_symbol_converter(io_limit))
-    read_size = global_conf.get('star_index', 'star_cycle_number', param_type='posint')
-    other_options = global_conf.get('star_index', 'other_options', required=False)
+    read_size = global_conf.global_get('star_index', 'star_cycle_number', param_type='posint')
+    other_options = global_conf.global_get('star_index', 'other_options', required=False)
      
     job.command = """\
 mkdir -p {genome_index_folder} && \\
@@ -186,7 +186,7 @@ STAR --runMode genomeGenerate \\
         gtf=" \\\n  --sjdbGTFfile " + gtf if gtf else "",
         io_limit_size=" \\\n  --limitIObufferSize " + str(io_max) if io_max else "",
         sjdbOverhang=" \\\n  --sjdbOverhang " + str(read_size) if read_size else "",
-        tmp_dir=global_conf.get('star_index', 'tmp_dir', required=True),
+        tmp_dir=global_conf.global_get('star_index', 'tmp_dir', required=True),
         other_options=" \\\n  " + other_options if other_options else ""
     )
 

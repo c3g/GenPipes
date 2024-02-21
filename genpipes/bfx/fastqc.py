@@ -55,7 +55,7 @@ fastqc \\
   -a {adapter_file} \\
   -f {file_format} \\
   {inputs}""".format(
-        threads=global_conf.get('fastqc', 'threads', param_type='posint'),
+        threads=global_conf.global_get('fastqc', 'threads', param_type='posint'),
         inputs=" \\\n  ".join(inputs),
         output_directory=output_directory,
         adapter_file=adapter_file,

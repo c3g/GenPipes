@@ -61,20 +61,20 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $LINX_JAR \\
   -driver_gene_panel {driver_gene} \\
   -check_drivers \\
   -write_vis_data """.format(
-            tmp_dir=global_conf.get(ini_section, 'tmp_dir'),
-            java_other_options=global_conf.get(ini_section, 'java_other_options'),
-            ram=global_conf.get(ini_section, 'ram'),
-            threads=global_conf.get(ini_section, 'threads'),
-            build=global_conf.get(ini_section, 'assembly_alias2'),
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+            java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+            ram=global_conf.global_get(ini_section, 'ram'),
+            threads=global_conf.global_get(ini_section, 'threads'),
+            build=global_conf.global_get(ini_section, 'assembly_alias2'),
             sample=tumor_name,
             purple_dir=purple_dir,
             purple_vcf=purple_vcf,
             outdir=output_dir,
-            fragile_site=global_conf.get(ini_section, 'fragile_site', param_type='filepath'),
-            line_element=global_conf.get(ini_section, 'line_element', param_type='filepath'),
-            ensembl_data=global_conf.get(ini_section, 'ensembl_data', param_type='dirpath'),
-            known_fusion=global_conf.get(ini_section, 'known_fusion', param_type='filepath'),
-            driver_gene=global_conf.get(ini_section, 'driver_gene', param_type='filepath')
+            fragile_site=global_conf.global_get(ini_section, 'fragile_site', param_type='filepath'),
+            line_element=global_conf.global_get(ini_section, 'line_element', param_type='filepath'),
+            ensembl_data=global_conf.global_get(ini_section, 'ensembl_data', param_type='dirpath'),
+            known_fusion=global_conf.global_get(ini_section, 'known_fusion', param_type='filepath'),
+            driver_gene=global_conf.global_get(ini_section, 'driver_gene', param_type='filepath')
         )
     )
 
@@ -109,18 +109,18 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $LINX_JAR \\
   -line_element_file {line_element} \\
   -ensembl_data_dir {ensembl_data} \\
   -driver_gene_panel {driver_gene}""".format(
-            tmp_dir=global_conf.get(ini_section, 'tmp_dir'),
-            java_other_options=global_conf.get(ini_section, 'java_other_options'),
-            ram=global_conf.get(ini_section, 'ram'),
-            threads=global_conf.get(ini_section, 'threads'),
-            build=global_conf.get(ini_section, 'assembly_alias2'),
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+            java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+            ram=global_conf.global_get(ini_section, 'ram'),
+            threads=global_conf.global_get(ini_section, 'threads'),
+            build=global_conf.global_get(ini_section, 'assembly_alias2'),
             sample=tumor_name,
             purple_vcf=purple_vcf,
             outdir=output_dir,
-            fragile_site=global_conf.get(ini_section, 'fragile_site', param_type='filepath'),
-            line_element=global_conf.get(ini_section, 'line_element', param_type='filepath'),
-            ensembl_data=global_conf.get(ini_section, 'ensembl_data', param_type='dirpath'),
-            driver_gene=global_conf.get(ini_section, 'driver_gene', param_type='filepath')
+            fragile_site=global_conf.global_get(ini_section, 'fragile_site', param_type='filepath'),
+            line_element=global_conf.global_get(ini_section, 'line_element', param_type='filepath'),
+            ensembl_data=global_conf.global_get(ini_section, 'ensembl_data', param_type='dirpath'),
+            driver_gene=global_conf.global_get(ini_section, 'driver_gene', param_type='filepath')
         )
     )
 
@@ -153,10 +153,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $LINX_JAR com
   -data_out {linx_dir}/circos/ \\
   -vis_file_dir {linx_dir} \\
   -circos circos""".format(
-            tmp_dir=global_conf.get(ini_section, 'tmp_dir'),
-            java_other_options=global_conf.get(ini_section, 'java_other_options'),
-            ram=global_conf.get(ini_section, 'ram'),
-            threads=global_conf.get(ini_section, 'threads'),
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+            java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+            ram=global_conf.global_get(ini_section, 'ram'),
+            threads=global_conf.global_get(ini_section, 'threads'),
             sample=sample_name,
             linx_dir=linx_dir
         )

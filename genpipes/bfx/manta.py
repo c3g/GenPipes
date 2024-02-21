@@ -50,8 +50,8 @@ def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
         --runDir {output}""".format(
             normal=input_normal,
             tumor="--tumorBam " + input_tumor if input_tumor else "",
-            genome=global_conf.get('manta_sv','genome_fasta', param_type='filepath'),
-            experiment_type=global_conf.get('manta_sv', 'experiment_type_option') if global_conf.get('manta_sv', 'experiment_type_option') else "",
+            genome=global_conf.global_get('manta_sv','genome_fasta', param_type='filepath'),
+            experiment_type=global_conf.global_get('manta_sv', 'experiment_type_option') if global_conf.global_get('manta_sv', 'experiment_type_option') else "",
             callRegion="\\\n        --callRegions " + callRegion if callRegion else "",
             output=output_dir
         )
@@ -59,7 +59,7 @@ def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
 
 def manta_run(input_dir, output_dep):
 
-    ram = global_conf.get('manta_sv', 'ram')
+    ram = global_conf.global_get('manta_sv', 'ram')
     ram_num = re.match('[0-9]+', ram)
     ram_GB = ram_num.group()
     if 'm' in ram.lower():
@@ -81,8 +81,8 @@ python {input_dir}/runWorkflow.py \\
         -g {ram} \\
         --quiet""".format(
             input_dir=input_dir,
-            mode=global_conf.get('manta_sv', 'option_mode'),
-            nodes=global_conf.get('manta_sv', 'option_nodes'),
+            mode=global_conf.global_get('manta_sv', 'option_mode'),
+            nodes=global_conf.global_get('manta_sv', 'option_nodes'),
             ram=ram_GB
         )
     )

@@ -314,7 +314,7 @@ class Illumina(GenPipesPipeline):
             link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
             # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = global_conf.get('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
+            adapter_fasta = global_conf.global_get('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
             adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
@@ -475,8 +475,8 @@ pandoc \\
   --variable trim_readset_table="$trim_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
-                            trailing_min_quality=global_conf.get('trimmomatic', 'trailing_min_quality', param_type='int'),
-                            min_length=global_conf.get('trimmomatic', 'min_length', param_type='posint'),
+                            trailing_min_quality=global_conf.global_get('trimmomatic', 'trailing_min_quality', param_type='int'),
+                            min_length=global_conf.global_get('trimmomatic', 'min_length', param_type='posint'),
                             read_type=read_type,
                             report_template_dir=self.report_template_dir,
                             readset_merge_trim_stats=readset_merge_trim_stats,
@@ -582,9 +582,9 @@ pandoc \\
         """
 
         # Known variants file
-        population_AF = global_conf.get('verify_bam_id', 'population_AF', required=False)
-        candidate_input_files = [[global_conf.get('verify_bam_id', 'verifyBamID_variants_file', required=False)]]
-        candidate_input_files.append([global_conf.get('verify_bam_id', 'verifyBamID_variants_file', required=False) + ".gz"])
+        population_AF = global_conf.global_get('verify_bam_id', 'population_AF', required=False)
+        candidate_input_files = [[global_conf.global_get('verify_bam_id', 'verifyBamID_variants_file', required=False)]]
+        candidate_input_files.append([global_conf.global_get('verify_bam_id', 'verifyBamID_variants_file', required=False) + ".gz"])
         [known_variants_annotated] = self.select_input_files(candidate_input_files)
         verify_bam_id_directory = "verify_bam_id"
         variants_directory = "variants"
@@ -681,7 +681,7 @@ pandoc \\
                 job = samtools.view(
                     input_bam,
                     output_cram,
-                    options=global_conf.get('samtools_cram_output', 'options'),
+                    options=global_conf.global_get('samtools_cram_output', 'options'),
                     removable=False
                 )
 

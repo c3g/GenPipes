@@ -27,7 +27,7 @@ from ..core.job import Job
 
 def report(input_vcf, cpsr_report, output_dir, tumor_id, input_cna=None):
     
-    if global_conf.get('report_pcgr', 'module_pcgr').split("/")[2] >= "1":
+    if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] >= "1":
         call = 'pcgr'
     else:
         call = 'pcgr.py'
@@ -57,19 +57,19 @@ def report(input_vcf, cpsr_report, output_dir, tumor_id, input_cna=None):
     --genome_assembly {assembly} \\
     --sample_id {tumor_id}""".format(
             call=call,
-            options=global_conf.get('report_pcgr', 'options'),
-            tumor_type=global_conf.get('report_pcgr', 'tumor_type'),
-            assay=global_conf.get('report_pcgr', 'assay'),
-            tumor_options=global_conf.get('report_pcgr', 'tumor_options'),
-            normal_options=global_conf.get('report_pcgr', 'normal_options'),
-            mutsig_options=global_conf.get('report_pcgr', 'mutsig_options'),
-            tmb_options=global_conf.get('report_pcgr', 'tmb_options'),
-            msi_options=global_conf.get('report_pcgr', 'msi_options'),
+            options=global_conf.global_get('report_pcgr', 'options'),
+            tumor_type=global_conf.global_get('report_pcgr', 'tumor_type'),
+            assay=global_conf.global_get('report_pcgr', 'assay'),
+            tumor_options=global_conf.global_get('report_pcgr', 'tumor_options'),
+            normal_options=global_conf.global_get('report_pcgr', 'normal_options'),
+            mutsig_options=global_conf.global_get('report_pcgr', 'mutsig_options'),
+            tmb_options=global_conf.global_get('report_pcgr', 'tmb_options'),
+            msi_options=global_conf.global_get('report_pcgr', 'msi_options'),
             input_vcf=input_vcf,
             cpsr_report=cpsr_report,
             input_cna=" \\\n --input_cna " + input_cna if input_cna else "",
             output_dir=output_dir,
-            assembly=global_conf.get('report_pcgr', 'assembly'),
+            assembly=global_conf.global_get('report_pcgr', 'assembly'),
             tumor_id=tumor_id
         )
     )

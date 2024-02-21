@@ -38,10 +38,10 @@ def scones_pair(bined_file, output_basename, window):
         -o {output_basename} \\
         -c {GC_map_bed} \\
         -b {window} """.format(
-            options=global_conf.get('scones_pair', 'other_options') if global_conf.get('scones_pair', 'other_options') else "",
+            options=global_conf.global_get('scones_pair', 'other_options') if global_conf.global_get('scones_pair', 'other_options') else "",
             bined_file=bined_file,
             output_basename=output_basename,
-            GC_map_bed=global_conf.get('scones_pair', 'gc_map_bedfile', param_type='filepath', required=True),
+            GC_map_bed=global_conf.global_get('scones_pair', 'gc_map_bedfile', param_type='filepath', required=True),
             window=window
         )
     )
@@ -88,12 +88,12 @@ def scones_annotate(scones_calls_filtered, output_basename, tmp_basename):
         {output_basename} \\
         {tmp_basename} """.format(
             scones_calls_filtered=scones_calls_filtered,
-            excluded_regions=global_conf.get('scones_annotate', 'excluded_regions_bed', param_type='filepath', required=True),
-            genes=global_conf.get('scones_annotate', 'genes_bed', param_type='filepath', required=True),
-            DGV=global_conf.get('scones_annotate', 'dgv_bed', param_type='filepath', required=True),
-            microsat=global_conf.get('scones_annotate', 'microsat_bed', param_type='filepath', required=True),
-            repeatMasker=global_conf.get('scones_annotate', 'repeat_masker_bed', param_type='filepath', required=True),
-            AutosomeSize=global_conf.get('scones_annotate', 'autosome_size_file', param_type='filepath', required=True),
+            excluded_regions=global_conf.global_get('scones_annotate', 'excluded_regions_bed', param_type='filepath', required=True),
+            genes=global_conf.global_get('scones_annotate', 'genes_bed', param_type='filepath', required=True),
+            DGV=global_conf.global_get('scones_annotate', 'dgv_bed', param_type='filepath', required=True),
+            microsat=global_conf.global_get('scones_annotate', 'microsat_bed', param_type='filepath', required=True),
+            repeatMasker=global_conf.global_get('scones_annotate', 'repeat_masker_bed', param_type='filepath', required=True),
+            AutosomeSize=global_conf.global_get('scones_annotate', 'autosome_size_file', param_type='filepath', required=True),
             output_basename=output_basename,
             tmp_basename=tmp_basename
         )

@@ -64,16 +64,16 @@ artic minion \\
     --sequencing-summary {seq_summary} \\
     {primers_version} \\
     {sample_name}""".format(
-            min_length=global_conf.get(ini_section, 'min_length', required=True),
-            max_length=global_conf.get(ini_section, 'max_length', required=True),
+            min_length=global_conf.global_get(ini_section, 'min_length', required=True),
+            max_length=global_conf.global_get(ini_section, 'max_length', required=True),
             read_fastq_dir=os.path.join("..", "..", read_fastq_dir),
             run_name=run_name,
-            normalise=global_conf.get(ini_section, 'normalise', required=True),
-            threads=global_conf.get(ini_section, 'threads', required=True),
-            primers_dir=global_conf.get(ini_section, 'primers_dir', required=True),
+            normalise=global_conf.global_get(ini_section, 'normalise', required=True),
+            threads=global_conf.global_get(ini_section, 'threads', required=True),
+            primers_dir=global_conf.global_get(ini_section, 'primers_dir', required=True),
             sample_name=sample_name,
             read_fast5_dir=os.path.join("..", "..", read_fast5_dir),
             seq_summary=os.path.join("..", "..", seq_summary),
-            primers_version=global_conf.get(ini_section, 'primers_version', required=True)
+            primers_version=global_conf.global_get(ini_section, 'primers_version', required=True)
         )
     )

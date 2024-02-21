@@ -49,7 +49,7 @@ svtyper --max_reads 5000 \\
   -B {input_bam} \\
   {input_vcf} \\
   {output_vcf}""".format(
-        ref_fastq=global_conf.get(ini_section, 'genome_fasta', param_type='filepath'),
+        ref_fastq=global_conf.global_get(ini_section, 'genome_fasta', param_type='filepath'),
         input_bam=",".join([input for input in inputs]),
         input_vcf="-i " + input_vcf if input_vcf else "",
         output_vcf="> " + output_vcf if output_vcf else "",

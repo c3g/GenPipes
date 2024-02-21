@@ -79,7 +79,7 @@ class AmpliconSeq(common.Illumina):
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = global_conf.get('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
+            adapter_fasta = global_conf.global_get('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
             adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
@@ -312,7 +312,7 @@ log_file.seek(0); \\
 merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
 log_file.close(); \\
 print "\t".join(merge_stat)'""".format(
-                module_python=global_conf.get('DEFAULT', 'module_python'),
+                module_python=global_conf.global_get('DEFAULT', 'module_python'),
                 flash_log=flash_log
             )
 
@@ -363,8 +363,8 @@ pandoc --to=markdown \\
   --variable merge_readset_table="$merge_readset_table_md" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    min_overlap=global_conf.get('flash', 'min_overlap', param_type='int'),
-                    max_overlap=global_conf.get('flash', 'max_overlap', param_type='int'),
+                    min_overlap=global_conf.global_get('flash', 'min_overlap', param_type='int'),
+                    max_overlap=global_conf.global_get('flash', 'max_overlap', param_type='int'),
                     read_type="Paired",
                     report_template_dir=self.report_template_dir,
                     readset_merge_flash_stats=readset_merge_flash_stats,
@@ -453,7 +453,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
             input_files.append(merge_file_prefix)
             sample_name.append(str(readset.sample.name).replace("_", "."))
 
-        if global_conf.get('qiime_catenate', 'map_file'):
+        if global_conf.global_get('qiime_catenate', 'map_file'):
             job = qiime.catenate(
                 input_files,
                 sample_name,
@@ -538,7 +538,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
         ])
 
         # Database
-        if global_conf.get('uchime', 'name') == 'gold':
+        if global_conf.global_get('uchime', 'name') == 'gold':
             chimera_db = 'GOLD'
             chimera_ref = 'gold'
         else:
@@ -621,7 +621,7 @@ pandoc --to=markdown \\
   > {report_file}""".format(
                     read_type="Paired",
                     report_template_dir=self.report_template_dir,
-                    sequence_max_n=global_conf.get('qiime_catenate', 'sequence_max_n'),
+                    sequence_max_n=global_conf.global_get('qiime_catenate', 'sequence_max_n'),
                     chimera_db=chimera_db,
                     chimera_ref=chimera_ref,
                     readset_merge_uchime_stats=readset_merge_uchime_stats,
@@ -644,7 +644,7 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        method = global_conf.get('qiime_otu_picking', 'method')
+        method = global_conf.global_get('qiime_otu_picking', 'method')
         otu_picking_method = "otu_" + method + "_picking"
 
         filter_directory = "catenate_without_chimeras"
@@ -942,11 +942,11 @@ $QIIME_HOME/biom summarize-table \\
 
         report_file = os.path.join("report", "AmpliconSeq.qiime.md")
 
-        if global_conf.get('qiime', 'amplicon_type') == '16S':
+        if global_conf.global_get('qiime', 'amplicon_type') == '16S':
             amp_db = 'Greengenes'
-        elif global_conf.get('qiime', 'amplicon_type') == '18S':
+        elif global_conf.global_get('qiime', 'amplicon_type') == '18S':
             amp_db = 'Silva'
-        elif global_conf.get('qiime', 'amplicon_type') == 'ITS':
+        elif global_conf.global_get('qiime', 'amplicon_type') == 'ITS':
             amp_db = 'UNITE'
         else:
             amp_db = 'Unknown'
@@ -964,8 +964,8 @@ pandoc --to=markdown \\
   --variable amplicon_db="{amplicon_db}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                amplicon_type=global_conf.get('qiime', 'amplicon_type'),
-                similarity=global_conf.get('qiime_otu_picking', 'similarity'),
+                amplicon_type=global_conf.global_get('qiime', 'amplicon_type'),
+                similarity=global_conf.global_get('qiime_otu_picking', 'similarity'),
                 amplicon_db=amp_db,
                 report_template_dir=self.report_template_dir,
                 basename_report_file=os.path.basename(report_file),
@@ -1289,7 +1289,7 @@ pandoc --to=markdown \\
   -s {depth}""".format(
                 stat=chao1_stat,
                 rarefied_stat=chao1_rarefied_stat,
-                depth=global_conf.get('qiime_single_rarefaction', 'single_rarefaction_depth')
+                depth=global_conf.global_get('qiime_single_rarefaction', 'single_rarefaction_depth')
             )
         )
 
@@ -1303,7 +1303,7 @@ pandoc --to=markdown \\
   -s {depth}""".format(
                 stat=observed_species_stat,
                 rarefied_stat=observed_species_rarefied_stat,
-                depth=global_conf.get('qiime_single_rarefaction', 'single_rarefaction_depth')
+                depth=global_conf.global_get('qiime_single_rarefaction', 'single_rarefaction_depth')
             )
         )
 
@@ -1317,7 +1317,7 @@ pandoc --to=markdown \\
   -s {depth}""".format(
                 stat=shannon_stat,
                 rarefied_stat=shannon_rarefied_stat,
-                depth=global_conf.get('qiime_single_rarefaction', 'single_rarefaction_depth')
+                depth=global_conf.global_get('qiime_single_rarefaction', 'single_rarefaction_depth')
             )
         )
 
@@ -1388,7 +1388,7 @@ pandoc --to=markdown \\
   -s {raremax}""".format(
                 stat=chao1_stat,
                 rarefied_stat=chao1_rarefied_stat,
-                raremax=global_conf.get('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
+                raremax=global_conf.global_get('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
             )
         )
 
@@ -1402,7 +1402,7 @@ pandoc --to=markdown \\
   -s {raremax}""".format(
                 stat=observed_species_stat,
                 rarefied_stat=observed_species_rarefied_stat,
-                raremax=global_conf.get('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
+                raremax=global_conf.global_get('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
             )
         )
 
@@ -1416,7 +1416,7 @@ pandoc --to=markdown \\
   -s {raremax}""".format(
                 stat=shannon_stat,
                 rarefied_stat=shannon_rarefied_stat,
-                raremax=global_conf.get('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
+                raremax=global_conf.global_get('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
             )
         )
 
@@ -1456,8 +1456,8 @@ pandoc --to=markdown \\
             alpha_diversity_rarefaction_rarefied_directory = os.path.join(alpha_diversity_rarefaction_directory, method, "merge_samples_rarefied")
             alpha_diversity_rarefaction_file = os.path.join(alpha_diversity_rarefaction_rarefied_directory, "rarefaction_plots.html")
 
-            if global_conf.get('rarefaction_plot', 'map_file'):
-                map_file = global_conf.get('rarefaction_plot', 'map_file')
+            if global_conf.global_get('rarefaction_plot', 'map_file'):
+                map_file = global_conf.global_get('rarefaction_plot', 'map_file')
             else:
                 map_file = "map.txt"
 
@@ -1724,7 +1724,7 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
 
             if method == 'rarefaction':
                 method_title = "from rarefaction"
-                method_link = "These results have been generated after a rarefaction step. All the samples have been rarefied to **" + global_conf.get('qiime_single_rarefaction', 'single_rarefaction_depth') + "** sequences."
+                method_link = "These results have been generated after a rarefaction step. All the samples have been rarefied to **" + global_conf.global_get('qiime_single_rarefaction', 'single_rarefaction_depth') + "** sequences."
             else:
                 method_title = "from CSS normalization"
                 method_link = "These results have been generated after the [CSS]\ [@css] normalization method."
@@ -1813,7 +1813,7 @@ pandoc --to=markdown \\
             dm_euclidean_file = os.path.join(dm_directory, "euclidean_otu_normalized_table.txt")
 
             job = qiime.beta_diversity(
-                global_conf.get('beta_diversity', 'beta_diversity_metric'),
+                global_conf.global_get('beta_diversity', 'beta_diversity_metric'),
                 otu_normalized_table,
                 phylogenetic_tree_file,
                 dm_directory,
@@ -1848,7 +1848,7 @@ pandoc --to=markdown \\
 
         for method in ['css', 'rarefaction']:
 
-            if global_conf.get('pcoa', 'beta_diversity_metric') == 'unifrac':
+            if global_conf.global_get('pcoa', 'beta_diversity_metric') == 'unifrac':
                 dm_unweighted_file = self.select_input_files([os.path.join(beta_directory, method, "dissimilarity_matrix", "unweighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
                 dm_weighted_file = self.select_input_files([os.path.join(beta_directory, method, "dissimilarity_matrix", "weighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
                 dm_euclidean_file = ''
@@ -1867,7 +1867,7 @@ pandoc --to=markdown \\
             pcoa_euclidean_file = os.path.join(pcoa_directory, "pcoa_euclidean_otu_normalized_table.txt")
 
             job = qiime.pcoa(
-                global_conf.get('pcoa', 'beta_diversity_metric'),
+                global_conf.global_get('pcoa', 'beta_diversity_metric'),
                 dm_unweighted_file,
                 dm_weighted_file,
                 dm_euclidean_file,
@@ -1903,7 +1903,7 @@ pandoc --to=markdown \\
 
         for method in ['css', 'rarefaction']:
 
-            if global_conf.get('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
+            if global_conf.global_get('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
                 pcoa_unweighted_file = self.select_input_files([os.path.join(beta_directory, method, "principal_coordinates", "pcoa_unweighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
                 pcoa_weighted_file = self.select_input_files([os.path.join(beta_directory, method, "principal_coordinates", "pcoa_weighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
                 pcoa_euclidean_file = ''
@@ -1921,12 +1921,12 @@ pandoc --to=markdown \\
             beta_diversity_pcoa_weighted = os.path.join(pcoa_plot_directory, "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
             beta_diversity_pcoa_euclidean = os.path.join(pcoa_plot_directory, "pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html")
 
-            if global_conf.get('pcoa_plot', 'map_file'):
-                map_file = global_conf.get('pcoa_plot', 'map_file')
+            if global_conf.global_get('pcoa_plot', 'map_file'):
+                map_file = global_conf.global_get('pcoa_plot', 'map_file')
             else:
                 map_file = "map.txt"
 
-            if global_conf.get('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
+            if global_conf.global_get('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
 
                 job1 = qiime.pcoa_plot(
                     pcoa_unweighted_file,
@@ -1979,7 +1979,7 @@ pandoc --to=markdown \\
 
         for method in ['css', 'rarefaction']:
 
-            if global_conf.get('plot_to_beta', 'beta_diversity_metric') == 'unifrac':
+            if global_conf.global_get('plot_to_beta', 'beta_diversity_metric') == 'unifrac':
                 beta_diversity_pcoa_unweighted = self.select_input_files([os.path.join(beta_directory, method, "2d_plots", "pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")] for beta_directory in beta_directories)[0]
                 beta_diversity_pcoa_weighted = self.select_input_files([os.path.join(beta_directory, method, "2d_plots", "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")] for beta_directory in beta_directories)[0]
 

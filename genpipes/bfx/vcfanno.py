@@ -38,9 +38,9 @@ vcfanno {options} \\
     -lua {lua} {config} \\
     {input} \\
     {output}""".format(
-            options=global_conf.get('run_vcfanno', 'options'),
-            lua=global_conf.get('run_vcfanno', 'lua'),
-            config=global_conf.get('run_vcfanno', 'config'),
+            options=global_conf.global_get('run_vcfanno', 'options'),
+            lua=global_conf.global_get('run_vcfanno', 'lua'),
+            config=global_conf.global_get('run_vcfanno', 'config'),
             input=input,
             output=" \\\n > " + output if output else "",
         )

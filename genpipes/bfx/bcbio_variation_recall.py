@@ -40,12 +40,12 @@ $BCBIO_VARIATION_RECALL_HOME/bcbio.variation.recall ensemble \\
   {output} \\
   {reference_sequence} \\
   {input_callers}""".format(
-        tmp_dir=global_conf.get('bcbio_ensemble', 'tmp_dir'),
-        java_other_options=global_conf.get('bcbio_ensemble', 'java_other_options'),
-        ram=global_conf.get('bcbio_ensemble', 'ram'),
+        tmp_dir=global_conf.global_get('bcbio_ensemble', 'tmp_dir'),
+        java_other_options=global_conf.global_get('bcbio_ensemble', 'java_other_options'),
+        ram=global_conf.global_get('bcbio_ensemble', 'ram'),
         options=options,
         output=output if output else "-",
-        reference_sequence=global_conf.get('bcbio_ensemble', 'genome_fasta', param_type='filepath'),
+        reference_sequence=global_conf.global_get('bcbio_ensemble', 'genome_fasta', param_type='filepath'),
         input_callers="  ".join("  \\\n  " + caller for caller in input_callers)
         )
     )

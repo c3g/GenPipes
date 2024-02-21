@@ -134,12 +134,12 @@ class DnaSeqRaw(common.Illumina):
     @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
-            self._sequence_dictionary = parse_sequence_dictionary_file(global_conf.get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
+            self._sequence_dictionary = parse_sequence_dictionary_file(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
         return self._sequence_dictionary
 
     def sequence_dictionary_variant(self):
         if not hasattr(self, "_sequence_dictionary_variant"):
-            self._sequence_dictionary_variant = parse_sequence_dictionary_file(global_conf.get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
+            self._sequence_dictionary_variant = parse_sequence_dictionary_file(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
         return self._sequence_dictionary_variant
 
     def generate_approximate_windows(self, nb_jobs):
@@ -264,7 +264,7 @@ END
             output_dir = os.path.join(self.output_dirs['trim_directory'], readset.sample.name)
             trim_file_prefix = os.path.join(output_dir, readset.name)
 
-            adapter_file = global_conf.get('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
+            adapter_file = global_conf.global_get('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
             quality_offset = readset.quality_offset
@@ -414,8 +414,8 @@ END
                                         "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                         #("\\tPU:" + readset.name) + \
                                         ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
-                                        ("\\tCN:" + global_conf.get('bwa_mem_sambamba_sort_sam', 'sequencing_center') if global_conf.get('bwa_mem_sambamba_sort_sam', 'sequencing_center', required=False) else "") + \
-                                        ("\\tPL:" + global_conf.get('bwa_mem_sambamba_sort_sam', 'sequencing_technology') if global_conf.get('bwa_mem_sambamba_sort_sam', 'sequencing_technology', required=False) else "Illumina") + \
+                                        ("\\tCN:" + global_conf.global_get('bwa_mem_sambamba_sort_sam', 'sequencing_center') if global_conf.global_get('bwa_mem_sambamba_sort_sam', 'sequencing_center', required=False) else "") + \
+                                        ("\\tPL:" + global_conf.global_get('bwa_mem_sambamba_sort_sam', 'sequencing_technology') if global_conf.global_get('bwa_mem_sambamba_sort_sam', 'sequencing_technology', required=False) else "Illumina") + \
                                         "'",
                                         ini_section="bwa_mem_sambamba_sort_sam"
                                 ),
@@ -427,8 +427,8 @@ END
                                 sambamba.sort(
                                     "/dev/stdin",
                                     readset_bam,
-                                    tmp_dir=global_conf.get('bwa_mem_sambamba_sort_sam', 'tmp_dir', required=True),
-                                    other_options=global_conf.get('bwa_mem_sambamba_sort_sam', 'sambamba_sort_options', required=True),
+                                    tmp_dir=global_conf.global_get('bwa_mem_sambamba_sort_sam', 'tmp_dir', required=True),
+                                    other_options=global_conf.global_get('bwa_mem_sambamba_sort_sam', 'sambamba_sort_options', required=True),
                                 )
                             ]
                         ),
@@ -509,8 +509,8 @@ END
                                         "\\tSM:" + readset.sample.name + \
                                         "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                         ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
-                                        ("\\tCN:" + global_conf.get('bwa_mem_sambamba', 'sequencing_center') if global_conf.get('bwa_mem_sambamba', 'sequencing_center', required=False) else "") + \
-                                        ("\\tPL:" + global_conf.get('bwa_mem_sambamba', 'sequencing_technology') if global_conf.get('bwa_mem_sambamba', 'sequencing_technology', required=False) else "Illumina") + \
+                                        ("\\tCN:" + global_conf.global_get('bwa_mem_sambamba', 'sequencing_center') if global_conf.global_get('bwa_mem_sambamba', 'sequencing_center', required=False) else "") + \
+                                        ("\\tPL:" + global_conf.global_get('bwa_mem_sambamba', 'sequencing_technology') if global_conf.global_get('bwa_mem_sambamba', 'sequencing_technology', required=False) else "Illumina") + \
                                         "'",
                                         ini_section="bwa_mem_sambamba"
                                 ),
@@ -552,8 +552,8 @@ END
                         sambamba.sort(
                             readset_bam,
                             readset_bam_sorted,
-                            tmp_dir=global_conf.get('sambamba_sort', 'tmp_dir', required=True),
-                            other_options=global_conf.get('sambamba_sort', 'options', required=True),
+                            tmp_dir=global_conf.global_get('sambamba_sort', 'tmp_dir', required=True),
+                            other_options=global_conf.global_get('sambamba_sort', 'options', required=True),
                         ),
                         bash.chmod(index_bam, "664")
                     ],
@@ -621,7 +621,7 @@ END
                                             "\tSM:" + readset.sample.name + \
                                             "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                             ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                                            ("\tCN:" + global_conf.get('bwa_mem', 'sequencing_center') if global_conf.get('bwa_mem','sequencing_center', required=False) else "") + \
+                                            ("\tCN:" + global_conf.global_get('bwa_mem', 'sequencing_center') if global_conf.global_get('bwa_mem','sequencing_center', required=False) else "") + \
                                             "\tPL:Illumina" + \
                                             "'"
                             ),
@@ -663,7 +663,7 @@ END
             unmapped_job = sambamba.view(
                 sample_bam,
                 sample_unmapped_bam,
-                global_conf.get("sambamba_extract_unmapped", "options")
+                global_conf.global_get("sambamba_extract_unmapped", "options")
             )
             unmapped_job.name = "sambamba_extract_unmapped." + sample.name
             unmapped_job.samples = [sample]
@@ -682,7 +682,7 @@ END
 
         jobs = []
 
-        nb_jobs = global_conf.get('gatk_indel_realigner', 'nb_jobs', param_type='posint')
+        nb_jobs = global_conf.global_get('gatk_indel_realigner', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -817,7 +817,7 @@ END
 
         jobs = []
 
-        nb_jobs = global_conf.get('gatk_indel_realigner', 'nb_jobs', param_type='posint')
+        nb_jobs = global_conf.global_get('gatk_indel_realigner', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -874,7 +874,7 @@ END
                         sambamba.sort(
                             "/dev/stdin",
                             output_bam,
-                            global_conf.get('sambamba_sort_sam', 'tmp_dir', required=True)
+                            global_conf.global_get('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ],
                     name="fix_mate_by_coordinate." + sample.name,
@@ -911,18 +911,18 @@ END
                         sambamba.sort(
                             input,
                             "/dev/stdout",
-                            global_conf.get('sambamba_sort_sam', 'tmp_dir', required=True),
+                            global_conf.global_get('sambamba_sort_sam', 'tmp_dir', required=True),
                             other_options="-N"
                         ),
                         samtools.fixmate(
                             "/dev/stdin",
                             None,
-                            global_conf.get('fix_mate_by_coordinate_samtools', 'options')
+                            global_conf.global_get('fix_mate_by_coordinate_samtools', 'options')
                         ),
                         sambamba.sort(
                             "/dev/stdin",
                             output_bam,
-                            global_conf.get('sambamba_sort_sam', 'tmp_dir', required=True)
+                            global_conf.global_get('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ],
                     name="fix_mate_by_coordinate_samtools." + sample.name,
@@ -1279,15 +1279,15 @@ END
             )
             output = os.path.join(qualimap_directory, "genome_results.txt")
 
-            use_bed = global_conf.get('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
+            use_bed = global_conf.global_get('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
 
             options = None
             if use_bed:
                 bed = self.samples[0].readsets[0].beds[0]
-                options = global_conf.get('dna_sample_qualimap', 'qualimap_options') + " --feature-file " + bed
+                options = global_conf.global_get('dna_sample_qualimap', 'qualimap_options') + " --feature-file " + bed
 
             else:
-                options = global_conf.get('dna_sample_qualimap', 'qualimap_options')
+                options = global_conf.global_get('dna_sample_qualimap', 'qualimap_options')
 
             jobs.append(
                 concat_jobs(
@@ -1349,7 +1349,7 @@ END
                         sambamba.flagstat(
                             input,
                             output,
-                            global_conf.get('dna_sambamba_flagstat', 'flagstat_options')
+                            global_conf.global_get('dna_sambamba_flagstat', 'flagstat_options')
                         )
                     ],
                     name="dna_sambamba_flagstat." + sample.name,
@@ -1383,7 +1383,7 @@ END
             file = re.sub(".bam", "", os.path.basename(input))
             output = os.path.join(fastqc_directory, file + "_fastqc.zip")
 
-            adapter_file = global_conf.get('fastqc', 'adapter_file', required=False, param_type='filepath')
+            adapter_file = global_conf.global_get('fastqc', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
             if not adapter_file:
@@ -1542,7 +1542,7 @@ END
                         bvatools.resolve_readset_coverage_bed(
                             sample.readsets[0]
                         ),
-                        other_options=global_conf.get('bvatools_depth_of_coverage', 'other_options', required=False)
+                        other_options=global_conf.global_get('bvatools_depth_of_coverage', 'other_options', required=False)
                     )
                 ],
                 name="bvatools_depth_of_coverage." + sample.name,
@@ -1664,7 +1664,7 @@ END
             job = bvatools.basefreq(
                 input,
                 alignment_file_prefix+"commonSNPs.alleleFreq.csv",
-                global_conf.get('extract_common_snp_freq', 'common_snp_positions', param_type='filepath'),
+                global_conf.global_get('extract_common_snp_freq', 'common_snp_positions', param_type='filepath'),
                 0
             )
             job.name = "extract_common_snp_freq." + sample.name
@@ -1686,7 +1686,7 @@ END
             job = bvatools.ratiobaf(
                 alignment_file_prefix+"commonSNPs.alleleFreq.csv",
                 alignment_file_prefix+"ratioBAF",
-                global_conf.get('baf_plot', 'common_snp_positions', param_type='filepath')
+                global_conf.global_get('baf_plot', 'common_snp_positions', param_type='filepath')
             )
             job.name = "baf_plot." + sample.name
             job.samples = [sample]
@@ -1951,7 +1951,7 @@ END
 
         jobs = []
 
-        nb_haplotype_jobs = global_conf.get('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
+        nb_haplotype_jobs = global_conf.global_get('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
         if nb_haplotype_jobs > 50:
             log.warning("Number of haplotype jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -2052,7 +2052,7 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = global_conf.get('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
+        nb_haplotype_jobs = global_conf.global_get('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -2083,7 +2083,7 @@ END
                             gatk4.genotype_gvcf(
                                 output_haplotype_file_prefix + ".hc.g.vcf.gz",
                                 output_haplotype_file_prefix + ".hc.vcf.gz",
-                                global_conf.get('gatk_genotype_gvcf', 'options')
+                                global_conf.global_get('gatk_genotype_gvcf', 'options')
                             )
                         ],
                         name="merge_and_call_individual_gvcf.call." + sample.name,
@@ -2107,7 +2107,7 @@ END
                 job = gatk4.genotype_gvcf(
                     output_haplotype_file_prefix + ".hc.g.vcf.gz",
                     output_haplotype_file_prefix + ".hc.vcf.gz",
-                    global_conf.get('gatk_genotype_gvcf', 'options')
+                    global_conf.global_get('gatk_genotype_gvcf', 'options')
                 )
                 job.name = "merge_and_call_individual_gvcf.call." + sample.name
                 job.samples = [sample]
@@ -2121,8 +2121,8 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = global_conf.get('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
-        nb_maxbatches_jobs = global_conf.get('gatk_combine_gvcf', 'nb_batch', param_type='posint')
+        nb_haplotype_jobs = global_conf.global_get('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
+        nb_maxbatches_jobs = global_conf.global_get('gatk_combine_gvcf', 'nb_batch', param_type='posint')
 
         interval_list = None
 
@@ -2306,7 +2306,7 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = global_conf.get('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
+        nb_haplotype_jobs = global_conf.global_get('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
         haplotype_file_prefix = os.path.join(self.output_dirs['variants_directory'], "allSamples")
         output_haplotype = os.path.join(self.output_dirs['variants_directory'], "allSamples.hc.g.vcf.gz")
         output_haplotype_genotyped = os.path.join(self.output_dirs['variants_directory'], "allSamples.hc.vcf.gz")
@@ -2334,7 +2334,7 @@ END
         job = gatk4.genotype_gvcf(
             output_haplotype,
             output_haplotype_genotyped,
-            global_conf.get('gatk_genotype_gvcf', 'options')
+            global_conf.global_get('gatk_genotype_gvcf', 'options')
         )
         job.name = "merge_and_call_combined_gvcf.call.AllSample"
         job.samples = self.samples
@@ -2365,8 +2365,8 @@ END
 
         #generate the recalibration tranche files
         output_directory = os.path.join(self.output_dirs['variants_directory'])
-        recal_snps_other_options = global_conf.get('variant_recalibrator', 'tranch_other_options_snps')
-        recal_indels_other_options = global_conf.get('variant_recalibrator', 'tranch_other_options_indels')
+        recal_snps_other_options = global_conf.global_get('variant_recalibrator', 'tranch_other_options_snps')
+        recal_indels_other_options = global_conf.global_get('variant_recalibrator', 'tranch_other_options_indels')
         variant_recal_snps_prefix = os.path.join(output_directory, "allSamples.hc.snps")
         variant_recal_indels_prefix = os.path.join(output_directory, "allSamples.hc.indels")
 
@@ -2398,8 +2398,8 @@ END
         )
 
         #aply the recalibration
-        apply_snps_other_options = global_conf.get('variant_recalibrator', 'apply_other_options_snps')
-        apply_indels_other_options = global_conf.get('variant_recalibrator', 'apply_other_options_indels')
+        apply_snps_other_options = global_conf.global_get('variant_recalibrator', 'apply_other_options_snps')
+        apply_indels_other_options = global_conf.global_get('variant_recalibrator', 'apply_other_options_indels')
         variant_apply_snps_prefix = os.path.join(output_directory, "allSamples.hc.snps")
         variant_apply_indels_prefix = os.path.join(output_directory, "allSamples.hc.indels")
 
@@ -2504,7 +2504,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_jobs = global_conf.get('rawmpileup', 'nb_jobs', param_type='posint')
+        nb_jobs = global_conf.global_get('rawmpileup', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
             mpileup_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name, "mpileup")
@@ -2531,7 +2531,7 @@ pandoc \\
                                     samtools.mpileup(
                                         input,
                                         None,
-                                        other_options=global_conf.get('rawmpileup', 'mpileup_other_options'),
+                                        other_options=global_conf.global_get('rawmpileup', 'mpileup_other_options'),
                                         region=None,
                                         regionFile=None,
                                     ),
@@ -2560,7 +2560,7 @@ pandoc \\
                                             samtools.mpileup(
                                                 input,
                                                 None,
-                                                other_options=global_conf.get('rawmpileup', 'mpileup_other_options'),
+                                                other_options=global_conf.global_get('rawmpileup', 'mpileup_other_options'),
                                                 region=sequence['name'],
                                                 regionFile=None,
                                             ),
@@ -2584,7 +2584,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_jobs = global_conf.get('rawmpileup', 'nb_jobs', param_type='posint')
+        nb_jobs = global_conf.global_get('rawmpileup', 'nb_jobs', param_type='posint')
         
         for sample in self.samples:
             mpileup_file_prefix = ""
@@ -2624,7 +2624,7 @@ pandoc \\
                     [os.path.join(alignment_directory, sample.name + ".sorted.bam") for sample in self.samples]
                 ]
             )
-            nb_jobs = global_conf.get('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
+            nb_jobs = global_conf.global_get('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
             output_directory = f"{self.output_dirs['variants_directory']}/rawBCF"
 
             mkdir_job = bash.mkdir(output_directory)
@@ -2639,12 +2639,12 @@ pandoc \\
                                     bcftools.mpileup(
                                         input,
                                         None,
-                                        global_conf.get('snp_and_indel_bcf', 'mpileup_other_options')
+                                        global_conf.global_get('snp_and_indel_bcf', 'mpileup_other_options')
                                     ),
                                     bcftools.call(
                                         "-",
                                         os.path.join(output_directory, "allSamples.bcf"),
-                                        global_conf.get('snp_and_indel_bcf', 'bcftools_other_options')
+                                        global_conf.global_get('snp_and_indel_bcf', 'bcftools_other_options')
                                     )
                                 ]
                             )
@@ -2664,13 +2664,13 @@ pandoc \\
                                         bcftools.mpileup(
                                             input,
                                             None,
-                                            global_conf.get('snp_and_indel_bcf', 'mpileup_other_options'),
+                                            global_conf.global_get('snp_and_indel_bcf', 'mpileup_other_options'),
                                             region
                                             ),
                                         bcftools.call(
                                             "-",
                                             os.path.join(output_directory, "allSamples." + region + ".bcf"),
-                                            global_conf.get('snp_and_indel_bcf', 'bcftools_other_options')
+                                            global_conf.global_get('snp_and_indel_bcf', 'bcftools_other_options')
                                         )
                                     ]
                                 )
@@ -2690,7 +2690,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_jobs = global_conf.get('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
+        nb_jobs = global_conf.global_get('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
         
         output_file_prefix = f"{self.output_dirs['variants_directory']}/allSamples.merged."
 
@@ -2968,7 +2968,7 @@ pandoc \\
                     snpeff.compute_effects(
                         input_vcf,
                         snpeff_file,
-                        options=global_conf.get('compute_effects', 'options', required=False)
+                        options=global_conf.global_get('compute_effects', 'options', required=False)
                     ),
                     htslib.bgzip_tabix(
                         snpeff_file,
@@ -3085,7 +3085,7 @@ pandoc \\
         self,
         input="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
         output="variants/allSamples.gemini.db",
-        temp_dir="global_conf.get('DEFAULT', 'tmp_dir')",
+        temp_dir="global_conf.global_get('DEFAULT', 'tmp_dir')",
         job_name="gemini_annotations"
         ):
         """
@@ -3105,7 +3105,7 @@ pandoc \\
 
     def haplotype_caller_gemini_annotations(self):
         
-        tmp_dir = global_conf.get('DEFAULT', 'tmp_dir')
+        tmp_dir = global_conf.global_get('DEFAULT', 'tmp_dir')
         job = self.gemini_annotations(
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
             f"{self.output_dirs['variants_directory']}/allSamples.gemini.db",
@@ -3116,7 +3116,7 @@ pandoc \\
 
     def mpileup_gemini_annotations(self):
     
-        tmp_dir = global_conf.get('DEFAULT', 'tmp_dir')
+        tmp_dir = global_conf.global_get('DEFAULT', 'tmp_dir')
         job = self.gemini_annotations(
             f"{self.output_dirs['variants_directory']}/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
             f"{self.output_dirs['variants_directory']}/allSamples.gemini.db",
@@ -3301,7 +3301,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ]
             )
 
-            SV_types = global_conf.get('delly_call_filter', 'sv_types_options').split(",")
+            SV_types = global_conf.global_get('delly_call_filter', 'sv_types_options').split(",")
 
             for sv_type in SV_types:
                 output_bcf = os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".bcf")
@@ -3324,7 +3324,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     bcftools.view(
                                         output_bcf,
                                         None,
-                                        global_conf.get('delly_call_filter_germline', 'bcftools_options')
+                                        global_conf.global_get('delly_call_filter_germline', 'bcftools_options')
                                     ),
                                     htslib.bgzip_tabix(
                                         None,
@@ -3356,7 +3356,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             output_vcf = os.path.join(delly_directory, sample.name + ".delly.merge.sort.vcf.gz")
             germline_vcf = os.path.join(directory, sample.name + ".delly.germline.vcf.gz")
         
-            SV_types = global_conf.get('delly_call_filter', 'sv_types_options').split(",")
+            SV_types = global_conf.global_get('delly_call_filter', 'sv_types_options').split(",")
         
             inputBCF = []
             for sv_type in SV_types:
@@ -3572,7 +3572,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     "/dev/stdin",
                                     discordants_normal,
                                     lumpy_directory,
-                                    global_conf.get('extract_discordant_reads', 'sambamba_options')
+                                    global_conf.global_get('extract_discordant_reads', 'sambamba_options')
                                 ),
                             ]
                         ),
@@ -3611,7 +3611,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     "/dev/stdin",
                                     splitters_normal,
                                     lumpy_directory,
-                                    global_conf.get('extract_split_reads', 'sambamba_options')
+                                    global_conf.global_get('extract_split_reads', 'sambamba_options')
                                 ),
                             ]
                         ),
@@ -3646,7 +3646,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 bcftools.annotate(
                                     None,
                                     None,
-                                    global_conf.get('lumpy_paired_sv_calls', 'header_options')
+                                    global_conf.global_get('lumpy_paired_sv_calls', 'header_options')
                                 ),
                                 vt.sort(
                                     "-",
@@ -3759,7 +3759,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 bcftools.annotate(
                                     None,
                                     None,
-                                    global_conf.get('wham_call_sv', 'header_options')
+                                    global_conf.global_get('wham_call_sv', 'header_options')
                                 ),
                                 vt.sort(
                                     "-",
@@ -3880,7 +3880,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 )
             )
 
-            if len(self.samples) > global_conf.get('cnvkit_batch', 'min_background_samples', param_type='posint'):
+            if len(self.samples) > global_conf.global_get('cnvkit_batch', 'min_background_samples', param_type='posint'):
                 jobs.append(
                     concat_jobs(
                         [
@@ -4094,7 +4094,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 bcftools.view(
                                     output,
                                     None,
-                                    global_conf.get('run_breakseq2', 'bcftools_options')
+                                    global_conf.global_get('run_breakseq2', 'bcftools_options')
                                 ),
                                 htslib.bgzip_tabix(
                                     None,
@@ -4163,7 +4163,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             bcftools.view(
                                 gatk_vcf,
                                 gatk_pass,
-                                global_conf.get('metasv_ensemble', 'filter_pass_options')
+                                global_conf.global_get('metasv_ensemble', 'filter_pass_options')
                             ),
                             htslib.tabix(
                                 gatk_pass,

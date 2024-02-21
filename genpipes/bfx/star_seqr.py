@@ -50,11 +50,11 @@ def run(fastqs1, fastqs2, output_dir):
       -1 {fastq1} \\
       -2 {fastq2} \\
       -p {output_dir}""".format(
-            genome_build=global_conf.get('run_star_seqr', 'genome_build'),
-            gene_annot=global_conf.get('run_star_seqr', 'gene_annot'),
-            reference=global_conf.get('run_star_seqr', 'reference'),
-            threads=global_conf.get('run_star_seqr', 'threads', param_type='posint'),
-            options=global_conf.get('run_star_seqr', 'options'),
+            genome_build=global_conf.global_get('run_star_seqr', 'genome_build'),
+            gene_annot=global_conf.global_get('run_star_seqr', 'gene_annot'),
+            reference=global_conf.global_get('run_star_seqr', 'reference'),
+            threads=global_conf.global_get('run_star_seqr', 'threads', param_type='posint'),
+            options=global_conf.global_get('run_star_seqr', 'options'),
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
             fastq2=",".join(fastq2 for fastq2 in fastqs2),
             output_dir=output_dir,

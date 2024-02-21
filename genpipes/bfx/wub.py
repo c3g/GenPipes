@@ -37,7 +37,7 @@ def bam_alignment_qc(bam_file, pickle, ini_section="wub_metrics"):
 bam_alignment_qc.py -f {reference} \\
   -p {pickle} \\
   {bam_file}""".format(
-            reference=global_conf.get(ini_section, 'genome_fasta', required=True),
+            reference=global_conf.global_get(ini_section, 'genome_fasta', required=True),
             pickle=pickle,
             bam_file=bam_file
         )

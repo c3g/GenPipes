@@ -20,6 +20,7 @@
 # Python Standard Modules
 
 # MUGQIC Modules
+import os
 from ..core.config import global_conf
 from ..core.job import Job
 
@@ -56,8 +57,8 @@ java -jar {juicer} \\
   {input} \\
   {output} \\
   {assembly}""".format(
-            juicer=os.path.expandvars(global_conf.get('create_hic_file', 'JuicerPath')),
-            q=global_conf.get('create_hic_file', 'q'),
+            juicer=os.path.expandvars(global_conf.global_get('create_hic_file', 'JuicerPath')),
+            q=global_conf.global_get('create_hic_file', 'q'),
             input=juicebox_input,
             output=hic_output,
             assembly=assembly

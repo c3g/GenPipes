@@ -36,10 +36,10 @@ def compute_tdf(input, output):
   {input} \\
   {output} \\
   {genome}""".format(
-        ram=global_conf.get('igvtools_compute_tdf', 'ram'),
-        option=global_conf.get('igvtools_compute_tdf', 'option'),
+        ram=global_conf.global_get('igvtools_compute_tdf', 'ram'),
+        option=global_conf.global_get('igvtools_compute_tdf', 'option'),
         input=input,
         output=output,
-        genome=global_conf.get('compute_tdf', 'igv_genome', param_type='filepath')
+        genome=global_conf.global_get('compute_tdf', 'igv_genome', param_type='filepath')
         )
     )

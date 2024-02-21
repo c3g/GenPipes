@@ -20,6 +20,7 @@
 # Python Standard Modules
 
 # MUGQIC Modules
+import os
 from ..core.config import global_conf
 from ..core.job import Job
 

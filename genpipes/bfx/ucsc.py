@@ -28,14 +28,14 @@ def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True, ini_section='u
 
     # If using GRCh37 assembly then create temporary dict file
     # only using autosomal + X + Y chromosomes and adding chr (e.g. chr1, instead of 1)
-    if (global_conf.get('DEFAULT', 'assembly') == 'GRCh37') :
+    if (global_conf.global_get('DEFAULT', 'assembly') == 'GRCh37') :
         chromosome_size_file = re.sub(".fa.fai", ".withchr.fa.fai",
-                                      global_conf.get(ini_section,
+                                      global_conf.global_get(ini_section,
                                                                  'chromosome_size', param_type='filepath'))
         chromosome_prefix = "chr"
         chromosome_sed = "| sed 's/MT/chrM/'"
     else :
-        chromosome_size_file = global_conf.get(ini_section, 'chromosome_size', param_type='filepath')
+        chromosome_size_file = global_conf.global_get(ini_section, 'chromosome_size', param_type='filepath')
         chromosome_prefix = ""
         chromosome_sed = ""
 
@@ -51,7 +51,7 @@ cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.so
 rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
             open="zcat" if (os.path.splitext(input_bed_graph)[1] == ".gz") else "cat",
             input_bed_graph=input_bed_graph,
-            temp_dir=global_conf.get(ini_section, 'tmp_dir', required=True),
+            temp_dir=global_conf.global_get(ini_section, 'tmp_dir', required=True),
             chrom=chromosome_prefix,
             chromosome_sed=chromosome_sed
         )
@@ -62,7 +62,7 @@ awk '{{if($0 !~ /^[A-W]/) print "{chrom}"$0; else print $0}}' | grep -v "GL\|lam
 awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.sorted""".format(
             open="zcat" if (os.path.splitext(input_bed_graph)[1] == ".gz") else "cat",
             input_bed_graph=input_bed_graph,
-            temp_dir=global_conf.get(ini_section, 'tmp_dir', required=True),
+            temp_dir=global_conf.global_get(ini_section, 'tmp_dir', required=True),
             chrom=chromosome_prefix,
             chromosome_sed=chromosome_sed
         )
@@ -100,7 +100,7 @@ bedToBigBed \\
   {bed_file} \\
   {chromosome_size} \\
   {bigBed_file}""".format(
-            chromosome_size=global_conf.get(ini_section, 'chromosome_size', param_type='filepath'),
+            chromosome_size=global_conf.global_get(ini_section, 'chromosome_size', param_type='filepath'),
             bed_file=bed_file,
             bigBed_file=bigBed_file
         )

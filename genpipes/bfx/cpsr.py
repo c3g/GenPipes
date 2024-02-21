@@ -31,13 +31,13 @@ def report(
     tumor_id
     ):
 
-    assembly = global_conf.get('report_cpsr', 'assembly')
+    assembly = global_conf.global_get('report_cpsr', 'assembly')
     output = [
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html")
     ]
 
-    if global_conf.get('report_cpsr', 'module_pcgr').split("/")[2] >= "1":
+    if global_conf.global_get('report_cpsr', 'module_pcgr').split("/")[2] >= "1":
         call = 'cpsr'
         module = 'module_pcgr'
     else:
@@ -58,10 +58,10 @@ def report(
     --genome_assembly {assembly} \\
     --sample_id {tumor_id}""".format(
             call=call,
-            options=global_conf.get('report_cpsr', 'options'),
+            options=global_conf.global_get('report_cpsr', 'options'),
             input=input,
             output_dir=output_dir,
-            assembly=global_conf.get('report_cpsr', 'assembly'),
+            assembly=global_conf.global_get('report_cpsr', 'assembly'),
             tumor_id=tumor_id
         )
     )

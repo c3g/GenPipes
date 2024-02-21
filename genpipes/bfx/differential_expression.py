@@ -30,7 +30,7 @@ def deseq(
     output_dir
     ):
 
-    localfit = "-l" if global_conf.get('differential_expression_deseq', 'localfit') else ""
+    localfit = "-l" if global_conf.global_get('differential_expression_deseq', 'localfit') else ""
 
     return  Job(
         [count_matrix],
@@ -57,7 +57,7 @@ def deseq2(
     output_dir
     ):
 
-    localfit = "-l" if global_conf.get('differential_expression_deseq', 'localfit') else ""
+    localfit = "-l" if global_conf.global_get('differential_expression_deseq', 'localfit') else ""
 
     return  Job(
         [count_matrix],
@@ -123,9 +123,9 @@ Rscript $R_TOOLS/goseq.R {other_options} \\
   -d {input_file} \\
   -c {input_columns} \\
   -o {output_file}""".format(
-        other_options=global_conf.get('differential_expression_goseq', 'other_options'),
-        gene_size_file=gene_size_file if gene_size_file else global_conf.get('differential_expression_goseq', 'gene_size', param_type='filepath'),
-        gene_ontology_file=gene_ontology_file if gene_ontology_file else global_conf.get('differential_expression_goseq', 'gene_ontology', param_type='filepath'),
+        other_options=global_conf.global_get('differential_expression_goseq', 'other_options'),
+        gene_size_file=gene_size_file if gene_size_file else global_conf.global_get('differential_expression_goseq', 'gene_size', param_type='filepath'),
+        gene_ontology_file=gene_ontology_file if gene_ontology_file else global_conf.global_get('differential_expression_goseq', 'gene_ontology', param_type='filepath'),
         input_file=input_file,
         input_columns=input_columns,
         output_file=output_file
