@@ -479,7 +479,7 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
         histone_marks = []
         # create a job for each histone maek in inputinfor file together with user's histone marks
         # get unique histone marks from the inputinfo file
-        with open(os.path.join(self.output_dir, inputinfofile_abs), "r") as histone_marks_total:
+        with open(inputinfofile_abs, "r") as histone_marks_total:
             for line in histone_marks_total:
                 histone_marks.append(line.strip().split("\t")[1])
         histone_marks = list(set(histone_marks))
@@ -512,10 +512,10 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
         for histone in histone_marks:
             input_files = []
             output_files = []
-            with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
+            with open(chr_sizes_file_abs, "r") as chrominfofile:
                 line = chrominfofile.readline()
 
-                with open(os.path.join(self.output_dir, inputinfofile_abs), "r") as inputinfo:
+                with open(inputinfofile_abs, "r") as inputinfo:
                     for inputinfoline in inputinfo:
 
                         # if histone mark in inputinfo file present in design file it only includes as an input fileof the convert global distance step
@@ -594,7 +594,7 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
                 os.remove(temp2_inputinfofile_path)
 
             temp_inputinfofile = open(temp2_inputinfofile_path, "a")
-            lines = open(os.path.join(self.output_dir, inputinfofile_abs), 'r').readlines()
+            lines = open(inputinfofile_abs, 'r').readlines()
             for line in sorted(lines, key=lambda line: line.split()[0]):
                 temp_inputinfofile.write(line)
             temp_inputinfofile.close()
@@ -623,7 +623,7 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
 
             if train_data_path == "":
                 for histone in histone_marks:
-                    with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
+                    with open(chr_sizes_file_abs, "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
                             input_files = []
@@ -637,7 +637,7 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
                                         input_files.append(os.path.join(distancedir, "%s_%s.txt" % (inputinfoline.split('\t')[0], histone)))
                                         # to make this job step independent of global distance step we need to correctly
                                         # specify all the dependency input files
-                                        with open(os.path.join(self.output_dir, inputinfofile_abs), "r") as inputinfo2:
+                                        with open(inputinfofile_abs, "r") as inputinfo2:
                                             for inpputinfo2line in inputinfo2:
                                                 input_files.append(os.path.join(distancedir, "%s_%s.txt" % (inpputinfo2line.split('\t')[0], inpputinfo2line.split('\t')[1])))
                                         # distance files generated for user histone marks
@@ -771,7 +771,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
                 if readset.mark_type != "I":
                     input_files = []
                     output_files = []
-                    with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
+                    with open(chr_sizes_file_abs, "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
                             with open(temp_inputinfofile, "r") as inputinfo:
@@ -823,7 +823,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
             for readset in sample.readsets:
                 input_files = []
                 if readset.mark_type != "I":
-                    with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
+                    with open(chr_sizes_file_abs, "r") as chrominfofile:
                         line = chrominfofile.readline()
                         chr_name = line.strip().split("\t")[0]
 
@@ -890,7 +890,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
             for readset in sample.readsets:
                 input_files = []
                 if readset.mark_type != "I":
-                    with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
+                    with open(chr_sizes_file_abs, "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
                             # If not, we search for the path from a chipseq pipeline
@@ -1091,7 +1091,7 @@ fi""".format(
                     if readset.bigwig:  # Check if the readset has a BIGWIG column != None
                         bigwig_file = readset.bigwig
                     else:  # If not, we search for the path from a chipseq pipeline
-                        prefix_path = "/".join(self.readset_file.name.split("/")[:-1])  # Find path to chipseq folder
+                        prefix_path = "/".join(self.readsets_file.name.split("/")[:-1])  # Find path to chipseq folder
                         bigwig_file = os.path.join(
                             prefix_path,
                             "tracks",
@@ -1466,14 +1466,46 @@ fi""".format(
         return self.protocols()[self._protocol]
 
     def protocols(self):
-        return { 'default': [
-            self.bigwiginfo,
-            self.chromimpute,
-            self.signal_to_noise,
-            self.epigeec,
-            self.bigwig_info_report,
-            self.chromimpute_report,
-            self.signal_to_noise_report,
-            self.epigeec_report,
-            self.epiqc_final_report
-        ] }
+        return { 'default':
+            [
+                self.bigwiginfo,
+                self.chromimpute,
+                self.signal_to_noise,
+                self.epigeec,
+                self.bigwig_info_report,
+                self.chromimpute_report,
+                self.signal_to_noise_report,
+                self.epigeec_report,
+                self.epiqc_final_report
+            ]
+        }
+
+
+def main(parsed_args):
+    """
+    The function that will call this pipeline!
+    """
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+
+    pipeline = EpiQC(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                     clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                     design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()
+

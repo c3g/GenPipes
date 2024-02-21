@@ -338,7 +338,7 @@ def main(parsed_args):
     The function that will call this pipeline!
     """
 
-   # Pipeline config
+    # Pipeline config
     config_files = parsed_args.config
 
     # Common Pipeline options
