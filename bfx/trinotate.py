@@ -150,6 +150,23 @@ cmscan -Z $genome_size {options} \\
     )
   )
 
+def infernal_merge(
+    input,
+    output
+    ):
+    return Job(
+        input,
+        [output],
+        [],
+        command="""
+head -n2 {input1} > {output}
+cat {input_chunks} | grep -v '^#' >> {output}""".format(
+    input1=input[0],
+    input_chunks=" \\\n".join(input),
+    output=output
+    )
+  )
+
 # Search Transdecoder-predicted coding regions for sequence homologies on UniProt using [blastp](http://blast.ncbi.nlm.nih.gov/).
 #def blastp_transdecoder_uniprot(
 #        blast_directory,
