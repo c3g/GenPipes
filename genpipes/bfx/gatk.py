@@ -181,16 +181,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --start 1 --stop {highest_summary_coverage_threshold} \\
   --nBins {nbins} \\
   --downsampling_type NONE""".format(
-        tmp_dir=global_conf.get('gatk_depth_of_coverage', 'tmp_dir'),
-        java_other_options=global_conf.get('gatk_depth_of_coverage', 'java_other_options'),
-        ram=global_conf.get('gatk_depth_of_coverage', 'ram'),
-        reference_sequence=global_conf.get('gatk_depth_of_coverage', 'genome_fasta', param_type='filepath'),
-        input=input,
-        output_prefix=output_prefix,
-        intervals=" \\\n  --intervals " + intervals if intervals else "",
-        summary_coverage_thresholds="".join(" \\\n  --summaryCoverageThreshold " + summary_coverage_threshold for summary_coverage_threshold in summary_coverage_thresholds),
-        highest_summary_coverage_threshold=summary_coverage_thresholds[-1],
-        nbins=int(summary_coverage_thresholds[-1]) - 1
+            tmp_dir=global_conf.get('gatk_depth_of_coverage', 'tmp_dir'),
+            java_other_options=global_conf.get('gatk_depth_of_coverage', 'java_other_options'),
+            ram=global_conf.get('gatk_depth_of_coverage', 'ram'),
+            reference_sequence=global_conf.get('gatk_depth_of_coverage', 'genome_fasta', param_type='filepath'),
+            input=input,
+            output_prefix=output_prefix,
+            intervals=" \\\n  --intervals " + intervals if intervals else "",
+            summary_coverage_thresholds="".join(" \\\n  --summaryCoverageThreshold " + summary_coverage_threshold for summary_coverage_threshold in summary_coverage_thresholds),
+            highest_summary_coverage_threshold=summary_coverage_thresholds[-1],
+            nbins=int(summary_coverage_thresholds[-1]) - 1
         )
     )
 
@@ -210,7 +210,7 @@ def genotype_gvcf(
                 [ini_section, 'module_java'],
                 [ini_section, 'module_gatk']
             ],
-        command="""\
+            command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type GenotypeGVCFs {options} \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
@@ -264,17 +264,17 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
   --out {output}{interval_padding} {interval_list}{intervals}{exclude_intervals}""".format(
-        tmp_dir=global_conf.get('gatk_haplotype_caller', 'tmp_dir'),
-        java_other_options=global_conf.get('gatk_haplotype_caller', 'java_other_options'),
-        ram=global_conf.get('gatk_haplotype_caller', 'ram'),
-        options=global_conf.get('gatk_haplotype_caller', 'options'),
-        reference_sequence=global_conf.get('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
-        interval_list=" --intervals " + interval_list if interval_list else "",
-        interval_padding=" \\\n --interval-padding " + str(interval_padding) if interval_padding else "",
-        input=" \\\n  ".join(input for input in inputs),
-        output=output,
-        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+            tmp_dir=global_conf.get('gatk_haplotype_caller', 'tmp_dir'),
+            java_other_options=global_conf.get('gatk_haplotype_caller', 'java_other_options'),
+            ram=global_conf.get('gatk_haplotype_caller', 'ram'),
+            options=global_conf.get('gatk_haplotype_caller', 'options'),
+            reference_sequence=global_conf.get('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
+            interval_list=" --intervals " + interval_list if interval_list else "",
+            interval_padding=" \\\n --interval_padding " + str(interval_padding) if interval_padding else "",
+            input=" \\\n  ".join(input for input in inputs),
+            output=output,
+            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
@@ -300,19 +300,19 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR 
   --input_file:tumor {inputTumor} \\
   --out {outputStats} \\
   --vcf {outputVCF}{intervals}{exclude_intervals}""".format(
-        tmp_dir=global_conf.get('gatk_mutect', 'tmp_dir'),
-        java_other_options=global_conf.get('gatk_mutect', 'java_other_options'),
-        ram=global_conf.get('gatk_mutect', 'ram'),
-        options=global_conf.get('gatk_mutect', 'options'),
-        reference_sequence=global_conf.get('gatk_mutect', 'genome_fasta', param_type='filepath'),
-        known_sites=global_conf.get('gatk_mutect', 'known_variants', param_type='filepath'),
-        cosmic=cosmic,
-        inputNormal=inputNormal,
-        inputTumor=inputTumor,
-        outputStats=outputStats,
-        outputVCF=outputVCF,
-        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+            tmp_dir=global_conf.get('gatk_mutect', 'tmp_dir'),
+            java_other_options=global_conf.get('gatk_mutect', 'java_other_options'),
+            ram=global_conf.get('gatk_mutect', 'ram'),
+            options=global_conf.get('gatk_mutect', 'options'),
+            reference_sequence=global_conf.get('gatk_mutect', 'genome_fasta', param_type='filepath'),
+            known_sites=global_conf.get('gatk_mutect', 'known_variants', param_type='filepath'),
+            cosmic=cosmic,
+            inputNormal=inputNormal,
+            inputTumor=inputTumor,
+            outputStats=outputStats,
+            outputVCF=outputVCF,
+            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
@@ -347,33 +347,34 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --input_file:normal {inputNormal} \\
   --input_file:tumor {inputTumor} \\
   --out {outputVCF}{intervals}{exclude_intervals}{interval_list}""".format(
-        tmp_dir=global_conf.get('gatk_mutect', 'tmp_dir'),
-        java_other_options=global_conf.get('gatk_mutect2', 'java_other_options'),
-        ram=global_conf.get('gatk_mutect2', 'ram'),
-        options=global_conf.get('gatk_mutect2', 'options'),
-        reference_sequence=global_conf.get('gatk_mutect2', 'genome_fasta', param_type='filepath'),
-        known_sites=global_conf.get('gatk_mutect2', 'dbsnp', param_type='filepath'),
-        cosmic=cosmic,
-        inputNormal=inputNormal,
-        inputTumor=inputTumor,
-        outputVCF=outputVCF,
-        #interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
-        interval_list=" \\\n  --intervals " + interval_list if interval_list else "",
-        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+            tmp_dir=global_conf.get('gatk_mutect', 'tmp_dir'),
+            java_other_options=global_conf.get('gatk_mutect2', 'java_other_options'),
+            ram=global_conf.get('gatk_mutect2', 'ram'),
+            options=global_conf.get('gatk_mutect2', 'options'),
+            reference_sequence=global_conf.get('gatk_mutect2', 'genome_fasta', param_type='filepath'),
+            known_sites=global_conf.get('gatk_mutect2', 'dbsnp', param_type='filepath'),
+            cosmic=cosmic,
+            inputNormal=inputNormal,
+            inputTumor=inputTumor,
+            outputVCF=outputVCF,
+            #interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
+            interval_list=" \\\n  --intervals " + interval_list if interval_list else "",
+            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
 def indel_realigner(input,
                     target_intervals,
-                    input2=[],
-                    output=[],
-                    output_dir=[],
+                    input2=None,
+                    output=None,
+                    output_dir=None,
                     output_norm_dep=[],
                     output_tum_dep=[],
                     intervals=[],
                     exclude_intervals=[],
-                    optional=[]
+                    optional=None,
+                    fix_encoding=None
                     ):
     
     output_dep = output_norm_dep + output_tum_dep
@@ -390,26 +391,27 @@ def indel_realigner(input,
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type IndelRealigner {other_options} \\
   --reference_sequence {reference_sequence} \\
-  {optional} \\
+  {optional} {fix_encoding} \\
   --input_file {input} \\
   {input2} \\
   --targetIntervals {target_intervals} \\
   {known_mills}{output}{intervals}{exclude_intervals} \\
   --maxReadsInMemory {max_reads_in_memory}""".format(
-        tmp_dir=global_conf.get('gatk_indel_realigner', 'tmp_dir'),
-        java_other_options=global_conf.get('gatk_indel_realigner', 'java_other_options'),
-        ram=global_conf.get('gatk_indel_realigner', 'ram'),
-        other_options=global_conf.get('gatk_indel_realigner', 'other_options'),
-        reference_sequence=global_conf.get('gatk_indel_realigner', 'genome_fasta', param_type='filepath'),
-        optional="--nWayOut " + optional if optional else "",
-        input=os.path.join(output_dir, input),
-        input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
-        target_intervals=os.path.join(output_dir, target_intervals),
-        known_mills=" \\\n  --knownAlleles " + global_conf.get('gatk_realigner_target_creator', 'known_mills', param_type='filepath') if global_conf.get('gatk_realigner_target_creator', 'known_mills', param_type='filepath') else "",
-        output=" \\\n  --out " + os.path.join(output_dir,output) if output else "",
-        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
-        max_reads_in_memory=global_conf.get('gatk_indel_realigner', 'max_reads_in_memory')
+            tmp_dir=global_conf.get('gatk_indel_realigner', 'tmp_dir'),
+            java_other_options=global_conf.get('gatk_indel_realigner', 'java_other_options'),
+            ram=global_conf.get('gatk_indel_realigner', 'ram'),
+            other_options=global_conf.get('gatk_indel_realigner', 'other_options'),
+            reference_sequence=global_conf.get('gatk_indel_realigner', 'genome_fasta', param_type='filepath'),
+            optional="--nWayOut " + optional if optional else "",
+            fix_encoding="-fixMisencodedQuals" if fix_encoding else "",
+            input=os.path.join(output_dir, input),
+            input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
+            target_intervals=os.path.join(output_dir, target_intervals),
+            known_mills=" \\\n  --knownAlleles " + global_conf.get('gatk_realigner_target_creator', 'known_mills', param_type='filepath') if global_conf.get('gatk_realigner_target_creator', 'known_mills', param_type='filepath') else "",
+            output=" \\\n  --out " + os.path.join(output_dir,output) if output else "",
+            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
+            max_reads_in_memory=global_conf.get('gatk_indel_realigner', 'max_reads_in_memory')
         )
     )
 
@@ -419,12 +421,12 @@ def print_reads(input, output, base_quality_score_recalibration):
     else:
         return Job(
             [input, base_quality_score_recalibration],
-            [output, re.sub(".bam", ".bai", output)],
+            [output],
             [
                 ['gatk_print_reads', 'module_java'],
                 ['gatk_print_reads', 'module_gatk']
             ],
-        command="""\
+            command="""\
 rm -rf {output}* && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type PrintReads --generate_md5 \\
@@ -433,23 +435,24 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --reference_sequence {reference_sequence} \\
   --BQSR {base_quality_score_recalibration} \\
   --out {output}""".format(
-        tmp_dir=global_conf.get('gatk_print_reads', 'tmp_dir'),
-        java_other_options=global_conf.get('gatk_print_reads', 'java_other_options'),
-        ram=global_conf.get('gatk_print_reads', 'ram'),
-        threads=global_conf.get('gatk_print_reads', 'threads', param_type='int'),
-        input=input,
-        reference_sequence=global_conf.get('gatk_print_reads', 'genome_fasta', param_type='filepath'),
-        base_quality_score_recalibration=base_quality_score_recalibration,
-        output=output
+                tmp_dir=global_conf.get('gatk_print_reads', 'tmp_dir'),
+                java_other_options=global_conf.get('gatk_print_reads', 'java_other_options'),
+                ram=global_conf.get('gatk_print_reads', 'ram'),
+                threads=global_conf.get('gatk_print_reads', 'threads', param_type='int'),
+                input=input,
+                reference_sequence=global_conf.get('gatk_print_reads', 'genome_fasta', param_type='filepath'),
+                base_quality_score_recalibration=base_quality_score_recalibration,
+                output=output
+            )
         )
-    )
 
 def realigner_target_creator(input,
                              output,
-                             output_dir=[],
-                             input2=[],
+                             output_dir=None,
+                             input2=None,
                              intervals=[],
-                             exclude_intervals=[]
+                             exclude_intervals=[],
+                             fix_encoding=None
                              ):
 
     return Job(
@@ -461,7 +464,7 @@ def realigner_target_creator(input,
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
-  --analysis_type RealignerTargetCreator {other_options} \\
+  --analysis_type RealignerTargetCreator {other_options} {fix_encoding} \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
   {input2} \\
@@ -470,6 +473,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         java_other_options=global_conf.get('gatk_realigner_target_creator', 'java_other_options'),
         ram=global_conf.get('gatk_realigner_target_creator', 'ram'),
         other_options=global_conf.get('gatk_realigner_target_creator', 'other_options'),
+        fix_encoding="-fixMisencodedQuals" if fix_encoding else "",
         reference_sequence=global_conf.get('gatk_realigner_target_creator', 'genome_fasta', param_type='filepath'),
         input= os.path.join(output_dir, input),
         input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
@@ -506,7 +510,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         tmp_dir=global_conf.get('gatk_combine_gvcf', 'tmp_dir'),
         java_other_options=global_conf.get('gatk_combine_gvcf', 'java_other_options'),
         ram=global_conf.get('gatk_combine_gvcf', 'ram'),
-        other_options=global_conf.get('gatk_combine_gvcf', 'other_options', required=False),
+        other_options=global_conf.get('gatk_combine_gvcf', 'other_options',required=False),
         reference_sequence=global_conf.get('gatk_combine_gvcf', 'genome_fasta', param_type='filepath'),
         input="".join(" \\\n  --variant " + input for input in inputs),
         output=output,
@@ -632,7 +636,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-
 def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[], interval_list=None):
     if interval_list:
         inputs = [input]
@@ -652,19 +655,18 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
   --out {output}{intervals}{exclude_intervals}""".format(
-            tmp_dir=global_conf.get('gatk_split_N_trim', 'tmp_dir'),
-            java_other_options=global_conf.get('gatk_split_N_trim', 'java_other_options'),
-            ram=global_conf.get('gatk_split_N_trim', 'ram'),
-            other_options=global_conf.get('gatk_split_N_trim', 'other_options', required=False),
-            reference_sequence=global_conf.get('gatk_split_N_trim', 'reference', param_type='filepath'),
-            input=" \\\n  ".join(input for input in inputs),
-            output=output,
-            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
-            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+
+        tmp_dir=global_conf.get('gatk_split_N_trim', 'tmp_dir'),
+        java_other_options=global_conf.get('gatk_split_N_trim', 'java_other_options'),
+        ram=global_conf.get('gatk_split_N_trim', 'ram'),
+        other_options=global_conf.get('gatk_split_N_trim', 'other_options', required=False),
+        reference_sequence=global_conf.get('gatk_split_N_trim', 'reference', param_type='filepath'),
+        input=input,
+        output=output,
+        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
-
 
 def variant_filtration(input, output, other_options):
     return Job(

@@ -20,7 +20,7 @@
 
 # MUGQIC Modules
 from ..core.job import Job
-
+from ..core.config import global_conf
 
 def gemini_annotations(variants, gemini_output, tmp_dir):
     return Job(

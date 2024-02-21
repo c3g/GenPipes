@@ -20,14 +20,20 @@
 # Python Standard Modules
 import os
 
-# MUGQIC Modules
+# GenPipes Modules
 from ..core.config import global_conf
 from ..core.job import Job
 
-def genotyper(input_tumor, input_normal, input_vcf, output_vcf):
+def genotyper(
+    input_tumor,
+    input_normal,
+    input_vcf,
+    output_vcf,
+    ini_section='wham_call_sv'
+    ):
+
     if input_tumor is not None:
-        inputs=[input_tumor, input_normal]
-        
+        inputs=[input_tumor, input_normal]        
     else:
         inputs=[input_normal]
         
@@ -35,7 +41,7 @@ def genotyper(input_tumor, input_normal, input_vcf, output_vcf):
         inputs,
         [output_vcf],
         [
-            ['wham_call_sv', 'module_python'],
+            [ini_section, 'module_python'],
         ],
         command="""\
 svtyper --max_reads 5000 \\
@@ -43,7 +49,7 @@ svtyper --max_reads 5000 \\
   -B {input_bam} \\
   {input_vcf} \\
   {output_vcf}""".format(
-        ref_fastq=global_conf.get('DEFAULT', 'genome_fasta', param_type='filepath'),
+        ref_fastq=global_conf.get(ini_section, 'genome_fasta', param_type='filepath'),
         input_bam=",".join([input for input in inputs]),
         input_vcf="-i " + input_vcf if input_vcf else "",
         output_vcf="> " + output_vcf if output_vcf else "",

@@ -22,12 +22,12 @@ import logging
 import os
 
 # MUGQIC Modules
-from ..core.config import global_conf
+from ..core.config import global_conf 
 from ..core.job import Job
 
 log = logging.getLogger(__name__)
 
-def trim( input1, input2, prefix, adapter_file ):
+def trim( input1, input2, prefix, adapter_file, quality_offset):
     output_pair1 = prefix + "-trimmed-pair1.fastq.gz"
     output_pair2 = prefix + "-trimmed-pair2.fastq.gz"
     output_log = prefix + "-trimmed.log"
@@ -50,12 +50,13 @@ def trim( input1, input2, prefix, adapter_file ):
 $SKEWER_HOME/./skewer --threads {threads} {options} \\
   {adapter_file} \\
   {inputs} \\
-  {outputs}""".format(
+  {outputs} \\
+  -f {quality_offset}""".format(
         threads=global_conf.get('skewer_trimming', 'threads', param_type='posint'),
         options=global_conf.get('skewer_trimming', 'options'),
         adapter_file="-x " + adapter_file, 
         inputs=" \\\n  ".join(inputs),
         outputs="-o " + prefix,
-        ),
-#        removable_files=output
+        quality_offset="solexa" if quality_offset == 64 else "sanger",
+        )
     )

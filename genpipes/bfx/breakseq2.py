@@ -17,6 +17,8 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+import os
+
 from ..core.config import global_conf
 from ..core.job import Job
 
@@ -32,19 +34,21 @@ def run(input, sample_name, output_dir):
 	        ['run_breakseq2', 'module_bwa']
         ],
         command="""\
-run_breakseq2.py {options} --bwa bwa --samtools samtools \\
+bwa_path=`which bwa`; \\
+samtools_path=`which samtools`; \\
+run_breakseq2.py {options} --bwa "$bwa_path" --samtools "$samtools_path" \\
     --nthreads {threads} \\
     --reference {genome}  \\
     --bplib_gff {gff} \\
     --bams {input} \\
     --sample {sample} \\
     --work {output}""".format(
-            options=global_conf.get('run_breakseq2', 'options'),
-            threads=global_conf.get('run_breakseq2', 'threads'),
-            genome=global_conf.get('run_breakseq2', 'genome_fasta', param_type='filepath'),
-	        gff=global_conf.get('run_breakseq2', 'gff', param_type='filepath'),
+            options=global_conf.get('run_breakseq2','options'),
+            threads=global_conf.get('run_breakseq2','threads'),
+            genome=global_conf.get('run_breakseq2','genome_fasta', param_type='filepath'),
+	        gff=global_conf.get('run_breakseq2','gff', param_type='filepath'),
 	        output=output_dir,
 	        input=input,
-	        sample=sample_name,
+	        sample=sample_name
         )
     )
