@@ -107,6 +107,18 @@ hmmscan --cpu {cpu} \\
             )
         )
 
+def parse_assembly_size(
+    input
+    ):
+
+    return Job(
+        [input],
+        [],
+        [],
+        command=f"""\
+export genome_size=`awk -F"," '$1 ~ "Total Transcripts Length" {{print $2/1000000 * 2}}' {input}`"""
+        )
+
 def infernal_cmscan(
     input,
     clan_file,
@@ -123,7 +135,7 @@ def infernal_cmscan(
             [ini_section, 'module_infernal']
         ],
         command="""\
-cmscan {options} \\
+cmscan -Z $genome_size {options} \\
   --tblout {output} \\
   --clanin {clan_file} \\
   {cm_db} \\
