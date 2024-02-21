@@ -313,20 +313,51 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         return self.protocols()[self._protocol]
 
     def protocols(self):
-        return { 'default': [
-            self.picard_sam_to_fastq,
-            self.skewer_trimming,
-            self.bwa_mem_sambamba_sort_sam,
-            self.sambamba_merge_sam_files,
-            self.gatk_indel_realigner,
-            self.sambamba_merge_realigned,
-            self.picard_fixmate,
-            self.metrics,
-            self.picard_calculate_hs_metrics,
-            self.gatk_callable_loci,
-            self.call_variants,
-            self.preprocess_vcf,
-            self.snp_effect,
-            self.gemini_annotations,
-            self.cram_output
-            ] }
+        return {
+            'default': [
+                self.picard_sam_to_fastq,
+                self.skewer_trimming,
+                self.bwa_mem_sambamba_sort_sam,
+                self.sambamba_merge_sam_files,
+                self.gatk_indel_realigner,
+                self.sambamba_merge_realigned,
+                self.picard_fixmate,
+                self.metrics,
+                self.picard_calculate_hs_metrics,
+                self.gatk_callable_loci,
+                self.call_variants,
+                self.preprocess_vcf,
+                self.snp_effect,
+                self.gemini_annotations,
+                self.cram_output
+            ]
+        }
+
+def main(parsed_args):
+    """
+    The function that will call this pipeline!
+    """
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+
+    pipeline = DnaSeqHighCoverage(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                                  clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                                  design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()
+ 

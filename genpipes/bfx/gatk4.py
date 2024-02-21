@@ -46,11 +46,11 @@ def realigner_target_creator(
     return gatk.realigner_target_creator(
         input,
         output,
-        output_dir,
-        input2,
-        intervals,
-        exclude_intervals,
-        fix_encoding
+        output_dir=output_dir,
+        input2=input2,
+        intervals=intervals,
+        exclude_intervals=exclude_intervals,
+        fix_encoding=fix_encoding
     )
 
 # only in GATK3

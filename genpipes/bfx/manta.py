@@ -18,12 +18,17 @@
 ################################################################################
 
 import re
+import os
 
 from ..core.config import global_conf
-from ..core.job import Job
+from ..core.job import Job 
 
 def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
-    output = [os.path.join(output_dir, "results", "variants", "diploidSV.vcf.gz"), os.path.join(output_dir, "results", "variants", "candidateSmallIndels.vcf.gz")]
+    outputs = [
+        output_dir,
+        os.path.join(output_dir, "results", "variants", "diploidSV.vcf.gz"),
+        os.path.join(output_dir, "results", "variants", "candidateSmallIndels.vcf.gz")
+    ]
     if input_tumor is not None:
         inputs = [input_normal, input_tumor, callRegion]
     else:
@@ -31,7 +36,7 @@ def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
         
     return Job(
         inputs,
-        [output_dir],
+        outputs,
         [
             ['manta_sv', 'module_python'],
             ['manta_sv', 'module_manta']
@@ -45,7 +50,7 @@ def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
         --runDir {output}""".format(
             normal=input_normal,
             tumor="--tumorBam " + input_tumor if input_tumor else "",
-            genome=global_conf.get('manta_sv', 'genome_fasta', param_type='filepath'),
+            genome=global_conf.get('manta_sv','genome_fasta', param_type='filepath'),
             experiment_type=global_conf.get('manta_sv', 'experiment_type_option') if global_conf.get('manta_sv', 'experiment_type_option') else "",
             callRegion="\\\n        --callRegions " + callRegion if callRegion else "",
             output=output_dir

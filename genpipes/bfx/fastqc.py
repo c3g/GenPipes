@@ -20,8 +20,9 @@
 # Python Standard Modules
 import logging
 import os
+import re
 
-# MUGQIC Modules
+# GenPipes Modules
 from ..core.config import global_conf
 from ..core.job import Job
 
