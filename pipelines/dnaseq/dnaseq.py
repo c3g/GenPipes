@@ -1101,7 +1101,7 @@ END
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
-                            metrics="dedup_coverage=$bdedup_coverage"
+                            metrics="dedup_coverage=$dedup_coverage"
                         )
                     ]
                 )
