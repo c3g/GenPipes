@@ -1127,7 +1127,7 @@ END
                     job_name = f"gatk_mark_duplicates.{readset.sample.name}.{readset.name}"
                     job_project_tracking_metrics = concat_jobs(
                         [
-                            gatk4.parse_duplicate_rate_metrics_pt(metrics_file, readset.library),
+                            gatk4.parse_duplicate_rate_metrics_pt(metrics_file, str(readset.library)),
                             job2json_project_tracking.run(
                                 input_file=metrics_file,
                                 pipeline=self,
@@ -1155,6 +1155,7 @@ END
                             output,
                             ini_section='samtools_index_cram'
                         ),
+                        job_project_tracking_metrics
                     ],
                     name=job_name,
                     samples=[sample],

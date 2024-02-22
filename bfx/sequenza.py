@@ -114,7 +114,12 @@ sequenza-utils  \\
         )
     )
 
-def main(seqz, output_folder, sample_name):
+def main(
+        seqz,
+        output_folder,
+        sample_name,
+        ini_section='sequenza'
+):
     output_dep = [os.path.join(output_folder, sample_name + "_chromosome_view.pdf"),
                   os.path.join(output_folder, sample_name + "_genome_view.pdf"),
                   os.path.join(output_folder, sample_name + "_CN_bars.pdf"),
@@ -125,8 +130,8 @@ def main(seqz, output_folder, sample_name):
         [seqz],
         output_dep,
         [
-            ['sequenza', 'module_mugqic_tools'],
-            ['sequenza', 'module_R'],
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_R'],
         ],
         command="""\\
 Rscript $R_TOOLS/RunSequenza_analysis.R \\

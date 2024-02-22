@@ -2284,7 +2284,7 @@ def parse_median_target_coverage_metrics(input_file):
 export median_target_coverage=`grep -A1 "^BAIT" {input_file} | cut -f35 | grep -vE "MEDIAN|^$"`"""
         )
 
-def parse_duplicate_rate_metrics_pt(input_file):
+def parse_dup_rate_metrics_pt(input_file):
     """
     """
     return Job(

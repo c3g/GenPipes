@@ -1363,7 +1363,7 @@ END
                                 job_name=job_name,
                                 metrics="median_target_coverage=$median_target_coverage"
                             ),
-                            gatk4.parse_duplicate_rate_metrics_pt(output),
+                            gatk4.parse_dup_rate_metrics_pt(output),
                             job2json_project_tracking.run(
                                 input_file=output,
                                 pipeline=self,
@@ -4575,10 +4575,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             sequenza.main(
                                 f"{output}.binned.merged.seqz.gz",
                                 sequenza_directory,
-                                tumor_pair.name
+                                tumor_pair.name,
+                                ini_section='sequenza_estimate'
                             )
                         ],
-                        name=f"sequenza.{tumor_pair.name}",
+                        name=f"sequenza_estimate.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
