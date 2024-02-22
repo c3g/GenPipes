@@ -320,7 +320,12 @@ class IlluminaRawReadset(IlluminaReadset):
 
     @property
     def species(self):
-        return self._species
+        if not hasattr(self, "_species"):
+            return ""
+        elif self._species == None:
+            return ""
+        else:
+            return self._species
 
     @property
     def project_id(self):
@@ -378,7 +383,12 @@ class IlluminaRawReadset(IlluminaReadset):
 
     @property
     def species(self):
-        return self._species
+        if not hasattr(self, "_species"):
+            return ""
+        elif self._species == None:
+            return ""
+        else:
+            return self._species
 
     @property
     def run_obj_id(self):
