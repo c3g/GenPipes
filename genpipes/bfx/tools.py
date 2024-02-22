@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -28,7 +28,7 @@ from ..core.job import Job
 ## functions for awk tools ##
 
 ## functions for python tools ##
-def py_addLengthRay (file_scaffolds_fasta, length_file, output):
+def py_addLengthRay(file_scaffolds_fasta, length_file, output):
     return Job(
         [file_scaffolds_fasta, length_file],
         [output],
@@ -45,7 +45,7 @@ python $PYTHON_TOOLS/addLengthRay.py \\
         )
     )
 
-def py_blastMatchSca (prefix_scaffolds_fasta, blast_file, output):
+def py_blastMatchSca(prefix_scaffolds_fasta, blast_file, output):
     return Job(
         [prefix_scaffolds_fasta + ".fasta", blast_file],
         [output],
@@ -62,7 +62,7 @@ python $PYTHON_TOOLS/blastMatchSca.py \\
         )
     )
 
-def py_equalFastqFile (fastq_ref, fastq, output):
+def py_equalFastqFile(fastq_ref, fastq, output):
     return Job(
         [fastq_ref, fastq],
         [output],
@@ -79,7 +79,7 @@ python $PYTHON_TOOLS/equalFastqFile.py \\
         )
     )
 
-def py_rrnaBAMcount (bam, gtf, output, typ="transcript"):
+def py_rrnaBAMcount(bam, gtf, output, typ="transcript"):
     return Job(
         [bam],
         [output],
@@ -126,19 +126,31 @@ $PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trino
         )
     )
 
-def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclude=None, left_join=None, sort_by=None, make_names=None, filters=None):
+def py_parseMergeCsv(
+    input_files,
+    delimiter,
+    output,
+    common,
+    subset=None,
+    exclude=None,
+    left_join=None,
+    sort_by=None,
+    make_names=None,
+    filters=None
+    ):
     return Job(
         input_files,
         [output],
         [
-            ['parse_merg_csv', 'module_mugqic_tools'],
-            ['parse_merg_csv', 'module_python']
+            ['parse_merge_csv', 'module_mugqic_tools'],
+            ['parse_merge_csv', 'module_python']
         ],
         command="""\
-$PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
-      -o {output} \\
-      -c {common_columns} \\
-      -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}{make_names}{filters}""".format(
+$PYTHON_TOOLS/parseMergeCsv.py \\
+  -i {input_files} \\
+  -o {output} \\
+  -c {common_columns} \\
+  -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}{make_names}{filters}""".format(
             input_files=" ".join(input_files),
             output=output,
             common_columns=common,
@@ -152,13 +164,19 @@ $PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
         )
     )
 
-def py_ampliconSeq(input_files, output_files, function, supplemental_parameters):
+def py_ampliconSeq(
+    input_files,
+    output_files,
+    function,
+    supplemental_parameters,
+    ini_section='py_ampliconSeq'
+    ):
     return Job(
         input_files,
         output_files,
         [
-            ['py_ampliconSeq', 'module_mugqic_tools'],
-            ['py_ampliconSeq', 'module_python']
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_python']
         ],
         command="""\
 python $PYTHON_TOOLS/AmpliconSeq_script.py \\
@@ -198,7 +216,7 @@ def dict2beds(dictionary,beds):
             ['dict2beds', 'module_python']
         ],
         command="""\
-dict2BEDs.py \\
+python3 $PYTHON_TOOLS/dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds}""".format(
             dictionary=dictionary if dictionary else global_conf.global_get('dict2beds', 'genome_dictionary', param_type='filepath'),
@@ -233,7 +251,7 @@ def fix_varscan_output(input, output=None, options=None):
             ['fix_varscan_output', 'module_python']
         ],
         command="""\
-python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
+python3 $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
     {output}""".format(
             options=options if options else "",
             input=input if input else "",
@@ -250,7 +268,7 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 ['DEFAULT', 'module_python']
             ],
             command="""\
-	python $PYTHON_TOOLS/update_genotypes_strelka.py \\
+	python3 $PYTHON_TOOLS/update_genotypes_strelka.py \\
 	    -i {input} \\
 	    -o {output} \\
 	    -n {normal} \\
@@ -261,22 +279,30 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 tumor=tumor,
             )
         )
-def cpg_cov_stats(input, output):
+
+def format2pcgr(input, output, filter, variant_type, tumor, ini_section='DEFAULT'):
     return Job(
         [input],
         [output],
         [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_python']
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_python']
         ],
         command="""\
-python $PYTHON_TOOLS/CpG_coverageStats.py \\
- -i {input} \\
- -o {output}""".format(
-            input=input,
-            output=output
-         )
+python3 $PYTHON_TOOLS/format2pcgr.py \\
+	-i {input} \\
+	-o {output} \\
+	-f {filter} \\
+	-v {variant_type} \\
+	-t {tumor}""".format(
+            input=input if input else "",
+            output=output if input else "",
+            filter=filter,
+            variant_type=variant_type,
+            tumor=tumor,
+        )
     )
+
 
 ## functions for perl tools ##
 
@@ -376,6 +402,7 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
         ],
         name=job_name,
         command="""\
+rm -rf {output_dir} && \\
 bash rnaseq_light_kallisto.sh \\
   {output_dir} \\
   {parameters} \\
@@ -394,6 +421,29 @@ bash rnaseq_light_kallisto.sh \\
      )
 
 ## functions for R tools ##
+def r_transcript_to_gene(
+    abundance_tsv,
+    output_tsv,
+    tx2genes_file
+    ):
+    return Job(
+        [abundance_tsv],
+        [output_tsv],
+        [
+            ['kallisto_count_matrix', 'module_mugqic_tools'],
+            ['kallisto_count_matrix', 'module_R'],
+            ['kallisto_count_matrix', 'module_mugqic_R_packages']
+        ],
+        command="""\
+Rscript --vanilla $R_TOOLS/abundanceTranscript2geneLevel.R \\
+  {abundance_tsv} \\
+  {tx2genes}""".format(
+            abundance_tsv=abundance_tsv,
+            tx2genes=tx2genes_file
+        )
+    )
+
+
 def r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name):
     return Job(
         input_abundance_files,
@@ -553,13 +603,12 @@ def methylkit_differential_analysis(design_file, input_files, outputfiles, outpu
             ['methylkit_differential_analysis', 'module_mugqic_tools']
         ],
         command="""\
-R --no-save '--args \\
+Rscript $R_TOOLS/methylKit.R \\
   -design {design_file} \\
   -outdir {output_folder} \\
   -build {genome} \\
   -suff {input_suffix} \\
-  {other_options}' \\
-  < $R_TOOLS/methylKit.R""".format(
+  {other_options}""".format(
             design_file=design_file,
             genome=global_conf.global_get('methylkit_differential_analysis', 'assembly'),
             output_folder=output_dir,
@@ -621,7 +670,7 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name
 
     return Job(
         [chip_bam, input_bam, chip_bed, crosscor_input],
-        [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats, output_dedup_input_bam, output_dedup_input_bai],
+        [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats],
         [
             ['IHEC_chipseq_metrics', 'module_mugqic_tools'],
             ['IHEC_chipseq_metrics', 'module_samtools'],
@@ -646,24 +695,24 @@ IHEC_chipseq_metrics_max.sh \\
             chip_bam=chip_bam,
             chip_type=chip_type,
             chip_name=chip_name,
+<<<<<<< HEAD
             threads=global_conf.global_get('IHEC_chipseq_metrics', 'thread', param_type='int')
-            if global_conf.global_get('IHEC_chipseq_metrics', 'thread', param_type='int', required=False) else 1,
+=======
+>>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
             chip_bed=chip_bed,
             output_dir=output_dir,
             assembly=assembly
         ),
-        removable_files=[output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bam,
-                         output_dedup_chip_bai, output_dedup_input_bam, output_dedup_input_bai, output_flagstats]
+        removable_files=[output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bam, output_dedup_chip_bai, output_dedup_input_bam, output_dedup_input_bai, output_flagstats]
     )
 
 def sh_fastq_readname_edit(
-    fastq,
-    working_dir,
-    job_name
+    input_fastq,
+    output_fastq
     ):
     return Job(
-        [fastq],
-        [fastq + ".edited.gz"],
+        [input_fastq],
+        [output_fastq],
         [
             ['fastq_readname_edit', 'module_mugqic_tools'],
         ],
@@ -671,13 +720,12 @@ def sh_fastq_readname_edit(
 bash FastqReadNameEdit.sh \\
   -i {input_fastq} \\
   -o {output_fastq} \\
-  -p {fastq_abs_path}""".format(
-            input_fastq=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq),
-            output_fastq=fastq + ".edited.gz" if os.path.isabs(fastq) else os.path.join(working_dir, fastq + ".edited.gz"),
-            fastq_abs_path=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq)
+  -p {fastq_rel_path}""".format(
+            input_fastq=input_fastq,
+            output_fastq=output_fastq,
+            fastq_rel_path=os.path.relpath(input_fastq, os.path.dirname(output_fastq))
         ),
-        name=job_name,
-        removable_files = [fastq + ".edited.gz"]
+        removable_files=[output_fastq]
     )
 
 def sh_create_rmap(genome_digest_input, rmap_output, job_name):
@@ -696,7 +744,6 @@ bash createRmapFile.sh \\
         ),
         name=job_name
     )
-
 
 def sh_create_baitmap(bait, sorted_bait, annotation, output):
     return Job(
@@ -768,7 +815,7 @@ bash extractCaptureBed.sh \\
 def sh_blastQC_ONT(output_directory, reads_fastq_dir, readset_name):
     return Job(
         [reads_fastq_dir],
-        [os.path.join(output_directory, readset_name + "blastHit_20MF_species.txt")],
+        [os.path.join(output_directory, readset_name + ".blastHit_20MF_species.txt")],
         [
             ["blastqc", "module_mugqic_tools"],
             ["blastqc", "module_blast"],
@@ -784,11 +831,13 @@ bash runBlastQC_ONT.sh \\
             readset_name=readset_name
         ),
         name="blastQC." + readset_name,
-        removable_files=[os.path.join(output_directory, "subsample_input.trim.blastres"),
-                         os.path.join(output_directory, "subsample_input.trim.fasta"),
-                         os.path.join(output_directory, "subsample_input.trim.fastq"),
-                         os.path.join(output_directory, "subsample_input.trim.qual"),
-                         os.path.join(output_directory, "subsample_input.fastq")]
+        removable_files=[
+            os.path.join(output_directory, "subsample_input.trim.blastres"),
+            os.path.join(output_directory, "subsample_input.trim.fasta"),
+            os.path.join(output_directory, "subsample_input.trim.fastq"),
+            os.path.join(output_directory, "subsample_input.trim.qual"),
+            os.path.join(output_directory, "subsample_input.fastq")
+        ]
     )
 
 def clean_otu(otu_table):

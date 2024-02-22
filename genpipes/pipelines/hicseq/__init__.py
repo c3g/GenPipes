@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes.
 #
@@ -14,7 +14,7 @@
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -92,20 +92,26 @@ class HicSeq(common.Illumina):
 
     @property
     def output_dirs(self):
-        dirs = {'hicup_output_directory': 'alignment',
-                'homer_output_directory': 'homer_tag_directory',
-                'bams_output_directory': 'alignment',
-                'matrices_output_directory': 'interaction_matrices',
-                'cmpt_output_directory': 'compartments',
-                'TAD_output_directory': 'TADs',
-                'peaks_output_directory': 'peaks',
-                'hicfiles_output_directory': 'hicFiles',
-                'chicago_input_files': 'input_files',
-                'chicago_output_directory': 'chicago',
-                'intersect_ouput_directory': 'bed_intersect',
-                'reproducible_score_output_directory': 'reproducibility_scores',
-                'quality_score_output_directory': 'quality_scores'
-                }
+        dirs = {
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'hicup_output_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'homer_output_directory': os.path.relpath(os.path.join(self.output_dir, 'homer_tag_directory'), self.output_dir),
+            'bams_output_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'matrices_output_directory': os.path.relpath(os.path.join(self.output_dir, 'interaction_matrices'), self.output_dir),
+            'cmpt_output_directory': os.path.relpath(os.path.join(self.output_dir, 'compartments'), self.output_dir),
+            'TAD_output_directory': os.path.relpath(os.path.join(self.output_dir, 'TADs'), self.output_dir),
+            'peaks_output_directory': os.path.relpath(os.path.join(self.output_dir, 'peaks'), self.output_dir),
+            'hicfiles_output_directory': os.path.relpath(os.path.join(self.output_dir, 'hicFiles'), self.output_dir),
+            'chicago_input_files': os.path.relpath(os.path.join(self.output_dir, 'input_files'), self.output_dir),
+            'chicago_output_directory': os.path.relpath(os.path.join(self.output_dir, 'chicago'), self.output_dir),
+            'intersect_ouput_directory': os.path.relpath(os.path.join(self.output_dir, 'bed_intersect'), self.output_dir),
+            'reproducible_score_output_directory': os.path.relpath(os.path.join(self.output_dir, 'reproducibility_scores'), self.output_dir),
+            'quality_score_output_directory': os.path.relpath(os.path.join(self.output_dir, 'quality_scores'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
+        }
         return dirs
 
     @property
@@ -114,7 +120,9 @@ class HicSeq(common.Illumina):
 
     @property
     def restriction_site(self):
-        """ sets the restriction enzyme recogntition site and genome digest location based on enzyme"""
+        """
+        Sets the restriction enzyme recogntition site and genome digest location based on enzyme.
+        """
         # Used only for Homer tag directory for QC of read location. For Arima, Homer doesn't accept multiple enzymes, use DpnII site
         if (self.enzyme == "DpnII") or (self.enzyme == "MboI") or (self.enzyme == "Arima"):
             restriction_site = "GATC"
@@ -127,47 +135,67 @@ class HicSeq(common.Illumina):
         return restriction_site
 
     @property
-    def genome(self):
-        genome_source = global_conf.global_get('DEFAULT', 'source')
-        if genome_source == "UCSC":
-            genome = global_conf.global_get('DEFAULT', 'assembly')
-        else:
-            genome = global_conf.global_get('DEFAULT', 'assembly_synonyms')
-        return genome
-
-    @property
     def genome_digest(self):
         genome_digest = os.path.expandvars(global_conf.global_get('hicup_align', "genome_digest_" + self.enzyme))
         return genome_digest
 
-    def fastq_readName_Edit(self):
+    def fastq_readname_edit(self):
         """
-        Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER
+        Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER.
         """
         jobs=[]
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!"))
 
-            candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+            candidate_input_files = [
+                [
+                    trim_file_prefix + "pair1.fastq.gz",
+                    trim_file_prefix + "pair2.fastq.gz"
+                ]
+            ]
             if readset.fastq1 and readset.fastq2:
-                candidate_input_files.append([readset.fastq1, readset.fastq2])
+                candidate_input_files.append(
+                    [
+                        readset.fastq1,
+                        readset.fastq2
+                    ]
+                )
             if readset.bam:
-                candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam.strip())])
+                candidate_input_files.append(
+                    [
+                        re.sub("\.bam$", ".pair1.fastq.gz", readset.bam.strip()),
+                        re.sub("\.bam$", ".pair2.fastq.gz", readset.bam.strip())
+                    ]
+                )
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-
-            job_fastq1 = tools.sh_fastq_readname_edit(fastq1, self.output_dir, "fastq_readName_Edit.fq1." + readset.name)
-            job_fastq1.samples = [readset.sample]
-
-            job_fastq2 = tools.sh_fastq_readname_edit(fastq2, self.output_dir, "fastq_readName_Edit.fq2." + readset.name)
-            job_fastq2.samples = [readset.sample]
-
+            job_fastq1 = concat_jobs(
+                [
+                    bash.mkdir(self.output_dirs["trim_directory"]),
+                    tools.sh_fastq_readname_edit(
+                        fastq1,
+                        os.path.join(self.output_dirs["trim_directory"], readset.sample.name, f"{os.path.basename(fastq1)}.edited.gz")
+                    )
+                ],
+                name=f"fastq_readname_edit.fq1.{readset.name}",
+                samples=[readset.sample]
+            )
+            job_fastq2 = concat_jobs(
+                [
+                    bash.mkdir(self.output_dirs["trim_directory"]),
+                    tools.sh_fastq_readname_edit(
+                        fastq2,
+                        os.path.join(self.output_dirs["trim_directory"], readset.sample.name, f"{os.path.basename(fastq2)}.edited.gz")
+                    )
+                ],
+                name=f"fastq_readname_edit.fq2.{readset.name}",
+                samples=[readset.sample]
+            )
             jobs.extend([job_fastq1, job_fastq2])
-
         return jobs
 
     def hicup_align(self):
@@ -182,7 +210,7 @@ class HicSeq(common.Illumina):
 
         for readset in self.readsets:
             sample_output_dir = os.path.join(self.output_dirs['hicup_output_directory'], readset.sample.name, readset.name)
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -195,26 +223,28 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            job_confFile = hicup.create_hicup_conf(readset.name, fastq1, fastq2, sample_output_dir, self.genome_digest)
-
-            job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir, fastq1, fastq2)
-
-            job = concat_jobs([
-                    job_confFile, job_hicup
+            job = concat_jobs(
+                [
+                    bash.mkdir(sample_output_dir),
+                    hicup.hicup_run(
+                        readset.name,
+                        sample_output_dir,
+                        fastq1,
+                        fastq2,
+                        self.genome_digest
+                    )
                 ],
                 name = "hicup_align." + readset.name,
                 samples = [readset.sample]
             )
-
             jobs.append(job)
-
         return jobs
 
     def samtools_merge_bams(self):
         """
         BAM readset files are merged into one file per sample. Merge is done using [samtools](http://samtools.sourceforge.net/).
 
-        This step takes as input files the aligned bams/sams from the hicup_align step
+        This step takes as input files the aligned bams/sams from the hicup_align step.
         """
 
         jobs = []
@@ -232,26 +262,29 @@ class HicSeq(common.Illumina):
                 else:
                     target_readset_bam = os.path.relpath(readset_bam, os.path.dirname(sample_output))
 
-                job = concat_jobs([
-                    mkdir_job,
-                    Job(
-                        readset_bams,
-                        [sample_output],
-                        command="ln -s -f " + target_readset_bam + " " + sample_output
-                    )
-                ], name="symlink_readset_sample_bam." + sample.name)
+                job = concat_jobs(
+                    [
+                        mkdir_job,
+                        bash.ln(
+                            target_readset_bam,
+                            sample_output,
+                            input=readset_bam
+                        )
+                    ],
+                    name="symlink_readset_sample_bam." + sample.name,
+                    samples=[sample]
+                )
 
             elif len(sample.readsets) > 1:
-
                 samtools_merge = samtools.merge(sample_output, readset_bams)
-
-                job = concat_jobs([
-                    mkdir_job,
-                    samtools_merge
-                ])
-                job.name = "samtools_merge_bams." + sample.name
-
-            job.samples = [sample]
+                job = concat_jobs(
+                    [
+                        mkdir_job,
+                        samtools_merge
+                    ],
+                    name="samtools_merge_bams." + sample.name,
+                    samples=[sample]
+                )
             jobs.append(job)
 
         return jobs
@@ -261,36 +294,76 @@ class HicSeq(common.Illumina):
         The bam file produced by HiCUP is used to create a tag directory using HOMER for further analysis that includes interaction matrix generation,
         compartments and identifying significant interactions.
 
-        For more detailed information about the HOMER process visit: [HOMER] (http://homer.ucsd.edu/homer/interactions/index.html)
+        For more detailed information about the HOMER process visit: [HOMER] (http://homer.ucsd.edu/homer/interactions/index.html).
         """
 
         jobs = []
 
+<<<<<<< HEAD
         makeDirTag_hic_other_options=global_conf.global_get('homer_tag_directory', 'other_options', required=False)
         PEflag = eval(global_conf.global_get('homer_tag_directory', 'illuminaPE'))
+=======
+        makeDirTag_hic_other_options=global_conf.global_get('homer_tag_directory', 'other_options', required=False)
+        PEflag = eval(global_conf.get('homer_tag_directory', 'illuminaPE'))
+        genome = global_conf.get('homer_tag_directory', 'genome', required=False) if global_conf.get('homer_tag_directory', 'genome', required=False) else global_conf.get('DEFAULT', 'assembly_synonyms')
+        chrlist = global_conf.get('homer_tag_directory', 'chrlist', required=True)
+>>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
             sample_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
             hicup_file_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
+
+            # For hic, input bam is provided twice : {input_bam},{input_bam}
             input_bam = ",".join([hicup_file_output, hicup_file_output])
 
-            tagDir_job = homer.makeTagDir(sample_output_dir, input_bam, self.genome, self.restriction_site, PEflag, makeDirTag_hic_other_options)
-            QcPlots_job = homer.hic_tagDirQcPlots(sample.name, sample_output_dir)
-            archive_job = homer.archive_contigs(sample_output_dir)
-
-            job = concat_jobs([tagDir_job, QcPlots_job, archive_job])
-            job.name = "homer_tag_directory." + sample.name
-            job.samples = [sample]
-
-            jobs.append(job)
+            jobs.append(
+                concat_jobs(
+                    [
+                        homer.makeTagDir(
+                            sample_output_dir,
+                            input_bam,
+                            genome,
+                            self.restriction_site,
+                            PEflag,
+                            makeDirTag_hic_other_options
+                        ),
+                        homer.hic_tagDirQcPlots(
+                            sample.name,
+                            sample_output_dir,
+                            chrlist,
+                            "HomerQcPlots"
+                        ),
+                        bash.mkdir(os.path.join(sample_output_dir, "archive")),
+                        bash.chdir(sample_output_dir),
+                        bash.mv(
+                            ["*random*.tsv", "*chrUn*.tsv", "*hap*.tsv", "chrM*.tsv", "MT*.tsv", "*Y*.tsv", "*EBV*.tsv", "*GL*.tsv", "NT_*.tsv"],
+                            os.path.join(sample_output_dir, "archive"),
+                            extra='|| echo "not all files found"'
+                        ),
+                        bash.chdir(self.output_dir)
+                    ],
+                    name="homer_tag_directory." + sample.name,
+                    samples=[sample],
+                    input_dependency=[hicup_file_output],
+                    output_dependency=[
+                        os.path.join(sample_output_dir, "tagInfo.txt"),
+                        os.path.join(sample_output_dir, "tagGCcontent.txt"),
+                        os.path.join(sample_output_dir, "genomeGCcontent.txt"),
+                        os.path.join(sample_output_dir, "tagLengthDistribution.txt"),
+                        os.path.join(sample_output_dir, "tagLengthDistribution.txt"),
+                        os.path.join(sample_output_dir, "HomerQcPlots"),
+                        os.path.join(sample_output_dir, "archive")
+                    ]
+                )
+            )
         return jobs
 
     def interaction_matrices_Chr(self):
         """
         IntraChromosomal interaction matrices are produced by Homer at resolutions defined in the ini config file and plotted by HiCPlotter.
-        For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
-        For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
+        For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html).
+        For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter).
         """
 
         jobs = []
@@ -318,8 +391,22 @@ class HicSeq(common.Illumina):
                     fileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, "\'.ofBins(0-\'*\')\'.", str(int(res)//1000), "K.jpeg")))
                     newFileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, ".all.", str(int(res)//1000), "K.jpeg")))
 
-                    jobMatrix = homer.hic_interactionMatrix_chr(sample.name, sample_output_dir_chr, homer_output_dir, res, chr, fileName, fileNameRN)
-                    jobMatrix.samples = [sample]
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(sample_output_dir_chr),
+                                homer.hic_interactionMatrix_chr(
+                                    homer_output_dir,
+                                    res,
+                                    chr,
+                                    fileName,
+                                    fileNameRN
+                                )
+                            ],
+                            name=f"interaction_matrices_Chr.{sample.name}_{chr}_res{res}",
+                            samples=[sample]
+                        )
+                    )
 
                     jobPlot = hicplotter.intra_chrom_matrix_plot(
                         fileNameRN,
@@ -330,13 +417,13 @@ class HicSeq(common.Illumina):
                         fileNamePlot,
                         newFileNamePlot
                     )
+                    jobPlot.name = f"interaction_matrices_Chr.plotting.{sample.name}_{chr}_res{res}"
                     jobPlot.samples = [sample]
-                    jobs.extend([jobMatrix, jobPlot])
+                    jobs.append(jobPlot)
 
         return jobs
 
     def reproducibility_scores(self):
-
         """
         hic-rep is a R package for calculating the inter-chromosomal reproducibility score.
         Pairwise reproducibility scores for each chromosome pair in each sample pair are calculated using
@@ -360,7 +447,6 @@ class HicSeq(common.Illumina):
         down_sampling = global_conf.global_get('reproducibility_scores', 'down_sampling')
         smooth = global_conf.global_get('reproducibility_scores', 'h')
         corr = global_conf.global_get('reproducibility_scores', 'corr')
-
 
         #Get the pairwise combinations of each sample (return an object list)
         pairwise_sample_combination = list(itertools.combinations(self.samples, 2))
@@ -396,69 +482,80 @@ class HicSeq(common.Illumina):
                             sample[0].name,
                             "chromosomeMatrices",
                             "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "rawRN.txt"))
-                            )
+                        )
 
                         input_sample2_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
                             sample[1].name,
                             "chromosomeMatrices",
                             "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "rawRN.txt"))
-                            )
+                        )
                         out_dir = os.path.join(
                             output_dir,
                             temp_dir,
                            "_".join((sample[0].name, "vs",  sample[1].name))
-                           )
+                        )
 
                         output_file = os.path.join(out_dir, "hicrep_" + sample[0].name + "_vs_" + sample[1].name + "_" + chromosome + "_" + res + "_res_" + smooth + "_" + bound_width + "_" + down_sampling + ".tmp")
 
-                        job_chr = concat_jobs([
-                            bash.mkdir(out_dir),
-                            hicrep.calculate_reproducible_score(
-                                output_file,
-                                sample[0].name,
-                                sample[1].name,
-                                input_sample1_file_path,
-                                input_sample2_file_path,
-                                chromosome,
-                                res,
-                                bound_width,
-                                weights,
-                                corr,
-                                down_sampling,
-                                smooth
+                        job_chr = concat_jobs(
+                            [
+                                bash.mkdir(out_dir),
+                                hicrep.calculate_reproducible_score(
+                                    output_file,
+                                    sample[0].name,
+                                    sample[1].name,
+                                    input_sample1_file_path,
+                                    input_sample2_file_path,
+                                    chromosome,
+                                    res,
+                                    bound_width,
+                                    weights,
+                                    corr,
+                                    down_sampling,
+                                    smooth
                                 )
-                            ])
-
-                        job_chr.samples = sample
-
+                            ],
+                            samples=[sample[0], sample[1]],
+                            removable_files=[output_file]
+                        )
                         input_files_for_merging.append(output_file)
                         job_all_chr.append(job_chr)
-                        job = concat_jobs(job_all_chr)
-                        job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs", sample[1].name, res))
-                        job.removable_files = [output_file]
+
+                    job = concat_jobs(job_all_chr)
+                    job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs", sample[1].name, res))
 
                     jobs.append(job)
                     tsv_output = os.path.join(
                         output_dir,
                         temp_dir,
                         ".".join(("_".join((sample[0].name,"vs",sample[1].name, "res", res, smooth, bound_width, down_sampling)), "tsv"))
-                        )
+                    )
                     #Storing output files for next step in a list
                     tsv_files_for_merging.append(tsv_output)
-                #create a job for merginh .tsv file with individual reproducibnility score for each pairwise comparison
-                job_merge = hicrep.merge_tmp_files(input_files_for_merging, tsv_files_for_merging, output_dir, res, smooth, bound_width, down_sampling, temp_dir)
+
+                #create a job for merging .tsv file with individual reproducibnility score for each pairwise comparison
+                job_merge = hicrep.merge_tmp_files(
+                    input_files_for_merging,
+                    tsv_files_for_merging,
+                    output_dir,
+                    res,
+                    smooth,
+                    bound_width,
+                    down_sampling,
+                    temp_dir
+                )
                 job_merge.samples = self.samples
                 job_merge.name = "merge_hicrep_scores." + res
                 jobs.append(job_merge)
 
-            #finally all the .tsv files are merged and create a one file (.csv) with all the values
+            #finally all the .tsv files are merged into one .csv file with all the values
             output_csv_file = "hicrep_combined_reproducibility_scores.csv"
             job_tsv_merge = hicrep.merge_tsv(
                 tsv_files_for_merging,
                 output_dir,
                 output_csv_file,
                 temp_dir
-                )
+            )
             job_tsv_merge.name = "merge_hicrep_scores"
             job_tsv_merge.samples = self.samples
             job_tsv_merge.removable_files = [os.path.join(output_dir, temp_dir)]
@@ -512,26 +609,28 @@ class HicSeq(common.Illumina):
             job_restructure = []
             for res in res_chr:
                 for chromosome in chrs:
-
-                    input_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
-                                                          sample.name,
-                                                          "chromosomeMatrices",
-                                                          "_".join((
-                                                              "HTD", sample.name, self.enzyme, chromosome, res,
-                                                              "rawRN.txt")))
-                    output_file_path = os.path.join(output_dir, temp_dir, "_".join((
-                                                              "HTD", sample.name, self.enzyme, chromosome, res,
-                                                              "rawRN.txt.temp")))
+                    input_file_path = os.path.join(
+                        self.output_dirs['matrices_output_directory'],
+                        sample.name,
+                        "chromosomeMatrices",
+                        "_".join(("HTD", sample.name, self.enzyme, chromosome, res, "rawRN.txt")))
+                    output_file_path = os.path.join(
+                        output_dir,
+                        temp_dir,
+                        "_".join(("HTD", sample.name, self.enzyme, chromosome, res, "rawRN.txt.temp")))
                     quasr_temp_files.append(output_file_path)
-                    job_matrix_restucture = quasar_qc.restructure_matrix( input_file_path, output_file_path,  output_dir, res, temp_dir)
-
+                    job_matrix_restucture = quasar_qc.restructure_matrix(
+                        input_file_path,
+                        output_file_path,
+                        output_dir,
+                        res,
+                        temp_dir
+                    )
                     job_matrix_restucture.samples = [sample]
                     job_restructure.append(job_matrix_restucture)
-                    job = concat_jobs(job_restructure)
-                    job.name = "_".join(("quality_scores.quasar", "restructuring",sample.name, res, self.enzyme))
-
+                job = concat_jobs(job_restructure)
+                job.name = "_".join(("quality_scores.quasar", "restructuring",sample.name, res, self.enzyme))
             jobs.append(job)
-
 
         #Perform the QUASAR-QC analysis using the generated temp files
         #loop through each sample with same enzyme and one or many resolutions user has specified.
@@ -545,16 +644,27 @@ class HicSeq(common.Illumina):
 
         for sample in self.samples:
             for res in res_chr:
-                input_files = os.path.join(output_dir, temp_dir, "_".join((
-                                                          "HTD", sample.name, self.enzyme, "*", res,
-                                                          "rawRN.txt.temp")))
+                input_files = os.path.join(
+                    output_dir,
+                    temp_dir,
+                    "_".join(("HTD", sample.name, self.enzyme, "*", res, "rawRN.txt.temp")))
 
-                output_file_path = os.path.join(output_dir, temp_dir, "_".join((
-                    sample.name, quasr_prefix ,res, self.enzyme)))
+                output_file_path = os.path.join(
+                    output_dir,
+                    temp_dir,
+                    "_".join((sample.name, quasr_prefix ,res, self.enzyme)))
                 output_report_file = "_".join((output_file_path, "report.txt"))
                 quasr_report_files.append(output_report_file)
-                job_qusarqc = quasar_qc.quality_analysis(quasr_temp_files, input_files, output_file_path, output_dir, output_fend_file, quasr_res, quasr_coverage, output_report_file)
-
+                job_qusarqc = quasar_qc.quality_analysis(
+                    quasr_temp_files,
+                    input_files,
+                    output_file_path,
+                    output_dir,
+                    output_fend_file,
+                    quasr_res,
+                    quasr_coverage,
+                    output_report_file
+                )
                 job_qusarqc.samples = [sample]
                 job_qusarqc.name = "_".join(("quality_scores.quasarqc",sample.name, res, self.enzyme))
                 jobs.append(job_qusarqc)
@@ -564,9 +674,17 @@ class HicSeq(common.Illumina):
                 q_res = int(q_res)/1000
                 q_res = "".join((str(q_res) , "Kb" ))
                 input_files = [s for s in quasr_report_files if "_".join((quasr_prefix, res, self.enzyme)) in s]
-                output_file = ".".join((os.path.join(output_dir, "_".join((
-                    "quasar_qc_final_report_res", res, "quasarqc_res", q_res, self.enzyme))), "tsv"))
-                job_qusarqc_final_report = quasar_qc.merge_all_reports(output_dir, input_files, output_file, res, self.enzyme, quasr_prefix, temp_dir, q_res)
+                output_file = ".".join((os.path.join(output_dir, "_".join(("quasar_qc_final_report_res", res, "quasarqc_res", q_res, self.enzyme))), "tsv"))
+                job_qusarqc_final_report = quasar_qc.merge_all_reports(
+                    output_dir,
+                    input_files,
+                    output_file,
+                    res,
+                    self.enzyme,
+                    quasr_prefix,
+                    temp_dir,
+                    q_res
+                )
                 job_qusarqc_final_report.samples = self.samples
                 job_qusarqc_final_report.name ="_".join(("quality_scores_merge.quasarqc_final_report","res", res, "quasar_res", q_res))
                 job_qusarqc_final_report.removable_files = [os.path.join(output_dir,temp_dir)]
@@ -577,9 +695,9 @@ class HicSeq(common.Illumina):
 
     def interaction_matrices_genome(self):
         """
-        Genomewide interaction matrices are produced by Homer at resolutions defined in the ini config file
-        For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
-        For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
+        Genomewide interaction matrices are produced by Homer at resolutions defined in the ini config file.
+        For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html).
+        For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter).
         """
 
         jobs = []
@@ -595,8 +713,21 @@ class HicSeq(common.Illumina):
                 fileName = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"raw.txt")))
                 fileNameRN = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"rawRN.txt")))
 
-                jobMatrix = homer.hic_interactionMatrix_genome (sample.name, sample_output_dir_genome, homer_output_dir, res, fileName, fileNameRN)
-                jobMatrix.samples = [sample]
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(sample_output_dir_genome),
+                            homer.hic_interactionMatrix_genome(
+                                homer_output_dir,
+                                res,
+                                fileName,
+                                fileNameRN
+                            )
+                        ],
+                        name=f"interaction_matrices_genome.{sample.name}_res{res}",
+                        samples=[sample]
+                    )
+                )
 
                 jobPlot = hicplotter.genome_wide_matrix_plot(
                     fileNameRN,
@@ -605,21 +736,26 @@ class HicSeq(common.Illumina):
                     os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))),
                     os.path.join(sample_output_dir_genome, tagDirName + "_genomewide_raw-WholeGenome-" + str(int(res)//1000) + "K.jpeg")
                 )
+                jobPlot.name = f"interaction_matrices_genome.plotting.{sample.name}_res{res}"
                 jobPlot.samples = [sample]
-
-                jobs.extend([jobMatrix, jobPlot])
+                jobs.append(jobPlot)
 
         return jobs
 
     def identify_compartments(self):
         """
-        Genomic compartments are identified using Homer at resolutions defined in the ini config file
-        For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html)
+        Genomic compartments are identified using Homer at resolutions defined in the ini config file.
+        For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html).
         """
 
         jobs = []
 
+<<<<<<< HEAD
         res = global_conf.global_get('identify_compartments', 'resolution_cmpt')
+=======
+        res = global_conf.get('identify_compartments', 'resolution_cmpt')
+        genome = global_conf.get('identify_compartments', 'genome', required=False) if global_conf.get('identify_compartments', 'genome', required=False) else global_conf.get('DEFAULT', 'assembly_synonyms')
+>>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -629,17 +765,29 @@ class HicSeq(common.Illumina):
             fileName_PC1 = os.path.join(sample_output_dir, sample.name + "_homerPCA_Res" + res + ".PC1.txt")
             fileName_Comp = os.path.join(sample_output_dir, sample.name + "_homerPCA_Res" + res + "_compartments")
 
-            job = homer.hic_compartments (sample.name, sample_output_dir, fileName, homer_output_dir, res, self.genome, fileName_PC1, fileName_Comp, 3)
-            job.samples = [sample]
-
-            jobs.append(job)
-
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(sample_output_dir),
+                        homer.hic_compartments(
+                            fileName,
+                            homer_output_dir,
+                            res,
+                            genome,
+                            fileName_PC1,
+                            fileName_Comp
+                        )
+                    ],
+                    name="identify_compartments." + sample.name + "_res" + res,
+                    samples=[sample]
+                )
+            )
         return jobs
 
     def identify_TADs_TopDom(self):
         """
         Topological associating Domains (TADs) are identified using TopDom at resolutions defined in the ini config file.
-        For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
+        For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975).
         """
 
         jobs = []
@@ -677,10 +825,12 @@ class HicSeq(common.Illumina):
                     job_TADs.name = "identify_TADs.TopDom_call_TADs." + sample.name + "_" + chr + "_res" + res
                     job_TADs.samples = [sample]
 
-                    jobs.extend([
-                        job_inputFile,
-                        job_TADs
-                    ])
+                    jobs.extend(
+                        [
+                            job_inputFile,
+                            job_TADs
+                        ]
+                    )
 
         return jobs
 
@@ -688,13 +838,20 @@ class HicSeq(common.Illumina):
         """
         Topological associating Domain (TAD) scores are calculated using RobusTAD for every bin in the genome.
         RobusTAD is resolution-independant and will use the first resolution in "resolution_TADs"  under [identify_TADs] in the ini file.
-        For more detailed information about the RobusTAD visit: [RobusTAD] (https://github.com/rdali/RobusTAD)
+        For more detailed information about the RobusTAD visit: [RobusTAD] (https://github.com/rdali/RobusTAD).
         """
 
         jobs = []
 
+<<<<<<< HEAD
         chrs = global_conf.global_get('identify_TADs', 'chromosomes')
         res = global_conf.global_get('identify_TADs', 'resolution_TADs').split(",")[0]
+=======
+        chrs = global_conf.get('identify_TADs', 'chromosomes')
+        res = global_conf.get('identify_TADs', 'resolution_TADs').split(",")[0]
+        minwin = global_conf.get('identify_TADs', 'minwin', required=False) if global_conf.get('identify_TADs', 'minwin', required=False) else "250"
+        maxwin = global_conf.get('identify_TADs', 'maxwin', required=False) if global_conf.get('identify_TADs', 'maxwin', required=False) else "500"
+>>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
 
         if chrs == "All":
             genome_dict = os.path.expandvars(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'))
@@ -709,16 +866,17 @@ class HicSeq(common.Illumina):
 
                 input_matrix = os.path.join(self.output_dirs['matrices_output_directory'], sample.name, "chromosomeMatrices", "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.txt")))
                 prefix = os.path.splitext(os.path.basename(input_matrix))[0]
-                output_Scores = os.path.join(sample_output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)//1000) ,"_minW250_maxW500_minRatio1.5.txt")))
-                output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)//1000) ,"_minW250_maxW500_minRatio1.5_threshold0.2.txt")))
+                output_Scores = os.path.join(sample_output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)//1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5.txt")))
+                output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)//1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5_threshold0.2.txt")))
 
-                job = concat_jobs([
-                    bash.mkdir(sample_output_dir),
-                    robustad.call_TADs(input_matrix, sample_output_dir, res)
-                ])
-                job.name = "identify_TADs.RobusTAD." + sample.name + "_" + chr
-                job.samples = [sample]
-
+                job = concat_jobs(
+                    [
+                        bash.mkdir(sample_output_dir),
+                        robustad.call_TADs(input_matrix, sample_output_dir, res, minwin, maxwin)
+                    ],
+                    name="identify_TADs.RobusTAD." + sample.name + "_" + chr,
+                    samples=[sample]
+                )
                 jobs.append(job)
 
         return jobs
@@ -726,12 +884,14 @@ class HicSeq(common.Illumina):
     def identify_peaks(self):
         """
         Significant intraChromosomal interactions (peaks) are identified using Homer.
-        For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
+        For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html).
         """
 
         jobs = []
 
         res = global_conf.global_get('identify_peaks', 'resolution_pks')
+
+        genome = global_conf.get('identify_peaks', 'genome', required=False) if global_conf.get('identify_peaks', 'genome', required=False) else global_conf.get('DEFAULT', 'assembly_synonyms')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -740,20 +900,33 @@ class HicSeq(common.Illumina):
             fileName = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + ".txt")
             fileName_anno = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + "_Annotated")
 
-            job = homer.hic_peaks(sample.name, sample_output_dir, homer_output_dir, res, self.genome, fileName, fileName_anno, 3)
-            job.samples = [sample]
-
-            jobs.append(job)
-
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(sample_output_dir),
+                        homer.hic_peaks(
+                            homer_output_dir,
+                            res,
+                            genome,
+                            fileName,
+                            fileName_anno
+                        )
+                    ],
+                    name="identify_peaks." + sample.name + "_res" + res,
+                    samples=[sample]
+                )
+            )
         return jobs
 
     def create_hic_file(self):
         """
         A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
-        For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html)
+        For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html).
         """
 
         jobs = []
+
+        genome = global_conf.get('create_hic_file', 'genome', required=False) if global_conf.get('create_hic_file', 'genome', required=False) else global_conf.get('DEFAULT', 'assembly_synonyms')
 
         for sample in self.samples:
             sample_input = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
@@ -761,14 +934,27 @@ class HicSeq(common.Illumina):
             sortedBam = sortedBamPrefix + ".bam"
             hic_output = os.path.join(self.output_dirs['hicfiles_output_directory'], sample.name + ".hic")
 
-            job = concat_jobs([
+            job = concat_jobs(
+                [
                 bash.mkdir(self.output_dirs['hicfiles_output_directory']),
-                samtools.sort(sample_input, sortedBamPrefix, sort_by_name=True),
-                hic.create_input(sortedBam, sample.name),
-                hic.create_hic(sample.name + ".juicebox.input.sorted", hic_output, self.genome)
-            ])
-            job.name = "create_hic_file." + sample.name
-            job.samples = [sample]
+                samtools.sort(
+                    sample_input,
+                    sortedBamPrefix,
+                    sort_by_name=True
+                    ),
+                hic.create_input(
+                    sortedBam,
+                    sample.name
+                    ),
+                hic.create_hic(
+                    sample.name + ".juicebox.input.sorted",
+                    hic_output,
+                    genome
+                    )
+                ],
+                name="create_hic_file." + sample.name,
+                samples=[sample]
+            )
 
             jobs.append(job)
 
@@ -777,7 +963,7 @@ class HicSeq(common.Illumina):
     def multiqc_report(self):
         """
         A quality control report for all samples is generated.
-        For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+        For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/).
         """
         ## set multiQc config file so we can customize one for every pipeline:
 
@@ -785,9 +971,12 @@ class HicSeq(common.Illumina):
 
         yamlFile = os.path.expandvars(global_conf.global_get('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam") for sample in self.samples]
-        job = multiqc.mutliqc_run(yamlFile, input_files)
+        job = multiqc.multiqc_run(
+            yamlFile,
+            input_files
+        )
+        job.name = "multiqc_report"
         job.samples = self.samples
-
         jobs.append(job)
 
         return jobs
@@ -804,11 +993,13 @@ class HicSeq(common.Illumina):
         sorted_output = re.sub("\.Initialrmap", ".sorted.rmap", output)
         input_file = self.genome_digest
 
-        job = concat_jobs([
-            bash.mkdir(self.output_dirs['chicago_input_files']),
-            tools.sh_create_rmap(input_file, output, "create_rmap_file." + self.enzyme),
-            bedops.sort_bed(output, sorted_output)
-        ])
+        job = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs['chicago_input_files']),
+                tools.sh_create_rmap(input_file, output, "create_rmap_file." + self.enzyme),
+                bedops.sort_bed(output, sorted_output)
+            ]
+        )
         job.name = "create_rmap_file." + os.path.basename(input_file)
         job.samples = self.samples
 
@@ -827,11 +1018,13 @@ class HicSeq(common.Illumina):
         output_file = os.path.join(self.output_dirs['chicago_input_files'], output_file_name)
         annotation = global_conf.global_get('create_baitmap_file', "annotation")
 
-        job = concat_jobs([
-            bedops.sort_bed(input_bait, sorted_input_bait),
-            bedtools.intersect_beds(input_rmap, sorted_input_bait, output_file + ".tmp", "-wa -u"),
-            tools.sh_create_baitmap(input_bait, sorted_input_bait, annotation, output_file)
-        ])
+        job = concat_jobs(
+            [
+                bedops.sort_bed(input_bait, sorted_input_bait),
+                bedtools.intersect_beds(input_rmap, sorted_input_bait, output_file + ".tmp", "-wa -u"),
+                tools.sh_create_baitmap(input_bait, sorted_input_bait, annotation, output_file)
+            ]
+        )
         job.name = "create_baitmap_file." + output_file_name
         job.samples = self.samples
 
@@ -875,7 +1068,7 @@ class HicSeq(common.Illumina):
     def runChicago(self):
         """
         Chicago is run on capture data. Chicago will filter capture hic artifacts and identify significant interactions. It will output data as a bed file and will also output SeqMonk and WashU tracks.
-        For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+        For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago](https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html).
         """
 
         jobs = []
@@ -896,7 +1089,7 @@ class HicSeq(common.Illumina):
     def runChicago_featureOverlap(self):
         """
         Runs the feature enrichement of chicago significant interactions.
-        For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+        For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago](https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html).
         """
 
         jobs = []
@@ -1027,43 +1220,77 @@ class HicSeq(common.Illumina):
 
     def protocols(self):
         return { 'hic':
-            [self.samtools_bam_sort,
-            self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.fastq_readName_Edit,
-            self.hicup_align,
-            self.samtools_merge_bams,
-            self.homer_tag_directory,
-            self.interaction_matrices_Chr,
-            self.interaction_matrices_genome,
-            self.identify_compartments,
-            self.identify_TADs_TopDom,
-            self.identify_TADs_RobusTAD,
-            self.identify_peaks,
-            self.create_hic_file,
-            self.reproducibility_scores,
-            self.quality_scores,
-            self.cram_output,
-            self.multiqc_report
+            [
+                self.samtools_bam_sort,
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.fastq_readname_edit,
+                self.hicup_align,
+                self.samtools_merge_bams,
+                self.homer_tag_directory,
+                self.interaction_matrices_Chr,
+                self.interaction_matrices_genome,
+                self.identify_compartments,
+                self.identify_TADs_TopDom,
+                self.identify_TADs_RobusTAD,
+                self.identify_peaks,
+                self.create_hic_file,
+                self.reproducibility_scores,
+                self.quality_scores,
+                self.cram_output,
+                self.multiqc_report
             ], 'capture':
-            [self.samtools_bam_sort,
-            self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.fastq_readName_Edit,
-            self.hicup_align,
-            self.samtools_merge_bams,
-            self.create_rmap_file,
-            self.create_baitmap_file,
-            self.create_design_files,
-            self.create_input_files,
-            self.runChicago,
-            self.runChicago_featureOverlap,
-            self.bait_intersect,
-            self.capture_intersect,
-            self.create_hic_file,
-            self.multiqc_report,
-            self.cram_output
+            [
+                self.samtools_bam_sort,
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.fastq_readname_edit,
+                self.hicup_align,
+                self.samtools_merge_bams,
+                self.create_rmap_file,
+                self.create_baitmap_file,
+                self.create_design_files,
+                self.create_input_files,
+                self.runChicago,
+                self.runChicago_featureOverlap,
+                self.bait_intersect,
+                self.capture_intersect,
+                self.create_hic_file,
+                self.multiqc_report,
+                self.cram_output
             ]
-            }
+        }
+
+def main(parsed_args):
+    """
+    """
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    # Specific pipeline options
+    protocol = parsed_args.protocol
+    enzyme = parsed_args.enzyme
+
+    pipeline = HicSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                      clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                      design_file=design_file, no_json=no_json, container=container,
+                      protocol=protocol, enzyme=enzyme)
+
+    pipeline.submit_jobs()
+

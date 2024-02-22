@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -18,9 +18,9 @@
 ################################################################################
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
-import os
 from ..core.config import global_conf
 from ..core.job import Job
 
@@ -48,17 +48,17 @@ def create_hic(juicebox_input, hic_output, assembly):
         [juicebox_input],
         [hic_output],
         [
-            ["create_hic_file", "module_java"]
+            ["create_hic_file", "module_java"],
+            ["create_hic_file", "module_juicer"]
         ],
         command="""
-java -jar {juicer} \\
+java -jar $juicer_JAR \\
   pre \\
   -q {q} \\
   {input} \\
   {output} \\
   {assembly}""".format(
-            juicer=os.path.expandvars(global_conf.global_get('create_hic_file', 'JuicerPath')),
-            q=global_conf.global_get('create_hic_file', 'q'),
+	q=global_conf.global_get('create_hic_file', 'q'),
             input=juicebox_input,
             output=hic_output,
             assembly=assembly
