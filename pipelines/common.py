@@ -329,7 +329,9 @@ class Illumina(MUGQICPipeline):
                             )
                         ],
                             name=f"gatk_sam_to_fastq.{readset.name}",
-                            samples=[readset.sample])
+                            samples=[readset.sample],
+                            readsets=[readset]
+                        ),
                     )
                 else:
                     _raise(SanitycheckError(f"Error: BAM file not available for readset {readset.name} !"))
@@ -664,7 +666,8 @@ END
                     ],
                     name="skewer_trimming." + readset.name,
                     removable_files=[output_dir],
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    readsets=[readset]
                 )
             )
 
@@ -813,6 +816,7 @@ END
                     name=job_name,
                     removable_files=[output_dir],
                     samples=[readset.sample],
+                    readsets=[readset],
                     output_dependency=[output1, output2, trim_json, trim_html]
                 )
             )
@@ -907,7 +911,8 @@ END
                         )
                     ],
                     name=f"bwa_mem2_samtools_sort.{readset.name}",
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    readsets=[readset]
                 )
             )
 
@@ -1159,6 +1164,7 @@ END
                     ],
                     name=job_name,
                     samples=[sample],
+                    readsets=[*list(sample.readsets)],
                     output_dependency= [output, output_index, metrics_file]
                 )
             )
@@ -1284,7 +1290,8 @@ END
 
             job.name = f"samtools_cram_output.{sample.name}"
             job.samples = [sample]
-            job.removable_files = [input_bam]
+            job.readsets = [*list(sample.readsets)]
+            job.removable_files = input_bam
 
             jobs.append(job)
 

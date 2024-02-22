@@ -290,6 +290,7 @@ class DnaSeqRaw(common.Illumina):
                 _raise(SanitycheckError(f"Error: run type {readset.run_type} is invalid for readset {readset.name} (should be PAIRED_END or SINGLE_END)!"))
 
             sym_link_job.samples = [readset.sample]
+            sym_link_job.readsets = [readset]
             jobs.append(sym_link_job)
 
         return jobs
@@ -493,7 +494,8 @@ END
                         )
                     ],
                     name=f"bwa_mem_sambamba_sort_sam.{readset.name}",
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    readsets=[readset]
                 )
             )
 
@@ -528,7 +530,8 @@ END
                         ),
                     ],
                     name=f"gatk_fixmate.{sample.name}",
-                    samples=[sample]
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
                 )
             )
 
@@ -586,7 +589,8 @@ END
                         )
                     ],
                     name=f"mark_duplicates.{sample.name}",
-                    samples=[sample]
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
                 )
             )
         return jobs
@@ -652,7 +656,8 @@ END
                         )
                     ],
                     name=f"sym_link_final_bam.{sample.name}",
-                    samples=[sample]
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
                 )
             )
 
@@ -997,6 +1002,7 @@ END
                     ],
                     name=job_name,
                     samples=[sample],
+                    readsets=[*list(sample.readsets)],
                     output_dependency=[
                         f"{output_prefix}.alignment_summary_metrics",
                         f"{output_prefix}.insert_size_metrics",
@@ -1019,6 +1025,7 @@ END
                     ],
                     name=f"picard_collect_oxog_metrics.{sample.name}",
                     samples=[sample],
+                    readsets=[*list(sample.readsets)],
                     output_dependency = [
                         f"{output_prefix}.oxog_metrics.txt"
                     ]
@@ -1036,6 +1043,7 @@ END
                     ],
                     name=f"picard_collect_gcbias_metrics.{sample.name}",
                     samples=[sample],
+                    readsets=[*list(sample.readsets)],
                     output_dependency=[
                         f"{output_prefix}.gcbias_metrics.txt"
                     ]
@@ -1121,6 +1129,7 @@ END
                     ],
                     name=job_name,
                     samples=[sample],
+                    readsets=[*list(sample.readsets)],
                     output_dependency=[output_dist, output_summary]
                 )
             )
@@ -1170,6 +1179,7 @@ END
                     ],
                     name=f"dna_samtools_flagstat.{sample.name}",
                     samples=[sample],
+                    readsets=[*list(sample.readsets)],
                     output_dependency=[
                         os.path.join(metrics_directory, f"{sample.name}.flagstat")
                     ]
@@ -1206,6 +1216,7 @@ END
             )
             job.name = "multiqc_all_samples"
             job.samples = self.samples
+            job.readsets = self.readsets
             job.input_files = multiqc_files_paths
             job.input_dependency = [multiqc_files_paths]
             jobs.append(job)
@@ -1407,6 +1418,7 @@ END
                         ],
                         name=job_name,
                         samples=[sample],
+                        readsets=[*list(sample.readsets)],
                         output_dependency=[os.path.join(metrics_directory, f"{sample.name}.onTarget.tsv")]
                     )
                 )
@@ -1427,7 +1439,9 @@ END
         input_prefix = os.path.join(self.output_dirs['variants_directory'], "allSamples")
 
         job = vcftools.missing_indv(f"{input_prefix}.hc.vcf.gz", input_prefix)
-        job.name = f"vcftools_depth.allSamples"
+        job.name = f"vcftools_missing_indv.allSamples"
+        job.samples = self.samples
+        job.readsets = self.readsets
         jobs.append(job)
 
         return jobs
@@ -1445,6 +1459,8 @@ END
     
         job = vcftools.depth(f"{input_prefix}.hc.vcf.gz", input_prefix)
         job.name = f"vcftools_depth.allSamples"
+        job.samples = self.samples
+        job.readsets = self.readsets
         jobs.append(job)
 
         return jobs
@@ -1487,7 +1503,8 @@ END
                     )
                 ],
                 name=f"gatk_crosscheck_fingerprint.sample.AllSamples",
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
             )
         )
 
@@ -1519,7 +1536,8 @@ END
                     ),
                 ],
                 name=f"gatk_cluster_crosscheck_metrics.allSamples",
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
             )
         )
 
@@ -1586,6 +1604,7 @@ END
                     ],
                     name=job_name,
                     samples=[sample],
+                    readsets=[*list(sample.readsets)],
                     output_dependency=[output]
                 )
             )
@@ -1614,7 +1633,8 @@ END
 
         job = gatk4.crosscheck_fingerprint(inputs, output)
         job.name = f"gatk_crosscheck_fingerprint.readset"
-
+        job.samples = self.samples
+        job.readsets = self.readsets
         jobs.append(job)
 
         return jobs
@@ -1671,7 +1691,8 @@ END
                             )
                         ],
                         name=f"gatk_haplotype_caller.{sample.name}",
-                        samples=[sample]
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)],
                     )
                 )
                 
@@ -1696,7 +1717,8 @@ END
                                 )
                             ],
                             name=f"gatk_haplotype_caller.{sample.name}.{str(idx)}",
-                            samples=[sample]
+                            samples=[sample],
+                            readsets=[*list(sample.readsets)]
                         )
                     )
                     
@@ -1754,7 +1776,8 @@ END
                             )
                         ],
                         name=f"merge_and_call_individual_gvcf.call.{sample.name}",
-                        samples=[sample]
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
                     )
                 )
             else:
@@ -1775,6 +1798,7 @@ END
                 )
                 job.name = f"merge_and_call_individual_gvcf.call.{sample.name}"
                 job.samples = [sample]
+                job.readsets = [*list(sample.readsets)]
                 jobs.append(job)
 
         return jobs
@@ -1809,7 +1833,8 @@ END
                             )
                         ],
                         name=f"gatk_combine_gvcf.AllSamples",
-                        samples=self.samples
+                        samples=self.samples,
+                        readsets=self.readsets
                     )
                 )
             else:
@@ -1829,6 +1854,7 @@ END
                             ],
                             name=f"gatk_combine_gvcf.AllSample.{str(idx)}",
                             samples=self.samples,
+                            readsets=self.readsets,
                             removable_files=[
                                 os.path.join(self.output_dirs['variants_directory'], "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                                 os.path.join(self.output_dirs['variants_directory'], "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"
@@ -1848,6 +1874,7 @@ END
                     os.path.join(self.output_dirs['variants_directory'], "allSamples.others.hc.g.vcf.gz.tbi")
                 ]
                 job.samples=self.samples
+                job.readsets = self.readsets
                 jobs.append(job)
         else:
             #Combine samples by batch (pre-defined batches number in ini)
@@ -1910,7 +1937,6 @@ END
                         os.path.join(self.output_dirs['variants_directory'], "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz"),
                         os.path.join(self.output_dirs['variants_directory'], "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz.tbi")
                     ]
-                    job.samples = self.samples
 
                     jobs.append(job)
 
@@ -2002,6 +2028,7 @@ END
         )
         job.name = f"merge_and_call_combined_gvcf.call.AllSample"
         job.samples = self.samples
+        job.readsets = self.readsets
         jobs.append(job)
 
         return jobs
@@ -2057,7 +2084,8 @@ END
                     )
                 ],
                 name=f"variant_recalibrator.tranch.allSamples",
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
             )
         )
 
@@ -2087,7 +2115,8 @@ END
                     )
                 ],
                 name=f"variant_recalibrator.apply.allSamples",
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
             )
         )
         return jobs
@@ -2119,7 +2148,8 @@ END
                     )
                 ],
                 name=job_name,
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
             )
         )
         return jobs
@@ -2149,6 +2179,7 @@ END
         job = tools.filter_long_indel(input_vcf, output_vcf)
         job.name = job_name
         job.samples = self.samples
+        job.readsets = self.readsets
         return [job]
 
     def haplotype_caller_filter_nstretches(self):
@@ -2189,7 +2220,8 @@ END
                     htslib.bgzip_tabix(None, output_vcf),
                 ],
                 name=job_name,
-                samples = self.samples
+                samples = self.samples,
+                readsets = self.readsets
             )
         )
         return jobs
@@ -2282,7 +2314,8 @@ END
                     )
                 ],
                 name=job_name,
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
             )
         )
 
@@ -2334,7 +2367,8 @@ END
                     )
                 ],
                 name=job_name,
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
             )
         )
         
@@ -2377,7 +2411,7 @@ END
         )
         job.name = job_name
         job.samples = self.samples
-        
+        job.readsets = self.readsets
         return [job]
 
     def haplotype_caller_gemini_annotations(self):
@@ -2413,6 +2447,7 @@ END
                 ],
                 name=f"split_tumor_only",
                 samples=self.samples,
+                readsets=self.readsets,
                 output_dependency=output_files
             )
         )
@@ -2458,7 +2493,8 @@ END
                         )
                     ],
                     name=f"filter_tumor_only.{sample.name}",
-                    samples=[sample]
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
                 )
             )
         
@@ -2506,7 +2542,8 @@ END
                             )
                         ],
                         name=job_name,
-                        samples=samples
+                        samples=samples,
+                        readsets=[*list(sample.readsets)],
                     )
                 )
                 
@@ -2517,8 +2554,6 @@ END
                     panel_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
                     ini_section = 'report_cpsr_fastpass'
                     job_name = "report_cpsr_fastpass." + tumor_pair.name
-                    sample_name = tumor_pair.name
-                    samples = [tumor_pair.normal, tumor_pair.tumor]
                     
                     input = os.path.join(
                         panel_directory,
@@ -2533,8 +2568,6 @@ END
                     ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
                     ini_section = 'report_cpsr'
                     job_name = f"report_cpsr.{tumor_pair.name}"
-                    sample_name = tumor_pair.name
-                    samples = [tumor_pair.normal, tumor_pair.tumor]
 
                     input = os.path.join(
                         ensemble_directory,
@@ -2556,12 +2589,13 @@ END
                             cpsr.report(
                                 input,
                                 cpsr_directory,
-                                sample_name,
+                                tumor_pair.name,
                                 ini_section=ini_section
                             )
                         ],
                         name=job_name,
-                        samples=samples
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
             
@@ -2638,6 +2672,7 @@ END
                         ],
                         name=f"report_pcgr_tumor_only.{sample.name}",
                         samples=[sample],
+                        readsets=[*list(sample.readsets)],
                         input_dependency=[input, input_cpsr, output_cna],
                         output_dependency=[output]
                     )
@@ -2849,7 +2884,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     )
                 ],
                 name=job_name + "_report",
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
             )
         ]
 
@@ -3695,8 +3731,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 )
                 
                 sample_name = tumor_pair.name
-                samples = [tumor_pair.normal, tumor_pair.tumor]
-                readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 
                 if 'fastpass' in self.get_protocol():
                     input_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
@@ -3768,8 +3802,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         )
                     ],
                     name=f"cnvkit_batch.vcf_flt.{sample_name}",
-                    samples=samples,
-                    readsets=readsets
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
     
@@ -3814,8 +3848,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         )
                     ],
                     name=f"cnvkit_batch.{sample_name}",
-                    samples=samples,
-                    readsets=readsets
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
             
@@ -3847,8 +3881,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         )
                     ],
                     name=f"cnvkit_batch.correction.{sample_name}",
-                    samples=samples,
-                    readsets=readsets
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
             
@@ -3878,8 +3912,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         ),
                     ],
                     name=f"cnvkit_batch.call.{sample_name}",
-                    samples=samples,
-                    readsets=readsets
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
             
@@ -3907,8 +3941,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             )
                     ],
                     name=f"cnvkit_batch.cna.{sample_name}",
-                    samples=samples,
-                    readsets=readsets,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[input_cna, output_cna],
                     output_dependency=[header, output_cna_body, output_cna]
                 )
@@ -3941,8 +3975,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         )
                     ],
                     name=f"cnvkit_batch.metrics.{sample_name}",
-                    samples=samples,
-                    readsets=readsets
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
             
@@ -4197,7 +4231,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ),
                             ],
                             name=f"gatk_scatterIntervalsByNs.{sample.name}",
-                            samples=[sample]
+                            samples=[sample],
+                            readsets=[*list(sample.readsets)]
                         )
                     )
                 elif scatter_jobs == 1:
@@ -4235,7 +4270,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ),
                             ],
                             name=f"gatk_scatterIntervalsByNs.{sample.name}",
-                            samples=[sample]
+                            samples=[sample],
+                            readsets=[*list(sample.readsets)]
                         )
                     )
                 else:
@@ -4271,7 +4307,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 )
                             ],
                             name=f"gatk_scatterIntervalsByNs.{sample.name}",
-                            samples=[sample]
+                            samples=[sample],
+                            readsets=[*list(sample.readsets)]
                         )
                     )
                     
@@ -4331,7 +4368,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ),
                             ],
                             name=f"gatk_scatterIntervalsByNs.{tumor_pair.name}",
-                            samples=[tumor_pair.tumor, tumor_pair.normal]
+                            samples=[tumor_pair.tumor, tumor_pair.normal],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
                 elif scatter_jobs == 1:
@@ -4369,7 +4407,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ),
                             ],
                             name=f"gatk_scatterIntervalsByNs.{tumor_pair.name}",
-                            samples=[tumor_pair.tumor, tumor_pair.normal]
+                            samples=[tumor_pair.tumor, tumor_pair.normal],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
                 else:
@@ -4413,7 +4452,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 )
                             ],
                             name=f"gatk_scatterIntervalsByNs.{tumor_pair.name}",
-                            samples=[tumor_pair.tumor, tumor_pair.normal]
+                            samples=[tumor_pair.tumor, tumor_pair.normal],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
         
@@ -4705,6 +4745,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     ],
                     name="preprocess_vcf.germline.allSamples",
                     samples=self.samples,
+                    readsets=self.readsets,
                     input_dependency=[f"{prefix}.vt.vcf.gz"],
                     output_dependency=[outputFix, f"{prefix}.vt.prep.vcf.gz"]
                 )
@@ -5606,7 +5647,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     )
                 ],
                 name= "germline_varscan2.bed",
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
                 )
             )
 
@@ -6691,6 +6733,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name=f"vardict_paired.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                         input_dependency=[input_normal, input_tumor, coverage_bed]
                     )
                 )
@@ -6713,7 +6756,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ),
                         ],
                         name=f"vardict.genome.beds.{tumor_pair.name}",
-                        samples=[tumor_pair.normal, tumor_pair.tumor]
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
                 output = os.path.join(vardict_directory, f"{tumor_pair.name}.vardict.vcf.gz")
@@ -6753,6 +6797,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name=f"vardict_paired.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                         input_dependency=[input_normal, input_tumor, bed_file]
                     )
                 )
