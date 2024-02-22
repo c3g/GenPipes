@@ -158,7 +158,7 @@ wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${
 class Nanopore(GenPipesPipeline):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(Nanopore, self).__init__(*args, **kwargs)
 
     @property
     def readsets(self):

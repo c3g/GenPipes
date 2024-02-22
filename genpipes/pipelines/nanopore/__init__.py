@@ -39,7 +39,7 @@ from ...bfx import samtools
 
 log = logging.getLogger(__name__)
 
-class Nanopore(common.GenPipesPipeline):
+class Nanopore(common.Nanopore):
     """
     Nanopore Pipeline
     ==============
@@ -72,8 +72,10 @@ class Nanopore(common.GenPipesPipeline):
 
     def __init__(self, *args, protocol=None, **kwargs):
         if protocol is None:
-            self._protocol = 'default'    
-        super(Nanopore, self).__init__(protocol)
+            self._protocol = 'default'
+        else:
+            self._protocol = protocol
+        super(Nanopore, self).__init__(*args, **kwargs)
 
     @property
     def output_dirs(self):
@@ -317,9 +319,38 @@ class Nanopore(common.GenPipesPipeline):
 
     def protocols(self):
         return { 'default': [
-            self.blastqc,
-            self.minimap2_align,
-            self.pycoqc,
-            self.picard_merge_sam_files,
-            self.svim
-        ] }
+                self.blastqc,
+                self.minimap2_align,
+                self.pycoqc,
+                self.picard_merge_sam_files,
+                self.svim
+            ]
+        }
+
+def main(parsed_args):
+    """
+    The function that will call this pipeline!
+    """
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    pipeline = Nanopore(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                        clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                        design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()
+
