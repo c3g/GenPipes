@@ -296,31 +296,6 @@ pandoc --to=markdown \\
                     ], name="fgbio_addumi." + readset.name, samples=[readset.sample])
                 )
 
-<<<<<<< HEAD
-        # report_file = os.path.join("report", "MethylSeq.bismark_align.md")
-        # jobs.append(
-        # Job(
-        # [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
-        # [report_file],
-        # [['bismark_align', 'module_pandoc']],
-        # command="""\
-        # mkdir -p report && \\
-        # pandoc --to=markdown \\
-        # --template {report_template_dir}/{basename_report_file} \\
-        # --variable scientific_name="{scientific_name}" \\
-        # --variable assembly="{assembly}" \\
-        # {report_template_dir}/{basename_report_file} \\
-        # > {report_file}""".format(
-        # scientific_name=global_conf.global_get('bismark_align', 'scientific_name'),
-        # assembly=global_conf.global_get('bismark_align', 'assembly'),
-        # report_template_dir=self.report_template_dir,
-        # basename_report_file=os.path.basename(report_file),
-        # report_file=report_file
-        # ),
-        # report_files=[report_file],
-        # name="bismark_align_report")
-        # )
-=======
         #report_file = os.path.join(self.output_dirs["report_directory"], "MethylSeq.bismark_align.md")
         #jobs.append(
             #Job(
@@ -335,8 +310,8 @@ pandoc --to=markdown \\
   #--variable assembly="{assembly}" \\
   #{report_template_dir}/{basename_report_file} \\
   #> {report_file}""".format(
-                    #scientific_name=global_conf.get('bismark_align', 'scientific_name'),
-                    #assembly=global_conf.get('bismark_align', 'assembly'),
+                    #scientific_name=global_conf.global_get('bismark_align', 'scientific_name'),
+                    #assembly=global_conf.global_get('bismark_align', 'assembly'),
                     #report_template_dir=self.report_template_dir,
                     #basename_report_file=os.path.basename(report_file),
                     #report_file=report_file
@@ -344,7 +319,6 @@ pandoc --to=markdown \\
                 #report_files=[report_file],
                 #name="bismark_align_report")
         #)
->>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
 
         return jobs
 
@@ -658,8 +632,8 @@ cp \\
 
         methylseq_protocol = self.protocol
 
-        methylation_protocol = global_conf.get('dragen_align', 'methylation_protocol', param_type='string', required=False)
-        mapping_implementation = global_conf.get('dragen_align', 'mapping_implementation', param_type='string', required=False)
+        methylation_protocol = global_conf.global_get('dragen_align', 'methylation_protocol', param_type='string', required=False)
+        mapping_implementation = global_conf.global_get('dragen_align', 'mapping_implementation', param_type='string', required=False)
         link_directory = os.path.join(self.output_dirs["metrics_directory"],"multiqc_inputs")
 
         for sample in self.samples:
@@ -1232,13 +1206,13 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         Align reads with [Dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) both hybrid and dragen protocols use this step to align reads.
         The Dragen parameters can be changed using other_options of the ini configuration.
         """
-       # duplicate_marking = global_conf.get('dragen_align', 'duplicate_marking', param_type='string').lower()
+       # duplicate_marking = global_conf.global_get('dragen_align', 'duplicate_marking', param_type='string').lower()
 
         jobs = []
         methylseq_protocol = self.protocol
 
-        methylation_protocol = global_conf.get('dragen_align', 'methylation_protocol', param_type='string')
-        mapping_implementation = global_conf.get('dragen_align', 'mapping_implementation', param_type='string')
+        methylation_protocol = global_conf.global_get('dragen_align', 'methylation_protocol', param_type='string')
+        mapping_implementation = global_conf.global_get('dragen_align', 'mapping_implementation', param_type='string')
         # if the protocol is hybrid and methylation_protocol is "directional-complement" and
         # mapping_implementation is "sigle-pass" pipeline will not be generating genpipes file. Dragen protocol
         # should be used in this case.
@@ -1256,8 +1230,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 # All the input files should copy to dragen work folder because IO operations with default locations
                 # are really slow or have permission issues. After processing files all the files should move back to
                 # the default GenPipes folder and remove files from dragen work folder
-                dragen_inputfolder = os.path.join(global_conf.get('dragen_align', 'work_folder'), "reads", readset.name)
-                dragen_workfolder = os.path.join(global_conf.get('dragen_align', 'work_folder'), "alignment", readset.name)
+                dragen_inputfolder = os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "reads", readset.name)
+                dragen_workfolder = os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "alignment", readset.name)
                 dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
                 # dragen output file name
                 dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
@@ -1321,7 +1295,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                     #location should be defined
                     cp_dragen_fastq_job,
                     bash.mkdir(dragen_workfolder),
-                    bash.mkdir(os.path.join(global_conf.get('dragen_align', 'work_folder'), "job_output", "dragen_align")),
+                    bash.mkdir(os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "job_output", "dragen_align")),
                     bash.mkdir(os.path.abspath(alignment_directory)),
                     dragen.align_methylation(
                         dragen_tmp_fastq1,
@@ -1387,14 +1361,14 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         """
         Call methylation with Dragen using the 2nd run of Dragen alignment.
         """
-       # duplicate_marking = global_conf.get('dragen_align', 'duplicate_marking', param_type='string').lower()
+       # duplicate_marking = global_conf.global_get('dragen_align', 'duplicate_marking', param_type='string').lower()
 
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             methylation_call_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
-            dragen_inputfolder = os.path.join(global_conf.get('dragen_align', 'work_folder'), "reads", sample.name)
-            dragen_workfolder = os.path.join(global_conf.get('dragen_align', 'work_folder'), "dragen_methylation_call", sample.name)
+            dragen_inputfolder = os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "reads", sample.name)
+            dragen_workfolder = os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "dragen_methylation_call", sample.name)
             dragen_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             output_report = os.path.join(methylation_call_directory, sample.name + ".CX_report.txt")
 
@@ -1412,7 +1386,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
             dragen_methylationn_call = concat_jobs([
                 cp_dragen_bam_job,
                 bash.mkdir(dragen_workfolder),
-                bash.mkdir(os.path.join(global_conf.get('dragen_align', 'work_folder'), "job_output", "dragen_methylation_call")),
+                bash.mkdir(os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "job_output", "dragen_methylation_call")),
                 bash.mkdir(os.path.abspath(methylation_call_directory)),
                 dragen.call_methylation(
                     dragen_tmp_bam,
@@ -1434,7 +1408,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         """
         jobs = []
 
-        duplicate_marking = global_conf.get('dragen_align', 'duplicate_marking', param_type='boolean')
+        duplicate_marking = global_conf.global_get('dragen_align', 'duplicate_marking', param_type='boolean')
 
         if duplicate_marking == True:
 

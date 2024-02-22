@@ -695,10 +695,6 @@ IHEC_chipseq_metrics_max.sh \\
             chip_bam=chip_bam,
             chip_type=chip_type,
             chip_name=chip_name,
-<<<<<<< HEAD
-            threads=global_conf.global_get('IHEC_chipseq_metrics', 'thread', param_type='int')
-=======
->>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
             chip_bed=chip_bed,
             output_dir=output_dir,
             assembly=assembly

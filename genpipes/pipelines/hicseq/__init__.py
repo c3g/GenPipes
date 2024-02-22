@@ -299,15 +299,10 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-<<<<<<< HEAD
         makeDirTag_hic_other_options=global_conf.global_get('homer_tag_directory', 'other_options', required=False)
         PEflag = eval(global_conf.global_get('homer_tag_directory', 'illuminaPE'))
-=======
-        makeDirTag_hic_other_options=global_conf.global_get('homer_tag_directory', 'other_options', required=False)
-        PEflag = eval(global_conf.get('homer_tag_directory', 'illuminaPE'))
-        genome = global_conf.get('homer_tag_directory', 'genome', required=False) if global_conf.get('homer_tag_directory', 'genome', required=False) else global_conf.get('DEFAULT', 'assembly_synonyms')
-        chrlist = global_conf.get('homer_tag_directory', 'chrlist', required=True)
->>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
+        genome = global_conf.global_get('homer_tag_directory', 'genome', required=False) if global_conf.global_get('homer_tag_directory', 'genome', required=False) else global_conf.global_get('DEFAULT', 'assembly_synonyms')
+        chrlist = global_conf.global_get('homer_tag_directory', 'chrlist', required=True)
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -750,12 +745,8 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-<<<<<<< HEAD
         res = global_conf.global_get('identify_compartments', 'resolution_cmpt')
-=======
-        res = global_conf.get('identify_compartments', 'resolution_cmpt')
-        genome = global_conf.get('identify_compartments', 'genome', required=False) if global_conf.get('identify_compartments', 'genome', required=False) else global_conf.get('DEFAULT', 'assembly_synonyms')
->>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
+        genome = global_conf.global_get('identify_compartments', 'genome', required=False) if global_conf.global_get('identify_compartments', 'genome', required=False) else global_conf.global_get('DEFAULT', 'assembly_synonyms')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -843,15 +834,10 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-<<<<<<< HEAD
         chrs = global_conf.global_get('identify_TADs', 'chromosomes')
         res = global_conf.global_get('identify_TADs', 'resolution_TADs').split(",")[0]
-=======
-        chrs = global_conf.get('identify_TADs', 'chromosomes')
-        res = global_conf.get('identify_TADs', 'resolution_TADs').split(",")[0]
-        minwin = global_conf.get('identify_TADs', 'minwin', required=False) if global_conf.get('identify_TADs', 'minwin', required=False) else "250"
-        maxwin = global_conf.get('identify_TADs', 'maxwin', required=False) if global_conf.get('identify_TADs', 'maxwin', required=False) else "500"
->>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
+        minwin = global_conf.global_get('identify_TADs', 'minwin', required=False) if global_conf.global_get('identify_TADs', 'minwin', required=False) else "250"
+        maxwin = global_conf.global_get('identify_TADs', 'maxwin', required=False) if global_conf.global_get('identify_TADs', 'maxwin', required=False) else "500"
 
         if chrs == "All":
             genome_dict = os.path.expandvars(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'))
@@ -891,7 +877,7 @@ class HicSeq(common.Illumina):
 
         res = global_conf.global_get('identify_peaks', 'resolution_pks')
 
-        genome = global_conf.get('identify_peaks', 'genome', required=False) if global_conf.get('identify_peaks', 'genome', required=False) else global_conf.get('DEFAULT', 'assembly_synonyms')
+        genome = global_conf.global_get('identify_peaks', 'genome', required=False) if global_conf.global_get('identify_peaks', 'genome', required=False) else global_conf.global_get('DEFAULT', 'assembly_synonyms')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -926,7 +912,7 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        genome = global_conf.get('create_hic_file', 'genome', required=False) if global_conf.get('create_hic_file', 'genome', required=False) else global_conf.get('DEFAULT', 'assembly_synonyms')
+        genome = global_conf.global_get('create_hic_file', 'genome', required=False) if global_conf.global_get('create_hic_file', 'genome', required=False) else global_conf.global_get('DEFAULT', 'assembly_synonyms')
 
         for sample in self.samples:
             sample_input = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
