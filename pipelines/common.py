@@ -781,7 +781,7 @@ END
                             job_name=job_name,
                             metrics="pre_mean_length_r2=$pre_mean_length_r2"
                         ),
-                        fastp.parse_post_length_r1_metrics(trim_json),
+                        fastp.parse_post_length_r2_metrics(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
                             pipeline=self,
@@ -1129,10 +1129,9 @@ END
             job_project_tracking_metrics = []
             if self.project_tracking_json:
                 for readset in self.readsets:
-                    job_name = f"gatk_mark_duplicates.{readset.sample.name}.{readset.name}"
                     job_project_tracking_metrics = concat_jobs(
                         [
-                            gatk4.parse_duplicate_rate_metrics_pt(metrics_file, str(readset.library)),
+                            gatk4.parse_duplicate_rate_metrics_pt(metrics_file, readset.library),
                             job2json_project_tracking.run(
                                 input_file=metrics_file,
                                 pipeline=self,
