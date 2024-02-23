@@ -2120,7 +2120,7 @@ def parse_bases_over_q30_percent_metrics_pt(input_file):
         command=f"""\
 export bases_over_q30_percent=`awk 'BEGIN {{FS="\t"}}; {{if ($1 ~ /^[0-9]+/) {{if ($1<30) {{below+=$2}} else if ($1>=30) {{above+=$2}}}}}} END {{printf "%.0f", 100*above/(above+below)}}' {input_file}`"""
         )
-def parse_duplicate_rate_metrics_pt(input_file, library):
+def parse_duplicate_rate_metrics_pt(input_file):
     """
     """
     return Job(
@@ -2128,7 +2128,7 @@ def parse_duplicate_rate_metrics_pt(input_file, library):
         [],
         [],
         command=f"""\
-export duplication_percent_{library}=`grep -E "^{library}" {input_file} | cut -f9 | grep -vE "^$"`"""
+export duplication_percent=`grep -vE "^$" {input_file} | awk '/^## METRICS CLASS/{{flag=1; next}} /## HISTOGRAM/{{flag=0}} flag && NF>1 {{sum+=$9; count++}} END {{if(count>0) print sum/(count-1)}}'`"""
         )
 def parse_mean_insert_metrics(input_file):
     """

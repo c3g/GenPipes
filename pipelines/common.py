@@ -1128,20 +1128,19 @@ END
             job_name = f"gatk_mark_duplicates.{sample.name}"
             job_project_tracking_metrics = []
             if self.project_tracking_json:
-                for readset in self.readsets:
-                    job_project_tracking_metrics = concat_jobs(
+                job_project_tracking_metrics = concat_jobs(
                         [
-                            gatk4.parse_duplicate_rate_metrics_pt(metrics_file, readset.library),
+                            gatk4.parse_duplicate_rate_metrics_pt(metrics_file),
                             job2json_project_tracking.run(
                                 input_file=metrics_file,
                                 pipeline=self,
-                                samples=readset.sample.name,
-                                readsets=readset.name,
+                                samples=sample.name,
+                                readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
-                                metrics="duplication_percent=$duplication_percent"
+                                metrics=f"duplication_percent=$duplication_percent"
                             ),
-                        ])
-
+                        ]
+                )
             jobs.append(
                 concat_jobs(
                     [
