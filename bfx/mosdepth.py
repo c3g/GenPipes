@@ -101,5 +101,5 @@ def parse_dedup_coverage_metrics_pt(input_file):
         [],
         [],
         command=f"""\
-export dedup_coverage=`awk '{{if ($0 ~ /total/) {{match($4,/[0-9]+.[0-9]+/,value); printf "%.2f", value[0]}}}}' {input_file}`"""
+export dedup_coverage=`awk '$1=="total" {{print $4}}' {input_file}`"""
         )
