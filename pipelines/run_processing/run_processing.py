@@ -737,6 +737,7 @@ class RunProcessing(common.MUGQICPipeline):
                                             },
                                     "derived_sample_obj_id": readset.library,
                                     "project_obj_id": readset.project_id,
+                                    "project_name": readset.project_name,
                                     "external_project_id": readset.external_project_id if is_json(self.readset_file) else None
                                 }
                             ) for readset in self.readsets[lane]

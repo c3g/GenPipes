@@ -336,6 +336,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._project
     
     @property
+    def project_name(self):
+        return self._project_name
+    
+    @property
     def external_project_id(self):
         if not hasattr(self, "_external_project_id"):
             return None
@@ -522,6 +526,7 @@ def parse_freezeman_readset_file(
         readset._recipe = None
         readset._operator = None
         readset._project = rdst['project_name']
+        readset._project_name = rdst['project_name']
         readset._project_id = str(rdst['project_obj_id'])
         readset._external_project_name = rdst['external_project_name']
         readset._external_project_id = rdst['external_project_id']
