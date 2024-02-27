@@ -5610,6 +5610,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             bed_file = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
         
         if bed_file or scatter_jobs == 1:
+            ini_section='germline_varscan2'
             jobs.append(
                 concat_jobs(
                 [
@@ -5619,8 +5620,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             samtools.mpileup(
                                 bam_list,
                                 None,
+                                region=config.param(ini_section, 'regions'),
                                 regionFile=bed_file,
-                                ini_section='germline_varscan2'
+                                ini_section=ini_section
                             ),
                             varscan.mpileupcns(
                                 None,
