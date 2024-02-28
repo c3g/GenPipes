@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes.
 #
@@ -21,8 +21,10 @@
 import glob
 import logging
 import os
+import argparse
 
 # GenPipes Modules
+from ...bfx import bash_cmd as bash
 from ...bfx import blast
 from ...bfx import differential_expression
 from ...bfx import exonerate
@@ -105,8 +107,9 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
     software suit from fastq files.
     """
 
-    def __init__(self, *args, protocol=None, **kwargs):
+    def __init__(self, *args, protocol=None, batch=None, **kwargs):
         self._protocol = protocol
+        self.batch_file = batch
         # Add pipeline specific arguments
         super(RnaSeqDeNovoAssembly, self).__init__(*args, **kwargs)
 
@@ -115,7 +118,29 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
         super().argparser(argparser)
         cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
                                     choices=["trinity", "seq2fun"], default="trinity")
-        return cls._argparser
+        cls._argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction",
+                                    type=argparse.FileType('r'))
+
+    @property
+    def output_dirs(self):
+        dirs = {
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'insilico_read_normalization_directory' : os.path.relpath(os.path.join(self.output_dir, 'insilico_read_normalization'), self.output_dir),
+            'trinity_out_directory': os.path.relpath(os.path.join(self.output_dir, 'trinity_out_dir'), self.output_dir),
+            'trinotate_directory': os.path.relpath(os.path.join(self.output_dir, 'trinotate'), self.output_dir),
+            'blast_directory': os.path.relpath(os.path.join(self.output_dir, 'blast'), self.output_dir),
+            'align_and_estimate_abundance_directory': os.path.relpath(os.path.join(self.output_dir, 'align_and_estimate_abundance'), self.output_dir),
+            'differential_expression_directory': os.path.relpath(os.path.join(self.output_dir, 'differential_expression'), self.output_dir),
+            'exploratory_directory': os.path.relpath(os.path.join(self.output_dir, 'exploratory'), self.output_dir),
+            'filtered_assembly_directory': os.path.relpath(os.path.join(self.output_dir, 'filtered_assembly'), self.output_dir),
+            'merge_fastq_directory': os.path.relpath(os.path.join(self.output_dir, 'merge_fastq'), self.output_dir),
+            'seq2fun_directory': os.path.relpath(os.path.join(self.output_dir, 'seq2fun'), self.output_dir),
+            'seq2fun_pathway_directory': os.path.relpath(os.path.join(self.output_dir, 'seq2fun_pathway'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
+        }
+        return dirs
 
     def insilico_read_normalization_readsets(self):
         """
@@ -124,8 +149,8 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
 
         jobs = []
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            normalization_directory = os.path.join("insilico_read_normalization", readset.name)
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+            normalization_directory = os.path.join(self.output_dirs["insilico_read_normalization_directory"], readset.name)
 
             if readset.run_type == "PAIRED_END":
                 left_or_single_reads = [trim_file_prefix + "pair1.fastq.gz"]
@@ -158,7 +183,7 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
         """
 
         jobs = []
-        normalization_directory = "insilico_read_normalization"
+        normalization_directory = self.output_dirs["insilico_read_normalization_directory"]
         normalization_directory_all = os.path.join(normalization_directory, "all")
         left_or_single_reads = []
         right_reads = []
@@ -186,29 +211,30 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
         job.samples = self.samples
         jobs.append(job)
 
-        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.insilico_read_normalization_all.md")
-        normalization_stats_file = os.path.join("insilico_read_normalization", "all", "normalization.stats.tsv")
+        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.insilico_read_normalization_all.md")
+        normalization_stats_file = os.path.join(self.output_dirs["insilico_read_normalization_directory"], "all", "normalization.stats.tsv")
         jobs.append(
             Job(
-                [normalization_stats_file, os.path.join("report", "trimReadsetTable.tsv")],
+                [normalization_stats_file, os.path.join(self.output_dirs["report_directory"], "trimReadsetTable.tsv")],
                 [report_file],
                 [['insilico_read_normalization_all', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
+mkdir -p {report_dir} && \\
 sum_norm=`cut -f2 {normalization_stats_file}` && \\
-normalization_table=`sed '1d' report/trimReadsetTable.tsv | LC_NUMERIC=en_CA awk -v sum_norm=$sum_norm '{{sum_trim+=$4}}END{{print sprintf("%\\47d", sum_trim)"|"sprintf("%\\47d", sum_norm)"|"sprintf("%.2f", sum_norm / sum_trim * 100)}}'` && \\
+normalization_table=`sed '1d' {report_dir}/trimReadsetTable.tsv | LC_NUMERIC=en_CA awk -v sum_norm=$sum_norm '{{sum_trim+=$4}}END{{print sprintf("%\\47d", sum_trim)"|"sprintf("%\\47d", sum_norm)"|"sprintf("%.2f", sum_norm / sum_trim * 100)}}'` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable read_type="{read_type}" \\
   --variable normalization_table="$normalization_table" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    read_type="Paired" if self.run_type == 'PAIRED_END' else "Single",
-    normalization_stats_file=normalization_stats_file,
-    report_file=report_file
-    ),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    read_type="Paired" if self.run_type == 'PAIRED_END' else "Single",
+                    normalization_stats_file=normalization_stats_file,
+                    report_dir=self.output_dirs['report_directory'],
+                    report_file=report_file
+                ),
                 report_files=[report_file],
                 name="insilico_read_normalization_all_report",
                 samples=self.samples)
@@ -223,8 +249,8 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        normalization_directory = os.path.join("insilico_read_normalization", "all")
-        output_directory = "trinity_out_dir"
+        normalization_directory = os.path.join(self.output_dirs["insilico_read_normalization_directory"], "all")
+        output_directory = self.output_dirs["trinity_out_directory"]
         trinity_fasta = os.path.join(output_directory, "Trinity.fasta")
         trinity_stats_prefix = os.path.join(output_directory, "Trinity.stats")
 
@@ -240,46 +266,52 @@ pandoc --to=markdown \\
 
         # Trinity job
         jobs.append(
-            concat_jobs([
-                trinity.trinity(input_files, trinity_fasta, output_directory, reads_option),
-                Job(
-                    [trinity_fasta],
-                    [trinity_fasta + ".zip"],
-                    command="zip -j " + trinity_fasta + ".zip " + trinity_fasta
-                ),
-                Job(
-                    [trinity_fasta],
-                    [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
-                    [['trinity', 'module_R'], ['trinity', 'module_mugqic_R_packages']],
-                    command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'"
-                )
-            ], name="trinity", samples=self.samples)
+            concat_jobs(
+                [
+                    trinity.trinity(input_files, trinity_fasta, output_directory, reads_option),
+                    Job(
+                        [trinity_fasta],
+                        [trinity_fasta + ".zip"],
+                        command="zip -j " + trinity_fasta + ".zip " + trinity_fasta
+                    ),
+                    Job(
+                        [trinity_fasta],
+                        [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                        [['trinity', 'module_R'], ['trinity', 'module_mugqic_R_packages']],
+                        command="Rscript -e 'library(gqSeqUtils); dnaFastaStats(filename = \"" + trinity_fasta + "\", type = \"trinity\", output.prefix = \"" + trinity_stats_prefix + "\")'"
+                    )
+                ],
+                name="trinity",
+                samples=self.samples
+            )
         )
 
-        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.trinity.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.trinity.md")
         jobs.append(
             Job(
                 [trinity_fasta + ".zip", trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
                 [report_file],
                 [['trinity', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
-cp {trinity_fasta}.zip {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
+mkdir -p {report_dir} && \\
+cp {trinity_fasta}.zip {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
 assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable assembly_table="$assembly_table" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-    trinity_fasta=trinity_fasta,
-    trinity_stats_prefix=trinity_stats_prefix,
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    report_file=report_file
-    ),
+                    trinity_fasta=trinity_fasta,
+                    trinity_stats_prefix=trinity_stats_prefix,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs['report_directory'],
+                    report_file=report_file
+                ),
                 report_files=[report_file],
                 name="trinity_report",
-                samples=self.samples)
+                samples=self.samples
+            )
         )
 
         return jobs
@@ -289,18 +321,37 @@ pandoc --to=markdown \\
         Split the Trinity assembly FASTA into chunks for further parallel BLAST annotations.
         """
 
-        trinity_directory = "trinity_out_dir"
+        trinity_directory = self.output_dirs["trinity_out_directory"]
         trinity_fasta = os.path.join(trinity_directory, "Trinity.fasta")
         trinity_fasta_for_blast = os.path.join(trinity_directory, "Trinity.fa")
         trinity_chunks_directory = os.path.join(trinity_directory, "Trinity.fasta_chunks")
         num_fasta_chunks = global_conf.global_get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
 
-        return [concat_jobs([
-            Job(command="rm -rf " + trinity_chunks_directory),
-            Job(command="mkdir -p " + trinity_chunks_directory),
-            trinity.prepare_for_blast(trinity_fasta, trinity_fasta_for_blast),
-            exonerate.fastasplit(trinity_fasta_for_blast, trinity_chunks_directory, "Trinity.fa_chunk", num_fasta_chunks)
-        ], name="exonerate_fastasplit.Trinity.fasta", samples=self.samples)]
+        return [
+            concat_jobs(
+                [
+                    bash.rm(
+                        trinity_chunks_directory,
+                        force=True,
+                        recursive=True
+                    ),
+                    bash.mkdir(trinity_chunks_directory),
+                    trinity.prepare_for_blast(
+                        trinity_fasta,
+                        trinity_fasta_for_blast
+                    ),
+                    exonerate.fastasplit(
+                        trinity_fasta_for_blast,
+                        trinity_chunks_directory,
+                        "Trinity.fa_chunk",
+                        num_fasta_chunks
+                    )
+                ],
+                input_dependency=[trinity_fasta],
+                name="exonerate_fastasplit.Trinity.fasta",
+                samples=self.samples
+            )
+        ]
 
     def blastx_trinity_uniprot(self):
         """
@@ -308,12 +359,12 @@ pandoc --to=markdown \\
         """
 
         jobs = []
-        trinity_chunks_directory = os.path.join("trinity_out_dir", "Trinity.fasta_chunks")
-        blast_directory = "blast"
+        trinity_chunks_directory = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta_chunks")
+        blast_directory = self.output_dirs["blast_directory"]
         num_fasta_chunks = global_conf.global_get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         program = "blastx"
         swissprot_db = global_conf.global_get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
-        uniref_db = global_conf.global_get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
+        # uniref_db = global_conf.global_get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
         cpu = global_conf.global_get('blastx_trinity_uniprot', 'cpu')
 
         # (Removed blast on uniref_db since it's too long)
@@ -326,13 +377,22 @@ pandoc --to=markdown \\
                 query_chunk = os.path.join(blast_directory, "query_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
                 blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
                 jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + blast_directory, removable_files=[blast_directory]),
-                        Job(command="ln -s -f " + os.path.relpath(trinity_chunk, os.path.dirname(query_chunk)) + " " + query_chunk, removable_files=[blast_directory]),
-                        blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db, cpu),
-                    ], name="blastx_trinity_uniprot." + os.path.basename(db) + ".chunk_{:07d}".format(i), samples=self.samples)
+                    concat_jobs(
+                        [
+                            bash.mkdir(blast_directory),
+                            bash.ln(
+                                os.path.relpath(trinity_chunk, os.path.dirname(query_chunk)),
+                                query_chunk,
+                                input=trinity_chunk
+                            ),
+                            blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db, cpu),
+                        ],
+                        input_dependency=[trinity_chunk],
+                        name="blastx_trinity_uniprot." + os.path.basename(db) + ".chunk_{:07d}".format(i),
+                        samples=self.samples,
+                        removable_files=[blast_directory]
+                    )
                 )
-
         return jobs
 
     def blastx_trinity_uniprot_merge(self):
@@ -341,48 +401,57 @@ pandoc --to=markdown \\
         """
 
         jobs = []
-        blast_directory = "blast"
+        blast_directory = self.output_dirs["blast_directory"]
         num_fasta_chunks = global_conf.global_get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         program = "blastx"
         blast_prefix = os.path.join(blast_directory, program + "_Trinity_")
         swissprot_db = global_conf.global_get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
-        uniref_db = global_conf.global_get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
+        # uniref_db = global_conf.global_get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
             blast_chunks = [os.path.join(blast_prefix + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
             blast_result = os.path.join(blast_prefix + os.path.basename(db) + ".tsv")
             jobs.append(
-                concat_jobs([
-                    Job(
-                        blast_chunks,
-                        [blast_result],
-                        command="cat \\\n  " + " \\\n  ".join(blast_chunks) + " \\\n  > " + blast_result
-                    ),
-                    Job([blast_result], [blast_result + ".zip"], command="zip -j {blast_result}.zip {blast_result}".format(blast_result=blast_result))
-                ], name="blastx_trinity_" + os.path.basename(db) + "_merge", samples=self.samples)
+                concat_jobs(
+                    [
+                        Job(
+                            blast_chunks,
+                            [blast_result],
+                            command="cat \\\n  " + " \\\n  ".join(blast_chunks) + " \\\n  > " + blast_result
+                        ),
+                        Job(
+                            [blast_result],
+                            [blast_result + ".zip"],
+                            command=f"zip -j {blast_result}.zip {blast_result}"
+                        )
+                    ],
+                    name="blastx_trinity_" + os.path.basename(db) + "_merge",
+                    samples=self.samples
+                )
             )
 
-        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.blastx_trinity_uniprot_merge.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.blastx_trinity_uniprot_merge.md")
         jobs.append(
             Job(
                 [blast_prefix + os.path.basename(swissprot_db) + ".tsv.zip"],
                 [report_file],
                 [['blastx_trinity_uniprot_merge', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
-cp {blast_prefix}{blast_db}.tsv.zip  report/ && \\
+mkdir -p {report_dir} && \\
+cp {blast_prefix}{blast_db}.tsv.zip  {report_dir}/ && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable blast_db="{blast_db}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-    blast_prefix=blast_prefix,
-    blast_db=os.path.basename(swissprot_db),
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    report_file=report_file
-    ),
+                    blast_prefix=blast_prefix,
+                    blast_db=os.path.basename(swissprot_db),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs['report_directory'],
+                    report_file=report_file
+                ),
                 report_files=[report_file],
                 name="blastx_trinity_uniprot_merge_report",
                 samples=self.samples)
@@ -395,11 +464,15 @@ pandoc --to=markdown \\
         Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.github.io/).
         """
 
-        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
-        transdecoder_directory = os.path.join("trinotate", "transdecoder")
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
+        transdecoder_directory = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder")
         transdecoder_subdirectory = os.path.join(os.path.basename(trinity_fasta) + ".transdecoder_dir")
 
-        jobs = trinotate.transdecoder(trinity_fasta, transdecoder_directory, transdecoder_subdirectory)
+        jobs = trinotate.transdecoder(
+            trinity_fasta,
+            transdecoder_directory,
+            transdecoder_subdirectory
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -410,11 +483,15 @@ pandoc --to=markdown \\
         Identifies protein domains using [HMMR](http://hmmer.janelia.org/).
         """
 
-        transdecoder_directory = os.path.join("trinotate", "transdecoder")
+        transdecoder_directory = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder")
         transdecoder_fasta = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep")
         transdecoder_pfam = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pfam")
 
-        jobs = trinotate.hmmer(transdecoder_directory, transdecoder_fasta, transdecoder_pfam)
+        jobs = trinotate.hmmer(
+            transdecoder_directory,
+            transdecoder_fasta,
+            transdecoder_pfam
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -425,10 +502,13 @@ pandoc --to=markdown \\
         Identify potential rRNA transcripts using [RNAmmer](http://www.cbs.dtu.dk/cgi-bin/sw_request?rnammer).
         """
 
-        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
-        rnammer_directory = os.path.join("trinotate", "rnammer")
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
+        rnammer_directory = os.path.join(self.output_dirs["trinotate_directory"], "rnammer")
 
-        jobs = trinotate.rnammer_transcriptome(trinity_fasta, rnammer_directory)
+        jobs = trinotate.rnammer_transcriptome(
+            trinity_fasta,
+            rnammer_directory
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -439,11 +519,15 @@ pandoc --to=markdown \\
         Search Transdecoder-predicted coding regions for sequence homologies on UniProt using [blastp](http://blast.ncbi.nlm.nih.gov/).
         """
 
-        blast_directory = os.path.join("trinotate", "blastp")
-        transdecoder_fasta = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
+        blast_directory = os.path.join(self.output_dirs["trinotate_directory"], "blastp")
+        transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
         db = global_conf.global_get("blastp_transdecoder_uniprot", "swissprot_db", param_type='prefixpath')
 
-        jobs = trinotate.blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db)
+        jobs = trinotate.blastp_transdecoder_uniprot(
+            blast_directory,
+            transdecoder_fasta,
+            db
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -454,10 +538,13 @@ pandoc --to=markdown \\
         Predict signal peptides using [SignalP](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp).
         """
 
-        transdecoder_fasta = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
-        signalp_gff = os.path.join("trinotate", "signalp", "signalp.gff")
+        transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
+        signalp_gff = os.path.join(self.output_dirs["trinotate_directory"], "signalp", "signalp.gff")
 
-        jobs = trinotate.signalp(transdecoder_fasta, signalp_gff)
+        jobs = trinotate.signalp(
+            transdecoder_fasta,
+            signalp_gff
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -468,10 +555,13 @@ pandoc --to=markdown \\
         Predict transmembrane regions using [TMHMM](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?tmhmm).
         """
 
-        transdecoder_fasta = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
-        tmhmm_output = os.path.join("trinotate", "tmhmm", "tmhmm.out")
+        transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
+        tmhmm_output = os.path.join(self.output_dirs["trinotate_directory"], "tmhmm", "tmhmm.out")
 
-        jobs = trinotate.tmhmm(transdecoder_fasta, tmhmm_output)
+        jobs = trinotate.tmhmm(
+            transdecoder_fasta,
+            tmhmm_output
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -485,36 +575,42 @@ pandoc --to=markdown \\
         jobs = []
 
         swissprot_db = os.path.basename(global_conf.global_get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath'))
-        transdecoder_pep = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
+        transdecoder_pep = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
 
-        job = trinotate.trinotate(
-            swissprot_db=swissprot_db,
-            trinity_fasta=os.path.join("trinity_out_dir", "Trinity.fasta"),
-            swissprot_blastx=os.path.join("blast", "blastx_Trinity_" + swissprot_db + ".tsv"),
-            transdecoder_pep=transdecoder_pep,
-            transdecoder_pfam=os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pfam"),
-            swissprot_blastp=os.path.join("trinotate", "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv"),
-            rnammer=os.path.join("trinotate", "rnammer", "Trinity.fasta.rnammer.gff"),
-            signalp=os.path.join("trinotate", "signalp", "signalp.gff"),
-            tmhmm=os.path.join("trinotate", "tmhmm", "tmhmm.out"),
-            trinotate_sqlite=os.path.join("trinotate", "Trinotate.sqlite"),
-            trinotate_report=os.path.join("trinotate", "trinotate_annotation_report.tsv")
+        job = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs["trinotate_directory"]),
+                trinotate.trinotate(
+                    trinity_fasta=os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta"),
+                    swissprot_blastx=os.path.join(self.output_dirs["blast_directory"], "blastx_Trinity_" + swissprot_db + ".tsv"),
+                    transdecoder_pep=transdecoder_pep,
+                    transdecoder_pfam=os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pfam"),
+                    swissprot_blastp=os.path.join(self.output_dirs["trinotate_directory"], "blastp", "blastp_" + os.path.basename(transdecoder_pep) + "_" + swissprot_db + ".tsv"),
+                    rnammer=os.path.join(self.output_dirs["trinotate_directory"], "rnammer", "Trinity.fasta.rnammer.gff"),
+                    signalp=os.path.join(self.output_dirs["trinotate_directory"], "signalp", "signalp.gff"),
+                    tmhmm=os.path.join(self.output_dirs["trinotate_directory"], "tmhmm", "tmhmm.out"),
+                    trinotate_sqlite=os.path.join(self.output_dirs["trinotate_directory"], "Trinotate.sqlite"),
+                    trinotate_report=os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
+                )
+            ],
+            name="trinotate",
+            samples=self.samples
         )
-        job.samples = self.samples
         jobs.append(job)
+
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-                job_input=os.path.join("trinotate", "trinotate_annotation_report.tsv"),
+                job_input=os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv"),
                 job_name="trinotate_report",
                 input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.trinotate.Rmd"),
                 samples=self.samples,
-                render_output_dir='report',
+                readsets=self.readsets,
+                render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
-                prerun_r='report_dir="report"; source_dir="trinotate";'
+                prerun_r=f'report_dir="{self.output_dirs["trinotate_directory"]}"; source_dir="{self.output_dirs["trinotate_directory"]}";'
             )
         )
-
         return jobs
 
     def align_and_estimate_abundance_prep_reference(self):
@@ -522,8 +618,12 @@ pandoc --to=markdown \\
         Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
         """
 
-        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
-        job = trinity.align_and_estimate_abundance(trinity_fasta, output_directory="trinity_out_dir", prep_reference=True)
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
+        job = trinity.align_and_estimate_abundance(
+            trinity_fasta,
+            output_directory=self.output_dirs["trinity_out_directory"],
+            prep_reference=True
+        )
         job.samples = self.samples
 
         return [job]
@@ -535,11 +635,11 @@ pandoc --to=markdown \\
         """
 
         jobs = []
-        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
 
         for sample in self.samples:
-            trim_directory = os.path.join("trim", sample.name)
-            output_directory = os.path.join("align_and_estimate_abundance", sample.name)
+            trim_directory = os.path.join(self.output_dirs["trim_directory"], sample.name)
+            output_directory = os.path.join(self.output_dirs["align_and_estimate_abundance_directory"], sample.name)
             left_or_single_reads = []
             right_reads = []
 
@@ -565,30 +665,45 @@ pandoc --to=markdown \\
             jobs.append(job)
 
         # Generate read files and matrix of estimated abundances, send to the differential_expression directory (God bless Joel)
-        output_directory = "differential_expression"
+        output_directory = self.output_dirs["differential_expression_directory"]
 
         for item in "genes", "isoforms":
             matrix = os.path.join(output_directory, item + ".counts.matrix")
             count_files = os.path.join(output_directory, item + ".counts.files")
-            align_and_estimate_abundance_results = [os.path.join("align_and_estimate_abundance", sample.name, sample.name + "." + item + ".results") for sample in self.samples]
+            align_and_estimate_abundance_results = [os.path.join(self.output_dirs["align_and_estimate_abundance_directory"], sample.name, sample.name + "." + item + ".results") for sample in self.samples]
             out_prefix = os.path.join(output_directory, item)
-            jobs.append(concat_jobs([
-                Job(command="mkdir -p " + os.path.join(output_directory, item)),
-                Job(
-                    align_and_estimate_abundance_results,
-                    [count_files],
-                    command="echo -e \"" + "\\n".join(align_and_estimate_abundance_results) + "\" > " + count_files,
-                    samples=self.samples
-                ),
-                # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
-                trinity.abundance_estimates_to_matrix(count_files, matrix, out_prefix),
-                trinity.prepare_abundance_matrix_for_dge(matrix, item),
-                trinity.extract_lengths_from_RSEM_output(align_and_estimate_abundance_results[0], os.path.join(output_directory, item + ".lengths.tsv"))
-            ], name="align_and_estimate_abundance." + item))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(output_directory, item)),
+                        Job(
+                            align_and_estimate_abundance_results,
+                            [count_files],
+                            command="echo -e \"" + "\\n".join(align_and_estimate_abundance_results) + "\" > " + count_files,
+                            samples=self.samples
+                        ),
+                        # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
+                        trinity.abundance_estimates_to_matrix(
+                            count_files,
+                            matrix,
+                            out_prefix
+                        ),
+                        trinity.prepare_abundance_matrix_for_dge(
+                            matrix,
+                            item
+                        ),
+                        trinity.extract_lengths_from_RSEM_output(
+                            align_and_estimate_abundance_results[0],
+                            os.path.join(output_directory, item + ".lengths.tsv")
+                        )
+                    ],
+                    name="align_and_estimate_abundance." + item
+                )
+            )
 
         # Parse Trinotate results to obtain blast, go annotation and a filtered set of contigs
         isoforms_lengths = os.path.join(output_directory, "isoforms.lengths.tsv")
-        trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
+        trinotate_annotation_report = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
         gene_id_column = "#gene_id" if not global_conf.global_get('trinotate', 'gene_column', required=False) else global_conf.global_get('trinotate', 'gene_column', required=False)
         transcript_id_column = "transcript_id" if not global_conf.global_get('trinotate', 'transcript_column', required=False) else global_conf.global_get('trinotate', 'gene_column', required=False)
         trinotate_filters = None if not global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
@@ -616,30 +731,35 @@ pandoc --to=markdown \\
         jobs = []
 
         # gqSeqUtils function call
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p exploratory", samples=self.samples),
-            gq_seq_utils.exploratory_analysis_rnaseq_denovo(
-                os.path.join("differential_expression", "genes.counts.matrix"),
-                os.path.join("differential_expression", "genes.lengths.tsv"),
-                "exploratory"
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(self.output_dirs["exploratory_directory"]),
+                    gq_seq_utils.exploratory_analysis_rnaseq_denovo(
+                        os.path.join(self.output_dirs["differential_expression_directory"], "genes.counts.matrix"),
+                        os.path.join(self.output_dirs["differential_expression_directory"], "genes.lengths.tsv"),
+                        self.output_dirs["exploratory_directory"]
+                    )
+                ],
+                name="gq_seq_utils_exploratory_analysis_rnaseq_denovo",
+                samples=self.samples
             )
-        ], name="gq_seq_utils_exploratory_analysis_rnaseq_denovo"))
+        )
 
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-                job_input=os.path.join("exploratory", "index.tsv"),
+                job_input=os.path.join(self.output_dirs["exploratory_directory"], "index.tsv"),
                 job_name="gq_seq_utils_exploratory_analysis_rnaseq_denovo_report",
                 input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq.Rmd"),
                 samples=self.samples,
-                render_output_dir='report',
+                readsets=self.readsets,
+                render_output_dir=self.output_dirs["report_directory"],
                 module_section='report', # TODO: this or exploratory?
-                prerun_r='report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+                prerun_r=f'report_dir="{self.output_dirs["report_directory"]}";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
              )
         )
-
         return jobs
-
 
     def filter_annotated_components(self):
         """
@@ -647,46 +767,63 @@ pandoc --to=markdown \\
         """
 
         jobs = []
-        output_directory = "filtered_assembly"
-        trinity_fasta = os.path.join("trinity_out_dir", "Trinity.fasta")
+        output_directory = self.output_dirs["filtered_assembly_directory"]
+        trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
         trinity_filtered = os.path.join(output_directory, "Trinity.fasta")
         trinity_filtered_prefix = os.path.join(output_directory, "Trinity")
         trinity_stats_prefix = os.path.join(output_directory, "trinity_filtered.stats")
-        trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
+        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
 
         # Use python  to extract selected headers
         jobs.append(
-            concat_jobs([
-                Job(command="mkdir -p " + output_directory),
-                tools.py_filterAssemblyToFastaToTsv(trinity_fasta, trinotate_annotation_report_filtered, 0, trinity_filtered_prefix),
-                Job(
-                    [trinity_filtered],
-                    [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
-                    [['filter_annotated_components', 'module_R'], ['filter_annotated_components', 'module_mugqic_R_packages']],
-                    command="""\
-Rscript -e 'library(gqSeqUtils);dnaFastaStats(filename=\"{trinity_filtered}\",type=\"trinity\",output.prefix=\"{trinity_stats_prefix}\")'""".format(
-    trinity_filtered=trinity_filtered,
-    trinity_stats_prefix=trinity_stats_prefix
-    )
-                ),
-                Job(
-                    [trinity_filtered],
-                    [trinity_filtered + ".zip"],
-                    command="zip -j " + trinity_filtered + ".zip " + trinity_filtered + " " + trinity_filtered_prefix + ".tsv"
-                )
-            ], name="filter_annotated_components", samples=self.samples)
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    tools.py_filterAssemblyToFastaToTsv(
+                        trinity_fasta,
+                        trinotate_annotation_report_filtered,
+                        0,
+                        trinity_filtered_prefix
+                    ),
+                    Job(
+                        [trinity_filtered],
+                        [
+                            trinity_stats_prefix + ".csv",
+                            trinity_stats_prefix + ".jpg",
+                            trinity_stats_prefix + ".pdf"
+                        ],
+                        [
+                            ['filter_annotated_components', 'module_R'],
+                            ['filter_annotated_components', 'module_mugqic_R_packages']
+                        ],
+                        command=f"Rscript -e 'library(gqSeqUtils);dnaFastaStats(filename=\"{trinity_filtered}\",type=\"trinity\",output.prefix=\"{trinity_stats_prefix}\")'"
+                    ),
+                    Job(
+                        [trinity_filtered],
+                        [trinity_filtered + ".zip"],
+                        command=f"zip -j {trinity_filtered}.zip {trinity_filtered} {trinity_filtered_prefix}.tsv"
+                    )
+                ],
+                name="filter_annotated_components",
+                samples=self.samples
+            )
         )
-        report_file = os.path.join("report", "RnaSeqDeNovoAssembly.filtered.trinity.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.filtered.trinity.md")
 
         jobs.append(
             Job(
-                [trinity_filtered + ".zip", trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                [
+                    trinity_filtered + ".zip",
+                    trinity_stats_prefix + ".csv",
+                    trinity_stats_prefix + ".jpg",
+                    trinity_stats_prefix + ".pdf"
+                ],
                 [report_file],
                 [['trinity', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
-cp {trinity_filtered}.zip report/{output_directory}.zip && \\
-cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
+mkdir -p {report_dir} && \\
+cp {trinity_filtered}.zip {report_dir}/{output_zip}.zip && \\
+cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
 assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
 pandoc --to=markdown \\
 --template {report_template_dir}/{basename_report_file} \\
@@ -694,73 +831,87 @@ pandoc --to=markdown \\
 --variable filter_string="{filter_string}" \\
 {report_template_dir}/{basename_report_file} \\
 > {report_file}""".format(
-    trinity_filtered=trinity_filtered,
-    output_directory=output_directory,
-    trinity_stats_prefix=trinity_stats_prefix,
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    report_file=report_file,
-    filter_string="" if not global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False)
-    ),
+                    trinity_filtered=trinity_filtered,
+                    output_zip=os.path.basename(output_directory),
+                    trinity_stats_prefix=trinity_stats_prefix,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs['report_directory'],
+                    report_file=report_file,
+                    filter_string="" if not global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False)
+                ),
                 name="filter_annotated_components_report",
                 report_files=[report_file],
                 samples=self.samples
-                )
             )
-
+        )
         return jobs
 
     def gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered(self):
         """
-        Exploratory analysis using the gqSeqUtils R package using a subset of filtered transcripts
+        Exploratory analysis using the gqSeqUtils R package using a subset of filtered transcripts.
         """
         # Run exploratory analysis on filtered components
         # Extract filtered components from counts file
         jobs = []
-        exploratory_output_dir = os.path.join("filtered_assembly", "exploratory")
-        counts_file = os.path.join("filtered_assembly", "isoforms.counts.matrix")
-        trinotate_annotation_report_filtered = os.path.join("trinotate", "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
-        trinotate_annotation_report_filtered_header = "trinotate/trinotate_annotation_report.tsv.isoforms_filtered_header.tsv"
-        lengths_file = os.path.join("differential_expression", "isoforms.lengths.tsv")
-        lengths_filtered_file = os.path.join("filtered_assembly", "isoforms.lengths.tsv")
+        exploratory_output_dir = os.path.join(self.output_dirs["filtered_assembly_directory"], "exploratory")
+        counts_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoforms.counts.matrix")
+        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered.tsv")
+        trinotate_annotation_report_filtered_header = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered_header.tsv")
+        lengths_file = os.path.join(self.output_dirs["differential_expression_directory"], "isoforms.lengths.tsv")
+        lengths_filtered_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoforms.lengths.tsv")
 
         jobs.append(
-            concat_jobs([
-                Job(command="mkdir -p " + exploratory_output_dir),
-                Job(
-                    [trinotate_annotation_report_filtered],
-                    [trinotate_annotation_report_filtered_header],
-                    command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header
-                ),
-                tools.py_parseMergeCsv(
-                    [trinotate_annotation_report_filtered_header, os.path.join("differential_expression", "isoforms.counts.matrix")],
-                    "\\\\t",
-                    counts_file,
-                    "\'\'",
-                    left_join=True,
-                    exclude="\'\'"
-                ),
-                tools.py_parseMergeCsv(
-                    [trinotate_annotation_report_filtered_header, lengths_file],
-                    "\\\\t",
-                    lengths_filtered_file,
-                    "\'\' transcript_id",
-                    left_join=True,
-                    exclude="\' \'"
-                )
-            ], name="filter_annotated_components_exploratory", samples=self.samples)
+            concat_jobs(
+                [
+                    bash.mkdir(exploratory_output_dir),
+                    Job(
+                        [trinotate_annotation_report_filtered],
+                        [trinotate_annotation_report_filtered_header],
+                        command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header
+                    ),
+                    tools.py_parseMergeCsv(
+                        [
+                            trinotate_annotation_report_filtered_header,
+                            os.path.join(self.output_dirs["differential_expression_directory"], "isoforms.counts.matrix")
+                        ],
+                        "\\\\t",
+                        counts_file,
+                        "\'\'",
+                        left_join=True,
+                        exclude="\'\'"
+                    ),
+                    tools.py_parseMergeCsv(
+                        [
+                            trinotate_annotation_report_filtered_header,
+                            lengths_file
+                        ],
+                        "\\\\t",
+                        lengths_filtered_file,
+                        "\'\' transcript_id",
+                        left_join=True,
+                        exclude="\' \'"
+                    )
+                ],
+                name="filter_annotated_components_exploratory",
+                samples=self.samples
+            )
         )
 
         # gqSeqUtils function call
         jobs.append(
-            concat_jobs([
-                Job(command="mkdir -p " + exploratory_output_dir),
-                gq_seq_utils.exploratory_analysis_rnaseq_denovo(
-                    counts_file,
-                    lengths_filtered_file,
-                    exploratory_output_dir
-                )
-            ], name="gq_seq_utils_exploratory_analysis_rnaseq_denovo", samples=self.samples)
+            concat_jobs(
+                [
+                    bash.mkdir(exploratory_output_dir),
+                    gq_seq_utils.exploratory_analysis_rnaseq_denovo(
+                        counts_file,
+                        lengths_filtered_file,
+                        exploratory_output_dir
+                    )
+                ],
+                name="gq_seq_utils_exploratory_analysis_rnaseq_denovo",
+                samples=self.samples
+            )
         )
 
         # Render Rmarkdown Report
@@ -770,9 +921,10 @@ pandoc --to=markdown \\
                 job_name="gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered_report",
                 input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq_filtered.Rmd"),
                 samples=self.samples,
-                render_output_dir='report',
+                readsets=self.readsets,
+                render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
-                prerun_r='report_dir="report/filtered_assembly"; exploratory_dir="' + exploratory_output_dir + '";'
+                prerun_r=f'report_dir="{self.output_dirs["report_directory"]}/filtered_assembly"; exploratory_dir="{exploratory_output_dir}";'
             )
         )
         return jobs
@@ -785,36 +937,56 @@ pandoc --to=markdown \\
         Generates GO annotations for differential genes and isoforms expression analysis, based on associated GOTERMS generated by trinotate.
         """
         jobs = []
+
+        design_file = os.path.relpath(self.design_file.name, self.output_dir)
+
         # Parameters from ini file
         gene_id_column = "#gene_id" if not global_conf.global_get('trinotate', 'gene_column', required=False) else global_conf.global_get('trinotate', 'gene_column', required=False)
         transcript_id_column = "transcript_id" if not global_conf.global_get('trinotate', 'transcript_column', required=False) else global_conf.global_get('trinotate', 'gene_column', required=False)
-        trinotate_filters = None if not global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
         trinotate_columns_to_exclude = None if not global_conf.global_get('differential_expression', 'trinotate_columns_to_exclude', required=False) else global_conf.global_get('differential_expression', 'trinotate_columns_to_exclude', required=False)
-
-        # mkdir
-        mkdir_job = Job(
-            [trinotate_annotation_report],
-            [],
-            command="mkdir -p " + os.path.join(output_directory, item)
-        )
 
         # Run DGE and merge dge results with annotations
         matrix = os.path.join(output_directory, item + ".counts.matrix")
 
         # Perform edgeR
-        edger_job = differential_expression.edger(os.path.relpath(self.design_file.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
-        edger_job.output_files = [os.path.join(output_directory, item, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+        edger_job = differential_expression.edger(
+            design_file,
+            matrix + ".symbol",
+            os.path.join(output_directory, item),
+            [os.path.join(output_directory, item, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+        )
 
         # Perform DESeq
-        deseq_job = differential_expression.deseq2(os.path.relpath(self.design_file.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
-        deseq_job.output_files = [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+        deseq_job = differential_expression.deseq2(
+            design_file,
+            matrix + ".symbol",
+            os.path.join(output_directory, item),
+            [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+        )
+
+        if self.batch_file:
+            # If provided a batch file, compute DGE with batch effect correction
+            batch_file = os.path.relpath(self.batch_file.name, self.output_dir)
+            deseq_job_batch_corrected = differential_expression.deseq2(
+                design_file,
+                matrix + ".symbol",
+                os.path.join(f"{output_directory}_batch_corrected", item),
+                [os.path.join(f"{output_directory}_batch_corrected", item, contrast.name, "dge_results.csv") for contrast in self.contrasts],
+                batch_file
+            )
 
         jobs.append(
-            concat_jobs([
-                mkdir_job,
-                edger_job,
-                deseq_job,
-            ], name="differential_expression.run." + item, samples=self.samples)
+            concat_jobs(
+                [
+                    bash.mkdir(os.path.join(output_directory, item)),
+                    bash.mkdir(os.path.join(f"{output_directory}_batch_corrected", item)) if self.batch_file else None,
+                    edger_job,
+                    deseq_job,
+                    deseq_job_batch_corrected if self.batch_file else None
+                ],
+                name="differential_expression.run." + item,
+                samples=self.samples
+            )
         )
         for contrast in self.contrasts:
             # Prepare GOseq job
@@ -827,21 +999,27 @@ pandoc --to=markdown \\
             )
             # Merge with annotations
             jobs.append(
-                concat_jobs([
-                    tools.py_parseMergeCsv(
-                        [os.path.join(output_directory, item, contrast.name, "dge_results.csv"), trinotate_annotation_report + "." + item + "_blast.tsv"],
-                        "\\\\t",
-                        os.path.join(output_directory, item, contrast.name, "dge_trinotate_results.csv"),
-                        "id " + "\"" + gene_id_column + "\"" if item == "genes" else "id " + transcript_id_column,
-                        None,
-                        trinotate_columns_to_exclude,
-                        True,
-                        "edger.p.value",
-                        True
-                    ),
-                    # Run GOseq
-                    goseq_job
-                ], name="differential_expression.merge.annotations.goseq." + item + "." + contrast.name, samples=self.samples)
+                concat_jobs(
+                    [
+                        tools.py_parseMergeCsv(
+                            [
+                                os.path.join(output_directory, item, contrast.name, "dge_results.csv"),
+                                trinotate_annotation_report + "." + item + "_blast.tsv"
+                            ],
+                            "\\\\t",
+                            os.path.join(output_directory, item, contrast.name, "dge_trinotate_results.csv"),
+                            "id " + "\"" + gene_id_column + "\"" if item == "genes" else "id " + transcript_id_column,
+                            subset=None,
+                            exclude=trinotate_columns_to_exclude,
+                            left_join=True,
+                            sort_by="edger.p.value",
+                            make_names=True                        ),
+                        # Run GOseq
+                        goseq_job
+                    ],
+                    name="differential_expression.merge.annotations.goseq." + item + "." + contrast.name,
+                    samples=self.samples
+                )
             )
 
         return jobs
@@ -852,10 +1030,10 @@ pandoc --to=markdown \\
         Merge the results of the analysis in a single csv file. Also, performs Gene Ontology analysis for RNA-Seq denovo Assembly using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
         Generates GO annotations for differential genes and isoforms expression analysis, based on associated GOTERMS generated by trinotate.
         """
-        output_directory = "differential_expression"
+        output_directory = self.output_dirs["differential_expression_directory"]
         jobs = []
-        trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
-        report_dir = 'report'
+        trinotate_annotation_report = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
+        report_dir = self.output_dirs["report_directory"]
         input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq.Rmd")
 
         # Run DGE and merge dge results with annotations
@@ -864,7 +1042,8 @@ pandoc --to=markdown \\
                 concat_jobs(
                     self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report),
                     name="differential_expression_" + item,
-                    samples=self.samples)
+                    samples=self.samples
+                )
             )
 
         output_files = []
@@ -879,29 +1058,25 @@ pandoc --to=markdown \\
                 job_name="differential_expression_goseq_rnaseq_denovo_report",
                 input_rmarkdown_file=input_rmarkdown_file,
                 samples=self.samples,
-                render_output_dir='report',
+                readsets=self.readsets,
+                render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
-                prerun_r='design_file="' +
-                         os.path.relpath(self.design_file.name, self.output_dir) +
-                         '"; report_dir="' +
-                         report_dir +
-                         '"; source_dir="' +
-                         output_directory +
-                         '"; ' +
-                         'top_n_results=10; contrasts=c("' +
-                         '","'.join(contrast.name for contrast in self.contrasts) + '");'
+                prerun_r=f'design_file="{os.path.relpath(self.design_file.name, self.output_dir)}"; ' +
+                         f'report_dir="{report_dir}"; ' +
+                         f'source_dir="{output_directory}"; ' +
+                         f'top_n_results=10; contrasts=c("{",".join(contrast.name for contrast in self.contrasts)}");'
             )
         )
         return jobs
 
     def differential_expression_filtered(self):
         """
-        Differential Expression and GOSEQ analysis based on filtered transcripts and genes
+        Differential Expression and GOSEQ analysis based on filtered transcripts and genes.
         """
-        output_directory = os.path.join("filtered_assembly","differential_expression")
+        output_directory = os.path.join(self.output_dirs["filtered_assembly_directory"],"differential_expression")
         jobs = []
-        trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
-        report_dir = os.path.join("report", "filtered_assembly")
+        trinotate_annotation_report = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
+        report_dir = os.path.join(self.output_dirs["report_directory"], "filtered_assembly")
         input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq_filtered.Rmd")
 
         # Filter input files
@@ -910,31 +1085,37 @@ pandoc --to=markdown \\
         trinotate_annotation_report_filtered_header["isoforms"] = trinotate_annotation_report + ".isoforms_filtered_header.tsv"
         trinotate_annotation_report_filtered_header["genes"] = trinotate_annotation_report + ".genes_filtered_header.tsv"
         counts_ids = {'genes':"Genes", 'isoforms':"Isoforms"}
-        trinotate_filters = None if not global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
-        source_directory = "differential_expression"
+        source_directory = self.output_dirs["differential_expression_directory"]
 
         # Create the files containing filtered isoforms and genes with headers
         jobs.append(
-            concat_jobs([
-                Job(command="mkdir -p " + output_directory),
-                Job(
-                    [trinotate_annotation_report_filtered],
-                    [trinotate_annotation_report_filtered_header["genes"]],
-                    command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["genes"],
-                ),
-                Job(
-                    [trinotate_annotation_report_filtered],
-                    [trinotate_annotation_report_filtered_header["isoforms"]],
-                    command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"]
-                )
-            ], name="differential_expression_filtered_get_trinotate", samples=self.samples)
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    Job(
+                        [trinotate_annotation_report_filtered],
+                        [trinotate_annotation_report_filtered_header["genes"]],
+                        command="cat " + trinotate_annotation_report_filtered + " | awk 'BEGIN{OFS=\"_\";FS=\"_\"}{print $1,$2}' | uniq | sed '1s/^/ \\n/' " + "  > " + trinotate_annotation_report_filtered_header["genes"],
+                    ),
+                    Job(
+                        [trinotate_annotation_report_filtered],
+                        [trinotate_annotation_report_filtered_header["isoforms"]],
+                        command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header["isoforms"]
+                    )
+                ],
+                name="differential_expression_filtered_get_trinotate",
+                samples=self.samples
+            )
         )
 
         # Run DGE and merge dge results with annotations
         for item in "genes", "isoforms":
             matrix = os.path.join(output_directory, item + ".counts.matrix.symbol")
             job = tools.py_parseMergeCsv(
-                [trinotate_annotation_report_filtered_header[item], os.path.join(source_directory, item + ".counts.matrix.symbol")],
+                [
+                    trinotate_annotation_report_filtered_header[item],
+                    os.path.join(source_directory, item + ".counts.matrix.symbol")
+                ],
                 "\\\\t",
                 matrix,
                 "\'\' " + counts_ids[item],
@@ -942,15 +1123,19 @@ pandoc --to=markdown \\
                 exclude="\' \'"
             )
             jobs.append(
-                concat_jobs([
-                    job,
-                    Job(
-                        [os.path.join(source_directory, item +".lengths.tsv.noheader.tsv")],
-                        [os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")],
-                        command="cp " + os.path.join(source_directory, item +".lengths.tsv.noheader.tsv") + " " + os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")
-                    ),
-                    concat_jobs(self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report))
-                ], name="differential_expression_filtered_" + item, samples=self.samples)
+                concat_jobs(
+                    [
+                        job,
+                        Job(
+                            [os.path.join(source_directory, item +".lengths.tsv.noheader.tsv")],
+                            [os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")],
+                            command="cp " + os.path.join(source_directory, item +".lengths.tsv.noheader.tsv") + " " + os.path.join(output_directory, item +".lengths.tsv.noheader.tsv")
+                        ),
+                        concat_jobs(self.differential_expression_and_goseq_rsem(output_directory, item, trinotate_annotation_report))
+                    ],
+                    name="differential_expression_filtered_" + item,
+                    samples=self.samples
+                )
             )
 
         # Dependencies for report
@@ -966,33 +1151,28 @@ pandoc --to=markdown \\
                 job_name="differential_expression_goseq_rnaseq_denovo_filtered_report",
                 input_rmarkdown_file=input_rmarkdown_file,
                 samples=self.samples,
-                render_output_dir='report',
+                readsets=self.readsets,
+                render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
-                prerun_r='report_dir="' +
-                         report_dir +
-                         '"; source_dir="' +
-                         output_directory +
-                         '"; ' +
-                         'top_n_results=10; contrasts=c("' +
-                         '","'.join(contrast.name for contrast in self.contrasts) + '");'
+                prerun_r=f'report_dir="{report_dir}"; ' +
+                         f'source_dir="{output_directory}"; ' +
+                         f'top_n_results=10; contrasts=c("{",".join(contrast.name for contrast in self.contrasts)}");'
             )
         )
-
         return jobs
 
     def merge_fastq(self):
-
         """
-                this step is performed to merge fastq files if multiple readset files for one sample is present
+        This step is performed to merge fastq files if multiple readset files for one sample is present
 
-                This step takes as input files:
+        This step takes as input files:
 
-                1. FASTQ files from the readset file if available
-                2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        1. FASTQ files from the readset file if available
+        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """
 
         jobs = []
-        output_directory = "merge_fastq"
+        output_directory = self.output_dirs["merge_fastq_directory"]
         samples_to_merge = []
         merge_fastq_job = []
         #check whether a sample has more than one readsets. if so take the sample name in to a list
@@ -1034,13 +1214,15 @@ pandoc --to=markdown \\
                         "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
             # if readset is paired end then two jobs will be created for the read pairs
             # if readset is single end then one job will be created for the forward read
-            if(merge_readsets_fastq2):
+            if (merge_readsets_fastq2):
                 #job to merge double reads
-                merge_fastq = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, merge_sample)),
-                                        Job(input_files=merge_readsets_fastq1,
-                                            output_files=[os.path.join(output_directory, merge_sample,
-                                                                      merge_sample + "_merged.pair1.fastq.gz")],
-                                           command="""if (file {input1} | grep -q compressed ) ; then
+                merge_fastq = concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(output_directory, merge_sample)),
+                        Job(
+                            input_files=merge_readsets_fastq1,
+                            output_files=[os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")],
+                            command="""if (file {input1} | grep -q compressed ) ; then
 ln -nsf {input1} {temp_out1}
 else
 gzip -c {input1} > {temp_out1} 
@@ -1053,18 +1235,18 @@ fi &&
 zcat  {temp_out1} {temp_out2} > {output} &&
 rm {temp_out1} &&
 rm {temp_out2}""".format(
-                                               input1 = merge_readsets_fastq1[0],
-                                               input2 = merge_readsets_fastq1[1],
-                                               temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read1.fastq.gz"),
-                                               temp_out2= os.path.join(output_directory, merge_sample,
-                                                                      merge_sample + "_temp2.read1.fastq.gz"),
-                                               output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")
-                                           )),
-
-                                           Job(input_files=merge_readsets_fastq2,
-                                               output_files=[os.path.join(output_directory, merge_sample,
-                                                                    merge_sample + "_merged.pair2.fastq.gz")],
-                                           command="""if (file {input1} | grep -q compressed ) ; then
+                                input1 = merge_readsets_fastq1[0],
+                                input2 = merge_readsets_fastq1[1],
+                                temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read1.fastq.gz"),
+                                temp_out2= os.path.join(output_directory, merge_sample,
+                                                        merge_sample + "_temp2.read1.fastq.gz"),
+                                output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")
+                            )
+                        ),
+                        Job(
+                            input_files=merge_readsets_fastq2,
+                            output_files=[os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair2.fastq.gz")],
+                            command="""if (file {input1} | grep -q compressed ) ; then
 ln -nsf {input1} {temp_out1}
 else
 gzip -c {input1} > {temp_out1} 
@@ -1077,21 +1259,24 @@ fi &&
 zcat  {temp_out1} {temp_out2} > {output} &&
 rm {temp_out1} &&
 rm {temp_out2}""".format(
-                                               input1 = merge_readsets_fastq2[0],
-                                               input2 = merge_readsets_fastq2[1],
-                                               temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read2.fastq.gz"),
-                                               temp_out2=os.path.join(output_directory, merge_sample,
-                                                                      merge_sample + "_temp2.read2.fastq.gz"),
-                                               output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair2.fastq.gz")
-                                           ))
-                                           ])
+                                input1 = merge_readsets_fastq2[0],
+                                input2 = merge_readsets_fastq2[1],
+                                temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read2.fastq.gz"),
+                                temp_out2=os.path.join(output_directory, merge_sample, merge_sample + "_temp2.read2.fastq.gz"),
+                                output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair2.fastq.gz")
+                            )
+                        )
+                    ]
+                )
             else:
                 #jobs to merge single reads
-                merge_fastq = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, merge_sample)),
-                                        Job(input_files=merge_readsets_fastq1,
-                                            output_files=[os.path.join(output_directory, merge_sample,
-                                                                      merge_sample + "_merged.pair1.fastq.gz")],
-                                           command="""if (file {input1} | grep -q compressed ) ; then
+                merge_fastq = concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(output_directory, merge_sample)),
+                        Job(input_files=merge_readsets_fastq1,
+                            output_files=[os.path.join(output_directory, merge_sample,
+                                                        merge_sample + "_merged.pair1.fastq.gz")],
+                            command="""if (file {input1} | grep -q compressed ) ; then
 ln -nsf {input1} {temp_out1}
 else
 gzip -c {input1} > {temp_out1} 
@@ -1104,14 +1289,15 @@ fi &&
 zcat  {temp_out1} {temp_out2} > {output} &&
 rm {temp_out1} &&
 rm {temp_out2}""".format(
-                                               input1 = merge_readsets_fastq1[0],
-                                               input2 = merge_readsets_fastq1[1],
-                                               temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read1.fastq.gz"),
-                                               temp_out2= os.path.join(output_directory, merge_sample,
-                                                                      merge_sample + "_temp2.read1.fastq.gz"),
-                                               output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")
-                                           ))
-                                           ])
+                                input1 = merge_readsets_fastq1[0],
+                                input2 = merge_readsets_fastq1[1],
+                                temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read1.fastq.gz"),
+                                temp_out2= os.path.join(output_directory, merge_sample, merge_sample + "_temp2.read1.fastq.gz"),
+                                output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")
+                            )
+                        )
+                    ]
+                )
 
             merge_fastq_job.append(merge_fastq)
             merge_fastq_jobs = concat_jobs(merge_fastq_job)
@@ -1138,16 +1324,14 @@ rm {temp_out2}""".format(
 
         For each contrast different folders and all the files for that particular contrast are
         generated. Therefore, only pairwise comparisons are possible
-        (treatment and controls will be added according to the 1 and 2 in the design file)
+        (treatment and controls will be added according to the 1 and 2 in the design file).
         """
         jobs = []
-        samples_to_merge = []
-        merge_fastq_job = []
-        output_directory = "seq2fun"
+        output_directory = self.output_dirs["seq2fun_directory"]
         # check whether a sample has more than one readsets. if so take the sample name in to a list
         #these samples will already have merged fastq and we need to use them for the seq2fun
 
-        merge_fastq_dir = "merge_fastq"
+        merge_fastq_dir = self.output_dirs["merge_fastq_directory"]
         write_line_control_jobs = []
         write_line_treatment_jobs = []
         folder_jobs = []
@@ -1160,10 +1344,14 @@ rm {temp_out2}""".format(
         for contrast in self.contrasts:
 
             output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
-            folder_job = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, contrast.name)),
-            Job(command="touch " + output_file_contrast)])
+            folder_job = concat_jobs(
+                [
+                    bash.mkdir(os.path.join(output_directory, contrast.name)),
+                    bash.touch(output_file_contrast)
+                ]
+            )
             folder_jobs.append(folder_job)
-            create_folder_jobs = concat_jobs(folder_jobs)
+            create_folder_jobs=concat_jobs(folder_jobs)
 
             for control in contrast.controls:
 
@@ -1175,58 +1363,51 @@ rm {temp_out2}""".format(
                                 if readset.run_type == "PAIRED_END":
                                     if len(sample.readsets) > 1:
                                         #get merged fastq link
-                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
-                                                     sample.name + "_merged.pair1.fastq.gz")
-                                        candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
-                                                                        sample.name + "_merged.pair2.fastq.gz")
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name, sample.name + "_merged.pair1.fastq.gz")
+                                        candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name, sample.name + "_merged.pair2.fastq.gz")
 
                                     else:
                                         candidate_fastq1 = readset.fastq1
                                         candidate_fastq2  = readset.fastq2
                                         if readset.bam:
-                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
-                                                                            readset.sample.name,
-                                                                            readset.name + ".pair1.fastq.gz")
-                                            candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
-                                                                            readset.sample.name,
-                                                                            readset.name + ".pair2.fastq.gz")
+                                            candidate_fastq1 = os.path.join(self.output_dirs["raw_reads_direcctory"], readset.sample.name, readset.name + ".pair1.fastq.gz")
+                                            candidate_fastq2 = os.path.join(self.output_dirs["raw_reads_direcctory"], readset.sample.name, readset.name + ".pair2.fastq.gz")
 
                                     seq2fun_input_files.append(candidate_fastq1)
                                     seq2fun_input_files.append(candidate_fastq2)
                                     seq2fun_output_samples.append(sample.name)
                                     write_line_job = Job(
-                                        input_files= [candidate_fastq1, candidate_fastq2],
-                                            command="""echo -e "{sample}\t{fastq1}\t{fastq2}\tcontrol" >> {file}""".format(
-                                                sample=os.path.join(output_directory, contrast.name, sample.name),
-                                                file=output_file_contrast,
-                                                fastq1=candidate_fastq1,
-                                                fastq2=candidate_fastq2
-                                            )
+                                        input_files=[
+                                            candidate_fastq1,
+                                            candidate_fastq2
+                                        ],
+                                        command="""echo -e "{sample}\t{fastq1}\t{fastq2}\tcontrol" >> {file}""".format(
+                                            sample=os.path.join(output_directory, contrast.name, sample.name),
+                                            file=output_file_contrast,
+                                            fastq1=candidate_fastq1,
+                                            fastq2=candidate_fastq2
                                         )
+                                    )
                                     write_line_control_jobs.append(write_line_job)
                                     sample_table_contrast_jobs = concat_jobs(write_line_control_jobs)
                                 elif readset.run_type == "SINGLE_END":
                                     if len(sample.readsets) > 1:
-                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
-                                                                        sample.name + "merged.pair1.fastq.gz")
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name, sample.name + "merged.pair1.fastq.gz")
                                     else:
                                         candidate_fastq1 = readset.fastq1
                                         if readset.bam:
-                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
-                                                                            readset.sample.name,
-                                                                            readset.name + ".pair1.fastq.gz")
+                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")
 
                                     seq2fun_input_files.append(candidate_fastq1)
                                     seq2fun_output_samples.append(sample.name)
                                     write_line_job = Job(
                                         input_files=[candidate_fastq1],
-                                            command="""echo -e "{sample}\t{fastq1}\tcontrol" >> {file}""".format(
-                                                sample=os.path.join(output_directory, contrast.name, sample.name),
-                                                file=output_file_contrast,
-                                                fastq1=candidate_fastq1
-                                            )
-
+                                        command="""echo -e "{sample}\t{fastq1}\tcontrol" >> {file}""".format(
+                                            sample=os.path.join(output_directory, contrast.name, sample.name),
+                                            file=output_file_contrast,
+                                            fastq1=candidate_fastq1
                                         )
+                                    )
                                     write_line_control_jobs.append(write_line_job)
                                     sample_table_contrast_jobs = concat_jobs(write_line_control_jobs)
         for contrast in self.contrasts:
@@ -1242,21 +1423,15 @@ rm {temp_out2}""".format(
                                 if readset.run_type == "PAIRED_END":
                                     if len(sample.readsets) > 1:
 
-                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
-                                                                        sample.name + "_merged.pair1.fastq.gz")
-                                        candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
-                                                                        sample.name + "_merged.pair2.fastq.gz")
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name, sample.name + "_merged.pair1.fastq.gz")
+                                        candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name, sample.name + "_merged.pair2.fastq.gz")
 
                                     else:
                                         candidate_fastq1 = readset.fastq1
                                         candidate_fastq2 = readset.fastq2
                                         if readset.bam:
-                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
-                                                                            readset.sample.name,
-                                                                            readset.name + ".pair1.fastq.gz")
-                                            candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
-                                                                            readset.sample.name,
-                                                                            readset.name + ".pair2.fastq.gz")
+                                            candidate_fastq1 = os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair1.fastq.gz")
+                                            candidate_fastq2 = os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair2.fastq.gz")
 
                                     seq2fun_input_files.append(candidate_fastq1)
                                     seq2fun_input_files.append(candidate_fastq2)
@@ -1265,7 +1440,7 @@ rm {temp_out2}""".format(
                                         input_files=[candidate_fastq1, candidate_fastq2],
                                         command="""echo -e "{sample}\t{fastq1}\t{fastq2}\ttreatment" >> {file}""".format(
                                             sample=os.path.join(output_directory, contrast.name, sample.name),
-                                            file= output_file_contrast,
+                                            file=output_file_contrast,
                                             fastq1=candidate_fastq1,
                                             fastq2=candidate_fastq2
                                         )
@@ -1274,14 +1449,11 @@ rm {temp_out2}""".format(
                                     sample_table_treatment_jobs = concat_jobs(write_line_treatment_jobs)
                                 elif readset.run_type == "SINGLE_END":
                                     if len(sample.readsets) > 1:
-                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
-                                                                        sample.name + "merged.pair1.fastq.gz")
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name, sample.name + "merged.pair1.fastq.gz")
                                     else:
                                         candidate_fastq1 = readset.fastq1
                                         if readset.bam:
-                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
-                                                                            readset.sample.name,
-                                                                            readset.name + ".pair1.fastq.gz")
+                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")
                                     seq2fun_input_files.append(candidate_fastq1)
                                     seq2fun_output_samples.append(sample.name)
                                     write_line_job = Job(
@@ -1295,8 +1467,6 @@ rm {temp_out2}""".format(
                                     )
                                     write_line_treatment_jobs.append(write_line_job)
                                     sample_table_treatment_jobs = concat_jobs(write_line_treatment_jobs)
-
-
 
         seq2fun_jobs = []
         ##remove duplicate lines in the sample table and execute seq2fun
@@ -1315,30 +1485,41 @@ rm {temp_out2}""".format(
 
             input_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
             output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.txt")
-            remove_duplicates = concat_jobs([Job(
-                output_files= [output_file_contrast],
-                command="""sort -u {input_file} > {output_file}""".format(
-                    input_file=input_file_contrast,
-                    output_file=output_file_contrast
-                )
-
-            ),Job(
-                command="""rm {temp_file}""".format(
-                    temp_file=input_file_contrast
-
-                )
-
-            ),
-            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_file_contrast, profiling)
-            ])
+            remove_duplicates = concat_jobs(
+                [
+                    Job(
+                        output_files= [output_file_contrast],
+                        command="""sort -u {input_file} > {output_file}""".format(
+                            input_file=input_file_contrast,
+                            output_file=output_file_contrast
+                        )
+                    ),
+                    Job(
+                        command="""rm {temp_file}""".format(
+                            temp_file=input_file_contrast
+                        )
+                    ),
+                    seq2fun.processing(
+                        seq2fun_input_files,
+                        seq2fun_outputs,
+                        output_file_contrast,
+                        profiling
+                    )
+                ]
+            )
             seq2fun_jobs.append(remove_duplicates)
             seq2fun_jobs = concat_jobs(seq2fun_jobs)
 
-
-
-        job = concat_jobs([create_folder_jobs,sample_table_contrast_jobs, sample_table_treatment_jobs, seq2fun_jobs])
-        job.samples = self.samples
-        job.name = "seq2fun.processing"
+        job = concat_jobs(
+            [
+                create_folder_jobs,
+                sample_table_contrast_jobs,
+                sample_table_treatment_jobs,
+                seq2fun_jobs
+            ],
+            name="seq2fun.processing",
+            samples=self.samples
+        )
         jobs.append(job)
         return jobs
 
@@ -1349,78 +1530,64 @@ rm {temp_out2}""".format(
         differential expression. The original seq2fun sample table and KO abundance table
         cannot be used in this case as differential expression needs all the samples together.
         The design file is directly used to find the contrasts.
-
         """
 
         jobs =[]
-        merge_fastq_dir = "merge_fastq"
+        merge_fastq_dir = self.output_dirs["merge_fastq_directory"]
         seq2fun_input_files = []
-        output_directory = "seq2fun/count_matrix"
+        output_directory = f'{self.output_dirs["seq2fun_directory"]}/count_matrix'
         write_line_jobs = []
         output_sample_temp_file = os.path.join(output_directory,  "common_sample_table.temp.txt")
         output_sample_file = os.path.join(output_directory, "common_sample_table.txt")
 
-        folder_job = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory)),
-                                  Job(command="touch " + output_sample_temp_file)])
-
         for sample in self.samples:
-                for readset in self.readsets:
-                    if sample.name == readset.sample.name:
-                        if readset.run_type == "PAIRED_END":
-                            if len(sample.readsets) > 1:
+            for readset in self.readsets:
+                if sample.name == readset.sample.name:
+                    if readset.run_type == "PAIRED_END":
+                        if len(sample.readsets) > 1:
+                            candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name, sample.name + "_merged.pair1.fastq.gz")
+                            candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name, sample.name + "_merged.pair2.fastq.gz")
 
-                                candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
-                                                                sample.name + "_merged.pair1.fastq.gz")
-                                candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
-                                                                sample.name + "_merged.pair2.fastq.gz")
+                        else:
+                            candidate_fastq1 = readset.fastq1
+                            candidate_fastq2 = readset.fastq2
+                            if readset.bam:
+                                candidate_fastq1 = os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair1.fastq.gz")
+                                candidate_fastq2 = os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair2.fastq.gz")
 
-                            else:
-                                candidate_fastq1 = readset.fastq1
-                                candidate_fastq2 = readset.fastq2
-                                if readset.bam:
-                                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
-                                                                    readset.sample.name,
-                                                                    readset.name + ".pair1.fastq.gz")
-                                    candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
-                                                                    readset.sample.name,
-                                                                    readset.name + ".pair2.fastq.gz")
-
-                            seq2fun_input_files.append(candidate_fastq1)
-                            seq2fun_input_files.append(candidate_fastq2)
-                            write_line_job = Job(
-                                input_files=[candidate_fastq1, candidate_fastq2],
-                                command="""echo -e "{sample}\t{fastq1}\t{fastq2}\tcontrol" >> {file}""".format(
-                                    sample=os.path.join(output_directory, sample.name),
-                                    file=output_sample_temp_file,
-                                    fastq1=candidate_fastq1,
-                                    fastq2=candidate_fastq2
-                                )
+                        seq2fun_input_files.append(candidate_fastq1)
+                        seq2fun_input_files.append(candidate_fastq2)
+                        write_line_job = Job(
+                            input_files=[candidate_fastq1, candidate_fastq2],
+                            command="""echo -e "{sample}\t{fastq1}\t{fastq2}\tcontrol" >> {file}""".format(
+                                sample=os.path.join(output_directory, sample.name),
+                                file=output_sample_temp_file,
+                                fastq1=candidate_fastq1,
+                                fastq2=candidate_fastq2
                             )
-                            write_line_jobs.append(write_line_job)
-                            sample_table_contrast_jobs = concat_jobs(write_line_jobs)
-                        elif readset.run_type == "SINGLE_END":
-                            if len(sample.readsets) > 1:
-                                candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
-                                                                sample.name + "merged.pair1.fastq.gz")
-                            else:
-                                candidate_fastq1 = readset.fastq1
-                                if readset.bam:
-                                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
-                                                                    readset.sample.name,
-                                                                    readset.name + ".pair1.fastq.gz")
+                        )
+                        write_line_jobs.append(write_line_job)
 
-                            seq2fun_input_files.append(candidate_fastq1)
-                            write_line_job = Job(
-                                input_files=[candidate_fastq1],
-                                command="""echo -e "{sample}\t{fastq1}\tcontrol" >> {file}""".format(
-                                    sample=os.path.join(output_directory, sample.name),
-                                    file=output_sample_temp_file,
-                                    fastq1=candidate_fastq1
-                                )
+                    elif readset.run_type == "SINGLE_END":
+                        if len(sample.readsets) > 1:
+                            candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name, sample.name + "merged.pair1.fastq.gz")
+                        else:
+                            candidate_fastq1 = readset.fastq1
+                            if readset.bam:
+                                candidate_fastq1 = os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair1.fastq.gz")
 
+                        seq2fun_input_files.append(candidate_fastq1)
+                        write_line_job = Job(
+                            input_files=[candidate_fastq1],
+                            command="""echo -e "{sample}\t{fastq1}\tcontrol" >> {file}""".format(
+                                sample=os.path.join(output_directory, sample.name),
+                                file=output_sample_temp_file,
+                                fastq1=candidate_fastq1
                             )
-                            write_line_jobs.append(write_line_job)
-                            sample_table_contrast_jobs = concat_jobs(write_line_jobs)
+
+                        )
+                        write_line_jobs.append(write_line_job)
+        sample_table_contrast_jobs = concat_jobs(write_line_jobs)
 
         seq2fun_jobs = []
         ##remove duplicates and execute seq2fun
@@ -1428,27 +1595,39 @@ rm {temp_out2}""".format(
         profiling = ""
         seq2fun_outputs.append(output_directory + "/All_sample_KO_abundance_table.txt")
 
-        remove_duplicates = concat_jobs([
-            Job(
-            output_files=[output_sample_file],
-            command="""sort -u {input_file} > {output_file}""".format(
-                input_file=output_sample_temp_file,
-                output_file=output_sample_file
-            )
-        ),
-            Job(
-            command="""rm {temp_file}""".format(
-                temp_file=output_sample_temp_file
-            )
-        ),
-            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_sample_file, profiling)
-        ])
+        remove_duplicates = concat_jobs(
+            [
+                Job(
+                    output_files=[output_sample_file],
+                    command="""sort -u {input_file} > {output_file}""".format(
+                        input_file=output_sample_temp_file,
+                        output_file=output_sample_file
+                    )
+                ),
+                Job(
+                    command="""rm {temp_file}""".format(
+                        temp_file=output_sample_temp_file
+                    )
+                ),
+                seq2fun.processing(
+                    seq2fun_input_files,
+                    seq2fun_outputs,
+                    output_sample_file,
+                    profiling
+                )
+            ]
+        )
         seq2fun_jobs.append(remove_duplicates)
         seq2fun_jobs = concat_jobs(seq2fun_jobs)
 
-
         job = concat_jobs(
-            [folder_job, sample_table_contrast_jobs, seq2fun_jobs])
+            [
+                bash.mkdir(output_directory),
+                bash.touch(output_sample_temp_file),
+                sample_table_contrast_jobs,
+                seq2fun_jobs
+            ]
+        )
         job.samples = self.samples
         job.name = "seq2fun.count_matrix"
         jobs.append(job)
@@ -1460,16 +1639,23 @@ rm {temp_out2}""".format(
         Merge the results of the analysis in a single csv file.
         """
         jobs = []
-        output_directory = "differential_expression/seq2fun"
-        count_matrix_temp = os.path.join("seq2fun", "count_matrix", "All_sample_KO_abundance_table.txt")
-        count_matrix = os.path.join("seq2fun", "count_matrix", "count_matrix.csv")
-        prepare_matrix_job = Job(output_files=[count_matrix],
-                                 input_files=[count_matrix_temp],
-            command="""awk 'BEGIN{{FS=OFS="\t"}} NF--' {input} | awk '{{if(NR!=2){{print $0}} }}' | awk -v OFS="\t" '{{ print $1,$0}}' > {output}""".format(
+        output_directory = os.path.join(self.output_dirs['differential_expression_directory'], "seq2fun")
+        count_matrix_temp = os.path.join(self.output_dirs["seq2fun_directory"], "count_matrix", "All_sample_KO_abundance_table.txt")
+        count_matrix = os.path.join(self.output_dirs["seq2fun_directory"], "count_matrix", "count_matrix.csv")
+
+        prepare_matrix_job = Job(
+            input_files=[count_matrix_temp],
+            output_files=[count_matrix],                     
+            command="""\
+awk 'BEGIN{{FS=OFS="\t"}} NF--' {input} | \\
+awk '{{if(NR!=2){{print $0}} }}' | \\
+awk -v OFS="\t" '{{ print $1,$0}}' \\
+  > {output}""".format(
                 input = count_matrix_temp,
                 output = count_matrix
             )
         )
+
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
             design_file = os.path.relpath(self.design_file.name, self.output_dir)
@@ -1486,35 +1672,71 @@ rm {temp_out2}""".format(
                 no_replicates = True
 
         if no_replicates == False:
-            edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
-            edger_job.input_files = [design_file, count_matrix]
-            edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
-            edger_job.samples = self.samples
+            edger_job = differential_expression.edger(
+                design_file,
+                count_matrix,
+                output_directory,
+                [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+            )
 
-            deseq_job = seq2fun.deseq2(design_file, count_matrix, output_directory)
-            deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+            deseq_job = differential_expression.deseq2(
+                design_file,
+                count_matrix,
+                output_directory,
+                [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+            )
 
+            if self.batch_file:
+                # If provided a batch file, compute DGE with batch effect correction
+                batch_file = os.path.relpath(self.batch_file.name, self.output_dir)
+                deseq_job_batch_corrected = differential_expression.deseq2(
+                    design_file,
+                    count_matrix,
+                    f"{output_directory}_batch_corrected",
+                    [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "dge_results.csv") for contrast in self.contrasts],
+                    batch_file
+                )
 
-            deseq_job.samples = self.samples
             report_jobs = []
             for contrast in self.contrasts:
-                report_job = Job(input_files = [os.path.join(output_directory, contrast.name, "dge_results.csv")],
-                             output_files = [os.path.join("report", "differential_expression", "seq2fun", contrast.name, "dge_results.csv")],
-                command = ("""mkdir -p {output_folder} && rm -f {output_file} && cp {input_file} {output_file}""").format(
-                input_file = os.path.join(output_directory, contrast.name, "dge_results.csv"),
-                output_file=os.path.join("report", "differential_expression", "seq2fun", contrast.name, "dge_results.csv"),
-                output_folder = os.path.join("report", "differential_expression", "seq2fun", contrast.name)
-                        ) )
+                input_file = os.path.join(output_directory, contrast.name, "dge_results.csv")
+                output_folder = os.path.join(self.output_dirs["report_directory"], "differential_expression", "seq2fun", contrast.name)
+                output_file = os.path.join(output_folder, "dge_results.csv")
+                report_job = concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(self.output_dirs["report_directory"], "differential_expression", "seq2fun", contrast.name)),
+                        bash.rm(
+                            output_file,
+                            force=True
+                        ),
+                        bash.cp(
+                            input_file,
+                            output_file
+                        )
+                    ]
+                )
                 report_jobs.append(report_job)
                 report_matrix_job = concat_jobs(report_jobs)
+
             jobs.extend(self.seq2fun_count_matrix())
-            jobs.extend([concat_jobs([
-                Job(command="mkdir -p " + output_directory),
-                prepare_matrix_job,
-                edger_job,
-                deseq_job,
-                report_matrix_job
-            ], name="differential_expression.seq2fun")])
+            jobs.extend(
+                [
+                    concat_jobs(
+                        [
+                            bash.mkdir(output_directory),
+                            bash.mkdir(f"{output_directory}_batch_corrected") if self.batch_file else None,
+                            prepare_matrix_job,
+                            edger_job,
+                            deseq_job,
+                            deseq_job_batch_corrected if self.batch_file else None,
+                            report_matrix_job
+                        ],
+                        input_dependency=[count_matrix_temp],
+                        name="differential_expression.seq2fun",
+                        samples=self.samples
+                    )
+                ]
+            )
             return jobs
         else:
             log.info("remove all the contrasts without replicates and re-run the pipeline")
@@ -1530,19 +1752,24 @@ rm {temp_out2}""".format(
 
         """
         jobs = []
-        output_prefix = "seq2fun_ko_pathway"
-        DGE_output_directory=  "differential_expression/seq2fun"
+        DGE_output_directory = f"{self.output_dirs['differential_expression_directory']}/seq2fun"
         profiling = (global_conf.global_get('seq2fun', 'profiling'))
         if "--profiling" == profiling:
             for contrast in self.contrasts:
-                output_file = os.path.join(DGE_output_directory, contrast.name, "edger_results.csv")
-                #html_file = os.path.join("seq2fun", contrast.name, "All_samples.html")
-                output_dir = os.path.join("seq2fun_pathway", contrast.name)
-                mkdir_job = Job(command="mkdir -p " + output_dir)
-                pathway_job = seq2fun.ko_pathway_analysis(output_file, output_prefix,  output_dir)
-                job = concat_jobs([mkdir_job, pathway_job])
-                job.name = "seq2fun_pathway." + contrast.name
-                job.samples = self.samples
+                input_file = os.path.join(DGE_output_directory, contrast.name, "edger_results.csv")
+                output_dir = os.path.join(self.output_dirs["seq2fun_pathway_directory"], contrast.name)
+                job = concat_jobs(
+                    [
+                        bash.mkdir(output_dir),
+                        seq2fun.ko_pathway_analysis(
+                            input_file,
+                            "seq2fun_ko_pathway",
+                            output_dir
+                        )
+                    ],
+                    name="seq2fun_pathway." + contrast.name,
+                    samples=self.samples
+                )
                 jobs.append(job)
         else:
             log.info("You should first run seq2fun with profiling on to conduct the pathway enrichment analysis... skipping")
@@ -1554,38 +1781,66 @@ rm {temp_out2}""".format(
         return self.protocols()[self._protocol]
 
     def protocols(self):
-        return { "trinity":
+        return { 'trinity':
             [
-            self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.insilico_read_normalization_readsets,
-            self.insilico_read_normalization_all,
-            self.trinity,
-            self.exonerate_fastasplit,
-            self.blastx_trinity_uniprot,
-            self.blastx_trinity_uniprot_merge,
-            self.transdecoder,
-            self.hmmer,
-            self.rnammer_transcriptome,
-            self.blastp_transdecoder_uniprot,
-            self.signalp,
-            self.tmhmm,
-            self.trinotate,
-            self.align_and_estimate_abundance_prep_reference,
-            self.align_and_estimate_abundance,
-            self.gq_seq_utils_exploratory_analysis_rnaseq_denovo,
-            self.differential_expression,
-            self.filter_annotated_components,
-            self.gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered,
-            self.differential_expression_filtered
-            ], "seq2fun":
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.insilico_read_normalization_readsets,
+                self.insilico_read_normalization_all,
+                self.trinity,
+                self.exonerate_fastasplit,
+                self.blastx_trinity_uniprot,
+                self.blastx_trinity_uniprot_merge,
+                self.transdecoder,
+                self.hmmer,
+                self.rnammer_transcriptome,
+                self.blastp_transdecoder_uniprot,
+                self.signalp,
+                self.tmhmm,
+                self.trinotate,
+                self.align_and_estimate_abundance_prep_reference,
+                self.align_and_estimate_abundance,
+                self.gq_seq_utils_exploratory_analysis_rnaseq_denovo,
+                self.differential_expression,
+                self.filter_annotated_components,
+                self.gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered,
+                self.differential_expression_filtered
+            ], 'seq2fun':
             [
-            self.picard_sam_to_fastq,
-            self.merge_fastq,
-            self.seq2fun,
-            self.differential_expression_seq2fun,
-            self.pathway_enrichment_seq2fun
-             ]
+                self.picard_sam_to_fastq,
+                self.merge_fastq,
+                self.seq2fun,
+                self.differential_expression_seq2fun,
+                self.pathway_enrichment_seq2fun
+            ]
         }
+
+def main(parsed_args):
+    """
+    """
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+    protocol = parsed_args.protocol
+
+    pipeline = RnaSeqDeNovoAssembly(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                                    clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                                    design_file=design_file, no_json=no_json, container=container,
+                                    protocol=protocol)
+
+    pipeline.submit_jobs()
 

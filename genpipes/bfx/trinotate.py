@@ -1,27 +1,29 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
+import os
+import glob
 
 # MUGQIC Modules
 from ..core.config import global_conf
-from ..core.job import Job
+from ..core.job import Job, concat_jobs
 from . import blast
 
 # Identifies candidate coding regions within transcript sequences using [Transdecoder](http://transdecoder.github.io/).
@@ -164,21 +166,39 @@ tmhmm --short \\
 
 
 # Perform transcriptome functional annotation and analysis using [Trinotate](http://trinotate.sourceforge.net/). All functional annotation data is integrated into a SQLite database and a whole annotation report is created.
-def trinotate(swissprot_db, trinity_fasta, swissprot_blastx, transdecoder_pep, transdecoder_pfam, swissprot_blastp, rnammer, signalp, tmhmm, trinotate_sqlite, trinotate_report):
-    return concat_jobs([
-        Job(command="mkdir -p trinotate"),
-        Job(
-            [trinity_fasta,
-                swissprot_blastx,
-                transdecoder_pep,
-                transdecoder_pfam,
-                swissprot_blastp,
-                rnammer,
-                signalp,
-                tmhmm],
-            [trinotate_sqlite, trinotate_report],
-            [['trinotate', 'module_perl'], ['trinotate', 'module_trinity'], ['trinotate', 'module_trinotate']],
-            command="""\
+def trinotate(
+    trinity_fasta,
+    swissprot_blastx,
+    transdecoder_pep,
+    transdecoder_pfam,
+    swissprot_blastp,
+    rnammer,
+    signalp,
+    tmhmm,
+    trinotate_sqlite,
+    trinotate_report
+    ):
+    return Job(
+        [
+            trinity_fasta,
+            swissprot_blastx,
+            transdecoder_pep,
+            transdecoder_pfam,
+            swissprot_blastp,
+            rnammer,
+            signalp,
+            tmhmm
+        ],
+        [
+            trinotate_sqlite,
+            trinotate_report
+        ],
+        [
+            ['trinotate', 'module_perl'],
+            ['trinotate', 'module_trinity'],
+            ['trinotate', 'module_trinotate']
+        ],
+        command="""\
 cp $TRINOTATE_SQLITE {trinotate_sqlite} && \\
 $TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl \\
 {trinity_fasta} \\
@@ -195,16 +215,17 @@ Trinotate {trinotate_sqlite} LOAD_signalp {signalp} && \\
 Trinotate {trinotate_sqlite} LOAD_rnammer {rnammer} && \\
 Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} \\
 > {trinotate_report}""".format(
-                trinity_fasta=trinity_fasta,
-                trinotate_sqlite=trinotate_sqlite,
-                transdecoder_pep=transdecoder_pep,
-                swissprot_blastx=swissprot_blastx,
-                swissprot_blastp=swissprot_blastp,
-                transdecoder_pfam=transdecoder_pfam,
-                tmhmm=tmhmm,
-                signalp=signalp,
-                rnammer=rnammer,
-                evalue=global_conf.global_get('trinotate', 'evalue'),
-                pfam_cutoff=global_conf.global_get('trinotate', 'pfam_cutoff'),
-                trinotate_report=trinotate_report
-        ))], name="trinotate")
+            trinity_fasta=trinity_fasta,
+            trinotate_sqlite=trinotate_sqlite,
+            transdecoder_pep=transdecoder_pep,
+            swissprot_blastx=swissprot_blastx,
+            swissprot_blastp=swissprot_blastp,
+            transdecoder_pfam=transdecoder_pfam,
+            tmhmm=tmhmm,
+            signalp=signalp,
+            rnammer=rnammer,
+            evalue=global_conf.global_get('trinotate', 'evalue'),
+            pfam_cutoff=global_conf.global_get('trinotate', 'pfam_cutoff'),
+            trinotate_report=trinotate_report
+        )
+    )

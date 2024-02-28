@@ -1,27 +1,28 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
-from ..core.job import Job
+from ..core.job import Job, concat_jobs
 
 # Large RNA-Seq data sets, such as those exceeding 300M pairs, are best suited for in silico normalization prior to running Trinity, in order to reduce memory requirements and greatly improve upon runtimes
 def insilico_read_normalization(left_or_single_reads, right_reads, sequence_type, jellyfish_memory,output_directory=None, cpu=None):
