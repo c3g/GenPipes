@@ -1,14 +1,14 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
@@ -17,9 +17,7 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Python Standard Modules
-
-# MUGQIC Modules
+# GenPipes Modules
 from ..core.config import global_conf
 from ..core.job import Job
 
@@ -83,7 +81,7 @@ bcftools \\
   {regionFile} \\
   {output}""".format(
         options=options if options else "",
-        reference_fasta=global_conf.global_get('samtools_mpileup', 'genome_fasta', param_type='filepath'),
+        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', param_type='filepath'),
         inputs="".join(" \\\n  " + input for input in inputs),
         regions="-r " + regions if regions else "",
         regionFile="-R " + regionFile if regionFile else "",
@@ -175,6 +173,46 @@ bcftools \\
         )
     )
 
+def sort(input, output, sort_options=None):
+    """
+    Generalized sort
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_sort', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  sort {sort_options} \\
+  {output}{input}""".format(
+        sort_options=sort_options if sort_options else "",
+        input=" \\\n " + input if input else "",
+        output=" \\\n -o " + output if output else ""
+        )
+    )
+
+def query(input, output, query_options=None):
+    """
+    Generalized sort
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_sort', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  query {query_options} \\
+  {output}{input}""".format(
+        query_options=query_options if query_options else "",
+        input=" \\\n " + input if input else "",
+        output=" \\\n -o " + output if output else ""
+        )
+    )
+
 def filter(input, output, filter_options):
     """
     Generalized filter function
@@ -249,10 +287,31 @@ def norm(input, output, options, ini_section='bcftools_norm'):
         command="""\
 bcftools \\
   norm {options} \\
-  {input}\\
+  {input} \\
   {output}""".format(
         options=options if options else "",
         input=input,
         output="> " + output if output else ""
+        )
+    )
+
+def split(input, output, options, ini_section='bcftools_split'):
+    """
+    split vcf by sample
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  +split {options} \\
+  {input} \\
+  -o {output}""".format(
+        options=options if options else "",
+        input=input,
+        output=output
         )
     )

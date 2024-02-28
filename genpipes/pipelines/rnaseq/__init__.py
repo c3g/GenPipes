@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes.
 #
@@ -14,7 +14,7 @@
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -38,12 +38,14 @@ from ...bfx import (
     annoFuse,
     arriba,
     ballgown,
+    bash_cmd as bash,
     bcftools,
     bedtools,
     bvatools,
     bwa,
     cpsr,
     deeptools,
+    deliverables,
     differential_expression,
     fastqc,
     gatk4,
@@ -74,8 +76,6 @@ from ...bfx import (
 from ...bfx import multiqc
 from ...bfx import gtex_pipeline
 
-from ...bfx import bash_cmd as bash
-
 log = logging.getLogger(__name__)
 
 class RnaSeqRaw(common.Illumina):
@@ -83,7 +83,7 @@ class RnaSeqRaw(common.Illumina):
     RNA-Seq Pipeline
     ================
 
-    The standard GenPipes RNA-Seq pipeline has three protocols (stringtie, variants, cancer), stringtie is the
+    The standard MUGQIC RNA-Seq pipeline has three protocols (stringtie, variants, cancer), stringtie is the
     default protocol and applicable in most cases.
 
     All three protocols are based on the use of the [STAR aligner](https://code.google.com/p/rna-star/)
@@ -314,11 +314,11 @@ class RnaSeqRaw(common.Illumina):
                             trim_fastq1,
                             trim_fastq2,
                             output_dir,
-                            output_dir_sample, 
+                            output_dir_sample,
                             readset.name
                         )
                 inputs = [trim_fastq1, trim_fastq2]
-                
+
             elif readset.run_type == "SINGLE_END":
                 trim_fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "single.fastq.gz")
                 trim_fastq2 = None
@@ -330,7 +330,7 @@ class RnaSeqRaw(common.Illumina):
                             readset.name
                         )
                 inputs = [trim_fastq1]
-                
+
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
@@ -342,7 +342,7 @@ class RnaSeqRaw(common.Illumina):
                     bash.mkdir(output_dir_sample),
                     bash.mkdir(index_directory),
                     bash.mkdir(link_directory),
-                    sortmerna_job, 
+                    sortmerna_job,
                     bash.ln(
                         os.path.relpath(os.path.join(output_dir_sample, readset.name + ".aligned.log"), link_directory),
                         os.path.join(link_directory, readset.name + ".aligned.log"),
@@ -356,9 +356,9 @@ class RnaSeqRaw(common.Illumina):
             )
 
             self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.name + ".aligned.log"))
-        
+
         return jobs
-    
+
 
     def star(self):
         """
@@ -549,7 +549,7 @@ class RnaSeqRaw(common.Illumina):
             if len(readset.sample.readsets) == 1:
                 readset_bam = os.path.join(alignment_pass_directory, "Aligned.sortedByCoord.out.bam")
                 sample_bam = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.sample.name + ".sorted.bam")
-                
+
                 job = concat_jobs(
                     [
                         job,
@@ -1143,10 +1143,10 @@ pandoc \\
             output = os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.bam")
 
             if nb_jobs > 1:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                unique_sequences_per_job, _ = split_by_size(self.sequence_dictionary, nb_jobs - 1)
 
                 inputs = []
-                for idx, sequences in enumerate(unique_sequences_per_job):
+                for idx, _ in enumerate(unique_sequences_per_job):
                     inputs.append(split_file_prefix + "sorted.mdup.split." + str(idx) + ".bam")
                 inputs.append(split_file_prefix + "sorted.mdup.split.others.bam")
 
@@ -1395,7 +1395,12 @@ pandoc \\
                             input,
                             print_reads_output,
                             base_recalibrator_output
-                        )
+                        ),
+                        deliverables.md5sum(
+                            print_reads_output,
+                            print_reads_output + ".md5",
+                            self.output_dir
+                            )
                     ],
                     name="gatk_print_reads." + sample.name,
                     samples=[sample],
@@ -1763,7 +1768,12 @@ pandoc \\
                         htslib.tabix(
                             output_filter,
                             options="-pvcf"
-                        )
+                        ),
+                        deliverables.md5sum(
+                            output_filter,
+                            output_filter + ".md5",
+                            self.output_dir
+                            )
                     ],
                     name="filter_gatk." + sample.name,
                     samples=[sample],
@@ -1842,10 +1852,11 @@ pandoc \\
                 sample.name,
                 "pcgr"
             )
-            output = os.path.join(
-                pcgr_directory,
-                sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"
-            )
+            output = [
+                    os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                    os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".maf"),
+                    os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv")
+                ]
 
             jobs.append(
                 concat_jobs(
@@ -1859,13 +1870,13 @@ pandoc \\
                             pcgr_directory,
                             sample.name
                         ),
-                        bash.ls(output)
+                        bash.ls(output[0])
                     ],
                     name="report_pcgr." + sample.name,
                     samples=[sample],
                     readsets=list(sample.readsets),
                     input_dependency=[input_cpsr],
-                    output_dependency=[output]
+                    output_dependency=output
                 )
             )
 
@@ -1893,8 +1904,10 @@ pandoc \\
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                                                  re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    candidate_input_files.append([
+                        re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
+                        re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                        ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
@@ -2261,7 +2274,7 @@ pandoc \\
                         output_count,
                         global_conf.global_get('htseq_count', 'options'),
                         stranded
-                    ),
+                        ),
                     bash.ln(
                         target_file=os.path.relpath(output_count, link_directory),
                         link=os.path.join(link_directory, sample.name + ".tsv"),
@@ -2585,7 +2598,7 @@ END
                     os.path.join(self.output_dirs['metrics_directory'], "rnaseqRep", "metrics.tsv"),
                     os.path.join(self.output_dirs["report_directory"], "trimAlignmentTable.tsv")
                 ] + [
-                    os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name, readset.name+"rRNA.stats.tsv")
+                    os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name, readset.name + "rRNA.stats.tsv")
                     for readset in self.readsets
                 ],
                 [os.path.join(self.output_dirs['report_directory'], "IHEC_metrics_rnaseq_All.txt")],
@@ -2618,7 +2631,7 @@ END
         if by_sample == "true":
             for sample in self.samples:
                 input = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", sample.name)
-                output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_by_sample", sample.name, "multiqc_" + sample.name)
+                output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_by_sample", sample.name, f"{sample.name}.multiqc")
 
                 job = multiqc.run(
                         input + "*",
@@ -2626,6 +2639,8 @@ END
                         )
                 job.name = "multiqc." + sample.name
                 job.input_files = self.multiqc_inputs
+                job.samples = self.samples
+                job.readsets = self.readsets
                 jobs.append(job)
 
         return jobs
@@ -2635,8 +2650,7 @@ END
         return self.protocols()[self._protocol]
 
     def protocols(self):
-        return {
-            'stringtie':
+        return { 'stringtie':
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
@@ -2659,8 +2673,7 @@ END
                 self.differential_expression,
                 self.multiqc,
                 self.cram_output
-            ],
-            'variant':
+            ], 'variants':
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
@@ -2687,12 +2700,11 @@ END
                 self.wiggle,
                 self.multiqc,
                 self.cram_output
-            ],
-            'cancer':
+            ], 'cancer':
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
-                self.sortmerna, 
+                self.sortmerna,
                 self.star,
                 self.picard_merge_sam_files,
                 self.mark_duplicates,
@@ -2722,13 +2734,14 @@ END
             ]
         }
 
+
 class RnaSeq(RnaSeqRaw):
     __doc__ = RnaSeqRaw.__doc__
     def __init__(self, *args, protocol=None, batch=None, **kwargs):
         self._protocol = protocol
         self.batch_file = batch
         # Add pipeline specific arguments
-        super(RnaSeq).__init__(*args, **kwargs)
+        super(RnaSeq, self).__init__(*args, **kwargs)
 
     @classmethod
     def argparser(cls, argparser):
@@ -2739,3 +2752,32 @@ class RnaSeq(RnaSeqRaw):
                                     type=argparse.FileType('r'))
 
         return cls._argparser
+
+def main(parsed_args):
+    """
+    """
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+    protocol = parsed_args.protocol
+
+    pipeline = RnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                              clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                              design_file=design_file, no_json=no_json, container=container,
+                              protocol=protocol)
+
+    pipeline.submit_jobs()
+

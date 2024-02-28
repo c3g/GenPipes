@@ -259,8 +259,7 @@ class Illumina(GenPipesPipeline):
                     [bam] = self.select_input_files(candidate_input_files)
 
                     rawReadsDirectory = os.path.join(
-                        self.output_dir,
-                        "raw_reads",
+                        self.output_dirs['raw_reads_directory'],
                         readset.sample.name,
                     )
                     if readset.run_type == "PAIRED_END":
@@ -303,6 +302,7 @@ class Illumina(GenPipesPipeline):
 
         This step takes as input files:
 
+utput_dir
         1. FASTQ files from the readset file if available
         2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """

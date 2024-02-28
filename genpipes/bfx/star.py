@@ -21,7 +21,8 @@
 import os
 import logging
 import sys 
-# MUGQIC Modules
+
+# GenPipes Modules
 from ..core.config import global_conf
 from ..core.job import Job
 from ..utils import utils
@@ -42,7 +43,9 @@ def align(
     sort_bam=False,
     create_wiggle_track=False,
     search_chimeres=False,
-    cuff_follow=False
+    cuff_follow=False,
+    two_pass=False,
+    allsjdbFiles=None,	
     ):
 
     if not genome_index_folder:
@@ -54,12 +57,18 @@ def align(
             star_version=''
         )
 
+    inputs = []
+    inputs.extend([reads1,reads2])
+
+    if two_pass:
+        inputs.extend(allsjdbFiles)
+
     bam_name = "Aligned.sortedByCoord.out.bam" if sort_bam else "Aligned.out.bam"
     log_file = os.path.join(output_directory, "Log.final.out")
 
     job = Job(
-        [reads1, reads2],
-        [os.path.join(output_directory, bam_name), os.path.join(output_directory, "SJ.out.tab")],
+        inputs,
+        [os.path.join(output_directory, bam_name), os.path.join(output_directory, "SJ.out.tab"), log_file],
         [['star_align', 'module_star']],
         removable_files=[os.path.join(output_directory, bam_name)]
     )
@@ -71,7 +80,7 @@ def align(
     io_max = int(utils.number_symbol_converter(io_limit))
     stranded = global_conf.global_get('star_align', 'strand_info')
     wig_prefix = global_conf.global_get('star_align', 'wig_prefix')
-    chimere_segment_min = global_conf.global_get('star_align', 'chimere_segment_min', param_type='int', required=False)
+    chimere_segment_min = global_conf.global_get('star_align','chimere_segment_min', param_type='int', required=False)
     ## Wiggle information
     if create_wiggle_track:
         wig_cmd = "--outWigType wiggle read1_5p"
@@ -88,7 +97,7 @@ def align(
 
     ## Chimeric information
     if search_chimeres and chimere_segment_min != "":
-        chim_cmd = "--chimSegmentMin " + str(chimere_segment_min)
+        chim_cmd = "--chimSegmentMin " + str(chimere_segment_min) + " --chimJunctionOverhangMin " + str(chimere_segment_min) + " --chimSegmentReadGapMax 3"
     else:
         chim_cmd = ""
 
@@ -102,6 +111,11 @@ def align(
             raise Exception("Stand info\"" + stranded + "\" unrecognized")
     else:
         cuff_cmd = ""
+
+    if two_pass:
+        two_pass_cmd = "  --sjdbFileChrStartEnd" + " ".join(" " + sjdbFile for sjdbFile in allsjdbFiles),
+    else:
+        two_pass_cmd = ""
 
     other_options = global_conf.global_get('star_align', 'other_options', required=False)
 
@@ -139,6 +153,7 @@ STAR --runMode alignReads \\
         chim_param=" \\\n  " + chim_cmd if chim_cmd else "",
         cuff_cmd=" \\\n  " + cuff_cmd if cuff_cmd else "",
         tmp_dir=global_conf.global_get('star_align', 'tmp_dir', required=True),
+	    two_pass_cmd=" \\\n" + " ".join(two_pass_cmd) if two_pass_cmd else "",
         other_options=" \\\n  " + other_options if other_options else ""
     )
 
@@ -148,7 +163,8 @@ STAR --runMode alignReads \\
 def index(
     genome_index_folder,
     junction_file,
-    gtf = global_conf.global_get('star_align', 'gtf', param_type='filepath', required=False),
+    genome_length,
+    gtf=global_conf.global_get('star_align', 'gtf', param_type='filepath', required=False)
     ):
     #STAR --runMode genomeGenerate --genomeDir $odir --genomeFastaFiles $genome --runThreadN $runThreadN --limitGenomeGenerateRAM $limitGenomeGenerateRAM --sjdbOverhang $sjdbOverhang  --sjdbFileChrStartEnd "
 
@@ -159,7 +175,7 @@ def index(
         removable_files=[genome_index_folder]
     )
 
-    ## get get from config filepath
+    ## get param from config filepath
     reference_fasta = global_conf.global_get('star_index', 'genome_fasta', param_type='filepath')
     num_threads = global_conf.global_get('star_index', 'threads', param_type='int')
     ram_limit = global_conf.global_get('star_index', 'ram')
@@ -168,17 +184,19 @@ def index(
     io_max = int(utils.number_symbol_converter(io_limit))
     read_size = global_conf.global_get('star_index', 'star_cycle_number', param_type='posint')
     other_options = global_conf.global_get('star_index', 'other_options', required=False)
-     
+
     job.command = """\
 mkdir -p {genome_index_folder} && \\
 STAR --runMode genomeGenerate \\
   --genomeDir {genome_index_folder} \\
   --genomeFastaFiles {reference_fasta} \\
+  --genomeSAindexNbases {genome_length} \\
   --runThreadN {num_threads} \\
   --limitGenomeGenerateRAM {ram} \\
   --outTmpDir {tmp_dir}/$(mktemp -u star_XXXXXXXX) \\
   --sjdbFileChrStartEnd {junction_file}{gtf}{io_limit_size}{sjdbOverhang}{other_options}""".format(
         genome_index_folder=genome_index_folder,
+        genome_length=genome_length,
         reference_fasta=reference_fasta,
         num_threads=num_threads if str(num_threads) != "" and isinstance(num_threads, int) and  num_threads > 0 else 1,
         ram=max_ram,
