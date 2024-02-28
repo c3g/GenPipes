@@ -1,20 +1,22 @@
+#!/usr/bin/env python
+
 ################################################################################
 # Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of GenPipes.
+# This file is part of MUGQIC Pipelines.
 #
-# GenPipes is free software: you can redistribute it and/or modify
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# GenPipes is distributed in the hope that it will be useful,
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -40,12 +42,14 @@ from ...bfx import snpeff
 from ...bfx import wub
 from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
+from ...core.readset import parse_nanopore_readset_file
 from .. import common
 from ...utils.utils import strtobool
 
+
 log = logging.getLogger(__name__)
 
-class NanoporeCoVSeq(common.Nanopore):
+class NanoporeCoVSeq(common.GenPipesPipeline):
     """
     Nanopore CoVSeq Pipeline
     ==============
@@ -101,7 +105,7 @@ class NanoporeCoVSeq(common.Nanopore):
         jobs = []
 
         reads_fast5_dir = []
-        transfer = bool(strtobool(global_conf.global_get('guppy_basecall', 'transfer_to_tmp')))
+        transfer = bool(distutils.util.strtobool(global_conf.global_get('guppy_basecall', 'transfer_to_tmp')))
 
         for sample in self.samples:
             reads_fast5_dir.append(sample.fast5_files)
@@ -146,7 +150,7 @@ class NanoporeCoVSeq(common.Nanopore):
 
         demux_fastq_directory = os.path.join("demultiplex")
 
-        transfer = bool(strtobool(global_conf.global_get('guppy_demultiplex', 'transfer_to_tmp')))
+        transfer = bool(distutils.util.strtobool(global_conf.global_get('guppy_demultiplex', 'transfer_to_tmp')))
 
         demux_barcode_dir = []
         for sample in self.samples:
@@ -834,7 +838,7 @@ fi""".format(
     @property
     def step_list(self):
         return self.protocols()[self._protocol]
-                
+
     def protocols(self):
         return {
             'default':
@@ -865,4 +869,32 @@ fi""".format(
                     self.prepare_report
                 ]
             }
+
+def main(parsed_args):
+    """
+    """
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+    protocol = parsed_args.protocol
+
+    pipeline = NanoporeCoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                              clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                              design_file=design_file, no_json=no_json, container=container,
+                              protocol=protocol)
+
+    pipeline.submit_jobs()
 
