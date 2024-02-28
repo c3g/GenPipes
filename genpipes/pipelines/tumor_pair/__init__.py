@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes.
 #
@@ -14,7 +14,7 @@
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -23,7 +23,6 @@ import logging
 import math
 import os
 import re
-import sys
 import gzip
 
 # GenPipes Modules
@@ -114,16 +113,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     choices=["fastpass", "ensemble", "sv"], default="ensemble")
 
         return cls._argparser
-                                                                                    
-    @property
-    def tumor_pairs(self):
-        if not hasattr(self, "_tumor_pairs"):
-            self._tumor_pairs = parse_tumor_pair_file(
-            self.pairs.name,
-            self.samples,
-            self.profyle
-        )
-        return self._tumor_pairs
+
 
     @property
     def output_dirs(self):
@@ -151,6 +141,16 @@ class TumorPair(dnaseq.DnaSeqRaw):
     @multiqc_inputs.setter
     def multiqc_inputs(self, value):
         self._multiqc_inputs = value
+
+    @property
+    def tumor_pairs(self):
+        if not hasattr(self, "_tumor_pairs"):
+            self._tumor_pairs = parse_tumor_pair_file(
+                self.pairs.name,
+                self.samples,
+                self.profyle
+            )
+        return self._tumor_pairs
 
     def sequence_dictionary_variant(self):
         if not hasattr(self, "_sequence_dictionary_variant"):
@@ -1821,6 +1821,29 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             collect_oxog_metrics_normal_job.readsets = list(tumor_pair.normal.readsets)
             tumor_pair_jobs.append(collect_oxog_metrics_normal_job)
 
+            collect_wgs_metrics_normal_job = concat_jobs(
+                    [
+                        mkdir_job_normal,
+                        gatk4.collect_wgs_metrics(
+                            normal_input,
+                            os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt")
+                            ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
+                            ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt"), self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.normal.name + ".wgs_metrics.txt"),
+                            input=os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt")
+                            )
+                    ]
+            )
+            self.multiqc_inputs[tumor_pair.name].append(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".wgs_metrics.txt"))
+            collect_wgs_metrics_normal_job.name = "picard_collect_wgs_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
+            collect_wgs_metrics_normal_job.samples = [tumor_pair.normal]
+            collect_wgs_metrics_normal_job.readsets = list(tumor_pair.normal.readsets)
+            tumor_pair_jobs.append(collect_wgs_metrics_normal_job)
+
             collect_gcbias_metrics_normal_job = concat_jobs(
                 [
                     mkdir_job_normal,
@@ -1926,6 +1949,29 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             collect_oxog_metrics_tumor_job.samples = [tumor_pair.tumor]
             collect_oxog_metrics_tumor_job.readsets = list(tumor_pair.tumor.readsets)
             tumor_pair_jobs.append(collect_oxog_metrics_tumor_job)
+
+            collect_wgs_metrics_tumor_job = concat_jobs(
+                    [
+                        mkdir_job_tumor,
+                        gatk4.collect_wgs_metrics(
+                            tumor_input,
+                            os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt")
+                            ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
+                            ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt"), self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.tumor.name + ".wgs_metrics.txt"),
+                            input=os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt")
+                            )
+                    ]
+            )
+            self.multiqc_inputs[tumor_pair.name].append(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".wgs_metrics.txt"))
+            collect_wgs_metrics_tumor_job.name = "picard_collect_wgs_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
+            collect_wgs_metrics_tumor_job.samples = [tumor_pair.tumor]
+            collect_wgs_metrics_tumor_job.readsets = list(tumor_pair.tumor.readsets)
+            tumor_pair_jobs.append(collect_wgs_metrics_tumor_job)
 
             collect_gcbias_metrics_tumor_job = concat_jobs(
                 [
@@ -2111,23 +2157,17 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         options
                     ),
                     bash.mkdir(
-                        self.output_dirs['report'][tumor_pair.name]
+                       os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")
+                    ),
+                    bash.ln(
+                        os.path.relpath(normal_qualimap_directory, os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")),
+                        os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap", tumor_pair.normal.name),
+                        input=normal_qualimap_directory
                     ),
                     normal_job_project_tracking_metrics
                 ]
             )
-            for outfile in qualimap_normal_job.report_files:
-                self.multiqc_inputs[tumor_pair.name].append(outfile)
-                qualimap_normal_job = concat_jobs(
-                    [
-                        qualimap_normal_job,
-                        bash.ln(
-                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.normal.name + "." + os.path.basename(outfile)),
-                            input=outfile
-                        )
-                    ]
-                )
+            self.multiqc_inputs[tumor_pair.name].append(normal_qualimap_directory)
             qualimap_normal_job.name = normal_job_name
             qualimap_normal_job.samples = normal_samples
             qualimap_normal_job.readsets = list(tumor_pair.normal.readsets)
@@ -2190,23 +2230,17 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         options
                     ),
                     bash.mkdir(
-                        self.output_dirs['report'][tumor_pair.name]
+                       os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")
+                    ),
+                    bash.ln(
+                        os.path.relpath(tumor_qualimap_directory, os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")),
+                        os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap", tumor_pair.tumor.name),
+                        input=tumor_qualimap_directory
                     ),
                     tumor_job_project_tracking_metrics
                 ]
             )
-            for outfile in qualimap_tumor_job.report_files:
-                self.multiqc_inputs[tumor_pair.name].append(outfile)
-                qualimap_tumor_job = concat_jobs(
-                    [
-                        qualimap_tumor_job,
-                        bash.ln(
-                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.tumor.name + "." + os.path.basename(outfile)),
-                            input=outfile
-                        )
-                    ]
-                )
+            self.multiqc_inputs[tumor_pair.name].append(tumor_qualimap_directory)
             qualimap_tumor_job.name = tumor_job_name
             qualimap_tumor_job.samples = tumor_samples
             qualimap_tumor_job.readsets = list(tumor_pair.tumor.readsets)
@@ -4885,10 +4919,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 tumor_pair.name,
                 "pcgr"
             )
-            output = os.path.join(
-                pcgr_directory,
-                tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"
-            )
+            output = [
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
+                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".cna_segments.tsv.gz")
+                ]
 
             jobs.append(
                 concat_jobs(
@@ -4918,13 +4954,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             tumor_pair.name,
                             input_cna=output_cna
                         ),
-                        bash.ls(output)
+                        bash.ls(output[0])
                     ],
                     name="report_pcgr." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency = [header, input, input_cna, input_cpsr, output_cna_body],
-                    output_dependency = [header, output_cna_body, output_cna, output]
+                    output_dependency = [header, output_cna_body, output_cna] + output
                 )
             )
 
@@ -6934,8 +6970,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
     @property
     def step_list(self):
-        return {
-            'fastpass':
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return { 'fastpass':
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
@@ -6962,8 +7000,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.sym_link_report,
                 self.sym_link_fastq_pair,
                 self.sym_link_panel #25
-            ],
-            'ensemble':
+            ], 'ensemble':
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
@@ -7007,8 +7044,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.sym_link_final_bam, #40
                 self.sym_link_report,
                 self.sym_link_ensemble
-            ],
-            'sv':
+            ], 'sv':
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
@@ -7029,4 +7065,36 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.linx_plot
             ]
         }
+
+def main(parsed_args):
+    """
+    """
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    # Specific pipeline options
+    protocol = parsed_args.protocol
+    profyle = parsed_args.profyle
+    pairs_file = parsed_args.pairs
+
+    pipeline = TumorPair(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                         clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                         design_file=design_file, no_json=no_json, container=container,
+                         protocol=protocol, profyle=profyle, pairs_file=pairs_file)
+
+    pipeline.submit_jobs()
 

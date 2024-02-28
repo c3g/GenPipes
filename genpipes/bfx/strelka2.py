@@ -1,22 +1,24 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+import os
+import re
 
 from ..core.config import global_conf
 from ..core.job import Job
@@ -29,13 +31,13 @@ def somatic_config(
     mantaIndels=None
     ):
 
-    output=[
-        os.path.join(output_dir, "runWorkflow.py"),
-        os.path.join(output_dir, "results", "variants", "somatic.snvs.vcf.gz"),
-        os.path.join(output_dir, "results", "variants", "somatic.indels.vcf.gz")
-    ]
+    inputs = [input_normal, input_tumor]
+    if callRegions:
+        inputs.append(callRegions)
+    if mantaIndels:
+        inputs.append(mantaIndels)
     return Job(
-        [input_normal, input_tumor],
+        inputs,
         [os.path.join(output_dir, "runWorkflow.py")],
         [
             ['strelka2_paired_somatic', 'module_python'],
@@ -52,9 +54,8 @@ python $STRELKA2_HOME/bin/configureStrelkaSomaticWorkflow.py \\
             workflow=os.path.join(output_dir, "runWorkflow.py"),
             normal=input_normal,
             tumor=input_tumor,
-            genome=global_conf.global_get('strelka2_paired_somatic', 'genome_fasta', param_type='filepath'),
-            experiment_type=global_conf.global_get('strelka2_paired_somatic', 'experiment_type_option')
-            if global_conf.global_get('strelka2_paired_somatic', 'experiment_type_option') else "",
+            genome=global_conf.global_get('strelka2_paired_somatic','genome_fasta', param_type='filepath'),
+            experiment_type=global_conf.global_get('strelka2_paired_somatic','experiment_type_option') if global_conf.global_get('strelka2_paired_somatic','experiment_type_option') else "",
             callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
             mantaIndels="\\\n  --indelCandidates " + mantaIndels if mantaIndels else "",
             output=output_dir
@@ -86,14 +87,12 @@ python $STRELKA2_HOME/bin/configureStrelkaGermlineWorkflow.py \\
   --runDir {output}""".format(
             workflow=os.path.join(output_dir, "runWorkflow.py"),
             normal="".join(" \\\n  --bam " + input for input in input_normal),
-            genome=global_conf.global_get('strelka2_paired_germline', 'genome_fasta', param_type='filepath'),
-            experiment_type=global_conf.global_get('strelka2_paired_germline', 'experiment_type_option')
-            if global_conf.global_get('strelka2_paired_germline', 'experiment_type_option') else "",
+            genome=global_conf.global_get('strelka2_paired_germline','genome_fasta', param_type='filepath'),
+            experiment_type=global_conf.global_get('strelka2_paired_germline','experiment_type_option') if global_conf.global_get('strelka2_paired_germline','experiment_type_option') else "",
             callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
             output=output_dir
         )
     )
-
 
 def run(
     input_dir,
@@ -123,8 +122,8 @@ python {input_dir}/runWorkflow.py \\
   -g {ram} \\
   --quiet""".format(
             input_dir=input_dir,
-            mode=global_conf.global_get('strelka2_paired_somatic', 'option_mode'),
-            nodes=global_conf.global_get('strelka2_paired_somatic', 'option_nodes'),
+            mode=global_conf.global_get('strelka2_paired_somatic','option_mode'),
+            nodes=global_conf.global_get('strelka2_paired_somatic','option_nodes'),
             ram=ram_GB
         )
     )
