@@ -88,7 +88,6 @@ def mpileup(
         regionFile=None,
         ini_section='rawmpileup'
 ):
-
     if not isinstance(inputs, list):
         inputs = [inputs]
 

@@ -2296,7 +2296,7 @@ END
         jobs = []
         
         if "high_cov" in self.get_protocol():
-            [input] = ["variants/allSamples.vt.prep.vcf.gz"]
+            [input] = ["variants/allSamples.vt.vcf.gz"]
             [output] = ["variants/allSamples.vt.snpeff.vcf"]
             job_name = "snp_effect.high_cov"
             
@@ -4720,34 +4720,52 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
         if 'high_cov' in self.get_protocol():
             prefix = os.path.join(self.output_dirs['variants_directory'], "allSamples")
-            outputPreprocess = f"{prefix}.vt.tmp.vcf.gz"
-            outputFix = f"{prefix}.vt.fix.vcf.gz"
+            outputPreprocess = f"{prefix}.tmp.vcf.gz"
+            outputFix = f"{prefix}.fix.vcf.gz"
             
             jobs.append(
                 concat_jobs(
                     [
-                        tools.preprocess_varscan(
-                            f"{prefix}.vt.vcf.gz",
-                            outputPreprocess
-                        ),
-                        Job(
-                            [outputPreprocess],
-                            [outputFix],
-                            command="zless " +
-                                    outputPreprocess +
-                                    " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  "
+                        pipe_jobs(
+                            [
+                                tools.preprocess_varscan(
+                                    f"{prefix}.vcf.gz",
+                                    None,
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    outputPreprocess
+                                ),
+                                Job(
+                                    [outputPreprocess],
+                                    [outputFix],
+                                    command="grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0}' | bgzip -cf >"
                                     + outputFix
+                                )
+                            ]
                         ),
-                        tools.preprocess_varscan(
-                        outputFix,
-                        f"{prefix}.vt.prep.vcf.gz"
-                        )
+                        pipe_jobs(
+                            [
+                                tools.preprocess_varscan(
+                                    outputFix,
+                                    f"{prefix}.prep.vcf.gz"
+                                ),
+                                vt.decompose_and_normalize_mnps(
+                                    f"{prefix}.prep.vcf.gz",
+                                    None
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    f"{prefix}.vt.vcf.gz"
+                                )
+                            ]
+                        ),
                     ],
                     name="preprocess_vcf.germline.allSamples",
                     samples=self.samples,
                     readsets=self.readsets,
-                    input_dependency=[f"{prefix}.vt.vcf.gz"],
-                    output_dependency=[outputFix, f"{prefix}.vt.prep.vcf.gz"]
+                    input_dependency=[f"{prefix}.vcf.gz"],
+                    output_dependency=[outputFix, outputPreprocess, f"{prefix}.vt.vcf.gz"]
                 )
             )
             
@@ -5589,7 +5607,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         
         jobs = []
         
-        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+        scatter_jobs = config.param('germline_varscan2', 'nb_jobs', param_type='posint')
         if scatter_jobs > 50:
             log.warning(
                 "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
@@ -5597,8 +5615,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         compression_postfix = config.param('bwa_mem2_samtools_sort', 'compression')
         variants_directory = os.path.join(self.output_dirs["variants_directory"])
         varscan_directory = os.path.join(variants_directory, "rawVarScan")
-        initial_output = os.path.join(variants_directory, "allSamples.vcf")
-        output = os.path.join(variants_directory, "allSamples.vt.vcf.gz")
+        output = os.path.join(variants_directory, "allSamples.vcf.gz")
      
         samples_file = 'sample_list.tsv'
         sample_list = open(samples_file, 'w')
@@ -5610,7 +5627,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             bed_file = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
         
         if bed_file or scatter_jobs == 1:
-            ini_section='germline_varscan2'
             jobs.append(
                 concat_jobs(
                 [
@@ -5620,9 +5636,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             samtools.mpileup(
                                 bam_list,
                                 None,
-                                region=config.param(ini_section, 'regions'),
+                                region=config.param('germline_varscan2', 'regions'),
                                 regionFile=bed_file,
-                                ini_section=ini_section
+                                ini_section='germline_varscan2'
                             ),
                             varscan.mpileupcns(
                                 None,
@@ -5631,24 +5647,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ),
                             htslib.bgzip_tabix(
                                 None,
-                                initial_output
+                                output
                             )
                         ]
                     ),
-                    pipe_jobs(
-                        [
-                            vt.decompose_and_normalize_mnps(
-                                initial_output,
-                                None,
-                            ),
-                            htslib.bgzip_tabix(
-                                None,
-                                output,
-                            )
-                        ],
-                    )
                 ],
-                name= "germline_varscan2.bed",
+                name= "germline_varscan2.single",
                 samples=self.samples,
                 readsets=self.readsets
                 )
@@ -5661,7 +5665,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     output = os.path.join(varscan_directory,
                                                f"allSamples.{sequence['name']}.vcf.gz")
                     input_vcfs.append(output)
-                    merged_vcf = os.path.join(varscan_directory, f"allSamples.vcf.gz")
                     
                     jobs.append(
                         pipe_jobs(
@@ -5669,9 +5672,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             samtools.mpileup(
                                 bam_list,
                                 None,
-                                config.param('germline_varscan2', 'mpileup_other_options'),
                                 region=sequence['name'],
-                                regionFile=None
+                                regionFile=None,
+                                ini_section='germline_varscan2'
                             ),
                             varscan.mpileupcns(
                                 None,
@@ -5683,31 +5686,27 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 output
                             )
                         ],
-                        name = f"germline_varscan2.{sequence['name']}",
-                        samples= self.samples
+                            name = f"germline_varscan2.{sequence['name']}",
+                            samples= self.samples,
+                            readsets=self.readsets,
+                            input_dependency=bam_list,
+                            output_dependency=[output]
                         )
                     )
+            output = os.path.join(variants_directory, f"allSamples.vcf.gz")
             jobs.append(
                 concat_jobs(
                     [
                         gatk4.cat_variants(
                             input_vcfs,
-                            merged_vcf
-                        ),
-                        pipe_jobs(
-                            [
-                                vt.decompose_and_normalize_mnps(
-                                merged_vcf,
-                                None,
-                            ),
-                            htslib.bgzip_tabix(
-                                None,
-                                output,
-                            )
-                        ]),
+                            output
+                        )
                     ],
                     name = "gatk_cat_germline_varscan2",
-                    samples = self.samples
+                    samples = self.samples,
+                    readsets = self.readsets,
+                    input_dependency = input_vcfs,
+                    output_dependency = [output]
                 )
             )
             
