@@ -27,7 +27,6 @@ import re
 # GenPipes Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
 from .sample import Sample, NanoporeSample
-from .config import global_conf, _raise, SanitycheckError
 
 log = logging.getLogger(__name__)
 
@@ -498,10 +497,6 @@ def parse_pacbio_readset_file(pacbio_readset_file):
 class NanoporeReadset(Readset):
 
     @property
-    def sample(self):
-        return self._sample
-
-    @property
     def run(self):
         return self._run
 
@@ -571,7 +566,7 @@ def parse_nanopore_readset_file(nanopore_readset_file):
                     abs_files.append(os.path.normpath(file))
                 line[format] = ",".join(abs_files)
 
-        readset._sample = Sample(sample_name)
+        #readset._sample = Sample(sample_name)
         readset._run = line.get('Run', None)
         sample._run = readset._run
         readset._flowcell = line.get('Flowcell', None)
