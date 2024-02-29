@@ -26,6 +26,8 @@ import subprocess
 import sys
 import io
 
+from ..utils import utils
+
 log = logging.getLogger(__name__)
 
 class Config(configparser.ConfigParser):
@@ -101,7 +103,6 @@ class Config(configparser.ConfigParser):
             except configparser.Error as e:
                 pass
 
-            from utils import utils
             if option == self.cluster_walltime and self.has_section(section) and self.has_option(section, option):
 
                 from_section = super().get(section, option)
