@@ -4732,24 +4732,33 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     f"{prefix}.vcf.gz",
                                     None,
                                 ),
-                                htslib.bgzip_tabix(
+                                htslib.bgzip(
                                     None,
                                     outputPreprocess
                                 ),
-                                Job(
-                                    [outputPreprocess],
-                                    [outputFix],
-                                    command="grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0}' | bgzip -cf >"
-                                    + outputFix
-                                )
                             ]
+                        ),
+                        Job(
+                            [outputPreprocess],
+                            [outputFix],
+                            command="zgrep -v 'ID=AD_O' " + outputPreprocess +
+                                    " | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0}' | bgzip -cf >"
+                                    + outputFix
                         ),
                         pipe_jobs(
                             [
                                 tools.preprocess_varscan(
                                     outputFix,
-                                    f"{prefix}.prep.vcf.gz"
+                                    None
                                 ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    f"{prefix}.prep.vcf.gz"
+                                )
+                            ]
+                        ),
+                        pipe_jobs(
+                            [
                                 vt.decompose_and_normalize_mnps(
                                     f"{prefix}.prep.vcf.gz",
                                     None
@@ -5657,7 +5666,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 readsets=self.readsets
                 )
             )
-
         else:
             input_vcfs = []
             for sequence in self.sequence_dictionary_variant():
