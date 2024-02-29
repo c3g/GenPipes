@@ -1,22 +1,20 @@
-#!/usr/bin/env python
-
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -49,7 +47,7 @@ from ...utils.utils import strtobool
 
 log = logging.getLogger(__name__)
 
-class NanoporeCoVSeq(common.GenPipesPipeline):
+class NanoporeCoVSeq(common.Nanopore):
     """
     Nanopore CoVSeq Pipeline
     ==============
@@ -77,7 +75,7 @@ class NanoporeCoVSeq(common.GenPipesPipeline):
 
     @property
     def samples(self):
-        if not hasattr(self, "_samples"):
+        if self._samples is None:
             self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
             reads_fast5_dir = []
             for sample in self.samples:
@@ -105,7 +103,7 @@ class NanoporeCoVSeq(common.GenPipesPipeline):
         jobs = []
 
         reads_fast5_dir = []
-        transfer = bool(distutils.util.strtobool(global_conf.global_get('guppy_basecall', 'transfer_to_tmp')))
+        transfer = bool(strtobool(global_conf.global_get('guppy_basecall', 'transfer_to_tmp')))
 
         for sample in self.samples:
             reads_fast5_dir.append(sample.fast5_files)
@@ -150,7 +148,7 @@ class NanoporeCoVSeq(common.GenPipesPipeline):
 
         demux_fastq_directory = os.path.join("demultiplex")
 
-        transfer = bool(distutils.util.strtobool(global_conf.global_get('guppy_demultiplex', 'transfer_to_tmp')))
+        transfer = bool(strtobool(global_conf.global_get('guppy_demultiplex', 'transfer_to_tmp')))
 
         demux_barcode_dir = []
         for sample in self.samples:
@@ -741,8 +739,8 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
         modules = []
         # Retrieve all unique module version values in config files
         # assuming that all module key names start with "module_"
-        for section in config.sections():
-            for name, value in config.items(section):
+        for section in global_conf.sections():
+            for name, value in global_conf.items(section):
                 if re.search("^module_", name) and value not in modules:
                     modules.append(value)
 

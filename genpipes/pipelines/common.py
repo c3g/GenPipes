@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes.
 #
@@ -81,7 +79,7 @@ class GenPipesPipeline(Pipeline):
     @property
     def contrasts(self):
         if getattr(self, "_contrasts") is None:
-                self._contrasts = parse_design_file(self.design_file, self.samples)
+            self._contrasts = parse_design_file(self.design_file, self.samples)
         return self._contrasts
 
     @property

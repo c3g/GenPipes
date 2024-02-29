@@ -566,7 +566,7 @@ def parse_nanopore_readset_file(nanopore_readset_file):
                     abs_files.append(os.path.normpath(file))
                 line[format] = ",".join(abs_files)
 
-        #readset._sample = Sample(sample_name)
+        readset._sample = Sample(sample_name)
         readset._run = line.get('Run', None)
         sample._run = readset._run
         readset._flowcell = line.get('Flowcell', None)

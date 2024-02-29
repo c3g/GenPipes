@@ -26,7 +26,6 @@ import re
 # GenPipes Modules
 from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
-from ...core.readset import parse_nanopore_readset_file
 from .. import common
 from ...bfx import minimap2
 from ...bfx import sambamba
@@ -86,12 +85,6 @@ class Nanopore(common.Nanopore):
             'svim_directory': os.path.relpath(os.path.join(self.output_dir, 'svim'), self.output_dir)
         }
         return dirs
-
-    #@property
-    #def samples(self):
-    #    if not hasattr(self, "_samples"):
-    #        self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
-    #    return self._samples
 
     def guppy(self):
         """
