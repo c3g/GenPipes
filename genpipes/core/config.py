@@ -99,7 +99,6 @@ class Config(configparser.ConfigParser):
             try:
                 return super().get(section, '{}{}'.format(self.cit_prefix, option))
             except configparser.Error as e:
-                _raise(SanitycheckError(e))
                 pass
 
             from utils import utils
