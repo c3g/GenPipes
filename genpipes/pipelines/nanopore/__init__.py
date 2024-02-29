@@ -87,11 +87,11 @@ class Nanopore(common.Nanopore):
         }
         return dirs
 
-    @property
-    def samples(self):
-        if not hasattr(self, "_samples"):
-            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
-        return self._samples
+    #@property
+    #def samples(self):
+    #    if not hasattr(self, "_samples"):
+    #        self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
+    #    return self._samples
 
     def guppy(self):
         """
