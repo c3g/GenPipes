@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes.
 #
@@ -24,9 +24,6 @@ import argparse
 import logging
 import os
 import sys
-
-# Append mugqic_pipelines directory to Python library path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # GenPipes Modules
 import utils.utils
