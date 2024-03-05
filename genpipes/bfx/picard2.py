@@ -1,20 +1,20 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -140,7 +140,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             report_files=outputs
         )
 def collect_sequencing_artifacts_metrics(input, output, annotation_flat=None,reference_sequence=None):
-        output_dep = output + ".bait_bias_summary_metrics"
+        output_dep = output + ".bait_bias_summary_metrics.txt"
 
         return Job(
             [input],
@@ -248,7 +248,7 @@ def collect_gcbias_metrics(
 
     return Job(
         [input],
-        [output],
+        outputs,
         [
             ['picard_collect_gcbias_metrics', 'module_java'],
             ['picard_collect_gcbias_metrics', 'module_picard'],
@@ -328,10 +328,11 @@ def mark_duplicates(
             inputs,
             outputs,
             [
-                ['picard_mark_duplicates', 'module_java'],
-                ['picard_mark_duplicates', 'module_picard']
+                [ini_section, 'module_java'],
+                [ini_section, 'module_picard']
             ],
             command="""\
+rm -rf {output}.part && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar MarkDuplicates \\
  REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT {create_index} \\
  TMP_DIR={tmp_dir} \\
@@ -339,16 +340,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  OUTPUT={output} \\
  METRICS_FILE={metrics_file} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram} {other_options}""".format(
-            tmp_dir=global_conf.global_get('picard_mark_duplicates', 'tmp_dir'),
-            java_other_options=global_conf.global_get('picard_mark_duplicates', 'java_other_options'),
-            ram=global_conf.global_get('picard_mark_duplicates', 'ram'),
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+            java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+            ram=global_conf.global_get(ini_section, 'ram'),
             remove_duplicates=remove_duplicates,
             create_index="CREATE_INDEX=true" if create_index else "",
             inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
             output=output,
             metrics_file=metrics_file,
-            max_records_in_ram=global_conf.global_get('picard_mark_duplicates', 'max_records_in_ram', param_type='int'),
-            other_options=global_conf.global_get('picard_mark_duplicates', 'other_options', required = False) if global_conf.global_get('picard_mark_duplicates', 'other_options', required = False) else ""
+            max_records_in_ram=global_conf.global_get(ini_section, 'max_records_in_ram', param_type='int'),
+            other_options=global_conf.global_get(ini_section, 'other_options',required = False) if global_conf.global_get(ini_section, 'other_options',required = False) else ""
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
@@ -383,41 +384,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             output=output,
             metrics_file=metrics_file,
             max_records_in_ram=global_conf.global_get('mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int'),
-            other_options=global_conf.global_get('mark_duplicates_mate_cigar', 'other_options', required=False) if global_conf.global_get('picard_mark_duplicates', 'other_options', required=False) else ""),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
-        )
-
-def mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates="false"):
-    if not isinstance(inputs, list):
-        inputs=[inputs]
-    if global_conf.global_get('picard_mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] > "4":
-        return gatk4.mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates)
-    else:
-        return Job(
-            inputs,
-            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
-            [
-                ['picard_mark_duplicates_mate_cigar', 'module_java'],
-                ['picard_mark_duplicates_mate_cigar', 'module_picard']
-            ],
-            command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar \\
- MarkDuplicatesWithMateCigar \\
- REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
- TMP_DIR={tmp_dir} \\
- {inputs} \\
- OUTPUT={output} \\
- METRICS_FILE={metrics_file} \\
- MAX_RECORDS_IN_RAM={max_records_in_ram} {other_options}""".format(
-            tmp_dir=global_conf.global_get('picard_mark_duplicates_mate_cigar', 'tmp_dir'),
-            java_other_options=global_conf.global_get('picard_mark_duplicates_mate_cigar', 'java_other_options'),
-            ram=global_conf.global_get('picard_mark_duplicates_mate_cigar', 'ram'),
-            remove_duplicates=remove_duplicates,
-            inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
-            output=output,
-            metrics_file=metrics_file,
-            max_records_in_ram=global_conf.global_get('picard_mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int'),
-            other_options=global_conf.global_get('picard_mark_duplicates_mate_cigar', 'other_options', required = False) if global_conf.global_get('picard_mark_duplicates', 'other_options', required = False) else ""),
+            other_options=global_conf.global_get('mark_duplicates_mate_cigar', 'other_options',required = False) if global_conf.global_get('picard_mark_duplicates', 'other_options',required = False) else ""),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
@@ -604,7 +571,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         )
   )
 
-def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
+def collect_rna_metrics(
+    input,
+    output,
+    annotation_flat=None,
+    reference_sequence=None
+    ):
 
     if global_conf.global_get('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
         return picard.collect_rna_metrics(input, output, annotation_flat, reference_sequence)
@@ -629,16 +601,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  MINIMUM_LENGTH={min_length} \\
  REFERENCE_SEQUENCE={reference} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=global_conf.global_get('picard_collect_rna_metrics', 'tmp_dir'),
-            java_other_options=global_conf.global_get('picard_collect_rna_metrics', 'java_other_options'),
-            ram=global_conf.global_get('picard_collect_rna_metrics', 'ram'),
-            input=input,
-            output=output,
-            ref_flat=annotation_flat if annotation_flat else global_conf.global_get('picard_collect_rna_metrics', 'annotation_flat'),
-            strand_specificity=global_conf.global_get('picard_collect_rna_metrics', 'strand_info'),
-            min_length=global_conf.global_get('picard_collect_rna_metrics', 'minimum_length', param_type='int'),
-            reference=reference_sequence if reference_sequence else global_conf.global_get('picard_collect_rna_metrics', 'genome_fasta'),
-            max_records_in_ram=global_conf.global_get('picard_collect_rna_metrics', 'max_records_in_ram', param_type='int')
+                tmp_dir=global_conf.global_get('picard_collect_rna_metrics', 'tmp_dir'),
+                java_other_options=global_conf.global_get('picard_collect_rna_metrics', 'java_other_options'),
+                ram=global_conf.global_get('picard_collect_rna_metrics', 'ram'),
+                input=input,
+                output=output,
+                ref_flat=annotation_flat if annotation_flat else global_conf.global_get('picard_collect_rna_metrics', 'annotation_flat'),
+                strand_specificity=global_conf.global_get('picard_collect_rna_metrics', 'strand_info'),
+                min_length=global_conf.global_get('picard_collect_rna_metrics', 'minimum_length', param_type='int'),
+                reference=reference_sequence if reference_sequence else global_conf.global_get('picard_collect_rna_metrics', 'genome_fasta'),
+                max_records_in_ram=global_conf.global_get('picard_collect_rna_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
@@ -679,10 +651,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
                 platform=global_conf.global_get('picard_add_read_groups', 'platform'),
                 processing_unit=processing_unit,
                 sample=sample,
-                sequencing_center=("RGCN=\"" + global_conf.global_get(
-                    'picard_add_read_groups', 'sequencing_center') + "\""
-                                   if global_conf.global_get(
-                    'picard_add_read_groups', 'sequencing_center', required=False) else "")
+                sequencing_center=("RGCN=\"" + global_conf.global_get('picard_add_read_groups', 'sequencing_center') + "\"") if global_conf.global_get('picard_add_read_groups', 'sequencing_center', required=False) else ""
             )
         )
 
@@ -760,6 +729,40 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             ram=global_conf.global_get('picard_ScatterIntervalsByNs', 'ram'),
             reference=reference if reference else global_conf.global_get('picard_ScatterIntervalsByNs', 'genome_fasta', param_type='filepath'),
             output=output
+        )
+    )
+
+def collect_wgs_metrics(
+    input,
+    output,
+    reference_sequence=None,
+    ini_section='picard_collect_wgs_metrics'
+    ):
+
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_java'],
+            [ini_section, 'module_picard']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar \\
+  CollectWgsMetrics {options} \\
+  VALIDATION_STRINGENCY=SILENT \\
+  TMP_DIR={tmp_dir} \\
+  INPUT={input} \\
+  OUTPUT={output} \\
+  REFERENCE_SEQUENCE={reference} \\
+  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+            java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+            ram=global_conf.global_get(ini_section, 'ram'),
+            options=global_conf.global_get(ini_section, 'options'),
+            input=input,
+            output=output,
+            reference=reference_sequence if reference_sequence else global_conf.global_get(ini_section, 'genome_fasta'),
+            max_records_in_ram=global_conf.global_get(ini_section, 'max_records_in_ram', param_type='int')
         )
     )
 

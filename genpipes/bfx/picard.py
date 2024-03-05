@@ -1,25 +1,25 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
 
-# MUGQIC Modules
+# GenPipes Modules
 from ..core.config import global_conf
 from ..core.job import Job
 from . import picard2
@@ -174,8 +174,8 @@ def mark_duplicates(
 
     if not isinstance(inputs, list):
         inputs=[inputs]
-    if global_conf.global_get('picard_mark_duplicates', 'module_picard').split("/")[2] >= "2":
-        return picard2.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
+    if global_conf.global_get(ini_section, 'module_picard').split("/")[2] >= "2":
+        return picard2.mark_duplicates(inputs, output, metrics_file, remove_duplicates, ini_section=ini_section)
     else:
         outputs = [output, metrics_file]
         if create_index:
@@ -184,10 +184,11 @@ def mark_duplicates(
             inputs,
             outputs,
             [
-                ['picard_mark_duplicates', 'module_java'],
-                ['picard_mark_duplicates', 'module_picard']
+                [ini_section, 'module_java'],
+                [ini_section, 'module_picard']
             ],
             command="""\
+rm -rf {output}.part && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MarkDuplicates.jar \\
  REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT {create_index} \\
  TMP_DIR={tmp_dir} \\
@@ -440,10 +441,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
                 platform=global_conf.global_get('picard_add_read_groups', 'platform'),
                 processing_unit=processing_unit,
                 sample=sample,
-                sequencing_center=("RGCN=\"" + global_conf.global_get(
-                    'picard_add_read_groups', 'sequencing_center') + "\""
-                                   if global_conf.global_get(
-                    'picard_add_read_groups', 'sequencing_center', required=False) else "")
+                sequencing_center=("RGCN=\"" + global_conf.global_get('picard_add_read_groups', 'sequencing_center') + "\"") if global_conf.global_get('picard_add_read_groups', 'sequencing_center', required=False) else ""
             )
         )
 

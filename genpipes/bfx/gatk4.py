@@ -1,20 +1,20 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
-# This file is part of MUGQIC Pipelines.
+# This file is part of GenPipes.
 #
-# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# GenPipes is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# GenPipes is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -22,8 +22,7 @@ import logging
 import re
 import os
 
-# MUGQIC Modules
-from genpipes import core
+# GenPipes Modules
 from ..core.config import global_conf
 from ..core.job import Job
 from . import gatk
@@ -46,11 +45,11 @@ def realigner_target_creator(
     return gatk.realigner_target_creator(
         input,
         output,
-        output_dir=output_dir,
-        input2=input2,
-        intervals=intervals,
-        exclude_intervals=exclude_intervals,
-        fix_encoding=fix_encoding
+        output_dir,
+        input2,
+        intervals,
+        exclude_intervals,
+        fix_encoding
     )
 
 # only in GATK3

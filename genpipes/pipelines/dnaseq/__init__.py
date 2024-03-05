@@ -22,10 +22,6 @@ import logging
 import math
 import os
 import re
-import sys
-
-# Append mugqic_pipelines directory to Python library path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
@@ -33,45 +29,48 @@ from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import common
 from ...bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 
-from ...bfx import adapters
-from ...bfx import bvatools
-from ...bfx import bwa
-from ...bfx import bwakit
-from ...bfx import gatk4
-from ...bfx import igvtools
-from ...bfx import metrics
-from ...bfx import samtools
-from ...bfx import snpeff
-from ...bfx import tools
-from ...bfx import vcftools
-from ...bfx import skewer
-from ...bfx import sambamba
-from ...bfx import picard2
-from ...bfx import vt
-from ...bfx import htslib
-from ...bfx import gemini
-from ...bfx import qualimap
-from ...bfx import fastqc
-from ...bfx import ngscheckmate
-from ...bfx import verify_bam_id
-from ...bfx import multiqc
-from ...bfx import deliverables
-
-from ...bfx import bash_cmd as bash
+from ...bfx import (
+    adapters,
+    bvatools,
+    bwa,
+    bwakit,
+    gatk4,
+    igvtools,
+    metrics,
+    samtools,
+    snpeff,
+    tools,
+    vcftools,
+    skewer,
+    sambamba,
+    picard2,
+    vt,
+    htslib,
+    gemini,
+    qualimap,
+    fastqc,
+    ngscheckmate,
+    verify_bam_id,
+    multiqc,
+    deliverables,
+    bash_cmd as bash,
+)
 
 ##Structural variants
-from ...bfx import delly
-from ...bfx import manta
-from ...bfx import lumpy
-from ...bfx import wham
-from ...bfx import cnvkit
-from ...bfx import breakseq2
-from ...bfx import metasv
-from ...bfx import svtyper
-from ...bfx import bcftools
-from ...bfx import metric_tools
-from ...bfx import vawk
-from ...bfx import svaba
+from ...bfx import (
+    delly,
+    manta,
+    lumpy,
+    wham,
+    cnvkit,
+    breakseq2,
+    metasv,
+    svtyper,
+    bcftools,
+    metric_tools,
+    vawk,
+    svaba,
+)
 
 log = logging.getLogger(__name__)
 
@@ -719,7 +718,7 @@ END
                                 input,
                                 realign_intervals,
                                 output_dir=self.output_dir,
-                                fix_encoding=True if (quality_offsets[0] == 64) else ""
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                             ),
                             gatk4.indel_realigner(
                                 input,
@@ -4319,8 +4318,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return self.protocols()[self._protocol]
 
     def protocols(self):
-
-        return {"mugqic": [
+        return {'mugqic':
+            [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
@@ -4359,7 +4358,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.metrics_vcftools_depth_indiv,
                 self.metrics_gatk_sample_fingerprint,
                 self.metrics_gatk_cluster_fingerprint
-            ], "mpileup" : [
+            ], 'mpileup':
+            [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
@@ -4391,7 +4391,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.run_multiqc,
                 self.sym_link_fastq,
                 self.sym_link_final_bam
-            ], "light" : [
+            ], 'light':
+            [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
@@ -4423,7 +4424,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_gemini_annotations,
                 self.run_multiqc,
                 self.cram_output
-            ], "sv" : [
+            ], 'sv':
+            [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
@@ -4449,7 +4451,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.run_breakseq2,
 	            self.ensemble_metasv,
                 self.metasv_sv_annotation
-            ]
+            ],
         }
 
 class DnaSeq(DnaSeqRaw):
