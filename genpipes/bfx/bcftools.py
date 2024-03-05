@@ -14,8 +14,10 @@
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
+
+# Python Standard Modules
 
 # GenPipes Modules
 from ..core.config import global_conf
@@ -81,7 +83,7 @@ bcftools \\
   {regionFile} \\
   {output}""".format(
         options=options if options else "",
-        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', param_type='filepath'),
+        reference_fasta=global_conf.global_get('samtools_mpileup', 'genome_fasta', param_type='filepath'),
         inputs="".join(" \\\n  " + input for input in inputs),
         regions="-r " + regions if regions else "",
         regionFile="-R " + regionFile if regionFile else "",
