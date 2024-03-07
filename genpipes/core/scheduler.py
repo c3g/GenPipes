@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes.
 #
@@ -14,7 +14,7 @@
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
+# along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 import json
 import logging
@@ -287,7 +287,7 @@ cd $OUTPUT_DIR
             for j_file in json_files:
                 self.genpipes_file.write("""
                     sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}
-""".format(file=j_file))
+""".format(file=os.path.relpath(j_file, pipeline.output_dir)))
 
         ## Print a copy of sample JSONs for the genpipes dashboard
         if pipeline.json and pipeline.portal_output_dir != "":
