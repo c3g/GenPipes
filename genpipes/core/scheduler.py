@@ -299,7 +299,7 @@ cd $OUTPUT_DIR
                 output_file = os.path.join(pipeline.portal_output_dir, '$USER.' + sample.name + '.' + unique_uuid + '.json')
                 #test_output_file = os.path.join("/lb/project/mugqic/analyste_dev/portal_test_dir/", '$USER.' + sample.name + '.' + unique_uuid + '.json')
                 copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
-                    input_file=input_file, output_file=output_file))
+                    input_file=os.path.relpath(input_file, pipeline.output_dir), output_file=output_file))
                 #test_copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
                     #input_file=input_file, output_file=test_output_file))
             self.genpipes_file.write(textwrap.dedent("""
