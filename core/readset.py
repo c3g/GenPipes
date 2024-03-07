@@ -1169,9 +1169,13 @@ def sub_get_index(
     """
     Constructs the actual sequence of the indexes
     """
-    index_file = config.param('DEFAULT', 'index_settings_file', param_type='filepath', required=False)
+    index_file = config.param('DEFAULT', 'index_settings_file',
+                              param_type='filepath',
+                              required=False)
     if not (index_file and os.path.isfile(index_file)):
-        index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
+        index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),
+                                  "resources",
+                                  'adapter_settings_format.txt')
     index_fh = open(index_file, 'r')
     index_line = index_fh.readline()
     while index_line:
@@ -1230,17 +1234,26 @@ def sub_get_index(
     index_fh.close()
 
     if index1cycles:
+        ### TODO review if else statement below, last line seems to negate it
         if len(index1seq) < int(index1cycles):
             index1_primer_seq = index1_primer[:len(index1seq)-int(index1cycles)]
         else:
             index1_primer_seq = index1_primer
         index1_primer_seq = index1_primer
+        ### TODO above
         if index1_primer_seq:
             if readset.library_type == 'tenX_sc_RNA_v1' or readset.library_type == 'TELL-Seq' or readset.library_type == "SHARE-Seq_ATAC" or readset.library_type == "SHARE-Seq_RNA":
                 actual_index1seq = ""
             elif seqtype in ["dnbseqg400", "dnbseqt7"] and readset.run_type == "PAIRED_END":
                 actual_index1seq = re.sub("\[", "", re.sub("\]", "", re.sub("i7", index1seq, index1_main_seq.split(index1_primer_seq)[1])))[index1_primeroffset:index1_primeroffset+len(index1seq)].replace("A", "t").replace("C", "g").replace("T", "a").replace("G", "c").upper()[::-1][:int(index1cycles)]
             else:
+                # NovaseqX can use shorter index than the number of cycles
+                # configured in its run. In that case, the indexcycle used to
+                # retrieve the actual_indexseq must be set to the shorter value
+                # of the index length & be used with n* in the bcl2fastq mask
+                # to fit the supplementary cycles
+                if seqtype in ["novaseqx"] and readset.run_type == "PAIRED_END":
+                    index1cycles = len(index1seq)
                 actual_index1seq = re.sub("\[", "", re.sub("\]", "", re.sub("i7", index1seq, index1_main_seq.split(index1_primer_seq)[1])))[index1_primeroffset:index1_primeroffset+int(index1cycles)]
 
     if index2cycles:
@@ -1253,6 +1266,7 @@ def sub_get_index(
             if seqtype in ["hiseqx", "hiseq4000", "iSeq"] or (seqtype in ["dnbseqg400", "dnbseqt7"] and readset.run_type == "PAIRED_END"):
                 actual_index2seq = re.sub("\[", "", re.sub("\]", "", re.sub("i5c", index2seq.replace("A", "t").replace("C", "g").replace("T", "a").replace("G", "c").upper(), index2_main_seq.split(index2_primer_seq)[0])))[::-1][index2_primeroffset:index2_primeroffset+int(index2cycles)]
             else:
+                if seqtype in ["novaseqx"] and readset.run_type == "PAIRED_END":
+                    index2cycles = len(index2seq)
                 actual_index2seq = re.sub("\[", "", re.sub("\]", "", re.sub("i5", index2seq, index2_main_seq.split(index2_primer_seq)[1])))[index2_primeroffset:index2_primeroffset+int(index2cycles)]
-
     return [actual_index1seq, actual_index2seq, adapteri7, adapteri5]
