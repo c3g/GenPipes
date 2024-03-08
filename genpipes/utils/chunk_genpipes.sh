@@ -30,7 +30,7 @@ echo start_new_chunk on $1
 header=$(basename "$2")
   cat << EOF > $1
 #!/usr/bin/env bash
-SCRIPTPATH="\$( cd "\$(dirname "\$0")" >/dev/null 2>&1 ; pwd -P )"
+SCRIPTPATH="\$( cd "\$(dirname $(dirname "\$0"))" >/dev/null 2>&1 ; pwd -P )"
 source \${SCRIPTPATH}/${header}
 STEP=$3
 mkdir -p \$JOB_OUTPUT_DIR/\$STEP
@@ -85,7 +85,7 @@ while read -r line ; do
     elif [[ "$line" =~ ^TIMESTAMP=.*$ ]]; then
       line="export TIMESTAMP=${TIMESTAMP}"
     elif [[ $line =~ ^[^[:space:]]*=[^[:space:]]  ]]; then
-        line="export ${line}"
+      line="export ${line}"
     fi
 
     echo "$line" >> ${header}
