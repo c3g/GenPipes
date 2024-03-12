@@ -264,7 +264,7 @@ set -eu -o pipefail
 
         if pipeline.jobs:
             self.genpipes_file.write("""
-OUTPUT_DIR={pipeline.output_dir}
+OUTPUT_DIR={os.path.realpath(pipeline.output_dir)}
 JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
 JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP

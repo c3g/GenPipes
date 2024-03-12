@@ -30,7 +30,8 @@ echo start_new_chunk on $1
 header=$(basename "$2")
   cat << EOF > $1
 #!/usr/bin/env bash
-SCRIPTPATH="\$( cd "\$(dirname $(dirname "\$0"))" >/dev/null 2>&1 ; pwd -P )"
+SCRIPTPATH="\$( cd "\$(dirname "\$0")" >/dev/null 2>&1 ; pwd -P )"
+echo \${SCRIPTPATH}/${header}
 source \${SCRIPTPATH}/${header}
 STEP=$3
 mkdir -p \$JOB_OUTPUT_DIR/\$STEP
