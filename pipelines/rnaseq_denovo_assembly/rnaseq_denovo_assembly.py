@@ -544,10 +544,20 @@ pandoc --to=markdown \\
                         bash.mv(
                             "Trinity.fasta.transdecoder.gff3",
                             os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.gff3")
+                            ),
+                        bash.rm(
+                            os.path.join(transdecoder_subdirectory, "__checkpoints_longorfs")
+                            ),
+                        bash.rm(
+                            os.path.join(transdecoder_subdirectory, "__checkpoints_TDpredict")
+                            ),
+                        bash.rm(
+                            os.path.join(transdecoder_subdirectory, "start_refinement_*_checkpoints")
                             )
                     ],
                     name = "transdecoder",
                     samples = self.samples,
+                    input_dependency=[trinity_fasta],
                     output_dependency=[os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.bed"), os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep"),os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.cds"),os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.gff3")]
                     )
                 )
@@ -739,9 +749,6 @@ pandoc --to=markdown \\
                 bash.mkdir(
                     self.output_dirs["trinotate_directory"]
                     ),
-                bash.rm(
-                    "__init.ok"
-                    ),
                 trinotate.trinotate(
                     trinity_fasta=trinity_fasta,
                     swissprot_blastx=swissprot_blastx,
@@ -753,6 +760,9 @@ pandoc --to=markdown \\
                     tmhmm=tmhmm_output,
                     trinotate_sqlite=trinotate_sqlite,
                     trinotate_report=trinotate_report
+                    ),
+                bash.rm(
+                    "__init.ok"
                     )
             ],
             name="trinotate",
