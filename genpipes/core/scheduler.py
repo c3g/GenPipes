@@ -270,7 +270,6 @@ TIMESTAMP=`date +%FT%H.%M.%S`
 JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
 export CONFIG_FILES="{config_files}"
 mkdir -p $OUTPUT_DIR
-cd $OUTPUT_DIR
 """
                 .format(
                     pipeline=pipeline,
