@@ -264,7 +264,7 @@ set -eu -o pipefail
 
         if pipeline.jobs:
             self.genpipes_file.write("""
-OUTPUT_DIR={os.path.realpath(pipeline.output_dir)}
+OUTPUT_DIR={pipeline.output_dir}
 JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
 JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
@@ -287,7 +287,7 @@ cd $OUTPUT_DIR
             for j_file in json_files:
                 self.genpipes_file.write("""
                     sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}
-""".format(file=os.path.relpath(j_file, pipeline.output_dir)))
+""".format(file=j_file))
 
         ## Print a copy of sample JSONs for the genpipes dashboard
         if pipeline.json and pipeline.portal_output_dir != "":
@@ -299,7 +299,7 @@ cd $OUTPUT_DIR
                 output_file = os.path.join(pipeline.portal_output_dir, '$USER.' + sample.name + '.' + unique_uuid + '.json')
                 #test_output_file = os.path.join("/lb/project/mugqic/analyste_dev/portal_test_dir/", '$USER.' + sample.name + '.' + unique_uuid + '.json')
                 copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
-                    input_file=os.path.relpath(input_file, pipeline.output_dir), output_file=output_file))
+                    input_file=input_file, output_file=output_file))
                 #test_copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
                     #input_file=input_file, output_file=test_output_file))
             self.genpipes_file.write(textwrap.dedent("""
@@ -308,6 +308,10 @@ cd $OUTPUT_DIR
                 #------------------------------------------------------------------------------
                 {copy_commands}
             """).format(copy_commands='\n'.join(copy_commands)))
+
+        if pipeline.jobs:
+            self.genpipes_file.write("cd $OUTPUT_DIR")
+
 
     def print_step(self, step):
         self.genpipes_file.write("""
