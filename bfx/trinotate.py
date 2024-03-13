@@ -254,7 +254,6 @@ tmhmm --short \\
                 tmhmm_output=tmhmm_output
         ))], name="tmhmm")]
 
-
 # Perform transcriptome functional annotation and analysis using [Trinotate](http://trinotate.sourceforge.net/). All functional annotation data is integrated into a SQLite database and a whole annotation report is created.
 def trinotate(
     trinity_fasta,
