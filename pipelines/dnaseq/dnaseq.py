@@ -529,7 +529,7 @@ END
                             ini_section='gatk_fix_mate_information'
                         ),
                     ],
-                    name=f"gatk_fixmate.{sample.name}",
+                    name=f"gatk_fix_mate_information.{sample.name}",
                     samples=[sample],
                     readsets=[*list(sample.readsets)]
                 )
