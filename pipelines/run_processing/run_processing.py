@@ -69,10 +69,11 @@ class RunInfoRead(object):
     Those attributes can be found in the RunInfo.xml file.
     """
 
-    def __init__(self, number, nb_cycles, is_index):
+    def __init__(self, number, nb_cycles, is_index, is_reverse_complement):
         self._number = number
         self._nb_cycles = nb_cycles
         self._is_index = is_index
+        self._is_reverse_complement = is_reverse_complement
 
     @property
     def number(self):
@@ -85,6 +86,14 @@ class RunInfoRead(object):
     @property
     def is_index(self):
         return self._is_index
+
+    @property
+    def is_reverse_complement(self):
+        """
+        New read feature from the release of RunInfo.xml v6.0, it is only
+        leveraged by the NovaseqX.
+        """
+        return self._is_reverse_complement
 
 class RunProcessing(common.MUGQICPipeline):
     """
@@ -505,6 +514,22 @@ class RunProcessing(common.MUGQICPipeline):
             for lane in self.lanes:
                 self._index2cycles[lane] = self.get_index2cycles(lane)
         return self._index2cycles
+
+    @property
+    def index1reverse(self):
+        if not hasattr(self, "_index1reverse"):
+            self._index1reverse = {}
+            for lane in self.lanes:
+                self._index1reverse[lane] = self.get_indexreverse(lane)[0]
+        return self._index1reverse
+
+    @property
+    def index2reverse(self):
+        if not hasattr(self, "_index2reverse"):
+            self._index2reverse = {}
+            for lane in self.lanes:
+                self._index2reverse[lane] = self.get_indexreverse(lane)[1]
+        return self._index2reverse
 
     @property
     def umi(self):
@@ -2974,7 +2999,7 @@ class RunProcessing(common.MUGQICPipeline):
 
     def get_illumina_indexcycles(self):
         """
-        Returns the number of cycles for each reads of the run.
+        Returns the number of cycles for each index reads of the run.
         """
         for read in [read for read in self.read_infos if read.is_index]:
             if read.number in [1, 2]:
@@ -2982,6 +3007,29 @@ class RunProcessing(common.MUGQICPipeline):
             if read.number in [3, 4]:
                 index2cycles = read.nb_cycles
         return [index1cycles, index2cycles]
+
+    def get_indexreverse(self, lane):
+        """
+        Returns the reverse complement status for each index reads of the run
+        if available in the current platform.
+        """
+        if self.args.type == "illumina":
+            [index1reverse, index2reverse] = self.get_illumina_indexreverse(lane)
+            return [index1reverse, index2reverse]
+        else:
+            _raise(SanitycheckError(
+                "Unsupported reverse index from RunInfo.xml on platform: " + self.args.type))
+
+    def get_illumina_indexreverse(self, lane):
+        """
+        Returns the reverse complement status for each index reads of the run.
+        """
+        for read in [read for read in self.read_infos if read.is_index]:
+            if read.number in [1, 2]:
+                index1reverse = read.is_reverse_complement
+            if read.number in [3, 4]:
+                index2reverse = read.is_reverse_complement
+        return [index1reverse, index2reverse]
 
     def get_sequencer_index_length(self):
         """
@@ -2995,11 +3043,14 @@ class RunProcessing(common.MUGQICPipeline):
         """
         return min([self.read1cycles[lane], self.read2cycles[lane]])
 
-    # Obsolete...
+    # TODO Obsolete... Is not called in this file. Must make sure it is not
+    # imported and used somewhere else before deleting the function.
     def has_single_index(self, lane):
         """
         Returns True when there is at least one sample on the lane that doesn't use double-indexing or we only have
         one read of indexes.
+
+        Obsolete
         """
         return len([readset for readset in self.readsets[lane] if ("-" not in readset.index)]) > 0 or\
                len([read for read in self.read_infos[lane] if read.is_index]) < 2
@@ -3170,8 +3221,8 @@ class RunProcessing(common.MUGQICPipeline):
 
     def validate_barcodes(self, lane):
         """
-        Validate all index sequences against each other to ensure they aren't in collision according to the chosen
-        number of mismatches parameter.
+        Validate all index sequences against each other to ensure they aren't
+        in collision according to the chosen number of mismatches parameter.
         """
         min_allowed_distance = (2 * self.number_of_mismatches) + 1
         index_lengths = self.get_smallest_index_length(lane)
@@ -3481,6 +3532,13 @@ class RunProcessing(common.MUGQICPipeline):
                     sample_barcode = sample_barcode[0:self.last_index]
                 if self.first_index > 1:
                     sample_barcode = sample_barcode[self.first_index-1:]
+
+                # Reverse complement the indexes that are marked in RunInfo v6
+                # Only relevent to the NovaseqX so far
+                if self.index1reverse[lane]:
+                    readset_index['INDEX1'] = readset_index['INDEX1'].replace("A", "t").replace("C", "g").replace("T", "a").replace("G", "c").upper()[::-1]
+                if self.index2reverse[lane]:
+                    readset_index['INDEX2'] = readset_index['INDEX2'].replace("A", "t").replace("C", "g").replace("T", "a").replace("G", "c").upper()[::-1]
 
                 readset_index['BARCODE_SEQUENCE'] = sample_barcode
                 readset.indexes[idx] = readset_index
@@ -4683,7 +4741,7 @@ class RunProcessing(common.MUGQICPipeline):
         Parse the RunInfo.xml file of the run and returns the list of RunInfoRead objects
         """
         reads = Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').find('Reads')
-        return [ RunInfoRead(int(r.get("Number")), int(r.get("NumCycles")), r.get("IsIndexedRead") == "Y") for r in reads.iter('Read') ]
+        return [ RunInfoRead(int(r.get("Number")), int(r.get("NumCycles")), r.get("IsIndexedRead") == "Y", r.get("IsReverseComplement") == "Y") for r in reads.iter('Read') ]
     
     def get_run_parameter_file(self, run_dir):
         """

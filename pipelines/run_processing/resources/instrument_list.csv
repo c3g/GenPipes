@@ -1,4 +1,5 @@
 Instrument ID,Instrument ID,Instrument type,Instrument name,write delay
+NX01,LH00375,novaseqx,Rosalind Franklin,10800
 NS01,A00266,novaseq,Rosalind Franklin,10800
 NS02,A01433,novaseq,Carrie Derick,10800
 NS03,A01861,novaseq,Barbara McClintock,10800
