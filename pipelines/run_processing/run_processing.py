@@ -3848,6 +3848,7 @@ class RunProcessing(common.MUGQICPipeline):
                 name = "mgi_lane_summary_report." + f"LO{lane}",
                 input_dependency=[readset_r1_outputs]
                 )
+            )
         # Process undetermined reads fastq files
         unmatched_R1_fastq = os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_undecoded_1.fq.gz")
         if unmatched_R1_fastq not in basecall_outputs:
