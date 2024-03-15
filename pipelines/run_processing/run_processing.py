@@ -3725,17 +3725,18 @@ class RunProcessing(common.MUGQICPipeline):
                         ]
                     )
 
-                summary_report = re.sub("_1.fq.gz", "_summaryReport.html", readset_r1_outputs[0])
+                # replace with metrics job that produces per-lane output, instead of per-sample output
+                #summary_report = re.sub("_1.fq.gz", "_summaryReport.html", readset_r1_outputs[0])
 
-                summary_report_job = run_processing_tools.mgi_summary_report(
-                    readset_r1_outputs[1],
-                    readset_r2_outputs[1] if readset.run_type == "PAIRED_END" else None,
-                    summary_report,
-                    index['INDEX_NAME']
-                    )
-                summary_report_job.name = "mgi_summary_report." + index['INDEX_NAME']
-                summary_report_job.samples=self.samples[lane]
-                postprocessing_jobs.append(summary_report_job)
+                #summary_report_job = run_processing_tools.mgi_summary_report(
+                #    readset_r1_outputs[1],
+                #    readset_r2_outputs[1] if readset.run_type == "PAIRED_END" else None,
+                #    summary_report,
+                #    index['INDEX_NAME']
+                #    )
+                #summary_report_job.name = "mgi_summary_report." + index['INDEX_NAME']
+                #summary_report_job.samples=self.samples[lane]
+                #postprocessing_jobs.append(summary_report_job)
 
             # If True, then merge the 'Undetermined' reads
             if self.merge_undetermined[lane]:
@@ -3826,6 +3827,26 @@ class RunProcessing(common.MUGQICPipeline):
                         name=f"fastq_convert.R2." + readset.name + "." + self.run_id + "." + lane,
                         samples=self.samples[lane]
                     )
+                )
+        # Produce summaryReport for lane
+        lane_basecall_dir = os.path.join(basecall_dir, self.run_id, f"L0{lane}")
+        metrics_dir = os.path.join(self.run_dir, f"LO{lane}", "metrics") 
+        if self.is_paired_end[lane]:
+            PE = "-p"
+        else:
+            PE = None
+
+        postprocessing_jobs.append(
+            concat_jobs(
+                [
+                    run_processing_tools.mgi_lane_summary_report(
+                        metrics_dir,
+                        lane_basecall_dir,
+                        PE
+                        )
+                ],
+                name = "mgi_lane_summary_report." + f"LO{lane}",
+                input_dependency=[readset_r1_outputs]
                 )
         # Process undetermined reads fastq files
         unmatched_R1_fastq = os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.flowcell_id +  "_L0" + lane + "_undecoded_1.fq.gz")
