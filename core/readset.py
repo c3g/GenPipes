@@ -576,7 +576,7 @@ def parse_freezeman_readset_file(
         elif "Mus musculus" in readset.species:
             genome_build = GenomeBuild("Mus_musculus", "GRCm38")
 
-        if genome_build is not None:
+        if genome_build is not None and readset._protocol != "WGBS":
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
             current_genome_folder = os.path.join(genome_root, folder_name)
 
@@ -798,7 +798,7 @@ def parse_clarity_readset_file(
         elif "Mus musculus" in readset.species:
             genome_build = GenomeBuild("Mus_musculus", "GRCm38")
 
-        if genome_build is not None:
+        if genome_build is not None and readset._protocol != "WGBS":
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
             current_genome_folder = os.path.join(genome_root, folder_name)
 
