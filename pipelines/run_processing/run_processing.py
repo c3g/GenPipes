@@ -3830,7 +3830,8 @@ class RunProcessing(common.MUGQICPipeline):
                 )
         # Produce summaryReport for lane
         lane_basecall_dir = os.path.join(basecall_dir, self.run_id, f"L0{lane}")
-        metrics_dir = os.path.join(self.run_dir, f"LO{lane}", "metrics") 
+        metrics_dir = os.path.join(self.run_dir, f"L0{lane}", "metrics") 
+        
         if self.is_paired_end[lane]:
             PE = "-p"
         else:
@@ -3842,11 +3843,12 @@ class RunProcessing(common.MUGQICPipeline):
                     run_processing_tools.mgi_lane_summary_report(
                         metrics_dir,
                         lane_basecall_dir,
+                        self.run_id,
                         PE
                         )
                 ],
-                name = "mgi_lane_summary_report." + f"LO{lane}",
-                input_dependency=[readset_r1_outputs]
+                name="mgi_lane_summary_report." + f"L0{lane}",
+                input_dependency=basecall_outputs
                 )
             )
         # Process undetermined reads fastq files

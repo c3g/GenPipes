@@ -748,6 +748,7 @@ def parse_clarity_readset_file(
         readset._recipe = None
         readset._operator = None
         readset._project = line['ProjectName']
+        readset._project_name = line['ProjectName']
         readset._project_id = line['ProjectLUID']
         readset._pool_fraction = float(line['Pool Fraction'])
 

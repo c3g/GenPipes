@@ -536,7 +536,7 @@ def mgi_lane_summary_report(
     ini_section="basecall"
     ):
     return Job(
-        input_metrics_dir,
+        [input_metrics_dir],
         [os.path.join(basecall_dir, prefix + ".summaryReport.html")],
         [
             [ini_section, 'module_basecall_t7'],
