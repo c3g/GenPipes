@@ -98,29 +98,29 @@ out_file=/dev/null
 n_job=0
 # create chunks
 while read -r line ; do
-    echo "Creating chunk script: $out_file" #jy
+    # echo "Creating chunk script: $out_file" #jy
     echo "$line" >> $out_file
 
     if [ "$line" == 'cd $OUTPUT_DIR' ]; then
-      echo "Start of new chunk detected" #jy
+      # echo "Start of new chunk detected" #jy
       out_file=${out_dir}/chunk_${chunk}.sh
       start_new_chunk ${out_file} ${header} ${STEP}
-      echo "New chunk script created: $out_file" #jy
+      # echo "New chunk script created: $out_file" #jy
 
     elif [[ $line =~ ^STEP=.*$ ]]; then
       STEP=${line#STEP=}
 
     elif [[ $line =~ \#.JOB:.* ]]; then
-      echo "Job-related line detected: $line" #jy
+      # echo "Job-related line detected: $line" #jy
       nb_job=$((nb_job+1))
       if [[ ${nb_job} -ge ${max_chunk} ]]; then
-          echo "Maximum chunk size reached. Finalizing current chunk." #jy
+          # echo "Maximum chunk size reached. Finalizing current chunk." #jy
           nb_job=0  # reset counter
           echo '# END' >> $out_file
           chunk=$(($chunk+1))
           out_file=${out_dir}/chunk_${chunk}.sh
           start_new_chunk ${out_file} ${header} ${STEP}
-          echo "New chunk script created: $out_file" #jy
+          # echo "New chunk script created: $out_file" #jy
           load_previous_submit_id ${out_file} ${out_dir}
 
           echo "$line" >> ${out_file}
@@ -131,6 +131,10 @@ while read -r line ; do
       job_list_chunk=chunk_${chunk}.out
       echo "new .out file created: $job_list_chunk" #jy
       bidon=$(echo "$line" | sed 's/echo\s"$\(.*\)\s$JOB_NAME.*/echo "export \1=$\1 "/g')
+
+      # explicitly creates the .out file
+      touch "${SCRIPTPATH}/${job_list_chunk}" #jy
+
       echo "$bidon >> \${SCRIPTPATH}/${job_list_chunk}" >> ${out_file}
       echo "what is bidon: $bidon" #jy
     fi
