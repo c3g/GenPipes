@@ -129,14 +129,10 @@ while read -r line ; do
     elif [[ $line =~ echo.*\ \>\>..JOB_LIST ]]; then
       echo "new .out file will be created" #jy
       job_list_chunk=chunk_${chunk}.out
-      echo "new .out file created: $job_list_chunk" #jy
       bidon=$(echo "$line" | sed 's/echo\s"$\(.*\)\s$JOB_NAME.*/echo "export \1=$\1 "/g')
-
       # explicitly creates the .out file
-      touch "${SCRIPTPATH}/${job_list_chunk}" #jy
-
+      touch "\${SCRIPTPATH}/${job_list_chunk}" #jy
       echo "$bidon >> \${SCRIPTPATH}/${job_list_chunk}" >> ${out_file}
-      echo "what is bidon: $bidon" #jy
     fi
 done < ${genpipes_in}
 
