@@ -130,8 +130,10 @@ while read -r line ; do
       echo "new .out file will be created" #jy
       job_list_chunk=chunk_${chunk}.out
       bidon=$(echo "$line" | sed 's/echo\s"$\(.*\)\s$JOB_NAME.*/echo "export \1=$\1 "/g')
+      echo "creates .outfile to this path: $SCRIPTPATH/$job_list_chunk"
+      echo "unless it is this one...: ${SCRIPTHPATH}/${job_list_chunk}"
       # explicitly creates the .out file
-      touch "\${SCRIPTPATH}/${job_list_chunk}" #jy
+      touch "${SCRIPTPATH}/${job_list_chunk}" #jy
       echo "$bidon >> \${SCRIPTPATH}/${job_list_chunk}" >> ${out_file}
     fi
 done < ${genpipes_in}
