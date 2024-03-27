@@ -528,6 +528,35 @@ python $MGI_REPORT/summaryReport.py \\
       )
     )
 
+def mgi_lane_summary_report(
+    input_metrics_dir,
+    basecall_dir,
+    prefix,
+    PE=None,
+    ini_section="basecall"
+    ):
+    return Job(
+        [input_metrics_dir],
+        [os.path.join(basecall_dir, prefix + ".summaryReport.html")],
+        [
+            [ini_section, 'module_basecall_t7'],
+            [ini_section, 'module_python']
+        ],
+        command="""\
+python $MGI_REPORT/analysisAndMapping.py \\
+  {input_metrics_dir} \\
+  {basecall_dir} {prefix} \\
+  {PE} \\
+  {options}""".format(
+      input_metrics_dir=input_metrics_dir,
+      basecall_dir=basecall_dir,
+      prefix=prefix,
+      PE=PE if PE else "",
+      options=config.param(ini_section, 'summaryReport_options')
+      )
+    )
+
+
 def parse_splitBarcode_metrics(
         input_metrics,
         samplesheet,
