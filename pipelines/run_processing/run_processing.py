@@ -935,8 +935,14 @@ class RunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        mask = ""
+        # Instantiate the readset to have the readset file a dependency
+        # and self.mask available for NovaseqX
+        self.readsets
 
+        # Builds the mask from the ReadInfo.xml
+        # TODO consider replacing this for self.mask[lane] from the readset
+        # class like the NovaseqX
+        mask = ""
         for read in self.read_infos:
             if read.is_index:
                 mask += str(read.nb_cycles) + "B"
@@ -964,10 +970,17 @@ class RunProcessing(common.MUGQICPipeline):
                 barcode_file = config.param('index', 'barcode_file', param_type='filepath', required=False)
                 if not (barcode_file and os.path.isfile(barcode_file)):
                     resources_dir = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'resources')
-                    if (self.seqtype in ["hiseqx", "hiseq4000", "iSeq"] or (self.seqtype == 'novaseq' and self.sbs_consumable_version == 3)):
+                    if (self.seqtype in ["hiseqx", "hiseq4000", "iSeq"] \
+                            or (self.seqtype in ["novaseq"] \
+                            and self.sbs_consumable_version == 3)):
                         barcode_file = os.path.join(resources_dir, 'barcodes_by_sequence.i5rev.txt')
                     else:
                         barcode_file = os.path.join(resources_dir, 'barcodes_by_sequence.i5fwd.txt')
+                if (self.seqtype == 'novaseqx'):
+                    # The mask built from RunInfo.xml is inadequate for the
+                    # NovaseqX when the index is shorter than the number of
+                    # index cycles with the introduction of override cycles
+                    mask = self.mask[lane]
 
                 # CountIlluminaBarcode
                 lane_jobs.append(
@@ -998,6 +1011,9 @@ class RunProcessing(common.MUGQICPipeline):
                         ],
                         name=f"index.{self.run_id}.{lane}",
                         samples=self.samples[lane],
+                        input_dependency=[self.readset_file,
+                                          os.path.join(self.run_dir,
+                                                       "RunInfo.xml")],
                         report_files=[output]
                     )
                 )
