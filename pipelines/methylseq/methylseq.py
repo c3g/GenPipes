@@ -1138,7 +1138,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         snp_output_file + ".gz"
                         )
                 ], name="bissnp." + sample.name, samples=[sample], 
-                output_dependency=[snp_output_file + ".gz", cpg_output_file + ".gz"]
+                output_dependency=[snp_output_file + ".gz", cpg_output_file + ".gz"],
+                removable_files=[cpg_output_file, snp_output_file]
                 )
             )
 
