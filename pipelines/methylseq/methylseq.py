@@ -45,6 +45,7 @@ from bfx import sambamba
 from bfx import gatk
 from bfx import igvtools
 from bfx import bissnp
+from bfx import htslib
 from bfx import tools
 from bfx import ucsc
 from bfx import fgbio
@@ -1127,12 +1128,12 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         input_file,
                         cpg_output_file,
                         snp_output_file
-                    ),
-                    bash.gzip(
+                        ),
+                    htslib.bgzip(
                         cpg_output_file,
                         cpg_output_file + ".gz"
                         ),
-                    bash.gzip(
+                    htslib.bgzip(
                         snp_output_file,
                         snp_output_file + ".gz"
                         )
