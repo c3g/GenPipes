@@ -23,7 +23,7 @@
 from core.config import *
 from core.job import *
 
-def index(input, ini_section='DEFAULT'):
+def index(input, ini_section='samtools_index'):
     output = [re.sub(r'\b(bam|cram)\b',
                       lambda match: match.group() + (".bai" if match.group() == "bam" else ".crai"),
                       input)]
@@ -32,7 +32,7 @@ def index(input, ini_section='DEFAULT'):
         [input],
         output,
         [
-            ['samtools_index', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools index \\
@@ -77,8 +77,7 @@ samtools flagstat {other_options} \\
             threads="--threads " + config.param('samtools_flagstat', 'threads'),
             input=input,
             output=output
-            ),
-        removable_files=[output]
+            )
         )
 
 def mpileup(
@@ -162,7 +161,7 @@ bcftools mpileup {options} \\
          )
     )
 
-def sort(input, output, sort_by_name=False, ini_section='DEFAULT'):
+def sort(input, output, sort_by_name=False, ini_section='samtools_sort'):
     
     return Job(
         [input],
@@ -184,10 +183,9 @@ samtools sort \\
             input_bam=input,
             output_prefix=output_prefix if config.param(ini_section, 'module_samtools').split("/")[2] == "0.1.19" else "-o " + output
             ),
-        removable_files=[output]
         )
 
-def view(input, output=None, options="", removable=True):
+def view(input, output=None, options="", removable=False):
 
     return Job(
         [input],
@@ -365,7 +363,6 @@ samtools view -F4 {options} -c \\
             output="> " + output if output else " ",
             target_option="-L " + bed if bed else " "
             ),
-        removable_files=[output]
         )
 
 def bam2fq(input_bam, output_pair1, output_pair2, output_other, output_single, ini_section='samtools_bam2fq'):

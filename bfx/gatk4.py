@@ -165,7 +165,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             metrics_file=metrics_file,
             max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
         ),
-        removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+        #removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
     )
 
 def base_recalibrator(
@@ -207,7 +207,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 known_mills=config.param(ini_section, 'known_mills', param_type='filepath'),
                 output=output
             ),
-            removable_files=[output]
+            #removable_files=[output]
         )
 
 def apply_bqsr(
@@ -1415,11 +1415,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 output=output,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[
-                output,
-                re.sub("\.([sb])am$", ".\\1ai", output),
-                output + ".md5"
-            ]
         )
 
 def mark_duplicates(
@@ -1482,11 +1477,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 metrics_file=metrics_file,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[
-                output,
-                re.sub("\.([sb])am$", ".\\1ai", output),
-                output + ".md5"
-            ]
+            #removable_files=[
+            #    output,
+            #    re.sub("\.([sb])am$", ".\\1ai", output),
+            #    output + ".md5"
+            #]
         )
 
 def mark_duplicates_mate_cigar(
@@ -1534,7 +1529,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 metrics_file=metrics_file,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+            #removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
 def picard_mark_duplicates_mate_cigar(
@@ -1582,7 +1577,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 metrics_file=metrics_file,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+            #removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
 def merge_sam_files(
@@ -1626,10 +1621,10 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 output=output,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[
-                output,
-                re.sub("\.([sb])am$", ".\\1ai", output)
-            ]
+            #removable_files=[
+            #    output,
+            #    re.sub("\.([sb])am$", ".\\1ai", output)
+            #]
         )
 
 # Reorder BAM/SAM files based on reference/dictionary
@@ -1664,7 +1659,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 reference=config.param(ini_section, 'genome_fasta', param_type='filepath'),
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
+            #removable_files=[
+            #    output,
+            #    re.sub("\.([sb])am$", ".\\1ai",
+            #           output)
+            #]
         )
 
 # Convert SAM/BAM file to fastq format
@@ -1749,10 +1748,10 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 sort_order=sort_order,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[
-                output,
-                re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None
-            ]
+            #removable_files=[
+            #    output,
+            #    re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None
+            #]
         )
 
 def sort_vcfs(

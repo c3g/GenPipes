@@ -30,7 +30,7 @@ def report(input_vcf,
            output_dir,
            tumor_id,
            input_cna,
-           ini_section=None
+           ini_section='report_pcgr'
            ):
     
     if config.param('report_pcgr', 'module_pcgr').split("/")[2] >= "1":

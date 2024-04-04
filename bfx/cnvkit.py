@@ -59,7 +59,7 @@ cnvkit.py batch {options} \\
   {normal_bam} \\
   {tumor_bam}""".format(
             options=config.param('cnvkit_batch','batch_options'),
-            threads=config.param('cnvkit_batch','cluster_cpu'),
+            threads=config.param('cnvkit_batch','threads'),
             genome=config.param('cnvkit_batch','genome_fasta', param_type='filepath'),
             access=config.param('cnvkit_batch','access', param_type='filepath'),
             annotate=config.param('cnvkit_batch','refFlat', param_type='filepath'),

@@ -158,7 +158,7 @@ class DnaSeqRaw(common.Illumina):
             'alignment_directory': os.path.relpath(os.path.join(self.output_dir, "alignment"), self.output_dir),
             'metrics_directory': {}, #os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
             'variants_directory': os.path.relpath(os.path.join(self.output_dir, "variants"), self.output_dir),
-            'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir," pairedVariants"), self.output_dir),
+            'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir,"pairedVariants"), self.output_dir),
             'sv_variants_directory': os.path.relpath(os.path.join(self.output_dir, "SVariants"), self.output_dir),
             'report_directory': os.path.relpath(os.path.join(self.output_dir, "report"), self.output_dir)
         }
@@ -495,7 +495,8 @@ END
                     ],
                     name=f"bwa_mem_sambamba_sort_sam.{readset.name}",
                     samples=[readset.sample],
-                    readsets=[readset]
+                    readsets=[readset],
+                    removable_files=[]
                 )
             )
 
@@ -531,7 +532,8 @@ END
                     ],
                     name=f"gatk_fix_mate_information.{sample.name}",
                     samples=[sample],
-                    readsets=[*list(sample.readsets)]
+                    readsets=[*list(sample.readsets)],
+                    removable_files=[]
                 )
             )
 
@@ -590,7 +592,8 @@ END
                     ],
                     name=f"mark_duplicates.{sample.name}",
                     samples=[sample],
-                    readsets=[*list(sample.readsets)]
+                    readsets=[*list(sample.readsets)],
+                    removable_files=[]
                 )
             )
         return jobs
@@ -657,7 +660,8 @@ END
                     ],
                     name=f"sym_link_final_bam.{sample.name}",
                     samples=[sample],
-                    readsets=[*list(sample.readsets)]
+                    readsets=[*list(sample.readsets)],
+                    removable_files=[]
                 )
             )
 
@@ -738,7 +742,8 @@ END
                             ],
                             name=f"sym_link_final_bam.pairs.{str(idx)}.{tumor_pair.name}.{key}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                            removable_files=[]
                         )
                     )
         return jobs
@@ -856,7 +861,8 @@ END
                     name=job_name,
                     samples=samples,
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    output_dependency=[concordance_out,contamination_out]
+                    output_dependency=[concordance_out,contamination_out],
+                    removable_files=[pileup_normal, pileup_tumor]
                 )
             )
             self.multiqc_inputs[tumor_pair.name].extend(
@@ -903,8 +909,7 @@ END
                 ]
             )
             mkdir_job = bash.mkdir(
-                metrics_directory,
-                remove=True
+                metrics_directory
             )
             job_name = f"picard_collect_multiple_metrics.{sample.name}"
             output_prefix = os.path.join(metrics_directory, f"{sample.name}.all.metrics")
@@ -1028,7 +1033,8 @@ END
                     readsets=[*list(sample.readsets)],
                     output_dependency = [
                         f"{output_prefix}.oxog_metrics.txt"
-                    ]
+                    ],
+                    removable_files=[]
                 )
             )
             
@@ -1046,8 +1052,8 @@ END
                     readsets=[*list(sample.readsets)],
                     output_dependency=[
                         f"{output_prefix}.gcbias_metrics.txt"
-                    ]
-                    
+                    ],
+                    removable_files=[]
                 )
             )
             self.multiqc_inputs[sample.name].extend(
@@ -1130,7 +1136,8 @@ END
                     name=job_name,
                     samples=[sample],
                     readsets=[*list(sample.readsets)],
-                    output_dependency=[output_dist, output_summary]
+                    output_dependency=[output_dist, output_summary],
+                    removable_files=[]
                 )
             )
             self.multiqc_inputs[sample.name].extend(
@@ -1169,8 +1176,7 @@ END
                 concat_jobs(
                     [
                         bash.mkdir(
-                            metrics_directory,
-                            remove=True
+                            metrics_directory
                         ),
                         samtools.flagstat(
                             input,
@@ -1219,6 +1225,7 @@ END
             job.readsets = self.readsets
             job.input_files = multiqc_files_paths
             job.input_dependency = [multiqc_files_paths]
+            job.removable_files=[]
             jobs.append(job)
 
         # Generate multiqc reports for somatics protocols excluding tumor only protocol
@@ -1248,6 +1255,7 @@ END
                 job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 job.input_files = multiqc_input_paths
                 job.input_dependency = [multiqc_input_paths]
+                job.removable_files=[]
                 jobs.append(job)
 
         return jobs
@@ -1419,7 +1427,8 @@ END
                         name=job_name,
                         samples=[sample],
                         readsets=[*list(sample.readsets)],
-                        output_dependency=[os.path.join(metrics_directory, f"{sample.name}.onTarget.tsv")]
+                        output_dependency=[os.path.join(metrics_directory, f"{sample.name}.onTarget.tsv")],
+                        removable_files=[]
                     )
                 )
                 self.multiqc_inputs[sample.name].append(
@@ -1442,6 +1451,7 @@ END
         job.name = f"vcftools_missing_indv.allSamples"
         job.samples = self.samples
         job.readsets = self.readsets
+        job.removable_files = []
         jobs.append(job)
 
         return jobs
@@ -1461,6 +1471,7 @@ END
         job.name = f"vcftools_depth.allSamples"
         job.samples = self.samples
         job.readsets = self.readsets
+        job.removable_files = []
         jobs.append(job)
 
         return jobs
@@ -1504,7 +1515,8 @@ END
                 ],
                 name=f"gatk_crosscheck_fingerprint.sample.AllSamples",
                 samples=self.samples,
-                readsets=self.readsets
+                readsets=self.readsets,
+                removable_files = []
             )
         )
 
@@ -1537,7 +1549,8 @@ END
                 ],
                 name=f"gatk_cluster_crosscheck_metrics.allSamples",
                 samples=self.samples,
-                readsets=self.readsets
+                readsets=self.readsets,
+                removable_files=[]
             )
         )
 
@@ -1605,7 +1618,8 @@ END
                     name=job_name,
                     samples=[sample],
                     readsets=[*list(sample.readsets)],
-                    output_dependency=[output]
+                    output_dependency=[output],
+                    removable_files=[]
                 )
             )
             self.multiqc_inputs[sample.name].append(
@@ -1635,6 +1649,7 @@ END
         job.name = f"gatk_crosscheck_fingerprint.readset"
         job.samples = self.samples
         job.readsets = self.readsets
+        job.removable_files = []
         jobs.append(job)
 
         return jobs
@@ -1693,6 +1708,7 @@ END
                         name=f"gatk_haplotype_caller.{sample.name}",
                         samples=[sample],
                         readsets=[*list(sample.readsets)],
+                        removable_files=[]
                     )
                 )
                 
@@ -1718,7 +1734,8 @@ END
                             ],
                             name=f"gatk_haplotype_caller.{sample.name}.{str(idx)}",
                             samples=[sample],
-                            readsets=[*list(sample.readsets)]
+                            readsets=[*list(sample.readsets)],
+                            removable_files=[]
                         )
                     )
                     
@@ -1777,7 +1794,11 @@ END
                         ],
                         name=f"merge_and_call_individual_gvcf.call.{sample.name}",
                         samples=[sample],
-                        readsets=[*list(sample.readsets)]
+                        readsets=[*list(sample.readsets)],
+                        removable_files=[
+                            f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
+                            f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi"
+                        ]
                     )
                 )
             else:
@@ -3115,12 +3136,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         bash.ln(
                             os.path.relpath(manta_germline_output, os.path.dirname(output_prefix + ".manta.germline.vcf.gz")),
                             output_prefix + ".manta.germline.vcf.gz",
-                            input=manta_germline_output
+                            input=manta_germline_output,
+                            remove=False
                         ),
                         bash.ln(
                             os.path.relpath(manta_germline_output_tbi, os.path.dirname(output_prefix + ".manta.germline.vcf.gz.tbi")),
                             output_prefix + ".manta.germline.vcf.gz.tbi",
-                            input=manta_germline_output_tbi
+                            input=manta_germline_output_tbi,
+                            remove=False
                         )
                     ],
                     input_dependency=[input],
@@ -3679,7 +3702,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         [
                             bash.mkdir(
                                 cnvkit_dir,
-                                remove=True
+                                remove=False
                             ),
                             cnvkit.metrics(
                                 os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
@@ -3702,7 +3725,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         ],
                         name=f"cnvkit_batch.metrics.{sample_name}",
                         samples=samples,
-                        readsets=readsets
+                        readsets=readsets,
+                        removable_files=[cnvkit_dir]
                     )
                 )
                 
@@ -3858,7 +3882,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     [
                         bash.mkdir(
                             cnvkit_dir,
-                            remove=True
+                            remove=False
                         ),
                         cnvkit.fix(
                             tarcov_cnn,
@@ -3882,7 +3906,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     ],
                     name=f"cnvkit_batch.correction.{sample_name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    removable_files=[cnvkit_dir]
                 )
             )
             
@@ -3944,7 +3969,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[input_cna, output_cna],
-                    output_dependency=[header, output_cna_body, output_cna]
+                    output_dependency=[header, output_cna_body, output_cna],
+                    removable_files=[header, output_cna_body]
                 )
             )
             
@@ -4502,7 +4528,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         [
                             bash.mkdir(
                                 raw_sequenza_directory,
-                                remove=True
+                                remove=False
                             ),
                             sequenza.bam2seqz(
                                 input_normal,
@@ -4518,7 +4544,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         ],
                         name=f"sequenza.create_seqz.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        removable_files=[raw_sequenza_directory]
                     )
                 )
 
@@ -4537,7 +4564,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         ],
                         name=f"sequenza.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        removable_files=[raw_sequenza_directory]
                     )
                 )
 
@@ -4550,7 +4578,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 [
                                     bash.mkdir(
                                         raw_sequenza_directory,
-                                        remove=True
+                                        remove=False
                                     ),
                                     sequenza.bam2seqz(
                                         input_normal,
@@ -4566,7 +4594,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 ],
                                 name=f"sequenza.create_seqz.{sequence['name']}.{tumor_pair.name}",
                                 samples=[tumor_pair.normal, tumor_pair.tumor],
-                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                                removable_files=[raw_sequenza_directory]
                             )
                         )
 
@@ -4774,7 +4803,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     samples=self.samples,
                     readsets=self.readsets,
                     input_dependency=[f"{prefix}.vcf.gz"],
-                    output_dependency=[outputFix, outputPreprocess, f"{prefix}.vt.vcf.gz"]
+                    output_dependency=[outputFix, outputPreprocess, f"{prefix}.vt.vcf.gz"],
+                    removable_files=[outputFix, outputPreprocess]
                 )
             )
             
@@ -5885,7 +5915,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         [
                             bash.mkdir(
                                 varscan_directory,
-                                remove=True
+                                remove=False
                             ),
                             varscan.somatic(
                                 input_pair,
@@ -5945,7 +5975,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name=job_name,
                         samples=[tumor_pair.tumor, tumor_pair.normal],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        removable_files=[varscan_directory]
                     )
                 )
             
@@ -5970,7 +6001,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 [
                                     bash.mkdir(
                                         varscan_directory,
-                                        remove=True
+                                        remove=False
                                     ),
                                     varscan.somatic(
                                         input_pair,
@@ -6034,7 +6065,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ],
                                 name=f"{job_name}.{sequence['name']}",
                                 samples=[tumor_pair.tumor, tumor_pair.normal],
-                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                                removable_files=[varscan_directory]
                             )
                         )
         return jobs
@@ -6159,7 +6191,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name=job_name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        removable_files=[all_output, f"{all_output}.tbi"]
                     )
                 )
             
@@ -6244,7 +6277,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name=job_name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        removable_files=[all_output, f"{all_output}.tbi", all_output_vt, f"{all_output_vt}.tbi"]
                     )
                 )
         return jobs
@@ -6448,7 +6482,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name=f"merge_filter_mutect2.{tumor_pair.name}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                            removable_files=[output_flt, f"{output_flt}.tbi"]
                         )
                     )
                 
@@ -6582,7 +6617,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name=f"merge_filter_mutect2.{tumor_pair.name}",
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                            removable_files=[output_flt, f"{output_flt}.tbi"]
                         )
                     )
                 
@@ -6990,7 +7026,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name=f"symlink_vardict_vcf.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        removable_files=[output_tmp, f"{output_tmp}.tbi", output, f"{output}.tbi"]
                     )
                 )
             else:
@@ -7076,7 +7113,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name=f"merge_filter_paired_vardict.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        removable_files=[output_tmp, f"{output_tmp}.tbi", output, f"{output}.tbi"]
                     )
                 )
         
@@ -7997,7 +8035,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.haplotype_caller_gemini_annotations,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
-                self.metrics_dna_samtools_flagstat,
                 self.metrics_picard_calculate_hs,
                 self.metrics_verify_bam_id,
                 self.run_multiqc,
@@ -8019,7 +8056,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.merge_and_call_individual_gvcf,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
-                self.metrics_dna_samtools_flagstat,
                 self.metrics_picard_calculate_hs,
                 self.run_multiqc,
                 self.delly_call_filter,
@@ -8044,7 +8080,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.gatk_fixmate,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
-                self.metrics_dna_samtools_flagstat,
                 self.metrics_picard_calculate_hs,
                 self.metrics_verify_bam_id,
                 self.germline_varscan2,
@@ -8061,7 +8096,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.sym_link_final_bam,  # 5
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
-                self.metrics_dna_samtools_flagstat,
                 self.metrics_picard_calculate_hs,
                 self.metrics_verify_bam_id,
                 self.run_multiqc,
@@ -8077,6 +8111,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.filter_tumor_only,
                 self.report_cpsr,
                 self.report_pcgr,  # 20
+                self.cram_output
             ],
             [
                 self.gatk_sam_to_fastq,
@@ -8100,7 +8135,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.run_multiqc,
                 self.sym_link_report,
                 self.sym_link_fastq_pair,
-                self.sym_link_panel
+                self.sym_link_panel,
+                self.cram_output
             ],
             [
                 self.gatk_sam_to_fastq,
@@ -8139,7 +8175,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,  # 40
                 self.sym_link_report,
-                self.sym_link_ensemble
+                self.sym_link_ensemble,
+                self.cram_output
             ],
             [
                 self.gatk_sam_to_fastq,
@@ -8154,7 +8191,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.purple_sv,
                 self.linx_annotations_somatic,
                 self.linx_annotations_germline,  # 15
-                self.linx_plot
+                self.linx_plot,
+                self.cram_output
             ]
         ]
 

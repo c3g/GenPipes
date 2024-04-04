@@ -303,7 +303,7 @@ def format2pcgr(input,
                 filter,
                 variant_type,
                 tumor,
-                ini_section='DEFAULT'):
+                ini_section='filter_ensemble'):
     
     return Job(
         [input],

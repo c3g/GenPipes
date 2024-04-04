@@ -912,7 +912,8 @@ END
                     ],
                     name=f"bwa_mem2_samtools_sort.{readset.name}",
                     samples=[readset.sample],
-                    readsets=[readset]
+                    readsets=[readset],
+                    removable_files=[]
                 )
             )
 
@@ -1002,7 +1003,7 @@ END
     
     def samtools_merge_files(self):
         """
-        BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+        BAM readset files are merged into one file per sample. Merge is done using [Samtools](https://www.htslib.org/).
 
         This step takes as input files:
 
@@ -1259,7 +1260,8 @@ END
                                      [os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam")],
                                      [os.path.join(alignment_directory, f"{sample.name}.sorted.mdup.bam")],
                                      [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.merded.mdup.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.merged.mdup.bam")],
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
                                      [os.path.join(alignment_directory, f"{sample.name}.matefixed.sorted.bam")],
                                      [os.path.join(alignment_directory, f"{sample.name}.realigned.sorted.bam")],
                                      [os.path.join(alignment_directory, f"{sample.name}.merged.bam")],
@@ -1268,7 +1270,7 @@ END
                                      [os.path.join(alignment_directory, f"{sample.name}.sorted.UMI.bam")],
                                      [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]]  #DNAseq; TumorPair
             
-            input_bam = self.select_input_files(candidate_input_files)[0]
+            [input_bam] = self.select_input_files(candidate_input_files)
 
             output_cram = re.sub("\.bam$", ".cram", input_bam)
 
@@ -1289,7 +1291,7 @@ END
             job.name = f"samtools_cram_output.{sample.name}"
             job.samples = [sample]
             job.readsets = [*list(sample.readsets)]
-            job.removable_files = input_bam
+            job.removable_files = [input_bam, f"{input_bam}.bai"]
 
             jobs.append(job)
 
