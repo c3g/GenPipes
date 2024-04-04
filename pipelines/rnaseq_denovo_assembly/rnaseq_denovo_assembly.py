@@ -774,7 +774,8 @@ pandoc --to=markdown \\
                 transdecoder_pfam,
                 swissprot_blastp,
                 infernal_output,
-                tmhmm_output
+                tmhmm_output,
+                signalp_output
                 ]
         )
         jobs.append(job)
