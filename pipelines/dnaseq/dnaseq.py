@@ -7863,7 +7863,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     [
                         bash.mkdir(
                             gridss_directory,
-                            remove=True
+                            remove=False
                         ),
                         gridss.paired_somatic(
                             input_normal,
@@ -8110,8 +8110,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.split_tumor_only,
                 self.filter_tumor_only,
                 self.report_cpsr,
-                self.report_pcgr,  # 20
-                self.cram_output
+                self.report_pcgr  # 20
             ],
             [
                 self.gatk_sam_to_fastq,
