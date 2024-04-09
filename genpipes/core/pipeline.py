@@ -76,10 +76,11 @@ class Pipeline(object):
             self.config_parser.write(config_trace)
             self.config_parser._filepath = os.path.abspath(config_trace.name)
 
-        if output_dir:
-            self._output_dir = output_dir
-        else:
-            self._output_dir = os.getcwd()
+#        if output_dir:
+#            self._output_dir = output_dir
+#        else:
+#            self._output_dir = os.getcwd()
+        self._output_dir = os.path.abspath(output_dir)
 
         if job_scheduler is not None:
             self._job_scheduler = create_scheduler(job_scheduler, config_files,
