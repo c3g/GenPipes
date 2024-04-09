@@ -267,12 +267,13 @@ set -eu -o pipefail
 OUTPUT_DIR={pipeline.output_dir}
 JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
-JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
+JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}{protocol}.job_list.$TIMESTAMP
 export CONFIG_FILES="{config_files}"
 mkdir -p $OUTPUT_DIR
 """
                 .format(
                     pipeline=pipeline,
+                    protocol="." + pipeline.protocol if pipeline.protocol else "",
                     config_files=",".join([c.name for c in self._config_files])
                 )
             )
