@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -27,25 +27,26 @@ from core.job import *
 def mpileupcns(
         input,
         output,
-        sample_list
+        sample_list,
+        ini_section='germline_varscan2'
 ):
 
     return Job(
         [input, sample_list],
         [output],
         [
-            ['germline_varscan2', 'module_java'],
-            ['germline_varscan2', 'module_varscan'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_varscan'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR mpileup2cns {other_options} \\
   {input} \\
   --output-vcf 1 \\
   --vcf-sample-list {sampleNames}{output}""".format(
-        tmp_dir=config.param('germline_varscan2', 'tmp_dir'),
-        java_other_options=config.param('germline_varscan2', 'java_other_options'),
-        ram=config.param('germline_varscan2', 'ram'),
-        other_options=config.param('germline_varscan2', 'mpileup_other_options'),
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
+        other_options=config.param(ini_section, 'mpileup_other_options'),
         input=" \\\n " + input if input else "",
         sampleNames=sample_list,
         output=" \\\n  > " + output if output else ""
@@ -65,8 +66,8 @@ def somatic(
         [input_pair],
         [output_vcf_dep, output_snp_dep, output_indel_dep],
         [
-            ['varscan2_somatic', 'module_java'],
-            ['varscan2_somatic', 'module_varscan'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_varscan'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR somatic \\
@@ -83,14 +84,19 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
         )
     )
 
-def fpfilter_somatic(input_vcf, input_readcount, output=None):
+def fpfilter_somatic(
+        input_vcf,
+        input_readcount,
+        output=None,
+        ini_section='varscan2_somatic'
+):
 
     return Job(
         [input_vcf, input_readcount],
         [output],
         [
-            ['varscan2_somatic', 'module_java'],
-            ['varscan2_somatic', 'module_varscan'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_varscan'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR fpfilter \\
@@ -98,10 +104,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
   {input_readcount} \\
   {options} \\
   {output}""".format(
-        tmp_dir=config.param('varscan2_somatic', 'tmp_dir'),
-        java_other_options=config.param('varscan2_somatic', 'java_other_options'),
-        ram=config.param('varscan2_somatic', 'ram'),
-        options=config.param('varscan2_somatic', 'fpfilter_options'),
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
+        options=config.param(ini_section, 'fpfilter_options'),
         input_vcf=input_vcf,
         input_readcount=input_readcount,
         output="--output-file " + output if output else ""

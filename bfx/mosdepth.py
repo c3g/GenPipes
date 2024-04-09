@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -21,7 +21,14 @@
 from core.config import config
 from core.job import Job
 
-def mosdepth(input, output_prefix, per_base=False, regions=None):
+def mosdepth(
+        input,
+        output_prefix,
+        per_base=False,
+        regions=None,
+        ini_section='mosdepth'
+):
+    
     outputs = [
             output_prefix + ".mosdepth.global.dist.txt",
             output_prefix + ".mosdepth.summary.txt",
@@ -31,8 +38,8 @@ def mosdepth(input, output_prefix, per_base=False, regions=None):
             [input],
             outputs,
             [
-                ['mosdepth', 'module_python'],
-                ['mosdepth', 'module_mosdepth']
+                [ini_section, 'module_python'],
+                [ini_section, 'module_mosdepth']
             ],
             command="""\
 mosdepth {other_options} \\
@@ -42,17 +49,23 @@ mosdepth {other_options} \\
 {chrom} \\
 {output_prefix} \\
 {input}""".format(
-    other_options=config.param('mosdepth', 'other_options'),
-    reference="--fasta " + config.param('mosdepth', 'genome_fasta', param_type='filepath'),
+    other_options=config.param(ini_section, 'other_options'),
+    reference="--fasta " + config.param(ini_section, 'genome_fasta', param_type='filepath'),
     per_base="--no-per-base " if not per_base else "",
     regions="--by " + regions if regions else "",
-    chrom="--chrom " + config.param('mosdepth', 'chrom') if config.param('mosdepth', 'chrom', required=False) else "",
+    chrom="--chrom " + config.param(ini_section, 'chrom') if config.param(ini_section, 'chrom', required=False) else "",
     output_prefix=output_prefix,
     input=input
         )
     )
 
-def run(input, output_prefix, per_base=False, regions=None):
+def run(
+        input,
+        output_prefix,
+        per_base=False,
+        regions=None,
+        ini_section='mosdepth'
+):
     outputs = [
             output_prefix + ".mosdepth.global.dist.txt",
             output_prefix + ".mosdepth.summary.txt",
@@ -66,8 +79,8 @@ def run(input, output_prefix, per_base=False, regions=None):
             [input],
             outputs,
             [
-                ['mosdepth', 'module_python'],
-                ['mosdepth', 'module_mosdepth']
+                [ini_section, 'module_python'],
+                [ini_section, 'module_mosdepth']
             ],
             command="""\
 export MOSDEPTH_Q0=NO_COVERAGE && \\
@@ -81,14 +94,14 @@ mosdepth {other_options} \\
 {chrom} \\
 {output_prefix} \\
 {input}""".format(
-    Q1=config.param('mosdepth', 'Q1'),
-    Q2=config.param('mosdepth', 'Q2'),
-    Q3=config.param('mosdepth', 'Q3'),
-    other_options=config.param('mosdepth', 'other_options'),
-    reference="--fasta " + config.param('mosdepth', 'genome_fasta', param_type='filepath'),
+    Q1=config.param(ini_section, 'Q1'),
+    Q2=config.param(ini_section, 'Q2'),
+    Q3=config.param(ini_section, 'Q3'),
+    other_options=config.param(ini_section, 'other_options'),
+    reference="--fasta " + config.param(ini_section, 'genome_fasta', param_type='filepath'),
     per_base="--no-per-base " if not per_base else "",
     regions="--by " + regions if regions else "",
-    chrom="--chrom " + config.param('mosdepth', 'chrom') if config.param('mosdepth', 'chrom', required=False) else "",
+    chrom="--chrom " + config.param(ini_section, 'chrom') if config.param(ini_section, 'chrom', required=False) else "",
     output_prefix=output_prefix,
     input=input
         )

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -118,24 +118,25 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
 
 def strelka2_convert(
         input,
-        output
+        output,
+        ini_section='purple_convert_strelka2'
 ):
 
     return Job(
         [input],
         [output],
         [
-            ['purple_convert_strelka2', 'module_java'],
-            ['purple_convert_strelka2', 'module_R'],
-            ['purple_convert_strelka2', 'module_purple'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_R'],
+            [ini_section, 'module_purple'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $PURPLE_JAR com.hartwig.hmftools.purple.tools.AnnotateStrelkaWithAllelicDepth \\
   -in {input} \\
   -out {output}""".format(
-            tmp_dir=config.param('purple_convert_strelka2', 'tmp_dir'),
-            java_other_options=config.param('purple_convert_strelka2', 'java_other_options'),
-            ram=config.param('purple_convert_strelka2', 'ram'),
+            tmp_dir=config.param(ini_section, 'tmp_dir'),
+            java_other_options=config.param(ini_section, 'java_other_options'),
+            ram=config.param(ini_section, 'ram'),
             input=input,
             output=output,
         )

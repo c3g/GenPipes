@@ -26,7 +26,12 @@ import os
 from core.config import *
 from core.job import *
 
-def verify(input_bam, output_prefix, bed_file=None):
+def verify(
+        input_bam,
+        output_prefix,
+        bed_file=None,
+        ini_section='verify_bam_id2'
+):
     if not isinstance(input_bam, list):
         inputs = [input_bam]
         
@@ -37,7 +42,7 @@ def verify(input_bam, output_prefix, bed_file=None):
         inputs,
         [output_prefix + ".selfSM"],
         [
-            ['verify_bam_id2', 'module_verify_bam_id2']
+            [ini_section, 'module_verify_bam_id2']
         ],
         command="""\
 VerifyBamID {other_options} \\
@@ -45,12 +50,12 @@ VerifyBamID {other_options} \\
   --Reference {reference} \\
   --BamFile {input_bam} \\
   --Output {output_prefix}{bed_file}""".format(
-            svdprefix=config.param('verify_bam_id2', 'svd_dataset'),
-            reference=config.param('verify_bam_id2', 'genome_fasta', param_type='filepath'),
+            svdprefix=config.param(ini_section, 'svd_dataset'),
+            reference=config.param(ini_section, 'genome_fasta', param_type='filepath'),
             input_bam=input_bam,
             output_prefix=output_prefix,
             bed_file=" --BedPath " + bed_file if bed_file else "",
-            other_options=config.param('verify_bam_id2', 'options')
+            other_options=config.param(ini_section, 'options')
         )
     )
 

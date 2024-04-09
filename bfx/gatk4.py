@@ -165,7 +165,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             metrics_file=metrics_file,
             max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
         ),
-        #removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
     )
 
 def base_recalibrator(
@@ -207,7 +206,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 known_mills=config.param(ini_section, 'known_mills', param_type='filepath'),
                 output=output
             ),
-            #removable_files=[output]
         )
 
 def apply_bqsr(
@@ -469,8 +467,6 @@ def callable_loci(
 def haplotype_caller(
     input,
     output,
-    #intervals=[],
-    #exclude_intervals=[],
     interval_list,
     ini_section='gatk_haplotype_caller'
     ):
@@ -491,8 +487,6 @@ def haplotype_caller(
         return gatk.haplotype_caller(
             input,
             output,
-            #intervals=intervals,
-            #exclude_intervals=exclude_intervals,
             interval_list
         )
     else:
@@ -520,10 +514,7 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
                 interval_list="--intervals " + str(interval_list) if interval_list else "",
                 interval_padding=" \\\n --interval-padding " + str(interval_padding)  if interval_padding else "",
                 input=input,
-                output=output,
-  #              intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-  #              exclude_intervals="".join(
-  #                  " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
+                output=output
             )
         )
 
@@ -647,8 +638,6 @@ def mutect2(inputNormal,
             tumor_name,
             outputVCF,
             read_orientation,
-#            intervals=[],
-#            exclude_intervals=[],
             interval_list=None,
             ini_section='gatk_mutect2'
             ):
@@ -666,8 +655,6 @@ def mutect2(inputNormal,
                             inputTumor,
                             tumor_name,
                             outputVCF,
-                            #intervals,
-                            #exclude_intervals,
                             interval_list)
     else:
         return Job(
@@ -703,10 +690,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
         outputVCF=outputVCF,
         interval_list=str(interval_list) if interval_list else "",
         interval_padding=" \\\n --interval-padding " + str(interval_padding) if interval_padding else "",
-        pon=" --panel-of-normals " + config.param('gatk_mutect2', 'pon', param_type='filepath') if config.param('gatk_mutect2', 'pon', param_type='filepath', required=False) else "",
-        #      intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-  #      exclude_intervals="".join(
-  #          " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
+        pon=" --panel-of-normals " + config.param('gatk_mutect2', 'pon', param_type='filepath') if config.param('gatk_mutect2', 'pon', param_type='filepath', required=False) else ""
         )
     )
 
@@ -1477,11 +1461,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 metrics_file=metrics_file,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            #removable_files=[
-            #    output,
-            #    re.sub("\.([sb])am$", ".\\1ai", output),
-            #    output + ".md5"
-            #]
         )
 
 def mark_duplicates_mate_cigar(
@@ -1528,8 +1507,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 output=output,
                 metrics_file=metrics_file,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
-            ),
-            #removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+            )
         )
 
 def picard_mark_duplicates_mate_cigar(
@@ -1577,7 +1555,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 metrics_file=metrics_file,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            #removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
 def merge_sam_files(
@@ -1621,10 +1598,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 output=output,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            #removable_files=[
-            #    output,
-            #    re.sub("\.([sb])am$", ".\\1ai", output)
-            #]
         )
 
 # Reorder BAM/SAM files based on reference/dictionary
@@ -1659,11 +1632,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 reference=config.param(ini_section, 'genome_fasta', param_type='filepath'),
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            #removable_files=[
-            #    output,
-            #    re.sub("\.([sb])am$", ".\\1ai",
-            #           output)
-            #]
         )
 
 # Convert SAM/BAM file to fastq format
@@ -1748,10 +1716,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 sort_order=sort_order,
                 max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            #removable_files=[
-            #    output,
-            #    re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None
-            #]
         )
 
 def sort_vcfs(
@@ -1909,7 +1873,6 @@ def scatterIntervalsByNs(
     reference,
     output,
     ):
-    # exclude_intervals=None
 
     return Job(
         [reference],
@@ -2003,7 +1966,6 @@ def preProcessInterval(
     options=None,
     ini_section='gatk_preProcessInterval'
     ):
-    # exclude_intervals=None
 
     return Job(
         [intervals],
@@ -2024,7 +1986,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             ram=config.param(ini_section, 'ram'),
             reference=reference if reference else config.param(ini_section, 'genome_fasta', param_type='filepath'),
             intervals=intervals,
-#            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
             output=output
         )
     )
@@ -2036,7 +1997,6 @@ def splitInterval(
     options=None,
     ini_section='gatk_splitInterval'
     ):
-    # exclude_intervals=None
 
     interval_list = []
     for idx in range(jobs):
@@ -2063,7 +2023,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             ram=config.param(ini_section, 'ram'),
             reference=config.param(ini_section, 'genome_fasta', param_type='filepath'),
             intervals=intervals,
-#            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
             output=output
         )
     )

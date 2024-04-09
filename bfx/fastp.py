@@ -32,7 +32,8 @@ def basic_qc(
     input2,
     output_json_path,
     output_html_path=None,
-    overrepresentation_analysis=True
+    overrepresentation_analysis=True,
+    ini_section='fastp'
     ):
 
     if input2:
@@ -40,14 +41,14 @@ def basic_qc(
     else:
         inputs = [input1]
 
-    num_threads = config.param('fastp', 'threads', required=False, param_type='posint')
+    num_threads = config.param(ini_section, 'threads', required=False, param_type='posint')
     output_files = filter(None, [output_json_path, output_html_path])
 
     return Job(
         inputs,
         output_files,
         module_entries=[
-            ['fastp', 'module_fastp']
+            [ini_section, 'module_fastp']
         ],
         command="""\
 fastp -V \\
@@ -93,7 +94,7 @@ def trim(
         inputs,
         outputs,
         module_entries=[
-            ['fastp', 'module_fastp']
+            [ini_section, 'module_fastp']
         ],
         command="""\
 fastp -V \\
