@@ -31,7 +31,7 @@ def ensemble(lumpy, manta, cnvkit, wham, delly, gatk, bam, sample_name, workdir,
         [
             ['metasv_ensemble', 'module_spades'],
             ['metasv_ensemble', 'module_age'],
-            ['metasv_ensemble', 'module_python'],
+            ['metasv_ensemble', 'module_metasv'],
             ['metasv_ensemble', 'module_bedtools'],
         ],
         command="""\
