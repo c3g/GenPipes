@@ -889,7 +889,6 @@ mkdir -p {graphs_dir} && \\
 Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
   {readset_file} \\
   {output_dir} && \\
-cp {report_template_dir}/{basename_report_file} {report_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
@@ -897,7 +896,6 @@ do
   do
     cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/
     convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_QC_Metrics.png
-    echo -e "----\\n\\n![QC Metrics for Sample $sample and Mark $mark_name ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.png)\\n" >> {report_file}
   done
 done""".format(
                     samples_associative_array=" ".join(
@@ -905,9 +903,6 @@ done""".format(
                          self.samples]),
                     readset_file=readset_file,
                     output_dir=self.output_dir,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file,
                     report_dir=self.output_dirs['report_output_directory'],
                     graphs_dir=self.output_dirs['graphs_output_directory']
                 ),
