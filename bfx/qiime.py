@@ -245,7 +245,8 @@ def otu_table(
         inputs,
         outputs,
         [
-            ['qiime_otu_table', 'module_python']
+            ['qiime_otu_table', 'module_python',
+             'qiime_otu_table', 'module_stdenv']
         ],
 
         command="""\
