@@ -362,7 +362,7 @@ samtools bam2fq {other_options} \\
           other_options=global_conf.global_get(ini_section, 'samtools_bam2fq_other_options', required=False),
           nthread="-@ " + global_conf.global_get(ini_section, 'samtools_bam2fq_threads', required=False),
           output_pair1="-1 " + output_pair1 if output_pair2 else "",
-          output_pair2="-2 " + output_pair2 if output_pair2 else "",
+          output_pair2=" -2 " + output_pair2 if output_pair2 else "",
           output_single= " -s " + output_single if output_pair2 else "",
           output_other = " -0 " + output_other,
           input_bam=input_bam

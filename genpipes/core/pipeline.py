@@ -54,32 +54,50 @@ class Pipeline(object):
                  json_pt=None, steps=None, report=False, clean=False, force=False):
 
 #        self._args = self.argparser.parse_args()
-        self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H.%M.%S")
 
         self.config_parser = global_conf
 
         self.sanity_check = sanity_check
         if sanity_check:
             self.config_parser.sanity = True
+        
+        self._output_dir = os.path.abspath(output_dir)
+
+        # Create a config trace from merged config file values
+        try:
+            config_trace_basename = f"{self.__class__.__name__}.{self.protocol}.{self.timestamp}.config.trace.ini"
+        except AttributeError:
+            config_trace_basename = f"{self.__class__.__name__}.{self.timestamp}.config.trace.ini"
+#       Paul had added this, but not sure how he got it to work when the output_dir doesn't exist. TBD.
+#        config_trace_filename = os.path.join(
+#                self._output_dir,
+#                config_trace_basename
+#                )
+
+        full_command = " ".join(sys.argv[0:])
 
         self.config_parser.parse_files(config_files)
-        # Create a config trace from merged config file values
-        with open(self.__class__.__name__ + ".config.trace.ini", 'w') as config_trace:
+        with open(config_trace_basename, 'w') as config_trace:
             config_trace.write(textwrap.dedent("""\
               # {self.__class__.__name__} Config Trace
+              # Command: {full_command}
               # Created on: {self.timestamp}
               # From:
               #   {config_files}
               # DO NOT EDIT THIS AUTOMATICALLY GENERATED FILE - edit the master config files
 
-            """).format(config_files="\n#   ".join([config_file.name for config_file in config_files]), self=self))
+            """).format(
+                full_command=full_command,
+                config_files="\n#   ".join([config_file.name for config_file in config_files]), self=self))
             self.config_parser.write(config_trace)
             self.config_parser._filepath = os.path.abspath(config_trace.name)
 
-        if output_dir:
-            self._output_dir = output_dir
-        else:
-            self._output_dir = os.getcwd()
+#        if output_dir:
+#            self._output_dir = output_dir
+#        else:
+#            self._output_dir = os.getcwd()
+#        self._output_dir = os.path.abspath(output_dir)
 
         if job_scheduler is not None:
             self._job_scheduler = create_scheduler(job_scheduler, config_files,
