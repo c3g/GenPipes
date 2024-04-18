@@ -4299,8 +4299,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     [
                         # Create output directory since it is not done by default by GATK tools
                         bash.mkdir(
-                            paired_ensemble_directory,
-                            remove=True
+                            paired_ensemble_directory
                         ),
                         # Remove any existing outputs because they cause silent error
                         bash.rm(
@@ -5930,8 +5929,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 concat_jobs(
                     [
                         bash.mkdir(
-                            amber_dir,
-                            remove=True
+                            amber_dir
                         ),
                         amber.run(
                             input_normal,
@@ -5950,8 +5948,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 concat_jobs(
                     [
                         bash.mkdir(
-                            cobalt_dir,
-                            remove=True
+                            cobalt_dir
                         ),
                         cobalt.run(
                             input_normal,
