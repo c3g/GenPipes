@@ -1214,25 +1214,29 @@ pandoc --to=markdown \\
                             [],
                             [sample_map],
                             'map_per_sample',
-                            f"-s {readset.sample.name} -j {sample_map}"
+                            f"-s {readset.sample.name} -j {sample_map}",
+                            ini_section='qiime_sample_rarefaction'
                         ),
                         tools.py_ampliconSeq(
                             [chao1_stat],
                             [chao1],
                             'sample_rarefaction',
-                            f"-i {chao1_stat} -j {chao1} -s {readset.sample.name}"
+                            f"-i {chao1_stat} -j {chao1} -s {readset.sample.name}",
+                            ini_section='qiime_sample_rarefaction'
                         ),
                         tools.py_ampliconSeq(
                             [observed_species_stat],
                             [observed_species],
                             'sample_rarefaction',
-                            f"-i {observed_species_stat} -j {observed_species} -s {readset.sample.name}"
+                            f"-i {observed_species_stat} -j {observed_species} -s {readset.sample.name}",
+                            ini_section='qiime_sample_rarefaction'
                         ),
                         tools.py_ampliconSeq(
                             [shannon_stat],
                             [shannon],
                             'sample_rarefaction',
-                            f"-i {shannon_stat} -j {shannon} -s {readset.sample.name}"
+                            f"-i {shannon_stat} -j {shannon} -s {readset.sample.name}",
+                            ini_section='qiime_sample_rarefaction'
                         ),
                         qiime.sample_rarefaction_plot(
                             chao1_stat,
