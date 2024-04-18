@@ -1562,7 +1562,7 @@ fi""".format(
                             ['prepare_report', 'module_pandoc']
                         ],
                         command="""\
-module --force purge && \\
+module purge && \\
 module load {R_covseqtools}""".format(
                             R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools') + " " + config.param('prepare_report', 'module_pandoc'),
                             output_dir=self.output_dir)
