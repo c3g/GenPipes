@@ -893,6 +893,7 @@ $QIIME_HOME/filter_samples_from_otu_table.py \\
                         job_filter2,
                         Job(
                             command="""\
+export LC_ALL=C \\
 $QIIME_HOME/biom summarize-table \\
 -i {otu_table_final} \\
 > {otu_table_summary}""".format(
