@@ -136,9 +136,9 @@ sub readJobLogListFile {
           # Job number
           } elsif ($jobLine =~ /^Job ID:\s+(\S+)/) {
             $jobLog{'jobFullId'} = $1;
-          # Job MUGQIC exit status
-          } elsif ($jobLine =~ /MUGQICexitStatus:(\S+)/) {
-            $jobLog{'MUGQICexitStatus'} = $1;
+          # Job GenPipes exit status
+          } elsif ($jobLine =~ /GenPipesexitStatus:(\S+)/) {
+            $jobLog{'GenPipesexitStatus'} = $1;
           # Username
           } elsif ($jobLine =~ /^Username:\s+(\S+)/) {
             $jobLog{'username'} = $1;
@@ -165,7 +165,7 @@ sub readJobLogListFile {
           # Account
           } elsif ($jobLine =~ /^Account:\s+(\S+)/) {
             $jobLog{'account'} = $1;
-          # Job exit status (should be the same as MUGQIC exit status unless MUGQIC exit status is skipped)
+          # Job exit status (should be the same as GenPipes exit status unless GenPipes exit status is skipped)
           # abacus syntax: "Exit_status", guillimin phase 2 syntax: "Exit code"
           } elsif ($jobLine =~ /^Exit(_status| code):\s+(\S+)/) {
             $jobLog{'exitStatus'} = $2;
@@ -193,9 +193,9 @@ sub readJobLogListFile {
       if (not(defined($successOption)) or    # Keep all jobs
           (defined($successOption) and
            # Keep successful jobs only
-           ($successOption and exists($jobLog{'MUGQICexitStatus'}) and $jobLog{'MUGQICexitStatus'} == 0) or
+           ($successOption and exists($jobLog{'GenPipesexitStatus'}) and $jobLog{'GenPipesexitStatus'} == 0) or
            # Keep unsuccessful jobs only
-           (not($successOption) and (not(exists($jobLog{'MUGQICexitStatus'})) or $jobLog{'MUGQICexitStatus'} != 0)))) {
+           (not($successOption) and (not(exists($jobLog{'GenPipesexitStatus'})) or $jobLog{'GenPipesexitStatus'} != 0)))) {
         push (@$rAoH_jobLogList, \%jobLog);
       }
     }
@@ -229,11 +229,11 @@ sub getLogTextReport {
   my $highestMemoryJob;
 
   for my $jobLog (@AoH_jobLogList) {
-    if (exists $jobLog->{'MUGQICexitStatus'} and $jobLog->{'MUGQICexitStatus'} eq 0) {
+    if (exists $jobLog->{'GenPipesexitStatus'} and $jobLog->{'GenPipesexitStatus'} eq 0) {
       $successfulJobCount++;
       $jobLog->{'status'} = "SUCCESS";
     } elsif (exists $jobLog->{'endSecondsSinceEpoch'}) {
-      # If job end date exists and MUGQICexitStatus != 0, job failed
+      # If job end date exists and GenPipesexitStatus != 0, job failed
       $failedJobCount++;
       $jobLog->{'status'} = "FAILED";
     } elsif (exists $jobLog->{'startSecondsSinceEpoch'}) {
@@ -338,7 +338,7 @@ sub getLogTextReport {
       exists $jobLog->{'jobDependencies'} ? $jobLog->{'jobDependencies'} : "N/A",
       exists $jobLog->{'status'} ? $jobLog->{'status'} : "N/A",
       exists $jobLog->{'exitStatus'} ? $jobLog->{'exitStatus'} : "N/A",
-      exists $jobLog->{'MUGQICexitStatus'} ? $jobLog->{'MUGQICexitStatus'} : "N/A",
+      exists $jobLog->{'GenPipesexitStatus'} ? $jobLog->{'GenPipesexitStatus'} : "N/A",
       exists $jobLog->{'walltime'} ? $jobLog->{'walltime'} . " (" . formatDuration($jobLog->{'duration'}) . ")" : "N/A",
       exists $jobLog->{'startSecondsSinceEpoch'} ? strftime('%FT%T', localtime($jobLog->{'startSecondsSinceEpoch'})) : "N/A",
       exists $jobLog->{'endSecondsSinceEpoch'} ? strftime('%FT%T', localtime($jobLog->{'endSecondsSinceEpoch'})) : "N/A",
