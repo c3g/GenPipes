@@ -341,7 +341,7 @@ module load {module_python}
   -f {status}
 module unload {module_python} {command_separator}
 """.format(
-            job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
+            job2json_script="job2json.py",
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
             step=step,
             jsonfiles=json_file_list,
@@ -372,7 +372,7 @@ module load {module_python}
 module unload {module_python} {command_separator}
 """.format(
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
-            job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking.py"),
+            job2json_project_tracking_script="job2json_project_tracking.py",
             samples=",".join([sample.name for sample in job.samples]),
             readsets=",".join([readset.name for readset in job.readsets]),
             job_name=job.name,
@@ -562,7 +562,7 @@ module load {module_python}
   -f {status}
 module unload {module_python} {command_separator}
 """.format(
-            job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
+            job2json_script="job2json.py",
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
             step=step,
             jsonfiles=json_file_list,

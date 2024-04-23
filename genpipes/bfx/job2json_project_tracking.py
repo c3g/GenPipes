@@ -51,7 +51,7 @@ module load {module_python}
   -m {metrics}
 module unload {module_python}""".format(
     module_python=config.param('DEFAULT', 'module_python'),
-    job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking.py"),
+    job2json_project_tracking_script="job2json_project_tracking.py",
     samples=samples,
     readsets=readsets,
     job_name=job_name,

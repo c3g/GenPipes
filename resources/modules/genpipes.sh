@@ -3,17 +3,22 @@
 set -eu -o pipefail
 
 SOFTWARE=genpipes
-VERSION=4.4.4
+VERSION=5.0.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://bitbucket.org/mugqic/genpipes/downloads/$ARCHIVE
+ARCHIVE_URL=https://bitbucket.org/mugqic/genpipes/downloads/genpipes-4.2.0.tar.gz #$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
+PYTHON_VERSION=3.12.2
+PYTHON_SHORT_VERSION=${PYTHON_VERSION%.*}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
+  module load mugqic/python/$PYTHON_VERSION
 
-  # Install software
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  git clone https://bitbucket.org/mugqic/genpipes.git -b package
+  cd genpipes
+  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed .
+  ln -s $(which python) $INSTALL_DIR/$SOFTWARE_DIR/bin/python
+  ln -s $(which python3) $INSTALL_DIR/$SOFTWARE_DIR/bin/python3
 }
 
 module_file() {
@@ -24,24 +29,11 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE\"
 
-set             root                   $INSTALL_DIR/$SOFTWARE_DIR
-setenv          MUGQIC_PIPELINES_HOME \$root
-prepend-path    PATH                  \$root/utils
-prepend-path    PATH                  \$root/pipelines/ampliconseq
-prepend-path    PATH                  \$root/pipelines/covseq
-prepend-path    PATH                  \$root/pipelines/chipseq
-prepend-path    PATH                  \$root/pipelines/dnaseq
-prepend-path    PATH                  \$root/pipelines/dnaseq_high_coverage
-prepend-path    PATH                  \$root/pipelines/epiqc
-prepend-path    PATH                  \$root/pipelines/hicseq
-prepend-path    PATH                  \$root/pipelines/methylseq
-prepend-path    PATH                  \$root/pipelines/nanopore
-prepend-path    PATH                  \$root/pipelines/nanopore_covseq
-prepend-path    PATH                  \$root/pipelines/rnaseq
-prepend-path    PATH                  \$root/pipelines/rnaseq_denovo_assembly
-prepend-path    PATH                  \$root/pipelines/rnaseq_light
-prepend-path    PATH                  \$root/pipelines/hicseq
-prepend-path    PATH                  \$root/pipelines/tumor_pair
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root/bin
+prepend-path    PYTHONPATH          $PYTHONPATH
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}/site-packages
 "
 }
 

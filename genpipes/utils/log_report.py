@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -30,7 +30,6 @@ import re
 import subprocess
 
 logger = logging.getLogger(__name__)
-
 
 class JobStat(object):
     JOBID = 'JobId'

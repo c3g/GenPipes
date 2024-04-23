@@ -18,9 +18,8 @@ import uuid
 
 from uuid import uuid4
 
-# MUGQIC Modules
-#from ...core.config import global_conf, _raise, SanitycheckError
-from core.config import global_conf, _raise, SanitycheckError
+# GenPips Modules
+from genpipes.core.config import global_conf, _raise, SanitycheckError
 
 def getarg(argument):
     step_name = ""
@@ -145,7 +144,7 @@ def main():
                             if jjob['name'] == job_name:
                                 job_found = True
                                 if  status == "running":
-                                    jjob['job_start_date'] = re.sub("\.\d+$", "", str(datetime.datetime.now()))
+                                    jjob['job_start_date'] = re.sub(r"\.\d+$", "", str(datetime.datetime.now()))
                                     jjob['status'] = "running"
                                 else:
                                     jjob['log_file'] = job_log
@@ -154,7 +153,7 @@ def main():
                                         jjob['done_file'] = job_done
                                     else:
                                         jjob['status'] = "error"
-                                    jjob['job_end_date'] = re.sub("\.\d+$", "", str(datetime.datetime.now()))
+                                    jjob['job_end_date'] = re.sub(r"\.\d+$", "", str(datetime.datetime.now()))
 
                         # If job does not exist already, raise an exception
                         if not job_found :
@@ -188,7 +187,7 @@ def main():
                         count -= 1
 
             # Print a copy of it for the monitoring interface
-            portal_output_dir = global_conf.global_getget('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
+            portal_output_dir = global_conf.global_get('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
             if portal_output_dir != '':
                 with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'), 'w') as out_json:
                     json.dump(current_json, out_json, indent=4)

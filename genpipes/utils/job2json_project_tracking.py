@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ### Paul Stretenowich (2023/06/05)
-### job2json
+### job2json_project_tracking
 
 import argparse
 import os
@@ -15,9 +15,6 @@ import shutil
 import signal
 
 from datetime import datetime
-
-# MUGQIC Modules
-from ...core.config import *
 
 def main():
 
