@@ -45,12 +45,12 @@ python3 $CONPAIR_SCRIPTS/run_gatk_pileup_for_sample.py -t {tmp_dir} \\
   -M {markers} \\
   -B {input} \\
   -O {output} {other_options}""".format(
-        tmp_dir=global_conf.global_get('conpair_concordance_contamination', 'tmp_dir'),
-        ram=global_conf.global_get('conpair_concordance_contamination', 'ram'),
-        reference_sequence=global_conf.global_get('conpair_concordance_contamination', 'genome_fasta', param_type='filepath'),
-        markers=global_conf.global_get('conpair_concordance_contamination', 'markers_bed'),
+        tmp_dir=global_conf.get('conpair_concordance_contamination', 'tmp_dir'),
+        ram=global_conf.get('conpair_concordance_contamination', 'ram'),
+        reference_sequence=global_conf.get('conpair_concordance_contamination', 'genome_fasta', param_type='filepath'),
+        markers=global_conf.get('conpair_concordance_contamination', 'markers_bed'),
         input=input_bam,
-        other_options=" \\\n  " + global_conf.global_get('conpair_concordance_contamination', 'other_options', required= False) if global_conf.global_get('conpair_concordance_contamination', 'other_options', required= False) else "",
+        other_options=" \\\n  " + global_conf.get('conpair_concordance_contamination', 'other_options', required= False) if global_conf.get('conpair_concordance_contamination', 'other_options', required= False) else "",
         output=output
         )
     )
@@ -71,8 +71,8 @@ python3 $CONPAIR_SCRIPTS/verify_concordance.py {options} \\
   -N {input_normal} \\
   -T {input_tumor} \\ 
   {output}""".format(
-        options=global_conf.global_get('conpair_concordance_contamination', 'concord_options'),
-        markers=global_conf.global_get('conpair_concordance_contamination', 'markers_txt'),
+        options=global_conf.get('conpair_concordance_contamination', 'concord_options'),
+        markers=global_conf.get('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
         input_tumor=input_tumor,
         output=" > " + output
@@ -95,8 +95,8 @@ python3 $CONPAIR_SCRIPTS/estimate_tumor_normal_contamination.py {options} \\
   -N {input_normal} \\
   -T {input_tumor} \\
   {output}""".format(
-        options=global_conf.global_get('conpair_concordance_contamination', 'contam_options'),
-        markers=global_conf.global_get('conpair_concordance_contamination', 'markers_txt'),
+        options=global_conf.get('conpair_concordance_contamination', 'contam_options'),
+        markers=global_conf.get('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
         input_tumor=input_tumor,
         output=" --outfile " + output

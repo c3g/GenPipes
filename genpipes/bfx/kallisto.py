@@ -54,7 +54,7 @@ kallisto quant \\
   {infiles} \\
   > {output_dir}/kallisto_quant.log""".format(
             parameters=parameters,
-            threads=global_conf.global_get('kallisto', 'threads'),
+            threads=global_conf.get('kallisto', 'threads'),
             transcriptome=transcriptome,
             output_dir=output_dir,
             infiles=" \\\n  ".join(inputs),

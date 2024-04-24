@@ -60,10 +60,10 @@ java -jar $juicer_JAR \\
   {output} \\
   {assembly}""".format(
 <<<<<<< HEAD
-            juicer=os.path.expandvars(global_conf.global_get('create_hic_file', 'JuicerPath')),
-            q=global_conf.global_get('create_hic_file', 'q'),
+            juicer=os.path.expandvars(global_conf.get('create_hic_file', 'JuicerPath')),
+            q=global_conf.get('create_hic_file', 'q'),
 =======
-            q=global_conf.global_get('create_hic_file', 'q'),
+            q=global_conf.get('create_hic_file', 'q'),
 >>>>>>> 782b0c2e0c46ac1d0df40a6f97f4f18cbdbd3e7e
             input=juicebox_input,
             output=hic_output,

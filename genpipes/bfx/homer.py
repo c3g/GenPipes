@@ -260,7 +260,7 @@ findHiCCompartments.pl \\
             homer_dir=homer_dir,
             res=res,
             genome=genome,
-            cpu=global_conf.global_get("identify_compartments", "threads", param_type='posint'),
+            cpu=global_conf.get("identify_compartments", "threads", param_type='posint'),
             fileName_PC1=fileName_PC1,
             fileName_Comp=fileName_Comp
         ),
@@ -301,7 +301,7 @@ annotateInteractions.pl \\
             fileName=fileName,
             genome=genome,
             fileName_anno=fileName_anno,
-            cpu=global_conf.global_get("identify_peaks", "threads", param_type='posint')
+            cpu=global_conf.get("identify_peaks", "threads", param_type='posint')
         )
     )
 
@@ -401,7 +401,7 @@ findMotifsGenome.pl \\
             peak_file=peak_file,
             genome=genome,
             output_dir=output_dir,
-            threads=global_conf.global_get('homer_find_motifs_genome', 'threads', param_type='posint')
+            threads=global_conf.get('homer_find_motifs_genome', 'threads', param_type='posint')
         ),
         name="homer_find_motifs_genome"
     )

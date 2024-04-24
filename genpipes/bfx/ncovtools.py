@@ -79,25 +79,25 @@ snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_t
 snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis || true && \\
 cd {output_dir} && \\
 module purge""".format(
-            ncovtools=global_conf.global_get(ini_section, 'module_ncovtools'),
-            reference_genome=global_conf.global_get(ini_section, 'reference_genome', required=True),
+            ncovtools=global_conf.get(ini_section, 'module_ncovtools'),
+            reference_genome=global_conf.get(ini_section, 'reference_genome', required=True),
             ncovtools_directory=ncovtools_directory,
-            reference_genome_file=global_conf.global_get(ini_section, 'reference_genome', required=True).split("/")[-1],
+            reference_genome_file=global_conf.get(ini_section, 'reference_genome', required=True).split("/")[-1],
             readset_file=readset_file,
             # neg_ctrl=os.path.join("report", "neg_controls.txt"),
-            platform=global_conf.global_get(ini_section, 'platform', required=True),
-            run_name=global_conf.global_get(ini_section, 'run_name', required=True),
-            amplicon_bed=global_conf.global_get(ini_section, 'amplicon_bed', required=True),
-            primer_bed=global_conf.global_get(ini_section, 'primer_bed', required=True),
+            platform=global_conf.get(ini_section, 'platform', required=True),
+            run_name=global_conf.get(ini_section, 'run_name', required=True),
+            amplicon_bed=global_conf.get(ini_section, 'amplicon_bed', required=True),
+            primer_bed=global_conf.get(ini_section, 'primer_bed', required=True),
             bam_pattern_extension=re.sub(r"^.*?\.", ".", output_filtered_bam),
             primer_trimmed_bam_pattern_extension=re.sub(r"^.*?\.", ".", output_primer_trimmed_bam),
             consensus_pattern_extension=re.sub(r"^.*?\.", ".", output_consensus),
             variants_pattern_extension=re.sub(r"^.*?\.", ".", output_variants),
             metadata=os.path.basename(metadata),
-            primer_prefix=global_conf.global_get(ini_section, 'primer_prefix'),
+            primer_prefix=global_conf.get(ini_section, 'primer_prefix'),
             ncovtools_config=ncovtools_config,
             ncovtools_config_local=os.path.basename(ncovtools_config),
-            nb_threads=global_conf.global_get(ini_section, 'nb_threads'),
+            nb_threads=global_conf.get(ini_section, 'nb_threads'),
             output_dir=output_dir
         )
     )

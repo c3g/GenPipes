@@ -55,7 +55,7 @@ DISCASM {options} \\
         --out_dir {output_dir}""".format(
             chimeric_jxt=chimeric_jxt,
 	        star_fusion_bam=star_fusion_bam,
-            options=global_conf.global_get('run_discasm_gmap_fusion', 'trinity_options'),
+            options=global_conf.get('run_discasm_gmap_fusion', 'trinity_options'),
 	        denovo_assembler="Trinity",
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
             fastq2=",".join(fastq2 for fastq2 in fastqs2),

@@ -97,10 +97,10 @@ EOF""".format(
 
 def report(ini_filepaths, project_path, pipeline_type, output_directory):
 
-    title = global_conf.global_get('gq_seq_utils_report', 'report_title', required=False)
-    path = os.path.join(output_directory, global_conf.global_get('gq_seq_utils_report', 'report_dir'))
-    author = global_conf.global_get('gq_seq_utils_report', 'report_author', required=False)
-    contact = global_conf.global_get('gq_seq_utils_report', 'report_contact', required=False)
+    title = global_conf.get('gq_seq_utils_report', 'report_title', required=False)
+    path = os.path.join(output_directory, global_conf.get('gq_seq_utils_report', 'report_dir'))
+    author = global_conf.get('gq_seq_utils_report', 'report_author', required=False)
+    contact = global_conf.get('gq_seq_utils_report', 'report_contact', required=False)
 
     return Job(
         # Job input files must be set in pipeline class since they are different for each pipeline

@@ -59,9 +59,9 @@ $FUSIONINSPECTOR_HOME/FusionInspector \\
         --out_dir {output_dir} \\
         {options}""".format(
             fusion_list=fusion_lists,
-	        genome_build=global_conf.global_get('run_star_fusion', 'genome_build'),
-            options=global_conf.global_get('fusion_annotation', 'options'),
-	        threads=global_conf.global_get('fusion_annotation', 'threads'),
+	        genome_build=global_conf.get('run_star_fusion', 'genome_build'),
+            options=global_conf.get('fusion_annotation', 'options'),
+	        threads=global_conf.get('fusion_annotation', 'threads'),
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
             fastq2=",".join(fastq2 for fastq2 in fastqs2),
 	        sample_name=sample_name,

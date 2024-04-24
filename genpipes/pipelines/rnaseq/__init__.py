@@ -157,14 +157,14 @@ class RnaSeqRaw(common.Illumina):
     @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
-            self._sequence_dictionary = parse_sequence_dictionary_file(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=False)
+            self._sequence_dictionary = parse_sequence_dictionary_file(global_conf.get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=False)
         return self._sequence_dictionary
 
     def star_genome_length(self):
         """
         Calculation for setting genomeSAindexNbases for STAR index.
         """
-        genome_index = csv.reader(open(global_conf.global_get('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
+        genome_index = csv.reader(open(global_conf.get('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
 
         return int(min(14, math.log2(sum([int(chromosome[1]) for chromosome in genome_index])) / 2 - 1))
 
@@ -182,7 +182,7 @@ class RnaSeqRaw(common.Illumina):
             output_dir = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
             trim_file_prefix = os.path.join(output_dir, readset.name)
 
-            adapter_file = global_conf.global_get('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
+            adapter_file = global_conf.get('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
             quality_offset = readset.quality_offset
@@ -378,7 +378,7 @@ class RnaSeqRaw(common.Illumina):
         project_junction_file = os.path.join(self.output_dirs["alignment_1stPass_directory"], "AllSamples.SJ.out.tab")
         individual_junction_list=[]
         genome_length = self.star_genome_length()
-        mapping = global_conf.global_get("star_align", "mapping", required=False) # option to skip 2-pass mapping with star aligner and only do one pass
+        mapping = global_conf.get("star_align", "mapping", required=False) # option to skip 2-pass mapping with star aligner and only do one pass
 
         if not mapping or mapping == "2-pass": # if mapping is not explicitely set in config file or is set to 2-pass, start 1st pass alignment, otherwise skip to next pass
             #pass 1 -alignment
@@ -420,8 +420,8 @@ class RnaSeqRaw(common.Illumina):
                 else:
                     _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-                rg_platform = global_conf.global_get('star_align', 'platform', required=False)
-                rg_center = global_conf.global_get('star_align', 'sequencing_center', required=False)
+                rg_platform = global_conf.get('star_align', 'platform', required=False)
+                rg_center = global_conf.get('star_align', 'sequencing_center', required=False)
 
                 job = star.align(
                     reads1=fastq1,
@@ -507,8 +507,8 @@ class RnaSeqRaw(common.Illumina):
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-            rg_platform = global_conf.global_get('star_align', 'platform', required=False)
-            rg_center = global_conf.global_get('star_align', 'sequencing_center', required=False)
+            rg_platform = global_conf.get('star_align', 'platform', required=False)
+            rg_center = global_conf.get('star_align', 'sequencing_center', required=False)
 
             job = concat_jobs(
                 [
@@ -582,8 +582,8 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=global_conf.global_get('star', 'scientific_name'),
-                    assembly=global_conf.global_get('star', 'assembly'),
+                    scientific_name=global_conf.get('star', 'scientific_name'),
+                    assembly=global_conf.get('star', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_dir=self.output_dirs["report_directory"],
@@ -686,7 +686,7 @@ pandoc --to=markdown \\
         """
 
         jobs = []
-        reference_file = global_conf.global_get('picard_rna_metrics', 'genome_fasta', param_type='filepath')
+        reference_file = global_conf.get('picard_rna_metrics', 'genome_fasta', param_type='filepath')
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
         for sample in self.samples:
             alignment_file = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam")
@@ -855,7 +855,7 @@ pandoc --to=markdown \\
         input_bams = [sample_row[1] for sample_row in sample_rows]
         output_directory = os.path.join(self.output_dirs["metrics_directory"], "rnaseqRep")
         # Use GTF with transcript_id only otherwise RNASeQC fails
-        gtf_transcript_id = global_conf.global_get('rnaseqc', 'gtf_transcript_id', param_type='filepath')
+        gtf_transcript_id = global_conf.get('rnaseqc', 'gtf_transcript_id', param_type='filepath')
 
         jobs.append(
             concat_jobs(
@@ -877,8 +877,8 @@ echo "Sample\tBamFile\tNote
                         output_directory,
                         self.run_type == "SINGLE_END",
                         gtf_file=gtf_transcript_id,
-                        reference=global_conf.global_get('rnaseqc', 'genome_fasta', param_type='filepath'),
-                        ribosomal_interval_file=global_conf.global_get('rnaseqc', 'ribosomal_fasta', param_type='filepath')
+                        reference=global_conf.get('rnaseqc', 'genome_fasta', param_type='filepath'),
+                        ribosomal_interval_file=global_conf.get('rnaseqc', 'ribosomal_fasta', param_type='filepath')
                     ),
                     bash.zip(
                         output_directory,
@@ -963,17 +963,17 @@ pandoc \\
 
         output_directory = os.path.join(self.output_dirs["metrics_directory"], "rna")
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
-        scientific_name = global_conf.global_get('star', 'scientific_name')
+        scientific_name = global_conf.get('star', 'scientific_name')
 
-        if os.path.isfile(os.path.join(global_conf.global_get('DEFAULT', 'annotations_prefix', param_type='prefixpath', required=False) + ".rnaseqc2.gtf")):
-            input_gtf = os.path.join(global_conf.global_get('DEFAULT', 'annotations_prefix', param_type='prefixpath', required=False) + ".rnaseqc2.gtf")
+        if os.path.isfile(os.path.join(global_conf.get('DEFAULT', 'annotations_prefix', param_type='prefixpath', required=False) + ".rnaseqc2.gtf")):
+            input_gtf = os.path.join(global_conf.get('DEFAULT', 'annotations_prefix', param_type='prefixpath', required=False) + ".rnaseqc2.gtf")
         else:
             jobs.append(
                 concat_jobs(
                     [
                     bash.mkdir(output_directory),
                     gtex_pipeline.collapse_gtf(
-                        input_gtf=global_conf.global_get('DEFAULT', 'gtf', param_type='filepath', required=True),
+                        input_gtf=global_conf.get('DEFAULT', 'gtf', param_type='filepath', required=True),
                         output_gtf=os.path.join(output_directory, scientific_name + "_collapsed.gtf")
                     )
                     ],
@@ -1049,7 +1049,7 @@ pandoc \\
 
         jobs = []
 
-        nb_jobs = global_conf.global_get('gatk_split_N_trim', 'nb_jobs', param_type='posint')
+        nb_jobs = global_conf.get('gatk_split_N_trim', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of haplotype jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -1133,7 +1133,7 @@ pandoc \\
 
         jobs = []
 
-        nb_jobs = global_conf.global_get('gatk_split_N_trim', 'nb_jobs', param_type='posint')
+        nb_jobs = global_conf.get('gatk_split_N_trim', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of haplotype jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -1169,7 +1169,7 @@ pandoc \\
 
         jobs = []
 
-        nb_jobs = global_conf.global_get('gatk_indel_realigner', 'nb_jobs', param_type='posint')
+        nb_jobs = global_conf.get('gatk_indel_realigner', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -1301,7 +1301,7 @@ pandoc \\
 
         jobs = []
 
-        nb_jobs = global_conf.global_get('gatk_indel_realigner', 'nb_jobs', param_type='posint')
+        nb_jobs = global_conf.get('gatk_indel_realigner', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
@@ -1419,7 +1419,7 @@ pandoc \\
 
         jobs = []
 
-        nb_haplotype_jobs = global_conf.global_get('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
+        nb_haplotype_jobs = global_conf.get('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
         if nb_haplotype_jobs > 50:
             log.warning(
                 "Number of haplotype jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
@@ -1506,7 +1506,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_haplotype_jobs = global_conf.global_get('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
+        nb_haplotype_jobs = global_conf.get('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
             haplotype_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, "rawHaplotypeCaller", sample.name)
@@ -1605,7 +1605,7 @@ pandoc \\
                     gatk4.variant_filtration(
                         input_file_prefix + ".hc.rnaedit.vcf.gz",
                         input_file_prefix + ".hc.flt.vcf.gz",
-                        global_conf.global_get('gatk_variant_filtration', 'other_options')
+                        global_conf.get('gatk_variant_filtration', 'other_options')
                     )
                 ],
                 name="gatk_variant_filtration." + sample.name,
@@ -1671,7 +1671,7 @@ pandoc \\
                     snpeff.compute_effects(
                         input_file_prefix + ".hc.vt.vcf.gz",
                         input_file_prefix + ".hc.snpeff.vcf",
-                        options=global_conf.global_get('compute_effects', 'options')
+                        options=global_conf.get('compute_effects', 'options')
                     ),
                     htslib.bgzip_tabix(
                         input_file_prefix + ".hc.snpeff.vcf",
@@ -1694,7 +1694,7 @@ pandoc \\
         """
 
         jobs = []
-        gemini_module = global_conf.global_get("DEFAULT", 'module_gemini').split(".")
+        gemini_module = global_conf.get("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
         for sample in self.samples:
@@ -1746,7 +1746,7 @@ pandoc \\
                         tools.format2pcgr(
                             input,
                             output_annot,
-                            global_conf.global_get('filter_gatk', 'call_filter'),
+                            global_conf.get('filter_gatk', 'call_filter'),
                             "somatic",
                             sample.name,
                             ini_section='filter_gatk'
@@ -1756,7 +1756,7 @@ pandoc \\
                                 bcftools.view(
                                     output_annot,
                                     None,
-                                    filter_options=global_conf.global_get('filter_gatk', 'somatic_filter_options'),
+                                    filter_options=global_conf.get('filter_gatk', 'somatic_filter_options'),
                                 ),
                                 bcftools.sort(
                                     None,
@@ -1830,7 +1830,7 @@ pandoc \\
         """
         jobs = []
 
-        assembly = global_conf.global_get('report_pcgr', 'assembly')
+        assembly = global_conf.get('report_pcgr', 'assembly')
 
         for sample in self.samples:
             cpsr_directory = os.path.join(
@@ -1944,7 +1944,7 @@ pandoc \\
                 ]
                 )
 
-            if global_conf.global_get('run_star_fusion', 'force') == "True":
+            if global_conf.get('run_star_fusion', 'force') == "True":
                 job = concat_jobs(
                         [
                             bash.rm(
@@ -2119,10 +2119,10 @@ pandoc \\
                                     "\tSM:" + readset.sample.name + \
                                     ("\tLB:" + readset.library if readset.library else "") + \
                                     ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                                    ("\tCN:" + global_conf.global_get('bwa_mem_rRNA', 'sequencing_center') if global_conf.global_get('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
+                                    ("\tCN:" + global_conf.get('bwa_mem_rRNA', 'sequencing_center') if global_conf.get('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
                                     "\tPL:Illumina" + \
                                     "'",
-                                ref=global_conf.global_get('bwa_mem_rRNA', 'ribosomal_fasta'),
+                                ref=global_conf.get('bwa_mem_rRNA', 'ribosomal_fasta'),
                                 ini_section='bwa_mem_rRNA'
                             ),
                             picard.sort_sam(
@@ -2135,7 +2135,7 @@ pandoc \\
                     ),
                     tools.py_rrnaBAMcount(
                         bam=readset_metrics_bam,
-                        gtf=global_conf.global_get('bwa_mem_rRNA', 'gtf'),
+                        gtf=global_conf.get('bwa_mem_rRNA', 'gtf'),
                         output=os.path.join(output_folder, readset.name+"rRNA.stats.tsv"),
                         typ="transcript"
                     ),
@@ -2169,7 +2169,7 @@ pandoc \\
             tracks_dir = os.path.join(self.output_dirs["tracks_directory"])
             big_wig = os.path.join(self.output_dirs['tracks_directory'], "bigWig")
 
-            if global_conf.global_get('wiggle', 'separate_strand') == 'NO':
+            if global_conf.get('wiggle', 'separate_strand') == 'NO':
 
                 output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
 
@@ -2263,16 +2263,16 @@ pandoc \\
 
             # Count reads
             output_count = os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.tsv")
-            stranded = global_conf.global_get('htseq_count', 'stranded')
+            stranded = global_conf.get('htseq_count', 'stranded')
             job = concat_jobs(
                 [
                     bash.mkdir(f"{self.output_dirs['raw_counts_directory']}"),
                     bash.mkdir(link_directory),## ensure existance of link directory
                     htseq.htseq_count(
                         input_bam,
-                        global_conf.global_get('htseq_count', 'gtf', param_type='filepath'),
+                        global_conf.get('htseq_count', 'gtf', param_type='filepath'),
                         output_count,
-                        global_conf.global_get('htseq_count', 'options'),
+                        global_conf.get('htseq_count', 'options'),
                         stranded
                         ),
                     bash.ln(
@@ -2325,7 +2325,7 @@ do
 done && \\
 echo -e $HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\\t' > {output_matrix} && \\
 rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
-            reference_gtf=global_conf.global_get('raw_counts_metrics', 'gtf', param_type='filepath'),
+            reference_gtf=global_conf.get('raw_counts_metrics', 'gtf', param_type='filepath'),
             output_directory=output_directory,
             read_count_files=" \\\n  ".join(read_count_files),
             output_matrix=output_matrix
@@ -2339,7 +2339,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
         wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
 
-        if global_conf.global_get('wiggle', 'separate_strand') == 'NO':
+        if global_conf.get('wiggle', 'separate_strand') == 'NO':
             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
         else:
             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
@@ -2362,7 +2362,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         # RPKM and Saturation
         count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")
-        gene_size_file = global_conf.global_get('rpkm_saturation', 'gene_size', param_type='filepath')
+        gene_size_file = global_conf.get('rpkm_saturation', 'gene_size', param_type='filepath')
         rpkm_directory = self.output_dirs["raw_counts_directory"]
         saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
 
@@ -2392,7 +2392,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         """
         jobs = []
 
-        gtf = global_conf.global_get('stringtie','gtf', param_type='filepath')
+        gtf = global_conf.get('stringtie','gtf', param_type='filepath')
 
         for sample in self.samples:
             input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam")
@@ -2416,7 +2416,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         output_directory = os.path.join(self.output_dirs["stringtie_directory"], "AllSamples")
         sample_file = os.path.join(self.output_dirs["stringtie_directory"], "stringtie-merge.samples.txt")
         input_gtfs = [os.path.join(self.output_dirs["stringtie_directory"], sample.name, "transcripts.gtf") for sample in self.samples]
-        gtf = global_conf.global_get('stringtie','gtf', param_type='filepath')
+        gtf = global_conf.get('stringtie','gtf', param_type='filepath')
 
         if os.path.exists(os.path.join(self.output_dir, self.output_dirs["stringtie_directory"], "stringtieAbundDone")) and not self.force_jobs:
             log.info("Stringtie Abund done already... Skipping stringtie_merge step...")
@@ -2591,7 +2591,7 @@ END
         Generate IHEC's standard metrics.
         """
 
-        genome = global_conf.global_get('ihec_metrics', 'assembly')
+        genome = global_conf.get('ihec_metrics', 'assembly')
         return [
             metrics.ihec_metrics_rnaseq(
                 [
@@ -2626,7 +2626,7 @@ END
         job.input_files = self.multiqc_inputs
         jobs.append(job)
 
-        by_sample = global_conf.global_get("multiqc", "by_sample", required=False) # option to also generate individual multiqc reports for each sample
+        by_sample = global_conf.get("multiqc", "by_sample", required=False) # option to also generate individual multiqc reports for each sample
 
         if by_sample == "true":
             for sample in self.samples:

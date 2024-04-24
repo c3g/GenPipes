@@ -60,8 +60,8 @@ genomeCoverageBed {other_options} -bg -split -scale $scalefactor \\
   > {output_bed_graph}""".format(
             samtools_options=samtools_options,
             input_bam=input_bam,
-            chromosome_size=global_conf.global_get('bedtools_graph', 'chromosome_size', param_type='filepath'),
-            other_options=global_conf.global_get('bedtools_graph', 'other_options', required=False),
+            chromosome_size=global_conf.get('bedtools_graph', 'chromosome_size', param_type='filepath'),
+            other_options=global_conf.get('bedtools_graph', 'other_options', required=False),
             output_bed_graph=output_bed_graph
         )
     )
@@ -81,7 +81,7 @@ bedtools intersect {other_options} {include_header} \\
   > {output_bam}""".format(
             input_bam=input_bam,
             target_bed=target_bed,
-            other_options=global_conf.global_get('bedtools_intersect', 'other_options', required=False),
+            other_options=global_conf.get('bedtools_intersect', 'other_options', required=False),
             include_header="-header" if include_header else "",
             output_bam=output_bam
         )
@@ -119,7 +119,7 @@ def bamtobed(input_bam, output_bed):
 bedtools bamtobed {other_options} \\
   -i {input_bam}{output_bed}""".format(
             input_bam=input_bam,
-            other_options=global_conf.global_get('bedtools_coverage', 'other_options', required=False),
+            other_options=global_conf.get('bedtools_coverage', 'other_options', required=False),
             output_bed=" \\\n  > " + output_bed if output_bed else ""
         )
     )
@@ -137,9 +137,9 @@ bedtools coverage {other_options} \\
   -a {intervals} \\
   -b {input} \\
   > {output_file}""".format(
-            intervals=global_conf.global_get('bedtools_coverage', 'gc_intervals'),
+            intervals=global_conf.get('bedtools_coverage', 'gc_intervals'),
             input=input_file,
-            other_options=global_conf.global_get('bedtools_coverage', 'other_options', required=False),
+            other_options=global_conf.get('bedtools_coverage', 'other_options', required=False),
             output_file=output_file
         )
     )
@@ -157,13 +157,13 @@ bedtools genomecov {other_options} \\
   {genome} \\
   > {output_file}""".format(
             input="-ibam " + input_file if re.search("\.bam$", os.path.basename(input_file)) else "-i " + input_file,
-            genome="-g " + global_conf.global_get('bedtools_genomecov', 'genome_fasta') if not re.search("\.bam$", os.path.basename(input_file)) else "",
-            other_options=global_conf.global_get('bedtools_genomecov', 'other_options', required=False),
+            genome="-g " + global_conf.get('bedtools_genomecov', 'genome_fasta') if not re.search("\.bam$", os.path.basename(input_file)) else "",
+            other_options=global_conf.get('bedtools_genomecov', 'other_options', required=False),
             output_file=output_file
         )
     )
 
-def bamtofastq(input_bam, output_pair1, output_pair2, other_options=global_conf.global_get('bedtools_bamtofastq', 'other_options', required=False), pigz_threads=global_conf.global_get('bedtools_bamtofastq', 'pigz_threads', required=False)):
+def bamtofastq(input_bam, output_pair1, output_pair2, other_options=global_conf.get('bedtools_bamtofastq', 'other_options', required=False), pigz_threads=global_conf.get('bedtools_bamtofastq', 'pigz_threads', required=False)):
     if output_pair2:  # Paired end reads
         outputs = [output_pair1, output_pair2]
     else:   # Single end reads

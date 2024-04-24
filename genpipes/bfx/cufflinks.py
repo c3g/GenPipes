@@ -46,8 +46,8 @@ formatDenovoCombinedGTF.py \\
   -o {output_prefix}.TranscriptList.tsv""".format(
         output_directory=os.path.dirname(output_prefix),
         output_prefix=output_prefix,
-        reference_gff=global_conf.global_get('cuffcompare', 'gtf', param_type='filepath'),
-        reference_fasta=global_conf.global_get('cuffcompare', 'genome_fasta', param_type='filepath'),
+        reference_gff=global_conf.get('cuffcompare', 'gtf', param_type='filepath'),
+        reference_fasta=global_conf.get('cuffcompare', 'genome_fasta', param_type='filepath'),
         gtf_files=" \\\n  ".join(gtf_files),
         gtf_list=gtf_list
         )
@@ -74,11 +74,11 @@ cuffdiff {other_options} \\
   --num-threads {num_threads} \\
   {gtf} \\
   {input_files}""".format(
-        other_options=global_conf.global_get('cuffdiff', 'other_options'),
-        genome_fasta=global_conf.global_get('cuffdiff', 'genome_fasta', param_type='filepath'),
-        library_type=global_conf.global_get('cuffdiff', 'strand_info'),
+        other_options=global_conf.get('cuffdiff', 'other_options'),
+        genome_fasta=global_conf.get('cuffdiff', 'genome_fasta', param_type='filepath'),
+        library_type=global_conf.get('cuffdiff', 'strand_info'),
         output_directory=output_directory,
-        num_threads=global_conf.global_get('cuffdiff', 'threads', param_type='posint'),
+        num_threads=global_conf.get('cuffdiff', 'threads', param_type='posint'),
         gtf=gtf,
         # Join replicate bams per sample with a "," then join all sample replicate groups with a " "
         input_files=" \\\n  ".join([",".join(sample_replicate_files) for sample_replicate_files in sample_replicate_group_files])
@@ -99,12 +99,12 @@ cufflinks -q {other_options}{gtf} \\
   --output-dir {output_directory} \\
   --num-threads {num_threads} \\
   {input_bam}""".format(
-        other_options=global_conf.global_get('cufflinks', 'other_options', required=False),
+        other_options=global_conf.get('cufflinks', 'other_options', required=False),
         gtf=" \\\n  --GTF-guide " + gtf if gtf else "",
-        max_bundle_frags=global_conf.global_get('cufflinks', 'max_bundle_frags', param_type='int'),
-        library_type=global_conf.global_get('cufflinks', 'strand_info'),
+        max_bundle_frags=global_conf.get('cufflinks', 'max_bundle_frags', param_type='int'),
+        library_type=global_conf.get('cufflinks', 'strand_info'),
         output_directory=output_directory,
-        num_threads=global_conf.global_get('cufflinks', 'threads', param_type='posint'),
+        num_threads=global_conf.get('cufflinks', 'threads', param_type='posint'),
         input_bam=input_bam
         )
     )
@@ -122,9 +122,9 @@ cuffmerge {gtf} \\
   --num-threads {num_threads} \\
   {sample_file}""".format(
         gtf=" \\\n  --ref-gtf " + gtf_file if gtf_file else "",
-        reference_sequence=global_conf.global_get('cuffmerge', 'genome_fasta', param_type='filepath', required=True),
+        reference_sequence=global_conf.get('cuffmerge', 'genome_fasta', param_type='filepath', required=True),
         output_directory=output_directory,
-        num_threads=global_conf.global_get('cuffmerge', 'threads', param_type='posint'),
+        num_threads=global_conf.get('cuffmerge', 'threads', param_type='posint'),
         sample_file=sample_file
         )
     )
@@ -144,12 +144,12 @@ cuffquant -q {other_options} \\
   --num-threads {num_threads} \\
   {gtf} \\
   {input_bam}""".format(
-        other_options=global_conf.global_get('cuffquant', 'other_options', required=False),
+        other_options=global_conf.get('cuffquant', 'other_options', required=False),
         gtf=gtf,
-        max_bundle_frags=global_conf.global_get('cuffquant', 'max_bundle_frags', param_type='int'),
-        library_type=global_conf.global_get('cuffquant', 'strand_info'),
+        max_bundle_frags=global_conf.get('cuffquant', 'max_bundle_frags', param_type='int'),
+        library_type=global_conf.get('cuffquant', 'strand_info'),
         output_directory=output_directory,
-        num_threads=global_conf.global_get('cuffquant', 'threads', param_type='posint'),
+        num_threads=global_conf.get('cuffquant', 'threads', param_type='posint'),
         input_bam=input_bam
         )
     )
@@ -169,11 +169,11 @@ cuffnorm -q {other_options} \\
   --labels {sample_labels} \\
   {gtf} \\
   {input_files}""".format(
-        other_options=global_conf.global_get('cuffnorm', 'other_options', required=False),
+        other_options=global_conf.get('cuffnorm', 'other_options', required=False),
         gtf=gtf,
-        library_type=global_conf.global_get('cuffnorm', 'strand_info'),
+        library_type=global_conf.get('cuffnorm', 'strand_info'),
         output_directory=output_directory,
-        num_threads=global_conf.global_get('cuffnorm', 'threads', param_type='posint'),
+        num_threads=global_conf.get('cuffnorm', 'threads', param_type='posint'),
         sample_labels=sample_labels,
         input_files=" \\\n  ".join(input_files)
         )

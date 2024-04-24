@@ -88,11 +88,11 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-      java_other_options=global_conf.global_get('DEFAULT', 'java_other_options'),
-      ram=global_conf.global_get('chromimpute', 'ram'),
+      java_other_options=global_conf.get('DEFAULT', 'java_other_options'),
+      ram=global_conf.get('chromimpute', 'ram'),
       histone_mark=histone_mark,
       convertsample=sample,
-      resolution=global_conf.global_get('chromimpute', 'resolution'),
+      resolution=global_conf.get('chromimpute', 'resolution'),
       path_to_dataset=input_dir,
       inputinfofile=inputinfofile,
       chrom_sizes=chr_sizes_file,
@@ -117,10 +117,10 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-      java_other_options=global_conf.global_get('DEFAULT', 'java_other_options'),
-      ram=global_conf.global_get('chromimpute', 'ram'),
+      java_other_options=global_conf.get('DEFAULT', 'java_other_options'),
+      ram=global_conf.get('chromimpute', 'ram'),
       histone_mark=histone_mark,
-      resolution=global_conf.global_get('chromimpute', 'resolution'),
+      resolution=global_conf.get('chromimpute', 'resolution'),
       converteddir=converteddir,
       inputinfofile=inputinfofile,
       chrom_sizes=chr_sizes_file,
@@ -146,9 +146,9 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {chrom_sizes} \\
   {output_dir} \\
   {histone_mark}""".format(
-      java_other_options=global_conf.global_get('DEFAULT', 'java_other_options'),
-      ram=global_conf.global_get('chromimpute_generate_train_data', 'ram'),
-      resolution=global_conf.global_get('chromimpute', 'resolution'),
+      java_other_options=global_conf.get('DEFAULT', 'java_other_options'),
+      ram=global_conf.get('chromimpute_generate_train_data', 'ram'),
+      resolution=global_conf.get('chromimpute', 'resolution'),
       converteddir=converteddir,
       distancedir=distancedir,
       inputinfofile=inputinfofile,
@@ -193,15 +193,15 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     {output_dir} \\
     {sample} \\
     {mark}""".format(
-        java_other_options = global_conf.global_get('DEFAULT', 'java_other_options'),
-        ram = global_conf.global_get('chromimpute', 'ram'),
-        chrom = global_conf.global_get('chromimpute', 'chrom'),
-        resolution = global_conf.global_get('chromimpute', 'resolution'),
+        java_other_options = global_conf.get('DEFAULT', 'java_other_options'),
+        ram = global_conf.get('chromimpute', 'ram'),
+        chrom = global_conf.get('chromimpute', 'chrom'),
+        resolution = global_conf.get('chromimpute', 'resolution'),
         converteddir = converteddir,
         distancedir = distancedir,
         predictordir = predictordir,
         inputinfofile = inputinfofile,
-        chrom_sizes = global_conf.global_get('chromimpute', 'chromsizes'),
+        chrom_sizes = global_conf.get('chromimpute', 'chromsizes'),
         output_dir = output_dir,
         sample = sample,
         mark = mark
@@ -223,8 +223,8 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {predictordir} \\
   {sample} \\
   {histone_mark}""".format(
-      java_other_options=global_conf.global_get('DEFAULT', 'java_other_options'),
-      ram=global_conf.global_get('chromimpute', 'ram'),
+      java_other_options=global_conf.get('DEFAULT', 'java_other_options'),
+      ram=global_conf.get('chromimpute', 'ram'),
       traindatadir=traindatadir,
       inputinfofile=inputinfofile,
       predictordir=output_dir,
@@ -252,10 +252,10 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     {output_dir} \\
     {sample} \\
     {mark}""".format(
-        java_other_options=global_conf.global_get('DEFAULT', 'java_other_options'),
-        ram=global_conf.global_get('chromimpute_apply', 'ram'),
+        java_other_options=global_conf.get('DEFAULT', 'java_other_options'),
+        ram=global_conf.get('chromimpute_apply', 'ram'),
         chrom=chr,
-        resolution=global_conf.global_get('chromimpute', 'resolution'),
+        resolution=global_conf.get('chromimpute', 'resolution'),
         converteddir=converteddir,
         distancedir=distancedir,
         predictordir=predictordir,
@@ -284,8 +284,8 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     {imputeddir} \\
     {imputed_file} \\
     {chrom_sizes}""".format(
-        java_other_options=global_conf.global_get('DEFAULT', 'java_other_options'),
-        ram=global_conf.global_get('chromimpute_eval', 'ram'),
+        java_other_options=global_conf.get('DEFAULT', 'java_other_options'),
+        ram=global_conf.get('chromimpute_eval', 'ram'),
         percent1=percent1,
         percent2=percent2,
         converteddir=converteddir,

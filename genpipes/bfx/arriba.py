@@ -47,14 +47,14 @@ $ARRIBA_HOME/./run_arriba.sh \\
       {threads} \\
       {fastq1} \\
       {fastq2}""".format(
-            genome_build=global_conf.global_get('run_arriba', 'genome_build'),
-            gene_annot=global_conf.global_get('run_arriba', 'gene_annot'),
-            reference=global_conf.global_get('run_arriba', 'reference'),
-            blacklist=global_conf.global_get('run_arriba', 'blacklist'),
-            known_fusions=global_conf.global_get('run_arriba', 'known_fusions'),
-            protein_domains=global_conf.global_get('run_arriba', 'protein_domains'),
-            threads=global_conf.global_get('run_arriba', 'threads', param_type='posint'),
-            options=global_conf.global_get('run_arriba', 'options'),
+            genome_build=global_conf.get('run_arriba', 'genome_build'),
+            gene_annot=global_conf.get('run_arriba', 'gene_annot'),
+            reference=global_conf.get('run_arriba', 'reference'),
+            blacklist=global_conf.get('run_arriba', 'blacklist'),
+            known_fusions=global_conf.get('run_arriba', 'known_fusions'),
+            protein_domains=global_conf.get('run_arriba', 'protein_domains'),
+            threads=global_conf.get('run_arriba', 'threads', param_type='posint'),
+            options=global_conf.get('run_arriba', 'options'),
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
             fastq2=",".join(fastq2 for fastq2 in fastqs2),
         ),

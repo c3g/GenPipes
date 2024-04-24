@@ -46,11 +46,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $COBALT_JAR 
   -tumor_bam {tumor_bam} \\
   -gc_profile {gc_profile} \\
   -output_dir {output_dir}""".format(
-        tmp_dir=global_conf.global_get('cobalt', 'tmp_dir'),
-        java_other_options=global_conf.global_get('cobalt', 'java_other_options'),
-        ram=global_conf.global_get('cobalt', 'ram'),
-        threads=global_conf.global_get('cobalt', 'threads'),
-        gc_profile=global_conf.global_get('cobalt', 'gc_profile'),
+        tmp_dir=global_conf.get('cobalt', 'tmp_dir'),
+        java_other_options=global_conf.get('cobalt', 'java_other_options'),
+        ram=global_conf.get('cobalt', 'ram'),
+        threads=global_conf.get('cobalt', 'threads'),
+        gc_profile=global_conf.get('cobalt', 'gc_profile'),
         reference=normal_name,
         reference_bam=normal,
         tumor=tumor_name,

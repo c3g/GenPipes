@@ -93,7 +93,7 @@ class NanoporeCoVSeq(common.Nanopore):
     @property
     def run_name(self):
         if not hasattr(self, "_run_name"):
-            self._run_name = global_conf.global_get('DEFAULT', 'run_name', required=True)
+            self._run_name = global_conf.get('DEFAULT', 'run_name', required=True)
         return self._run_name
 
     def guppy_basecall(self):
@@ -103,7 +103,7 @@ class NanoporeCoVSeq(common.Nanopore):
         jobs = []
 
         reads_fast5_dir = []
-        transfer = bool(strtobool(global_conf.global_get('guppy_basecall', 'transfer_to_tmp')))
+        transfer = bool(strtobool(global_conf.get('guppy_basecall', 'transfer_to_tmp')))
 
         for sample in self.samples:
             reads_fast5_dir.append(sample.fast5_files)
@@ -148,7 +148,7 @@ class NanoporeCoVSeq(common.Nanopore):
 
         demux_fastq_directory = os.path.join("demultiplex")
 
-        transfer = bool(strtobool(global_conf.global_get('guppy_demultiplex', 'transfer_to_tmp')))
+        transfer = bool(strtobool(global_conf.get('guppy_demultiplex', 'transfer_to_tmp')))
 
         demux_barcode_dir = []
         for sample in self.samples:
@@ -252,20 +252,20 @@ class NanoporeCoVSeq(common.Nanopore):
                         sambamba.sort(
                             "/dev/stdin",
                             sample_bam,
-                            tmp_dir=global_conf.global_get('host_reads_removal', 'tmp_dir', required=True),
-                            other_options=global_conf.global_get('host_reads_removal', 'sambamba_sort_other_options',
+                            tmp_dir=global_conf.get('host_reads_removal', 'tmp_dir', required=True),
+                            other_options=global_conf.get('host_reads_removal', 'sambamba_sort_other_options',
                                                        required=False)
                         )
                     ]),
                     sambamba.view(
                         sample_bam,
                         sample_bam_host_removed_sorted,
-                        options=global_conf.global_get('host_reads_removal', 'sambamba_view_other_options')
+                        options=global_conf.get('host_reads_removal', 'sambamba_view_other_options')
                     ),
                     sambamba.index(
                         sample_bam_host_removed_sorted,
                         sample_bam_host_removed_sorted_index,
-                        other_options=global_conf.global_get('host_reads_removal', 'sambamba_index_other_options', required=False)
+                        other_options=global_conf.get('host_reads_removal', 'sambamba_index_other_options', required=False)
                     ),
                     samtools.bam2fq(
                         input_bam=sample_bam_host_removed_sorted,
@@ -327,20 +327,20 @@ class NanoporeCoVSeq(common.Nanopore):
                         sambamba.sort(
                             "/dev/stdin",
                             sample_bam,
-                            tmp_dir=global_conf.global_get('host_reads_removal', 'tmp_dir', required=True),
-                            other_options=global_conf.global_get('host_reads_removal', 'sambamba_sort_other_options',
+                            tmp_dir=global_conf.get('host_reads_removal', 'tmp_dir', required=True),
+                            other_options=global_conf.get('host_reads_removal', 'sambamba_sort_other_options',
                                                        required=False)
                         )
                     ]),
                     sambamba.view(
                         sample_bam,
                         sample_bam_host_removed_sorted,
-                        options=global_conf.global_get('host_reads_removal', 'sambamba_view_other_options')
+                        options=global_conf.get('host_reads_removal', 'sambamba_view_other_options')
                     ),
                     sambamba.index(
                         sample_bam_host_removed_sorted,
                         sample_bam_host_removed_sorted_index,
-                        other_options=global_conf.global_get('host_reads_removal', 'sambamba_index_other_options', required=False)
+                        other_options=global_conf.get('host_reads_removal', 'sambamba_index_other_options', required=False)
                     ),
                     samtools.bam2fq(
                         input_bam=sample_bam_host_removed_sorted,
@@ -381,9 +381,9 @@ class NanoporeCoVSeq(common.Nanopore):
                         fastq1,
                         fastq2,
                         kraken_out_prefix,
-                        other_options=global_conf.global_get('kraken_analysis', 'kraken2_other_options'),
-                        nthread=global_conf.global_get('kraken_analysis', 'kraken2_threads'),
-                        database=global_conf.global_get('kraken_analysis', 'kraken2_database')
+                        other_options=global_conf.get('kraken_analysis', 'kraken2_other_options'),
+                        nthread=global_conf.get('kraken_analysis', 'kraken2_threads'),
+                        database=global_conf.get('kraken_analysis', 'kraken2_database')
                     ),
                     Job(
                         input_files=unclassified_output + classified_output,
@@ -393,7 +393,7 @@ class NanoporeCoVSeq(common.Nanopore):
                         ],
                         command="""pigz -k -f -p {nthreads} {input_files}""".format(
                             input_files=" ".join(unclassified_output + classified_output),
-                            nthreads=global_conf.global_get('kraken_analysis', 'pigz_threads')
+                            nthreads=global_conf.get('kraken_analysis', 'pigz_threads')
                         )
                     )
                 ],
@@ -505,7 +505,7 @@ class NanoporeCoVSeq(common.Nanopore):
                                 sambamba.sort(
                                     "/dev/stdin",
                                     primer_trimmed_bam,
-                                    tmp_dir=global_conf.global_get('artic_nanopolish', 'tmp_dir', required=True)
+                                    tmp_dir=global_conf.get('artic_nanopolish', 'tmp_dir', required=True)
                                 )
                             ]
                         ),
@@ -672,7 +672,7 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
-            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=global_conf.global_get('rename_consensus_header', 'sequencing_technology', required=False), status="${STATUS}"))
+            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=global_conf.get('rename_consensus_header', 'sequencing_technology', required=False), status="${STATUS}"))
 
             variant_directory = os.path.join("variant", sample.name)
             input_vcf = os.path.join(variant_directory, sample.name + ".pass.vcf.gz")
@@ -702,12 +702,12 @@ export STATUS""".format(
                             output_files=[output_status_fa],
                             command="""\\
 awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_status_fa}""".format(
-                            country=global_conf.global_get('rename_consensus_header', 'country', required=False),
-                            province=global_conf.global_get('rename_consensus_header', 'province', required=False),
-                            year=global_conf.global_get('rename_consensus_header', 'year', required=False),
-                            seq_method=global_conf.global_get('rename_consensus_header', 'seq_method', required=False),
-                            assemb_method=global_conf.global_get('rename_consensus_header', 'assemb_method', required=False),
-                            snv_call_method=global_conf.global_get('rename_consensus_header', 'snv_call_method', required=False),
+                            country=global_conf.get('rename_consensus_header', 'country', required=False),
+                            province=global_conf.get('rename_consensus_header', 'province', required=False),
+                            year=global_conf.get('rename_consensus_header', 'year', required=False),
+                            seq_method=global_conf.get('rename_consensus_header', 'seq_method', required=False),
+                            assemb_method=global_conf.get('rename_consensus_header', 'assemb_method', required=False),
+                            snv_call_method=global_conf.get('rename_consensus_header', 'snv_call_method', required=False),
                             sample=sample.name,
                             input_fa=input_fa,
                             output_status_fa=output_status_fa

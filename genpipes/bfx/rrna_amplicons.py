@@ -93,7 +93,7 @@ memtime contamWrapper.pl \\
     outfile_unmatched = outfile_unmatched,
     log = log,
     db = db,
-    num_threads = global_conf.global_get('duk_wrapper', 'num_threads', param_type='int')
+    num_threads = global_conf.get('duk_wrapper', 'num_threads', param_type='int')
     )
     return job
 
@@ -123,9 +123,9 @@ memtime gunzip -c {infile} | duk \\
     log = log,
     ncontam = ncontam,
     contam = contam,
-    k = global_conf.global_get('duk', 'k', 'int'),
-    s = global_conf.global_get('duk', 's', 'int'),
-    c = global_conf.global_get('duk', 'c', 'int'),
+    k = global_conf.get('duk', 'k', 'int'),
+    s = global_conf.get('duk', 's', 'int'),
+    c = global_conf.get('duk', 'c', 'int'),
     ) 
     return job
 
@@ -150,7 +150,7 @@ memtime barcodes.pl \\
   --log {log};""".format(
     infile = infile,
     outfile = outfile,
-    num_threads = global_conf.global_get('barcodes', 'num_threads', 1, 'int'),
+    num_threads = global_conf.get('barcodes', 'num_threads', 1, 'int'),
     log = log
     )
     
@@ -177,7 +177,7 @@ memtime removeUnpaired.pl \\
     outfile_paired = outfile_paired,
     outfile_1 = outfile_1,
     outfile_2 = outfile_2,
-    num_threads =  global_conf.global_get('remove_unpaired', 'num_threads', 'int')
+    num_threads =  global_conf.get('remove_unpaired', 'num_threads', 'int')
     )
                 
     return job
@@ -203,7 +203,7 @@ memtime splitPairs.pl \\
     infile = infile,
     outfile_1 = outfile_1,
     outfile_2 = outfile_2,
-    num_threads = global_conf.global_get('split_pairs', 'num_threads', 'int')
+    num_threads = global_conf.get('split_pairs', 'num_threads', 'int')
     )
                 
     return job
@@ -236,9 +236,9 @@ memtime qscoreSheets.pl \\
         suffix = suffix,
         log = log,
         outfile = outfile,
-        tmp = global_conf.global_get('default', 'tmpDir', 'dirpath'),
-        phred = global_conf.global_get('default', 'qual', 'int'),
-        num_threads = global_conf.global_get('qscore_sheet', 'num_threads', 'int')
+        tmp = global_conf.get('default', 'tmpDir', 'dirpath'),
+        phred = global_conf.get('default', 'qual', 'int'),
+        num_threads = global_conf.get('qscore_sheet', 'num_threads', 'int')
     )
                     
     return job
@@ -351,12 +351,12 @@ memtime flash.pl \\
     infileR2 = infileR2,
     prefix = prefix,
     outdir = outdir,
-    n = global_conf.global_get('flash', 'sampling', 'int'),
-    m = global_conf.global_get('flash', 'minOverlap', 'int'),
-    M = global_conf.global_get('flash', 'maxOverlap', 'int'),
-    x = global_conf.global_get('flash', 'percentMismatch', 'float'),
-    p = global_conf.global_get('flash', 'phred', 'int'),
-    num_threads = global_conf.global_getparam('flash', 'num_threads', 'int')
+    n = global_conf.get('flash', 'sampling', 'int'),
+    m = global_conf.get('flash', 'minOverlap', 'int'),
+    M = global_conf.get('flash', 'maxOverlap', 'int'),
+    x = global_conf.get('flash', 'percentMismatch', 'float'),
+    p = global_conf.get('flash', 'phred', 'int'),
+    num_threads = global_conf.getparam('flash', 'num_threads', 'int')
     )
     return job
 
@@ -383,7 +383,7 @@ memtime itagsQC.pl \\
   --primer_3_prime {revPrimer} \\
   --length_3_prime {length_3_prime} \\""".format(
         revPrimer = revPrimer,
-        length_3_prime = global_conf.global_get('itags_QC', 'length3Prime', 'int')
+        length_3_prime = global_conf.get('itags_QC', 'length3Prime', 'int')
         )
     
     if(fwdPrimer != "null"):
@@ -391,7 +391,7 @@ memtime itagsQC.pl \\
   --primer_5_prime {fwdPrimer} \\
   --length_5_prime {length_5_prime} \\""".format(
         fwdPrimer = fwdPrimer,
-        length_5_prime = global_conf.global_get('itags_QC', 'length5Prime', 'int')
+        length_5_prime = global_conf.get('itags_QC', 'length5Prime', 'int')
         )
  
     job.command+="""\
@@ -400,9 +400,9 @@ memtime itagsQC.pl \\
   --num_threads {num_threads} \\
   --qual {qual} \\
   --primer_mismatch {primer_mismatch}""".format(
-        num_threads = global_conf.global_get('itags_QC', 'num_threads', 'int'),
-        qual = global_conf.global_get('default', 'qual', 'int'),
-        primer_mismatch = global_conf.global_get('itags_QC', 'primerMismatch', 'int')
+        num_threads = global_conf.get('itags_QC', 'num_threads', 'int'),
+        qual = global_conf.get('default', 'qual', 'int'),
+        primer_mismatch = global_conf.get('itags_QC', 'primerMismatch', 'int')
     )
 
     return job
@@ -430,7 +430,7 @@ memtime  itagsQC.pl
   --primer_3_prime {revPrimer} \\
   --length_3_prime {length_3_prime} \\""".format(
             revPrimer = revPrimer,
-            length_3_prime = global_conf.global_get('itags_QC', 'length3Prime', 'int')
+            length_3_prime = global_conf.get('itags_QC', 'length3Prime', 'int')
         )
 
     if(fwdPrimer != "null"):
@@ -438,7 +438,7 @@ memtime  itagsQC.pl
   --primer_5_prime {fwdPrimer} \\
   --length_5_prime {length_5_prime} \\""".format(
             fwdPrimer = fwdPrimer,
-            length_5_prime = global_conf.global_get('itags_QC', 'length5Prime', 'int')
+            length_5_prime = global_conf.get('itags_QC', 'length5Prime', 'int')
         )
     job.command+="""\
   --qscore_1 {qscore1} \\
@@ -451,16 +451,16 @@ memtime  itagsQC.pl
   --primer_mismatch {primer_mismatch} \\
   --min_length {min_length} \\
   --N {N}""".format(
-        qscore_1 = global_conf.global_get('itags_QC', 'qscore1', 'int'),
-        qscore_2 = global_conf.global_get('itags_QC', 'qscore2', 'int'),
+        qscore_1 = global_conf.get('itags_QC', 'qscore1', 'int'),
+        qscore_2 = global_conf.get('itags_QC', 'qscore2', 'int'),
         outfile = outfile,
         outfile_failed = outfile_failed,
-        num_threads =  global_conf.global_get('itags_QC', 'num_threads', 'int'),
-        qual = global_conf.global_get('default', 'qual', 'int'),
-        lq_threshold = global_conf.global_get('itags_QC', 'lq_threshold', 'int'),
-        primer_mismatch = global_conf.global_get('itags_QC', 'primerMismatch', 'float'),
-        min_length = global_conf.global_get('itags_QC', 'minlength', 'int'),
-        N = global_conf.global_get('itags_QC', 'N', 'int')
+        num_threads =  global_conf.get('itags_QC', 'num_threads', 'int'),
+        qual = global_conf.get('default', 'qual', 'int'),
+        lq_threshold = global_conf.get('itags_QC', 'lq_threshold', 'int'),
+        primer_mismatch = global_conf.get('itags_QC', 'primerMismatch', 'float'),
+        min_length = global_conf.get('itags_QC', 'minlength', 'int'),
+        N = global_conf.get('itags_QC', 'N', 'int')
     )
                 
     return job
@@ -559,9 +559,9 @@ memtime clustering1.pl \\
   --num_threads {num_threads}.""".format(
     infile = infile,
     barcodes = barcodes,
-    ref_db =  global_conf.global_get('DB', 'chimeras', 'filepath'),
+    ref_db =  global_conf.get('DB', 'chimeras', 'filepath'),
     outdir = outdir,
-    num_threads = global_conf.global_get('clustering', 'num_threads', 1, 'int')
+    num_threads = global_conf.get('clustering', 'num_threads', 1, 'int')
     )
 
     return job
@@ -586,10 +586,10 @@ memtime clustering2.pl \\
   --outdir {outdir} \\
   --num_threads {num_threads}""".format(
         infile = infile,
-        ref_db = global_conf.global_get('DB', 'chimeras', 1, 'path'),
+        ref_db = global_conf.get('DB', 'chimeras', 1, 'path'),
         barcodes = barcodes,
         outdir = outdir,
-        num_threads = global_conf.global_get('clustering', 'num_threads', 'int')
+        num_threads = global_conf.get('clustering', 'num_threads', 'int')
     )
     return job
 
@@ -616,11 +616,11 @@ memtime clustering3.pl \\
   --lowAbunCutOff {lowAbunCutoff} \\
   --num_threads {num_threads}""".format(
     infile = infile,
-    ref_db =  global_conf.global_get('DB', 'chimeras', 'filepath'),
+    ref_db =  global_conf.get('DB', 'chimeras', 'filepath'),
     barcodes = barcodes,
     outdir = outdir,
-    lowAbunCutoff = global_conf.global_get('clustering', 'lowAbunCutOff', 'int'),
-    num_threads =  global_conf.global_get('clustering', 'num_threads', 'int')
+    lowAbunCutoff = global_conf.get('clustering', 'lowAbunCutOff', 'int'),
+    num_threads =  global_conf.get('clustering', 'num_threads', 'int')
     )
     
     return job
@@ -628,11 +628,11 @@ memtime clustering3.pl \\
 def clientReport(iniFilePath, projectPath, pipelineType, reportPath):
         
     pipeline = "pipeline=\"" + pipelineType + "\""
-    titleTMP = global_conf.global_get('report', 'projectName')
+    titleTMP = global_conf.get('report', 'projectName')
     title = "report.title=\"" + titleTMP + "\""
-    authorTMP = global_conf.global_get('report', 'report.author')
+    authorTMP = global_conf.get('report', 'report.author')
     author = "report.author=\"" + authorTMP + "\""
-    contactTMP = global_conf.global_get('report', 'report.contact')
+    contactTMP = global_conf.get('report', 'report.contact')
     contact = "report.contact=\"" + contactTMP + "\""
 
     job = Job(

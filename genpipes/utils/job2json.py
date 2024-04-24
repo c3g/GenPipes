@@ -177,7 +177,7 @@ def main():
                             current_json_hash = json.load(json_file)
                         if current_json_hash:
                             # Print a copy of the JSON file for the monitoring interface
-                            portal_output_dir = global_conf.global_get('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
+                            portal_output_dir = global_conf.get('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
                             if portal_output_dir != '':
                                 shutil.copy(jfile, os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'))
                             count = 0
@@ -187,7 +187,7 @@ def main():
                         count -= 1
 
             # Print a copy of it for the monitoring interface
-            portal_output_dir = global_conf.global_get('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
+            portal_output_dir = global_conf.get('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
             if portal_output_dir != '':
                 with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'), 'w') as out_json:
                     json.dump(current_json, out_json, indent=4)

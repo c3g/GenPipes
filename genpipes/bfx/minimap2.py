@@ -37,7 +37,7 @@ def minimap2_ont(
     :return: a job for nanopore alignment
     """
 
-    genome_fasta = global_conf.global_get(ini_section, 'genome_fasta', required=True)
+    genome_fasta = global_conf.get(ini_section, 'genome_fasta', required=True)
 
     return Job(
         [read_fastq_dir],
@@ -50,9 +50,9 @@ minimap2 \\
   {other_options} \\
   {genome_fasta} \\
   {read_fastq_dir}/*.fastq*{out_sam}""".format(
-            minimap_preset=global_conf.global_get(ini_section, 'preset'),
+            minimap_preset=global_conf.get(ini_section, 'preset'),
             read_group=read_group,
-            other_options=global_conf.global_get(ini_section, 'other_options', required=False),
+            other_options=global_conf.get(ini_section, 'other_options', required=False),
             genome_fasta=genome_fasta,
             read_fastq_dir=read_fastq_dir,
             out_sam=" \\\n  > " + out_sam if out_sam else ""

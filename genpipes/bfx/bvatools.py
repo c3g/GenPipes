@@ -25,7 +25,7 @@ from ..core.config import global_conf
 from ..core.job import Job
 
 def resolve_readset_coverage_bed(readset):
-    coverage_target = global_conf.global_get('bvatools_depth_of_coverage', 'coverage_targets', required=False)
+    coverage_target = global_conf.get('bvatools_depth_of_coverage', 'coverage_targets', required=False)
 
     if coverage_target:
         if coverage_target == "auto":
@@ -35,7 +35,7 @@ def resolve_readset_coverage_bed(readset):
                 return None
         else:
             # Add filepath validation
-            coverage_target = global_conf.global_get('bvatools_depth_of_coverage', 'coverage_targets', param_type='filepath')
+            coverage_target = global_conf.get('bvatools_depth_of_coverage', 'coverage_targets', param_type='filepath')
             return coverage_target
     else:
         return None
@@ -43,7 +43,7 @@ def resolve_readset_coverage_bed(readset):
 # If per RG != 0 is given there will be multiple outputs, so output is a prefix
 # If per RG == 0 or undef, output is an actual file.
 def basefreq(input, output, positions, per_rg):
-    threads = global_conf.global_get('bvatools_basefreq', 'threads', param_type='int')
+    threads = global_conf.get('bvatools_basefreq', 'threads', param_type='int')
 
     return Job(
         [input, positions],
@@ -58,8 +58,8 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   --pos {positions} \\
   --bam {input}{per_rg}{threads} \\
   --out {output}""".format(
-        java_other_options=global_conf.global_get('bvatools_basefreq', 'java_other_options'),
-        ram=global_conf.global_get('bvatools_basefreq', 'ram'),
+        java_other_options=global_conf.get('bvatools_basefreq', 'java_other_options'),
+        ram=global_conf.get('bvatools_basefreq', 'ram'),
         positions=positions,
         per_rg=" \\\n  --per_rg " if per_rg else "",
         threads=" \\\n  --useIndex --threads " + str(threads) if threads > 1 else "",
@@ -84,11 +84,11 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   --ref {reference_genome}{intervals} \\
   --bam {input} \\
   > {output}""".format(
-        java_other_options=global_conf.global_get('bvatools_depth_of_coverage', 'java_other_options'),
-        ram=global_conf.global_get('bvatools_depth_of_coverage', 'ram'),
+        java_other_options=global_conf.get('bvatools_depth_of_coverage', 'java_other_options'),
+        ram=global_conf.get('bvatools_depth_of_coverage', 'ram'),
         other_options=other_options,
-        threads=global_conf.global_get('bvatools_depth_of_coverage', 'threads', param_type='posint'),
-        reference_genome=reference_genome if reference_genome else global_conf.global_get('bvatools_depth_of_coverage', 'genome_fasta', param_type='filepath'),
+        threads=global_conf.get('bvatools_depth_of_coverage', 'threads', param_type='posint'),
+        reference_genome=reference_genome if reference_genome else global_conf.get('bvatools_depth_of_coverage', 'genome_fasta', param_type='filepath'),
         intervals=" \\\n  --intervals " + coverage_bed if coverage_bed else "",
         input=input,
         output=output
@@ -118,15 +118,15 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   --minMappingQuality {minMappingQuality} \\
   --threads {threads} \\
   --prefix {output_prefix}""".format(
-        java_other_options=global_conf.global_get('extract_sclip', 'java_other_options'),
-        ram=global_conf.global_get('extract_sclip', 'ram'),
-        other_options=global_conf.global_get('extract_sclip', 'other_options', required=False),
+        java_other_options=global_conf.get('extract_sclip', 'java_other_options'),
+        ram=global_conf.get('extract_sclip', 'ram'),
+        other_options=global_conf.get('extract_sclip', 'other_options', required=False),
         bamFile=bamFile,
         flank=flank,
-        minSCCount=global_conf.global_get('extract_sclip', 'min_sclip_count'),
-        minSCLength=global_conf.global_get('extract_sclip', 'kmer'),
-        minMappingQuality=global_conf.global_get('extract_sclip', 'min_mapping_quality'),
-        threads=global_conf.global_get('extract_sclip', 'threads'),
+        minSCCount=global_conf.get('extract_sclip', 'min_sclip_count'),
+        minSCLength=global_conf.get('extract_sclip', 'kmer'),
+        minMappingQuality=global_conf.get('extract_sclip', 'min_mapping_quality'),
+        threads=global_conf.get('extract_sclip', 'threads'),
         output_prefix=output_prefix
         )
     )
@@ -145,8 +145,8 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   --level 1 \\
   --bam {input} \\
   --out {output}""".format(
-        java_other_options=global_conf.global_get('bvatools_groupfixmate', 'java_other_options'),
-        ram=global_conf.global_get('bvatools_groupfixmate', 'ram'),
+        java_other_options=global_conf.get('bvatools_groupfixmate', 'java_other_options'),
+        ram=global_conf.get('bvatools_groupfixmate', 'ram'),
         input=input,
         output=output
         ),
@@ -168,10 +168,10 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   --snppos {positions} \\
   --basefreq {basefreq} \\
   --prefix {output_prefix}""".format(
-        java_other_options=global_conf.global_get('bvatools_ratiobaf', 'java_other_options'),
-        ram=global_conf.global_get('bvatools_ratiobaf', 'ram'),
-        other_options=global_conf.global_get('bvatools_ratiobaf', 'other_options', required=False),
-        reference_dictionary=global_conf.global_get('bvatools_ratiobaf', 'genome_dictionary', param_type='filepath'),
+        java_other_options=global_conf.get('bvatools_ratiobaf', 'java_other_options'),
+        ram=global_conf.get('bvatools_ratiobaf', 'ram'),
+        other_options=global_conf.get('bvatools_ratiobaf', 'other_options', required=False),
+        reference_dictionary=global_conf.get('bvatools_ratiobaf', 'genome_dictionary', param_type='filepath'),
         positions=positions,
         basefreq=basefreq,
         output_prefix=output_prefix
@@ -179,7 +179,7 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
     )
 
 def readsqc(read1, read2, type, region_name, output_directory):
-    threads = global_conf.global_get('bvatools_readsqc', 'threads', param_type='int', required=False)
+    threads = global_conf.get('bvatools_readsqc', 'threads', param_type='int', required=False)
 
     return Job(
         [read1, read2],
@@ -195,9 +195,9 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   --type {type} \\
   --output {output_directory} \\
   --read1 {read1}{read2}""".format(
-        java_other_options=global_conf.global_get('bvatools_readsqc', 'java_other_options'),
-        ram=global_conf.global_get('bvatools_readsqc', 'ram'),
-        other_options=global_conf.global_get('bvatools_readsqc', 'other_options', required=False),
+        java_other_options=global_conf.get('bvatools_readsqc', 'java_other_options'),
+        ram=global_conf.get('bvatools_readsqc', 'ram'),
+        other_options=global_conf.get('bvatools_readsqc', 'other_options', required=False),
         region_name=region_name,
         type=type,
         output_directory=output_directory,
@@ -220,9 +220,9 @@ def bam2fq(bam, tags=None , out=None):
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   bam2fq {other_options} \\
   --bam {bam} {tags} {out} """.format(
-        java_other_options=global_conf.global_get('bvatools_bam2fq', 'java_other_options'),
-        ram=global_conf.global_get('bvatools_bam2fq', 'ram'),
-        other_options=global_conf.global_get('bvatools_bam2fq', 'other_options', required=False),
+        java_other_options=global_conf.get('bvatools_bam2fq', 'java_other_options'),
+        ram=global_conf.get('bvatools_bam2fq', 'ram'),
+        other_options=global_conf.get('bvatools_bam2fq', 'other_options', required=False),
         bam=bam,
         tags=" \\\n  --tags " + tags if tags else "",
         out=" \\\n  --out " + out if out else ""
@@ -242,9 +242,9 @@ def bincounter(bam, refbam, out=None, window=None):
 java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
   bincounter {other_options} \\
   --bam {bam} --refbam {refbam} {window} {out} """.format(
-        java_other_options=global_conf.global_get('bvatools_bincounter', 'java_other_options'),
-        ram=global_conf.global_get('bvatools_bincounter', 'ram'),
-        other_options=global_conf.global_get('bvatools_bincounter', 'other_options', required=False),
+        java_other_options=global_conf.get('bvatools_bincounter', 'java_other_options'),
+        ram=global_conf.get('bvatools_bincounter', 'ram'),
+        other_options=global_conf.get('bvatools_bincounter', 'other_options', required=False),
         bam=bam,
         refbam=refbam,
         window=" \\\n  --window " + window if window else "",

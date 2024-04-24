@@ -92,7 +92,7 @@ class Config(configparser.ConfigParser):
 
     # Retrieve param in config files with optional definition check and type validation
     # By default, parameter is required to be defined in one of the config filete
-    def global_get(self, section, option, required=True, param_type='string', **kwargs):
+    def get(self, section, option, required=True, param_type='string', **kwargs):
         # Store original section for future error message, in case 'DEFAULT' section is used eventually
         original_section = section
         # Keep that if block first, it is only evaluated in testing mode

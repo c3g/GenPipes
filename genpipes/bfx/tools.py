@@ -219,7 +219,7 @@ def dict2beds(dictionary,beds):
 python3 $PYTHON_TOOLS/dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds}""".format(
-            dictionary=dictionary if dictionary else global_conf.global_get('dict2beds', 'genome_dictionary', param_type='filepath'),
+            dictionary=dictionary if dictionary else global_conf.get('dict2beds', 'genome_dictionary', param_type='filepath'),
             beds=' '.join(beds)
         )
     )
@@ -323,7 +323,7 @@ bed2IntervalList.pl \\
   --dict {dictionary} \\
   --bed {bed} \\
   > {output}""".format(
-            dictionary=global_conf.global_get('bed2interval_list', 'genome_dictionary', param_type='filepath'),
+            dictionary=global_conf.get('bed2interval_list', 'genome_dictionary', param_type='filepath'),
             bed=bed,
             output=output
         )
@@ -610,10 +610,10 @@ Rscript $R_TOOLS/methylKit.R \\
   -suff {input_suffix} \\
   {other_options}""".format(
             design_file=design_file,
-            genome=global_conf.global_get('methylkit_differential_analysis', 'assembly'),
+            genome=global_conf.get('methylkit_differential_analysis', 'assembly'),
             output_folder=output_dir,
             input_suffix=suffix,
-            other_options=global_conf.global_get('methylkit_differential_analysis', 'other_options')
+            other_options=global_conf.get('methylkit_differential_analysis', 'other_options')
         )
     )
 
@@ -642,8 +642,8 @@ IHEC_rnaseq_metrics.sh \\
             input_bam=input_bam,
             input_name=input_name,
             input_picard_dup=input_picard_dup,
-            intergenic_bed=global_conf.global_get('IHEC_rnaseq_metrics', 'intergenic_bed', param_type='filepath', required=True),
-            rrna_bed=global_conf.global_get('IHEC_rnaseq_metrics', 'ribo_rna_bed', param_type='filepath', required=True),
+            intergenic_bed=global_conf.get('IHEC_rnaseq_metrics', 'intergenic_bed', param_type='filepath', required=True),
+            rrna_bed=global_conf.get('IHEC_rnaseq_metrics', 'ribo_rna_bed', param_type='filepath', required=True),
             output_dir=output_dir
         )
     )
@@ -695,7 +695,7 @@ IHEC_chipseq_metrics_max.sh \\
             chip_bam=chip_bam,
             chip_type=chip_type,
             chip_name=chip_name,
-            threads=global_conf.global_get('IHEC_chipseq_metrics', 'thread', param_type='int'),
+            threads=global_conf.get('IHEC_chipseq_metrics', 'thread', param_type='int'),
             chip_bed=chip_bed,
             output_dir=output_dir,
             assembly=assembly
@@ -926,19 +926,19 @@ bedops --not-element-of \\
   {sorted_bed} \\
   {filter_sorted_bed} \\
   > {output}""". format(
-            cpg_threshold=global_conf.global_get('filter_snp_cpg', 'cpg_threshold', required=False) if global_conf.global_get('filter_snp_cpg', 'cpg_threshold', required=False) else "5",
+            cpg_threshold=global_conf.get('filter_snp_cpg', 'cpg_threshold', required=False) if global_conf.get('filter_snp_cpg', 'cpg_threshold', required=False) else "5",
             input=input,
-            sorted_bed=os.path.join(global_conf.global_get('filter_snp_cpg', 'tmp_dir'), os.path.basename(input)+".tmp.sorted.bed"),
-            filter_file=global_conf.global_get('filter_snp_cpg', 'known_variants'),
-            tmp_dir=global_conf.global_get('filter_snp_cpg', 'tmp_dir'),
-            ram=global_conf.global_get('filter_snp_cpg', 'ram'),
-            filter_sorted_bed=os.path.join(global_conf.global_get('filter_snp_cpg', 'tmp_dir'), os.path.basename(global_conf.global_get('filter_snp_cpg', 'known_variants'))+".tmp.sorted.bed"),
+            sorted_bed=os.path.join(global_conf.get('filter_snp_cpg', 'tmp_dir'), os.path.basename(input)+".tmp.sorted.bed"),
+            filter_file=global_conf.get('filter_snp_cpg', 'known_variants'),
+            tmp_dir=global_conf.get('filter_snp_cpg', 'tmp_dir'),
+            ram=global_conf.get('filter_snp_cpg', 'ram'),
+            filter_sorted_bed=os.path.join(global_conf.get('filter_snp_cpg', 'tmp_dir'), os.path.basename(global_conf.get('filter_snp_cpg', 'known_variants'))+".tmp.sorted.bed"),
             output=output
         )
     )
 
 def prepare_methylkit(input, output):
-    cutoff=global_conf.global_get('prepare_methylkit', 'min_CpG', required=True)
+    cutoff=global_conf.get('prepare_methylkit', 'min_CpG', required=True)
     return Job(
         [input],
         [output],

@@ -37,7 +37,7 @@ vcf-annotate \\
   -c CHROM,FROM,TO,INFO/MIL \\
   -a {annotations} \\
   {input}{output}""".format(
-        annotations=global_conf.global_get('annotate_mappability', 'genome_mappability_bed_indexed', param_type='filepath'),
+        annotations=global_conf.get('annotate_mappability', 'genome_mappability_bed_indexed', param_type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
         ),
@@ -57,7 +57,7 @@ def missing_indv(input, output):
 vcftools {options} --missing-indv \\
   --gzvcf {input} \\
   --out {output}""".format(
-        options=global_conf.global_get('vcftools_missing_indv', 'options'),
+        options=global_conf.get('vcftools_missing_indv', 'options'),
         input=input,
         output=output,
         ),
@@ -77,7 +77,7 @@ def depth(input, output):
 vcftools {options} --depth \\
   --gzvcf {input} \\
   --out {output}""".format(
-        options=global_conf.global_get('vcftools_depth', 'options'),
+        options=global_conf.get('vcftools_depth', 'options'),
         input=input,
         output=output,
         ),

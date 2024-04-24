@@ -42,7 +42,7 @@ blastdbcmd \\
   -entry {entry_cmd} \\
   -outfmt %f \\
   > {outfile}""".format(
-        blast_db=global_conf.global_get('blast_blastdbcmd', 'blast_db', param_type='prefixpath'),
+        blast_db=global_conf.get('blast_blastdbcmd', 'blast_db', param_type='prefixpath'),
         entry_cmd=entry_cmd,
         outfile=outfile
     ))
@@ -100,9 +100,9 @@ pacBioMergeCovToBlast.R \\
         infile_fasta=infile_fasta,
         outfmt=outfmt,
         tmp_outfile=tmp_outfile,
-        max_target_seqs=global_conf.global_get('blast_dcmegablast', 'max_target_seqs', param_type='posint'),
-        threads=global_conf.global_get('blast_dcmegablast', 'threads', param_type='posint'),
-        blast_db=global_conf.global_get('blast_dcmegablast', 'blast_db', param_type='prefixpath'),
+        max_target_seqs=global_conf.get('blast_dcmegablast', 'max_target_seqs', param_type='posint'),
+        threads=global_conf.get('blast_dcmegablast', 'threads', param_type='posint'),
+        blast_db=global_conf.get('blast_dcmegablast', 'blast_db', param_type='prefixpath'),
         outfile=outfile,
         coverage_bed=coverage_bed,
         outdir=outdir

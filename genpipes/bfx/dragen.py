@@ -48,8 +48,8 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
             ]
     if protocol == "dragen":
 
-        duplicate_marking = global_conf.global_get('dragen_align', 'duplicate_marking', param_type='boolean')
-        remove_duplicates = global_conf.global_get('dragen_align', 'remove_duplicates', param_type='boolean')
+        duplicate_marking = global_conf.get('dragen_align', 'duplicate_marking', param_type='boolean')
+        remove_duplicates = global_conf.get('dragen_align', 'remove_duplicates', param_type='boolean')
     else:
         duplicate_marking = "false"
         remove_duplicates = "false"
@@ -83,17 +83,17 @@ dragen --enable-methylation-calling true \\
     --remove-duplicates {remove_duplicates} {other_options}""".format(
             output_dir=output_dir,
             output_prefix=output_prefix,
-            dragen_tmp=global_conf.global_get('dragen_align', 'tmp_dragen', param_type='string'),
-            met_protocol=global_conf.global_get('dragen_align', 'methylation_protocol', param_type='string'),
-            reference=global_conf.global_get('dragen_align', 'reference', param_type='string'),
-            ct_report="true" if global_conf.global_get('dragen_align', 'CTreport', param_type='boolean') else "false",
-            mapping_implementation=global_conf.global_get('dragen_align', 'mapping_implementation', param_type='string'),
+            dragen_tmp=global_conf.get('dragen_align', 'tmp_dragen', param_type='string'),
+            met_protocol=global_conf.get('dragen_align', 'methylation_protocol', param_type='string'),
+            reference=global_conf.get('dragen_align', 'reference', param_type='string'),
+            ct_report="true" if global_conf.get('dragen_align', 'CTreport', param_type='boolean') else "false",
+            mapping_implementation=global_conf.get('dragen_align', 'mapping_implementation', param_type='string'),
             duplicate_marking=duplicate_marking,
             remove_duplicates=remove_duplicates,
             rgid=readGroupID,
             rglb=libraryName,
             rgsm=sampleName,
-            other_options=global_conf.global_get('dragen_align', 'other_options', param_type='string', required=False),
+            other_options=global_conf.get('dragen_align', 'other_options', param_type='string', required=False),
             fastq1=fastq1,
             fastq2="-2 " + fastq2 if fastq2 != None else ""
         ),
@@ -125,10 +125,10 @@ dragen --enable-methylation-calling true \\
     -b {bam} {other_options}""".format(
             output_dir=output_dir,
             output_prefix=output_prefix,
-            dragen_tmp=global_conf.global_get('dragen_align', 'tmp_dragen', param_type='string'),
-            reference=global_conf.global_get('dragen_align', 'reference', param_type='string'),
-            mapping_implementation=global_conf.global_get('dragen_align', 'mapping_implementation', param_type='string'),
-            other_options=global_conf.global_get('dragen_methylation_call', 'other_options', param_type='string', required=False),
+            dragen_tmp=global_conf.get('dragen_align', 'tmp_dragen', param_type='string'),
+            reference=global_conf.get('dragen_align', 'reference', param_type='string'),
+            mapping_implementation=global_conf.get('dragen_align', 'mapping_implementation', param_type='string'),
+            other_options=global_conf.get('dragen_methylation_call', 'other_options', param_type='string', required=False),
             bam=bam
         ),
     )

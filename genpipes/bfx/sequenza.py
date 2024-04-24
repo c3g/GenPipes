@@ -38,9 +38,9 @@ sequenza-utils \\
     {input} \\
     | gzip > \\
     {out}""".format(
-        input=global_conf.global_get('samtools_mpileup', 'genome_fasta', param_type='filepath'),
+        input=global_conf.get('samtools_mpileup', 'genome_fasta', param_type='filepath'),
         out=output,
-        window=global_conf.global_get('sequenza', 'window_length')
+        window=global_conf.get('sequenza', 'window_length')
     ),
   )
 
@@ -62,7 +62,7 @@ sequenza-utils \\
         gen=genome,
         normal=normal_gz,
         tumor=tumor_gz,
-        pileup_options=global_conf.global_get('sequenza', 'pileup_options'),
+        pileup_options=global_conf.get('sequenza', 'pileup_options'),
         out=" \\\n > " + output if output else ""
         )
     )
@@ -87,10 +87,10 @@ sequenza-utils \\
     --output {out}""".format(
         chr="\\\n    --chromosome " + chr if chr else "",
         gen=genome,
-        reference_sequence=global_conf.global_get('sequenza', 'genome_fasta', param_type='filepath'),
+        reference_sequence=global_conf.get('sequenza', 'genome_fasta', param_type='filepath'),
         normal=normal,
         tumor=tumor,
-        pileup_options=global_conf.global_get('sequenza', 'pileup_options'),
+        pileup_options=global_conf.get('sequenza', 'pileup_options'),
         out=output
         )
     )
@@ -109,7 +109,7 @@ sequenza-utils  \\
     -w {window}  \\
     -s {seqz_gz} \\
     -o {output}""".format(
-        window=global_conf.global_get('sequenza', 'bin_window_size'),
+        window=global_conf.get('sequenza', 'bin_window_size'),
         seqz_gz=seqz_gz,
         output=output,
         )
@@ -181,12 +181,12 @@ sequenza_filterAnnotCNV.sh \\
     {output_basename} \\
     {tmp_basename} """.format(
              scones_calls_filtered=calls_filtered,
-             excluded_regions=global_conf.global_get('scones_annotate', 'excluded_regions_bed', param_type='filepath', required=True),
-             genes=global_conf.global_get('scones_annotate', 'genes_bed', param_type='filepath', required=True),
-             DGV=global_conf.global_get('scones_annotate', 'dgv_bed', param_type='filepath', required=True),
-             microsat=global_conf.global_get('scones_annotate', 'microsat_bed', param_type='filepath', required=True),
-             repeatMasker=global_conf.global_get('scones_annotate', 'repeat_masker_bed', param_type='filepath', required=True),
-             AutosomeSize=global_conf.global_get('scones_annotate', 'autosome_size_file', param_type='filepath', required=True),
+             excluded_regions=global_conf.get('scones_annotate', 'excluded_regions_bed', param_type='filepath', required=True),
+             genes=global_conf.get('scones_annotate', 'genes_bed', param_type='filepath', required=True),
+             DGV=global_conf.get('scones_annotate', 'dgv_bed', param_type='filepath', required=True),
+             microsat=global_conf.get('scones_annotate', 'microsat_bed', param_type='filepath', required=True),
+             repeatMasker=global_conf.get('scones_annotate', 'repeat_masker_bed', param_type='filepath', required=True),
+             AutosomeSize=global_conf.get('scones_annotate', 'autosome_size_file', param_type='filepath', required=True),
              output_basename=output_basename,
              tmp_basename=tmp_basename
          )

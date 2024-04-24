@@ -165,7 +165,7 @@ class Nanopore(common.Nanopore):
                             sambamba.sort(
                                 "/dev/stdin",
                                 out_bam,
-                                tmp_dir=global_conf.global_get('minimap2_align', 'tmp_dir', required=True),
+                                tmp_dir=global_conf.get('minimap2_align', 'tmp_dir', required=True),
                             )
                         ]
                     ),

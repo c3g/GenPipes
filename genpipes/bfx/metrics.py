@@ -60,15 +60,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
   -r {reference_genome_fasta} \\
   -s {sample_file} \\
   -t {gtf_file}{other_options}{single_end}{ribosomal_interval_file}""".format(
-            tmp_dir=global_conf.global_get('rnaseqc', 'tmp_dir'),
-            java_other_options=global_conf.global_get('rnaseqc', 'java_other_options'),
-            ram=global_conf.global_get('rnaseqc', 'ram'),
-            number_top_transcripts=global_conf.global_get('rnaseqc', 'number_top_transcript', param_type='int'),
+            tmp_dir=global_conf.get('rnaseqc', 'tmp_dir'),
+            java_other_options=global_conf.get('rnaseqc', 'java_other_options'),
+            ram=global_conf.get('rnaseqc', 'ram'),
+            number_top_transcripts=global_conf.get('rnaseqc', 'number_top_transcript', param_type='int'),
             output_directory=output_directory,
-            reference_genome_fasta=reference if reference else global_conf.global_get('rnaseqc', 'genome_fasta', param_type='filepath'),
+            reference_genome_fasta=reference if reference else global_conf.get('rnaseqc', 'genome_fasta', param_type='filepath'),
             sample_file=sample_file,
-            gtf_file=gtf_file if gtf_file else global_conf.global_get('rnaseqc', 'gtf', param_type='filepath'),
-            other_options=" \\\n  " + global_conf.global_get('rnaseqc', 'other_options', required=False) if global_conf.global_get('rnaseqc', 'other_options', required=False) else "",
+            gtf_file=gtf_file if gtf_file else global_conf.get('rnaseqc', 'gtf', param_type='filepath'),
+            other_options=" \\\n  " + global_conf.get('rnaseqc', 'other_options', required=False) if global_conf.get('rnaseqc', 'other_options', required=False) else "",
             single_end=" \\\n  -singleEnd" if is_single_end else "",
             ribosomal_interval_file=" \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else "\\\n  -BWArRNA dummy_rRNA.fa"
         ),
@@ -96,8 +96,8 @@ zip -r {saturation_directory}.zip {saturation_directory}""".format(
             gene_size_file=gene_size_file,
             rpkm_directory=rpkm_directory,
             saturation_directory=saturation_directory,
-            threads=global_conf.global_get('rpkm_saturation', 'threads', param_type='posint'),
-            other_options=global_conf.global_get('rpkm_saturation', 'other_options', required=False)
+            threads=global_conf.get('rpkm_saturation', 'threads', param_type='posint'),
+            other_options=global_conf.get('rpkm_saturation', 'other_options', required=False)
         ),
         removable_files=[saturation_directory]
     )
@@ -134,7 +134,7 @@ python $PYTHON_TOOLS/vcfStats.py \\
   -o {output} \\
   -f {list}""".format(
             input=input,
-            dictionary=global_conf.global_get('vcf_stats', 'genome_dictionary', param_type='filepath'),
+            dictionary=global_conf.get('vcf_stats', 'genome_dictionary', param_type='filepath'),
             output=output,
             list=list
         )

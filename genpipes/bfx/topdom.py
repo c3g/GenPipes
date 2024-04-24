@@ -31,7 +31,7 @@ source(\\\"{script}\\\"); \\
 TopDom(matrix.file=\'{tmp_matrix}\', window.size={n}, outFile=\'{output_matrix}\')""".format(
         script=os.path.expandvars("${R_TOOLS}/TopDom_v0.0.2.R"),
         tmp_matrix=tmp_matrix,
-        n=global_conf.global_get('identify_TADs', 'TopDom_n'),
+        n=global_conf.get('identify_TADs', 'TopDom_n'),
         output_matrix=output_matrix
     )
 

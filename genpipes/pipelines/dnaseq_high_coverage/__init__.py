@@ -111,7 +111,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
                 input,
                 input_file_prefix + "coverage.tsv",
                 bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
-                other_options=global_conf.global_get('bvatools_depth_of_coverage', 'other_options', required=False)
+                other_options=global_conf.get('bvatools_depth_of_coverage', 'other_options', required=False)
             )
             job.name = "bvatools_depth_of_coverage." + sample.name
             job.samples = [sample]
@@ -175,7 +175,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = global_conf.global_get('varscan', 'nb_jobs', param_type='posint')
+        nb_jobs = global_conf.get('varscan', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of VarScan jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -186,7 +186,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         for idx in range(nb_jobs):
             beds.append(os.path.join(varscan_directory, 'chrs.' + str(idx) + '.bed'))
 
-        genome_dictionary = global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath')
+        genome_dictionary = global_conf.get('DEFAULT', 'genome_dictionary', param_type='filepath')
 
         if nb_jobs > 1:
             bedJob = tools.dict2beds(genome_dictionary, beds)
@@ -211,8 +211,8 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
             job = concat_jobs([
                 Job(command="mkdir -p " + varscan_directory, samples=self.samples),
                 pipe_jobs([
-                    samtools.mpileup(bams, None, global_conf.global_get('varscan', 'mpileup_other_options'), regionFile=bedfile),
-                    varscan.mpileupcns(None, None, sampleNamesFile, global_conf.global_get('varscan', 'other_options')),
+                    samtools.mpileup(bams, None, global_conf.get('varscan', 'mpileup_other_options'), regionFile=bedfile),
+                    varscan.mpileupcns(None, None, sampleNamesFile, global_conf.get('varscan', 'other_options')),
                     htslib.bgzip_tabix(None, os.path.join(variants_directory, "allSamples.vcf.gz"))
                 ])
             ], name="varscan.single")
@@ -224,8 +224,8 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
             for idx in range(nb_jobs):
                 output_vcf = os.path.join(varscan_directory, "allSamples."+str(idx)+".vcf.gz")
                 varScanJob = pipe_jobs([
-                    samtools.mpileup(bams, None, global_conf.global_get('varscan', 'mpileup_other_options'), regionFile=beds[idx]),
-                    varscan.mpileupcns(None, None, sampleNamesFile, global_conf.global_get('varscan', 'other_options')),
+                    samtools.mpileup(bams, None, global_conf.get('varscan', 'mpileup_other_options'), regionFile=beds[idx]),
+                    varscan.mpileupcns(None, None, sampleNamesFile, global_conf.get('varscan', 'other_options')),
                     htslib.bgzip_tabix(None, output_vcf)
                 ], name = "varscan." + str(idx))
                 varScanJob.samples = self.samples
@@ -296,9 +296,9 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         jobs = []
 
         output_directory = "variants"
-        temp_dir = global_conf.global_get('DEFAULT', 'tmp_dir')
+        temp_dir = global_conf.get('DEFAULT', 'tmp_dir')
         gemini_prefix = os.path.join(output_directory, "allSamples")
-        gemini_module=global_conf.global_get("DEFAULT", 'module_gemini').split(".")
+        gemini_module=global_conf.get("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])
 
         jobs.append(concat_jobs([

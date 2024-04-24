@@ -70,10 +70,10 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         Run Kallisto on fastq files for a fast esimate of abundance.
         """
 
-        transcriptome_file = global_conf.global_get('kallisto', 'transcriptome_idx', param_type="filepath")
-        tx2genes_file = global_conf.global_get('kallisto', 'transcript2genes', param_type="filepath")
-        bootstraps = global_conf.global_get('kallisto', 'bootstraps')
-        other_param = global_conf.global_get('kallisto', 'other_options', required=False)
+        transcriptome_file = global_conf.get('kallisto', 'transcriptome_idx', param_type="filepath")
+        tx2genes_file = global_conf.get('kallisto', 'transcript2genes', param_type="filepath")
+        bootstraps = global_conf.get('kallisto', 'bootstraps')
+        other_param = global_conf.get('kallisto', 'other_options', required=False)
 
         jobs = []
 
@@ -112,8 +112,8 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                     [fastq1] = self.select_input_files(candidate_input_files)
                     input_fastqs.append(fastq1)
 
-                    fragment_length = global_conf.global_get('kallisto', 'fragment_length', required=True)
-                    fragment_length_sd = global_conf.global_get('kallisto', 'fragment_length_sd', required=True)
+                    fragment_length = global_conf.get('kallisto', 'fragment_length', required=True)
+                    fragment_length_sd = global_conf.get('kallisto', 'fragment_length_sd', required=True)
                     parameters = "--single -l "+ fragment_length +" -s " + fragment_length_sd + " --bootstrap-samples=" + str(bootstraps)
 
                 else:
@@ -225,7 +225,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                 [
                     bash.mkdir(report_dir),
                     bash.cp(
-                        global_conf.global_get('kallisto', 'transcript2genes', param_type="filepath"),
+                        global_conf.get('kallisto', 'transcript2genes', param_type="filepath"),
                         report_dir
                     )
                 ],
@@ -272,7 +272,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
             Job(command=f"mkdir -p {self.output_dirs['exploratory_directory']}"),
             gq_seq_utils.exploratory_analysis_rnaseq_light(
                 abundance_file,
-                global_conf.global_get('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', param_type='filepath'),
+                global_conf.get('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', param_type='filepath'),
                 self.output_dirs['exploratory_directory']
             )],
             name="gq_seq_utils_exploratory_analysis_rnaseq_light",
@@ -308,7 +308,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
             design_file = os.path.relpath(self.design_file.name, self.output_dir)
         output_directory = self.output_dirs["sleuth_directory"]
         count_matrix = os.path.join(self.output_dirs["kallisto_directory"], "All_readsets", "all_readsets.abundance_genes.csv")
-        tx2gene = global_conf.global_get('sleuth_differential_expression', 'tx2gene')
+        tx2gene = global_conf.get('sleuth_differential_expression', 'tx2gene')
 
         sleuth_job = differential_expression.sleuth(design_file, count_matrix, tx2gene, output_directory)
         sleuth_job.output_files = [os.path.join(output_directory, contrast.name, "results.wt.gene.csv") for contrast in self.contrasts]

@@ -41,7 +41,7 @@ rnaseqc \\
             input_gtf=input_gtf,
             input_bam=input_bam,
             output_directory=output_directory,
-            other_options=(" \\\n  " + global_conf.global_get('rnaseqc2', 'other_options', required=False)) if global_conf.global_get('rnaseqc2', 'other_options', required=False) else ""
+            other_options=(" \\\n  " + global_conf.get('rnaseqc2', 'other_options', required=False)) if global_conf.get('rnaseqc2', 'other_options', required=False) else ""
         )
     )
 

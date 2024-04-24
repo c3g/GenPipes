@@ -48,9 +48,9 @@ bamCoverage --verbose \\
     --outFileName {output_file} {strand}""".format(
             output_file=output_file,
             input_bam=input_bam,
-            cpu=global_conf.global_get('wiggle', 'cluster_cpu', required=True), 
-            bs=global_conf.global_get('wiggle', 'bin_size', required=True),
-            nu=global_conf.global_get('wiggle', 'norm_using', required=True),
+            cpu=global_conf.get('wiggle', 'cluster_cpu', required=True), 
+            bs=global_conf.get('wiggle', 'bin_size', required=True),
+            nu=global_conf.get('wiggle', 'norm_using', required=True),
             strand="--filterRNAstrand " + strand if strand else "", 
         )
   )

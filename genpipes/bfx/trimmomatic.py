@@ -47,7 +47,7 @@ def trimmomatic(
         inputs = [input1]
         outputs = [single_output]
 
-    headcrop_length = global_conf.global_get('trimmomatic', 'headcrop_length', required=False, param_type='posint')
+    headcrop_length = global_conf.get('trimmomatic', 'headcrop_length', required=False, param_type='posint')
 
     return Job(
         inputs,
@@ -69,18 +69,18 @@ java {java_other_options} -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
   TRAILING:{trailing_min_quality} \\
   MINLEN:{min_length}{tophred33} \\
   2> {trim_log}""".format(
-        java_other_options=global_conf.global_get('trimmomatic', 'java_other_options'),
-        ram=global_conf.global_get('trimmomatic', 'ram'),
+        java_other_options=global_conf.get('trimmomatic', 'java_other_options'),
+        ram=global_conf.get('trimmomatic', 'ram'),
         mode = "PE" if input2 else "SE",
-        threads=global_conf.global_get('trimmomatic', 'threads', param_type='posint'),
+        threads=global_conf.get('trimmomatic', 'threads', param_type='posint'),
         quality_offset=quality_offset if quality_offset == 64 else "33",
         inputs=" \\\n  ".join(inputs),
         outputs=" \\\n  ".join(outputs),
         adapter_file=adapter_file,
-        illumina_clip_settings=global_conf.global_get('trimmomatic', 'illumina_clip_settings'),
+        illumina_clip_settings=global_conf.get('trimmomatic', 'illumina_clip_settings'),
         headcrop_length=" \\\n  HEADCROP:" + str(headcrop_length) if headcrop_length else "",
-        trailing_min_quality=global_conf.global_get('trimmomatic', 'trailing_min_quality', param_type='int'),
-        min_length=global_conf.global_get('trimmomatic', 'min_length', param_type='posint'),
+        trailing_min_quality=global_conf.get('trimmomatic', 'trailing_min_quality', param_type='int'),
+        min_length=global_conf.get('trimmomatic', 'min_length', param_type='posint'),
         tophred33=" \\\n  TOPHRED33" if quality_offset == 64 else "",
         trim_log=trim_log
         ),
@@ -124,9 +124,9 @@ java -XX:ParallelGCThreads=1 -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
   {outputs} \\
   HEADCROP:{headcrop_length} \\
   2> {trim_log}""".format(
-        ram=global_conf.global_get('trimmomatic16S', 'ram'),
+        ram=global_conf.get('trimmomatic16S', 'ram'),
         mode = "PE" if input2 else "SE",
-        threads=global_conf.global_get('trimmomatic16S', 'threads', param_type='posint'),
+        threads=global_conf.get('trimmomatic16S', 'threads', param_type='posint'),
         quality_offset=quality_offset if quality_offset == 64 else "33",
         inputs=" \\\n  ".join(inputs),
         outputs=" \\\n  ".join(outputs),

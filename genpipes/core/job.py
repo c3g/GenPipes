@@ -53,7 +53,7 @@ class Job(object):
         self._removable_files = [_f for _f in removable_files if _f]
 
         # Retrieve modules from config, removing duplicates but keeping the order
-        self._modules = list(dict.fromkeys([global_conf.global_get(section, option) for section, option in module_entries]))
+        self._modules = list(dict.fromkeys([global_conf.get(section, option) for section, option in module_entries]))
 
         self._name = name
         self._command = command

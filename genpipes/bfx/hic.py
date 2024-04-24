@@ -58,7 +58,7 @@ java -jar $juicer_JAR \\
   {input} \\
   {output} \\
   {assembly}""".format(
-	q=global_conf.global_get('create_hic_file', 'q'),
+	q=global_conf.get('create_hic_file', 'q'),
             input=juicebox_input,
             output=hic_output,
             assembly=assembly

@@ -109,11 +109,11 @@ class ChipSeq(common.Illumina):
 
     @property
     def ucsc_genome(self):
-        genome_source = global_conf.global_get('DEFAULT', 'source')
+        genome_source = global_conf.get('DEFAULT', 'source')
         if genome_source == "UCSC":
-            genome = global_conf.global_get('DEFAULT', 'assembly')
+            genome = global_conf.get('DEFAULT', 'assembly')
         else:
-            genome = global_conf.global_get('DEFAULT', 'assembly_synonyms')
+            genome = global_conf.get('DEFAULT', 'assembly_synonyms')
         return genome
 
     @property
@@ -145,14 +145,14 @@ class ChipSeq(common.Illumina):
 
     def sequence_dictionary_variant(self):
         if not hasattr(self, "_sequence_dictionary_variant"):
-            self._sequence_dictionary_variant = parse_sequence_dictionary_file(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
+            self._sequence_dictionary_variant = parse_sequence_dictionary_file(global_conf.get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
         return self._sequence_dictionary_variant
 
     def mappable_genome_size(self):
-        genome_index = csv.reader(open(global_conf.global_get('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
+        genome_index = csv.reader(open(global_conf.get('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
         # 2nd column of genome index contains chromosome length
         # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
-        return int(sum([int(chromosome[1]) for chromosome in genome_index]) * global_conf.global_get('DEFAULT', 'mappable_genome_size', param_type='float', required=True))
+        return int(sum([int(chromosome[1]) for chromosome in genome_index]) * global_conf.get('DEFAULT', 'mappable_genome_size', param_type='float', required=True))
 
     def trimmomatic(self):
         """
@@ -176,7 +176,7 @@ class ChipSeq(common.Illumina):
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = global_conf.global_get('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
+            adapter_fasta = global_conf.get('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
             adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
@@ -339,8 +339,8 @@ pandoc \\
   --variable trim_readset_table="$trim_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
-                    trailing_min_quality=global_conf.global_get('trimmomatic', 'trailing_min_quality', param_type='int'),
-                    min_length=global_conf.global_get('trimmomatic', 'min_length', param_type='posint'),
+                    trailing_min_quality=global_conf.get('trimmomatic', 'trailing_min_quality', param_type='int'),
+                    min_length=global_conf.get('trimmomatic', 'min_length', param_type='posint'),
                     read_type=read_type,
                     report_template_dir=self.report_template_dir,
                     readset_merge_trim_stats=readset_merge_trim_stats,
@@ -413,11 +413,11 @@ pandoc \\
                                        "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                        (
                                            "\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                                       ("\\tCN:" + global_conf.global_get('mapping_bwa_mem_sambamba',
-                                                                'sequencing_center') if global_conf.global_get(
+                                       ("\\tCN:" + global_conf.get('mapping_bwa_mem_sambamba',
+                                                                'sequencing_center') if global_conf.get(
                                            'mapping_bwa_mem_sambamba', 'sequencing_center', required=False) else "") + \
-                                       ("\\tPL:" + global_conf.global_get('mapping_bwa_mem_sambamba',
-                                                                'sequencing_technology') if global_conf.global_get(
+                                       ("\\tPL:" + global_conf.get('mapping_bwa_mem_sambamba',
+                                                                'sequencing_technology') if global_conf.get(
                                            'mapping_bwa_mem_sambamba', 'sequencing_technology',
                                            required=False) else "Illumina") + \
                                        "'",
@@ -426,20 +426,20 @@ pandoc \\
                         sambamba.view(
                             "/dev/stdin",
                             None,
-                            options=global_conf.global_get('mapping_bwa_mem_sambamba', 'sambamba_view_other_options')
+                            options=global_conf.get('mapping_bwa_mem_sambamba', 'sambamba_view_other_options')
                         ),
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam,
-                            tmp_dir=global_conf.global_get('mapping_bwa_mem_sambamba', 'tmp_dir', required=True),
-                            other_options=global_conf.global_get('mapping_bwa_mem_sambamba', 'sambamba_sort_other_options',
+                            tmp_dir=global_conf.get('mapping_bwa_mem_sambamba', 'tmp_dir', required=True),
+                            other_options=global_conf.get('mapping_bwa_mem_sambamba', 'sambamba_sort_other_options',
                                                        required=False)
                         )
                     ]),
                     sambamba.index(
                         readset_bam,
                         index_bam,
-                        other_options=global_conf.global_get('mapping_bwa_mem_sambamba', 'sambamba_index_other_options',
+                        other_options=global_conf.get('mapping_bwa_mem_sambamba', 'sambamba_index_other_options',
                                                    required=False)
                     )
                 ],
@@ -539,8 +539,8 @@ pandoc \\
                         sambamba.markdup(
                             input_bam,
                             output_bam,
-                            tmp_dir=global_conf.global_get('sambamba_mark_duplicates', 'tmp_dir', required=True),
-                            other_options=global_conf.global_get('sambamba_mark_duplicates', 'other_options', required=False)
+                            tmp_dir=global_conf.get('sambamba_mark_duplicates', 'tmp_dir', required=True),
+                            other_options=global_conf.get('sambamba_mark_duplicates', 'other_options', required=False)
                         )
                     ],
                         name="sambamba_mark_duplicates." + sample.name + "." + mark_name,
@@ -595,8 +595,8 @@ cp \\
                             input_bam,
                             output_bam,
                             """-t {threads} -f bam -F \"not unmapped and not failed_quality_control and mapping_quality >= {min_mapq}\" """.format(
-                                threads=global_conf.global_get('sambamba_view_filter', 'threads'),
-                                min_mapq=global_conf.global_get('sambamba_view_filter', 'min_mapq'))
+                                threads=global_conf.get('sambamba_view_filter', 'threads'),
+                                min_mapq=global_conf.get('sambamba_view_filter', 'min_mapq'))
                         ),
                         sambamba.index(
                             output_bam,
@@ -622,7 +622,7 @@ pandoc --to=markdown \\
   --variable min_mapq="{min_mapq}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    min_mapq=global_conf.global_get('sambamba_view_filter', 'min_mapq', param_type='int'),
+                    min_mapq=global_conf.get('sambamba_view_filter', 'min_mapq', param_type='int'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file,
@@ -641,8 +641,8 @@ pandoc --to=markdown \\
         """
         jobs = []
 
-        if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
-            blacklist = global_conf.global_get('bedtools_intersect', 'blacklist', param_type='filepath')
+        if global_conf.get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+            blacklist = global_conf.get('bedtools_intersect', 'blacklist', param_type='filepath')
 
             for sample in self.samples:
                 for mark_name in sample.marks:
@@ -742,7 +742,7 @@ pandoc --to=markdown \\
         metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
         report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
-        if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+        if global_conf.get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
             bam_ext = "sorted.dup.filtered.cleaned.bam"
         else:
             bam_ext = "sorted.dup.filtered.bam"
@@ -805,7 +805,7 @@ pandoc --to=markdown \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}
 """.format(
-                    sambamba=global_conf.global_get('DEFAULT', 'module_sambamba'),
+                    sambamba=global_conf.get('DEFAULT', 'module_sambamba'),
                     metrics_dir=metrics_output_directory,
                     metrics_file=metrics_file,
                     # samples=" ".join([sample.name for sample in self.samples]),
@@ -842,8 +842,8 @@ pandoc --to=markdown \\
                 candidate_input_files = [[cleaned_bam], [filtered_bam]]
                 [alignment_file] = self.select_input_files(candidate_input_files)
                 output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
-                other_options = global_conf.global_get('homer_make_tag_directory', 'other_options', required=False)
-                genome = global_conf.global_get('homer_make_tag_directory', 'genome', required=False) if global_conf.global_get('homer_make_tag_directory', 'genome', required=False) else self.ucsc_genome
+                other_options = global_conf.get('homer_make_tag_directory', 'other_options', required=False)
+                genome = global_conf.get('homer_make_tag_directory', 'genome', required=False) if global_conf.get('homer_make_tag_directory', 'genome', required=False) else self.ucsc_genome
 
                 job = homer.makeTagDir(
                     output_dir,
@@ -1001,7 +1001,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
             mark_list = []
             # if no Input file
             input_file = []
-            if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+            if global_conf.get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
                 input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                         sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam") for
                                         mark_name, mark_type in sample.marks.items() if mark_type == "I"]
@@ -1030,7 +1030,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     ## set macs2 variables:
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                    genome_size = global_conf.global_get('macs2_callpeak', 'genome_size', required=False) if global_conf.global_get('macs2_callpeak', 'genome_size', required=False) else self.mappable_genome_size()
+                    genome_size = global_conf.get('macs2_callpeak', 'genome_size', required=False) if global_conf.get('macs2_callpeak', 'genome_size', required=False) else self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
 
                     if mark_type == "B":  # Broad region
@@ -1041,11 +1041,11 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                         else:
                             options += " --fix-bimodal"
 
-                    options += " --shift " + global_conf.global_get('macs2_callpeak', 'shift') if global_conf.global_get(
+                    options += " --shift " + global_conf.get('macs2_callpeak', 'shift') if global_conf.get(
                         'macs2_callpeak', 'shift') else ""
-                    options += " --extsize " + global_conf.global_get('macs2_callpeak', 'extsize') if global_conf.global_get(
+                    options += " --extsize " + global_conf.get('macs2_callpeak', 'extsize') if global_conf.get(
                         'macs2_callpeak', 'extsize') else ""
-                    options += " -p " + global_conf.global_get('macs2_callpeak', 'pvalue') if global_conf.global_get(
+                    options += " -p " + global_conf.get('macs2_callpeak', 'pvalue') if global_conf.get(
                         'macs2_callpeak', 'pvalue') else ""
                     output = []
                     output.append(os.path.join(output_dir,
@@ -1158,7 +1158,7 @@ done""".format(
             mark_list = []
             # if no Input file
             input_file = []
-            if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+            if global_conf.get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
                 input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                         sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam") for
                                         mark_name, mark_type in sample.marks.items() if mark_type == "I"]
@@ -1188,7 +1188,7 @@ done""".format(
                     ## set macs2 variables:
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                    genome_size = global_conf.global_get('macs2_callpeak', 'genome_size', required=False) if global_conf.global_get('macs2_callpeak', 'genome_size', required=False) else self.mappable_genome_size()
+                    genome_size = global_conf.get('macs2_callpeak', 'genome_size', required=False) if global_conf.get('macs2_callpeak', 'genome_size', required=False) else self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
                     # output = os.path.join(output_dir,
                     #                       sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
@@ -1202,11 +1202,11 @@ done""".format(
                                  sample.name + "." + mark_name + "_peaks.xls"))
                     # other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
                     options += " --nomodel --call-summits"
-                    options += " --shift " + global_conf.global_get('macs2_callpeak', 'shift') if global_conf.global_get(
+                    options += " --shift " + global_conf.get('macs2_callpeak', 'shift') if global_conf.get(
                         'macs2_callpeak', 'shift') else " --shift -75 "
-                    options += " --extsize " + global_conf.global_get('macs2_callpeak', 'extsize') if global_conf.global_get(
+                    options += " --extsize " + global_conf.get('macs2_callpeak', 'extsize') if global_conf.get(
                         'macs2_callpeak', 'extsize') else " --extsize 150 "
-                    options += " -p " + global_conf.global_get('macs2_callpeak', 'pvalue') if global_conf.global_get(
+                    options += " -p " + global_conf.get('macs2_callpeak', 'pvalue') if global_conf.get(
                         'macs2_callpeak', 'pvalue') else " -p 0.01 "
 
                     jobs.append(
@@ -1301,9 +1301,9 @@ done""".format(
         html report will be generated to QC samples and check how well differential binding analysis was performed.
         """
         jobs = []
-        minOverlap = global_conf.global_get('differential_binding', 'minOverlap')
-        minMembers = global_conf.global_get('differential_binding', 'minMembers')
-        method = global_conf.global_get('differential_binding', 'method')
+        minOverlap = global_conf.get('differential_binding', 'minOverlap')
+        minMembers = global_conf.get('differential_binding', 'minMembers')
+        method = global_conf.get('differential_binding', 'method')
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         readset_file = os.path.relpath(self.readsets_file.name, self.output_dir)
         if self.contrasts:
@@ -1319,7 +1319,7 @@ done""".format(
             if controls_count < 2 or treatments_count < 2:
                 log.info(f"At leaset two treatments and  controls should be defined. Skipping differential binding analysis for {contrast.name}...")
             else:
-                if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+                if global_conf.get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
                     bam_ext = "sorted.dup.filtered.cleaned.bam"
                 else:
                     bam_ext = "sorted.dup.filtered.bam"
@@ -1413,8 +1413,8 @@ done""".format(
                         output_prefix = os.path.join(output_dir, sample.name + "." + mark_name)
                         annotation_file = output_prefix + ".annotated.csv"
 
-                        genome = global_conf.global_get('homer_annotate_peaks', 'genome', required=False) if global_conf.global_get('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
-                        genome_size = global_conf.global_get('homer_annotate_peaks', 'genome_size', required=False) if global_conf.global_get('homer_annotate_peaks', 'genome_size', required=False) else self.mappable_genome_size()
+                        genome = global_conf.get('homer_annotate_peaks', 'genome', required=False) if global_conf.get('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
+                        genome_size = global_conf.get('homer_annotate_peaks', 'genome_size', required=False) if global_conf.get('homer_annotate_peaks', 'genome_size', required=False) else self.mappable_genome_size()
 
                         jobs.append(
                             concat_jobs(
@@ -1451,11 +1451,11 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
 )'""".format(
                                             annotation_file=annotation_file,
                                             output_prefix=output_prefix,
-                                            proximal_distance=global_conf.global_get('homer_annotate_peaks', 'proximal_distance', param_type='int'),
-                                            distal_distance=global_conf.global_get('homer_annotate_peaks', 'distal_distance', param_type='int'),
-                                            distance5d_lower=global_conf.global_get('homer_annotate_peaks', 'distance5d_lower', param_type='int'),
-                                            distance5d_upper=global_conf.global_get('homer_annotate_peaks', 'distance5d_upper', param_type='int'),
-                                            gene_desert_size=global_conf.global_get('homer_annotate_peaks', 'gene_desert_size', param_type='int')
+                                            proximal_distance=global_conf.get('homer_annotate_peaks', 'proximal_distance', param_type='int'),
+                                            distal_distance=global_conf.get('homer_annotate_peaks', 'distal_distance', param_type='int'),
+                                            distance5d_lower=global_conf.get('homer_annotate_peaks', 'distance5d_lower', param_type='int'),
+                                            distance5d_upper=global_conf.get('homer_annotate_peaks', 'distance5d_upper', param_type='int'),
+                                            gene_desert_size=global_conf.get('homer_annotate_peaks', 'gene_desert_size', param_type='int')
                                         ),
                                         removable_files=[os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)],
                                     )
@@ -1524,7 +1524,7 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                                                      mark_type] + "Peak")
                         output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
 
-                        genome = global_conf.global_get('homer_annotate_peaks', 'genome', required=False) if global_conf.global_get('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
+                        genome = global_conf.get('homer_annotate_peaks', 'genome', required=False) if global_conf.get('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
 
                         jobs.append(
                             concat_jobs(
@@ -1677,11 +1677,11 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                         # samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
                         samples_associative_array=" ".join(samples_associative_array),
                         # contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
-                        proximal_distance=global_conf.global_get('homer_annotate_peaks', 'proximal_distance', param_type='int') / -1000,
-                        distal_distance=global_conf.global_get('homer_annotate_peaks', 'distal_distance', param_type='int') / -1000,
-                        distance5d_lower=global_conf.global_get('homer_annotate_peaks', 'distance5d_lower', param_type='int') / -1000,
-                        distance5d_upper=global_conf.global_get('homer_annotate_peaks', 'distance5d_upper', param_type='int') / -1000,
-                        gene_desert_size=global_conf.global_get('homer_annotate_peaks', 'gene_desert_size', param_type='int') / 1000,
+                        proximal_distance=global_conf.get('homer_annotate_peaks', 'proximal_distance', param_type='int') / -1000,
+                        distal_distance=global_conf.get('homer_annotate_peaks', 'distal_distance', param_type='int') / -1000,
+                        distance5d_lower=global_conf.get('homer_annotate_peaks', 'distance5d_lower', param_type='int') / -1000,
+                        distance5d_upper=global_conf.get('homer_annotate_peaks', 'distance5d_upper', param_type='int') / -1000,
+                        gene_desert_size=global_conf.get('homer_annotate_peaks', 'gene_desert_size', param_type='int') / 1000,
                         report_template_dir=self.report_template_dir,
                         basename_report_file=os.path.basename(report_file),
                         report_file=report_file,
@@ -1733,7 +1733,7 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
     Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
                                     sample_merge_mdup_bam=sample_merge_mdup_bam,
                                     output=output,
-                                    tmp_dir=global_conf.global_get('run_spp', 'tmp_dir')
+                                    tmp_dir=global_conf.get('run_spp', 'tmp_dir')
                                 )
                             )
                         ],
@@ -1797,7 +1797,7 @@ done""".format(
                         chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
                         output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
                         crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor")
-                        genome = global_conf.global_get('IHEC_chipseq_metrics', 'assembly')
+                        genome = global_conf.get('IHEC_chipseq_metrics', 'assembly')
 
                         if not input_file:
                             input_name = "no_input"
@@ -1899,7 +1899,7 @@ done""".format(
             """
             ## set multiQc config file so we can customize one for every pipeline:
             jobs = []
-            # yamlFile = os.path.expandvars(global_conf.global_get('multiqc_report', 'MULTIQC_CONFIG_PATH'))
+            # yamlFile = os.path.expandvars(global_conf.get('multiqc_report', 'MULTIQC_CONFIG_PATH'))
             input_files = []
             metrics_output_directory = self.output_dirs['metrics_output_directory']
             for sample in self.samples:
@@ -1974,7 +1974,7 @@ done""".format(
                 job = samtools.view(
                     input_bam,
                     output_cram,
-                    options=global_conf.global_get('samtools_cram_output', 'options'),
+                    options=global_conf.get('samtools_cram_output', 'options'),
                     removable=False
                 )
                 job.name = "cram_output." + sample.name + "." + mark_name
@@ -2019,7 +2019,7 @@ done""".format(
                                 haplotype_directory,
                                 remove=True
                     )
-                    interval_padding = global_conf.global_get('gatk_haplotype_caller', 'interval_padding')
+                    interval_padding = global_conf.get('gatk_haplotype_caller', 'interval_padding')
                     jobs.append(
                     concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
@@ -2069,7 +2069,7 @@ done""".format(
                                 gatk4.genotype_gvcf(
                                     output_haplotype_file_prefix + ".hc.g.vcf.gz",
                                     output_haplotype_file_prefix + ".hc.vcf.gz",
-                                    options=global_conf.global_get('merge_and_call_individual_gvcf', 'options'),
+                                    options=global_conf.get('merge_and_call_individual_gvcf', 'options'),
                                     ini_section='merge_and_call_individual_gvcf'
                                 )
                             ],

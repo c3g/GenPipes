@@ -40,7 +40,7 @@ def bam_stat(input, output):
     bam_stat.py {options} \\
         -i {input} \\
         > {output}""".format(
-            options=global_conf.global_get('rseqc', 'bam_stat_options'),
+            options=global_conf.get('rseqc', 'bam_stat_options'),
             input=input,
             output=output,
         ),
@@ -59,7 +59,7 @@ def gene_body_coverage(input_bam, output):
             -r {geneBody} \\
             -i {input} \\
             -o {output}""".format(
-            geneBody=global_conf.global_get('rseqc', 'housekeeping'),
+            geneBody=global_conf.get('rseqc', 'housekeeping'),
             input=input_bam,
             output=output,
         ),
@@ -78,7 +78,7 @@ def infer_experiment(input, output):
             -r {ref_gene_model} \\
             -i {input} \\
             > {output}""".format(
-            ref_gene_model=global_conf.global_get('rseqc', 'ref_gene_model'),
+            ref_gene_model=global_conf.get('rseqc', 'ref_gene_model'),
             input=input,
             output=output,
         ),
@@ -97,7 +97,7 @@ def inner_distance(input, output):
             -r {ref_gene_model} \\
             -i {input} \\
             -o {output}""".format(
-            ref_gene_model=global_conf.global_get('rseqc', 'ref_gene_model'),
+            ref_gene_model=global_conf.get('rseqc', 'ref_gene_model'),
             input=input,
             output=output,
         ),
@@ -116,7 +116,7 @@ def junction_annotation(input, output):
             -r {refseq} \\
             -i {input} \\
             -o {output}""".format(
-            refseq=global_conf.global_get('rseqc', 'refseq'),
+            refseq=global_conf.get('rseqc', 'refseq'),
             input=input,
             output=output,
         ),
@@ -139,7 +139,7 @@ def junction_saturation(input, output):
             -i {input} \\
             -o {output} 2> \\
             {output}.log""".format(
-            ref_gene_model=global_conf.global_get('rseqc', 'ref_gene_model'),
+            ref_gene_model=global_conf.get('rseqc', 'ref_gene_model'),
             input=input,
             output=output,
         ),
@@ -159,7 +159,7 @@ def tin(input, output_dir):
         tin.py \\
             -r {ref_gene_model} \\
             -i {input}""".format(
-            ref_gene_model=global_conf.global_get('rseqc', 'ref_gene_model'),
+            ref_gene_model=global_conf.get('rseqc', 'ref_gene_model'),
             input=input
         ),
     )

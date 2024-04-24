@@ -44,7 +44,7 @@ def create(pipeline, sample):
     else:
         pipeline_output_dir = pipeline.output_dir
     # /!\ Can't os.path.join otherwise the 'server://' disappears
-    path_prefix = global_conf.global_get("DEFAULT", 'cluster_server', required=True) + "://" + pipeline_output_dir
+    path_prefix = global_conf.get("DEFAULT", 'cluster_server', required=True) + "://" + pipeline_output_dir
 
     log.debug(f"Updating project_tracking JSON {json_file} for sample '{sample.name}'")
 
@@ -120,12 +120,12 @@ def init(
     """
 
     json_output = {
-        'project_name': global_conf.global_get("DEFAULT", 'project_name', required=False) if global_conf.global_get("DEFAULT", 'project_name', required=False) else None,
+        'project_name': global_conf.get("DEFAULT", 'project_name', required=False) if global_conf.get("DEFAULT", 'project_name', required=False) else None,
         'operation_config_name': 'genpipes_ini',
         'operation_config_version': operation_config_version.strip(),
         'operation_config_md5sum': operation_config_md5sum,
         'operation_config_data': ''.join(operation_config_data),
-        'operation_platform': global_conf.global_get("DEFAULT", 'cluster_server', required=True),
+        'operation_platform': global_conf.get("DEFAULT", 'cluster_server', required=True),
         'operation_cmd_line': operation_cmd_line,
         'operation_name': f'GenPipes_{operation_name}',
         'sample': []

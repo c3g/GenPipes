@@ -56,12 +56,12 @@ TransDecoder.Predict \\
 -t {transcripts} \\
 --retain_pfam_hits {transdecoder_subdirectory}/longest_orfs.pfam.domtblout \\
 --retain_blastp_hits {transdecoder_subdirectory}/longest_orfs.blastp.outfmt6""".format(
-                other_options=global_conf.global_get('transdecoder', 'other_options', required=False),
+                other_options=global_conf.get('transdecoder', 'other_options', required=False),
                 transcripts=os.path.relpath(trinity_fasta, transdecoder_directory),
                 transdecoder_subdirectory=transdecoder_subdirectory,
-                swissprot_db=global_conf.global_get('transdecoder', 'swissprot_db', param_type='prefixpath'),
-                pfam_db=global_conf.global_get('transdecoder', 'pfam_db', param_type='filepath'),
-                cpu=global_conf.global_get('transdecoder', 'cpu', param_type='posint')
+                swissprot_db=global_conf.get('transdecoder', 'swissprot_db', param_type='prefixpath'),
+                pfam_db=global_conf.get('transdecoder', 'pfam_db', param_type='filepath'),
+                cpu=global_conf.get('transdecoder', 'cpu', param_type='posint')
             )
         ),
         Job(command="cd " + os.path.join("..", "..")),
@@ -79,9 +79,9 @@ hmmscan --cpu {cpu} \\
 --domtblout {transdecoder_pfam} \\
 {pfam_db} \\
 {transdecoder_fasta}""".format(
-                cpu=global_conf.global_get('hmmer', 'cpu', param_type='posint'),
+                cpu=global_conf.get('hmmer', 'cpu', param_type='posint'),
                 transdecoder_pfam=transdecoder_pfam,
-                pfam_db=global_conf.global_get('hmmer', 'pfam_db', param_type='filepath'),
+                pfam_db=global_conf.get('hmmer', 'pfam_db', param_type='filepath'),
                 transdecoder_fasta=transdecoder_fasta
             )
         ),
@@ -104,7 +104,7 @@ def rnammer_transcriptome(trinity_fasta, rnammer_directory):
 $TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
 --transcriptome {transcriptome} \\
 --path_to_rnammer `which rnammer`""".format(
-                other_options=global_conf.global_get('rnammer_transcriptome', 'other_options', required=False),
+                other_options=global_conf.get('rnammer_transcriptome', 'other_options', required=False),
                 transcriptome=os.path.relpath(trinity_fasta, rnammer_directory)
             )
         ),
@@ -114,7 +114,7 @@ $TRINOTATE_HOME/util/rnammer_support/RnammerTranscriptome.pl {other_options} \\
 # Search Transdecoder-predicted coding regions for sequence homologies on UniProt using [blastp](http://blast.ncbi.nlm.nih.gov/).
 def blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db):
     jobs = []
-    cpu = global_conf.global_get('blastp_transdecoder_uniprot', 'cpu')
+    cpu = global_conf.get('blastp_transdecoder_uniprot', 'cpu')
     program = "blastp"
 
     if not glob.glob(db + ".*phr"):
@@ -141,7 +141,7 @@ signalp -f short {other_options} \\
 -T {tmp_directory} \\
 -n {signalp_gff} \\
 {transdecoder_fasta}""".format(
-            other_options=global_conf.global_get('signalp', 'other_options', required=False),
+            other_options=global_conf.get('signalp', 'other_options', required=False),
             tmp_directory=os.path.dirname(signalp_gff),
             signalp_gff=signalp_gff,
             transdecoder_fasta=transdecoder_fasta
@@ -224,8 +224,8 @@ Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} \\
             tmhmm=tmhmm,
             signalp=signalp,
             rnammer=rnammer,
-            evalue=global_conf.global_get('trinotate', 'evalue'),
-            pfam_cutoff=global_conf.global_get('trinotate', 'pfam_cutoff'),
+            evalue=global_conf.get('trinotate', 'evalue'),
+            pfam_cutoff=global_conf.get('trinotate', 'pfam_cutoff'),
             trinotate_report=trinotate_report
         )
     )

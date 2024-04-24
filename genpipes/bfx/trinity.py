@@ -48,10 +48,10 @@ insilico_read_normalization.pl {other_options} \\
   --JM {jellyfish_memory} \\
   --max_cov {maximum_coverage} \\
   {left_or_single_reads}{right_reads}{output_directory}{cpu}""".format(
-            other_options=global_conf.global_get('insilico_read_normalization', 'other_options', required=False),
+            other_options=global_conf.get('insilico_read_normalization', 'other_options', required=False),
             sequence_type=sequence_type,
             jellyfish_memory=jellyfish_memory,
-            maximum_coverage=global_conf.global_get('insilico_read_normalization', 'maximum_coverage', param_type="int"),
+            maximum_coverage=global_conf.get('insilico_read_normalization', 'maximum_coverage', param_type="int"),
             left_or_single_reads=" \\\n  ".join(["--left " + read for read in left_or_single_reads]) if right_reads else " \\\n  ".join(["--single " + read for read in left_or_single_reads]),
             right_reads="".join([" \\\n  --right " + read for read in right_reads]) if right_reads else "",
             output_directory=" \\\n  --output " + output_directory if output_directory else "",
@@ -100,9 +100,9 @@ Trinity {other_options} \\
   --CPU {cpu} \\
   {reads_option} \\
   --output {output_directory}""".format(
-            other_options=global_conf.global_get('trinity', 'other_options'),
-            max_memory=global_conf.global_get('trinity', 'max_memory'),
-            cpu=global_conf.global_get('trinity', 'cpu'),
+            other_options=global_conf.get('trinity', 'other_options'),
+            max_memory=global_conf.get('trinity', 'max_memory'),
+            cpu=global_conf.get('trinity', 'cpu'),
             reads_option=reads_option,
             output_directory=output_directory
         ),
@@ -157,11 +157,11 @@ align_and_estimate_abundance.pl {other_options} \\
   --output_dir {output_directory} \\
   --thread_count {cpu} \\
   {left_or_single_reads}{right_reads}""".format(
-                other_options=global_conf.global_get('align_and_estimate_abundance', 'other_options'),
+                other_options=global_conf.get('align_and_estimate_abundance', 'other_options'),
                 transcripts=trinity_fasta,
                 sample_name=sample_name,
                 output_directory=output_directory,
-                cpu=global_conf.global_get('align_and_estimate_abundance', 'cpu', param_type='posint'),
+                cpu=global_conf.get('align_and_estimate_abundance', 'cpu', param_type='posint'),
                 left_or_single_reads="--left " + ",".join(left_or_single_reads) if right_reads else "--single " + ",".join(left_or_single_reads),
                 right_reads=" \\\n  --right " + ",".join(right_reads) if right_reads else ""
             ),

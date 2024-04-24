@@ -33,8 +33,8 @@ def create(pipeline, sample):
     jsonator_version = "1.0.2"
 
     # Retrieve the project name fome the config file, if not specified then use the parent folder name of where the pipeline has been launched
-    if global_conf.global_get("DEFAULT", 'project_name', required=False):
-        project_name = global_conf.global_get("DEFAULT", 'project_name', required=False)
+    if global_conf.get("DEFAULT", 'project_name', required=False):
+        project_name = global_conf.get("DEFAULT", 'project_name', required=False)
     else:
         project_name = os.path.basename(pipeline.output_dir)
 
@@ -42,41 +42,41 @@ def create(pipeline, sample):
     general_info = {}
     if pipeline.__class__.__name__ == "AmpliconSeq":
         general_info = {
-            'amplicon_type' : global_conf.global_get("DEFAULT", 'amplicon_type'),
-            'db_name' : global_conf.global_get("DEFAULT", 'db_name'),
-            'db_version' : global_conf.global_get("DEFAULT", 'db_version'),
-            'similarity_threshold' : global_conf.global_get("DEFAULT", 'similarity_threshold')
+            'amplicon_type' : global_conf.get("DEFAULT", 'amplicon_type'),
+            'db_name' : global_conf.get("DEFAULT", 'db_name'),
+            'db_version' : global_conf.get("DEFAULT", 'db_version'),
+            'similarity_threshold' : global_conf.get("DEFAULT", 'similarity_threshold')
         }
     elif pipeline.__class__.__name__ == "PacBioAssembly":
         general_info = {
-            'library_type' : global_conf.global_get("DEFAULT", 'library_type'),
-            'blast_db' : global_conf.global_get("DEFAULT", 'blast_db')
+            'library_type' : global_conf.get("DEFAULT", 'library_type'),
+            'blast_db' : global_conf.get("DEFAULT", 'blast_db')
         }
     elif pipeline.__class__.__name__ == "Nanopore":
         general_info = {
-            'instrument': global_conf.global_get("DEFAULT", 'instrument_type'),
-            'blast_db': global_conf.global_get("DEFAULT", 'blast_db')
+            'instrument': global_conf.get("DEFAULT", 'instrument_type'),
+            'blast_db': global_conf.get("DEFAULT", 'blast_db')
         }
     elif pipeline.__class__.__name__ == "RnaSeqDeNovoAssembly":
         general_info = {
-            'swissprot_db' : global_conf.global_get("DEFAULT", 'swissprot_db'),
-            'uniref_db' : global_conf.global_get("DEFAULT", 'uniref_db'),
-            'pfam_db' : global_conf.global_get("DEFAULT", 'pfam_db')
+            'swissprot_db' : global_conf.get("DEFAULT", 'swissprot_db'),
+            'uniref_db' : global_conf.get("DEFAULT", 'uniref_db'),
+            'pfam_db' : global_conf.get("DEFAULT", 'pfam_db')
         }
     elif pipeline.__class__.__name__ == "IlluminaRunProcessing":
         general_info = {
-            'analysed_species' : global_conf.global_get("DEFAULT", 'scientific_name'),
-            'assembly_used' : global_conf.global_get("DEFAULT", 'assembly'),
-            'assembly_source' : global_conf.global_get("DEFAULT", 'source')
+            'analysed_species' : global_conf.get("DEFAULT", 'scientific_name'),
+            'assembly_used' : global_conf.get("DEFAULT", 'assembly'),
+            'assembly_source' : global_conf.get("DEFAULT", 'source')
         }
     else :
         general_info = {
-            'analysed_species' : global_conf.global_get("DEFAULT", 'scientific_name'),
-            'assembly_used' : global_conf.global_get("DEFAULT", 'assembly'),
-            'assembly_source' : global_conf.global_get("DEFAULT", 'source')
+            'analysed_species' : global_conf.get("DEFAULT", 'scientific_name'),
+            'assembly_used' : global_conf.get("DEFAULT", 'assembly'),
+            'assembly_source' : global_conf.get("DEFAULT", 'source')
         }
-    if global_conf.global_get("DEFAULT", 'dbsnp_version', required=False) : general_info['dbsnp_version'] = global_conf.global_get("DEFAULT", 'dbsnp_version', required=False)
-    general_info['server'] = global_conf.global_get("DEFAULT", 'cluster_server', required=True)
+    if global_conf.get("DEFAULT", 'dbsnp_version', required=False) : general_info['dbsnp_version'] = global_conf.get("DEFAULT", 'dbsnp_version', required=False)
+    general_info['server'] = global_conf.get("DEFAULT", 'cluster_server', required=True)
     general_info['analysis_folder'] = pipeline.output_dir + "/"
 
     # Prepare the software hash by first retrieving all unique module version values in config files

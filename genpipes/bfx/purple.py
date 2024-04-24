@@ -87,15 +87,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
   -ensembl_data_dir {ensembl_data_dir} \\
   -somatic_vcf {somatic_snv} {structural_sv} {sv_recovery} {somatic_hotspots} {germline_hotspots} {driver_gene_panel} {circos} \\
   -output_dir {output_dir}""".format(
-            tmp_dir=global_conf.global_get('purple', 'tmp_dir'),
-            java_other_options=global_conf.global_get('purple', 'java_other_options'),
-            other_options=global_conf.global_get('purple', 'other_options', required=False),
+            tmp_dir=global_conf.get('purple', 'tmp_dir'),
+            java_other_options=global_conf.get('purple', 'java_other_options'),
+            other_options=global_conf.get('purple', 'other_options', required=False),
             run_drivers="\\\n  -run_drivers" if structural_sv else "",
-            threads=global_conf.global_get('purple', 'threads'),
-            ram=global_conf.global_get('purple', 'ram'),
-            gc_profile=global_conf.global_get('purple', 'gc_profile'),
-            reference_sequence_version=global_conf.global_get('DEFAULT', 'assembly_alias2'),
-            reference_sequence=global_conf.global_get('purple', 'genome_fasta', param_type='filepath'),
+            threads=global_conf.get('purple', 'threads'),
+            ram=global_conf.get('purple', 'ram'),
+            gc_profile=global_conf.get('purple', 'gc_profile'),
+            reference_sequence_version=global_conf.get('DEFAULT', 'assembly_alias2'),
+            reference_sequence=global_conf.get('purple', 'genome_fasta', param_type='filepath'),
             reference=normal_name,
             tumor=tumor_name,
             amber=amber,
@@ -126,9 +126,9 @@ def strelka2_convert(input, output):
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $PURPLE_JAR com.hartwig.hmftools.purple.tools.AnnotateStrelkaWithAllelicDepth \\
   -in {input} \\
   -out {output}""".format(
-            tmp_dir=global_conf.global_get('purple', 'tmp_dir'),
-            java_other_options=global_conf.global_get('purple', 'java_other_options'),
-            ram=global_conf.global_get('purple', 'ram'),
+            tmp_dir=global_conf.get('purple', 'tmp_dir'),
+            java_other_options=global_conf.get('purple', 'java_other_options'),
+            ram=global_conf.get('purple', 'ram'),
             input=input,
             output=output,
         )

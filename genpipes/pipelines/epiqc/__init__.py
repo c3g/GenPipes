@@ -133,7 +133,7 @@ class EpiQC(common.Illumina):
     def chromosome_file(self):
         file_name = os.path.join(
             self.output_dirs['chromimpute_output_directory'],
-            "_".join((global_conf.global_get('DEFAULT', 'scientific_name'), global_conf.global_get('DEFAULT', 'assembly'), "chrom_sizes.txt"))
+            "_".join((global_conf.get('DEFAULT', 'scientific_name'), global_conf.get('DEFAULT', 'assembly'), "chrom_sizes.txt"))
         )
         return file_name
    
@@ -302,7 +302,7 @@ class EpiQC(common.Illumina):
         # to check whether user needs to add inputinfo file in epiqc.py
         # accordingly call SVMFS or user file
 
-        ihec_inputinfofile = os.path.expandvars(global_conf.global_get('chromimpute', 'IHEC_inputinfo', param_type='filepath'))
+        ihec_inputinfofile = os.path.expandvars(global_conf.get('chromimpute', 'IHEC_inputinfo', param_type='filepath'))
 
         #remove inputinfor file if exist
         #at this point imputation directory has already been created as chromosome file has generated first
@@ -323,7 +323,7 @@ class EpiQC(common.Illumina):
                     if readset.mark_type != "I":
                         inputinfo.write(f"{sample.name}\t{readset.mark_name}\t{sample.name}_{readset.mark_name}.bedgraph.gz\n")
 
-        #train_user_data = global_conf.global_get('DEFAULT', 'train_only_user_data')
+        #train_user_data = global_conf.get('DEFAULT', 'train_only_user_data')
         train_user_data = "F"
         chr_sizes_file = self.chromosome_file
         chr_sizes_file_abs = os.path.join(self.output_dir, chr_sizes_file)
@@ -356,7 +356,7 @@ class EpiQC(common.Illumina):
 ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
                 output_dir=self.output_dirs['chromimpute_output_directory'],
                 user_converteddir=os.path.basename(self.output_dirs['chromimpute_converted_directory']),
-                ihec_converteddir=global_conf.global_get('chromimpute', 'IHEC_data')
+                ihec_converteddir=global_conf.get('chromimpute', 'IHEC_data')
             )
         )
 
@@ -380,17 +380,17 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
             os.makedirs(output_dir)
         #get environment variable to generate the path of the chromosome file. different from usual ini file path.
         #check the ini file
-        chr_sizes =  os.path.expandvars(global_conf.global_get('DEFAULT', 'chromosome_size',  param_type='filepath'))
+        chr_sizes =  os.path.expandvars(global_conf.get('DEFAULT', 'chromosome_size',  param_type='filepath'))
 
-        chrs = global_conf.global_get('chromimpute_preprocess', 'chromosomes')
+        chrs = global_conf.get('chromimpute_preprocess', 'chromosomes')
         # get the chromosome from the ini file if one chr specified it gets the chromosome and split the string in the
         # ini file
         # otherwise get all chrs information from dictionary file and creates the chromosome length file
         if chrs == "All":
-            genome_dict = os.path.expandvars(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'))
+            genome_dict = os.path.expandvars(global_conf.get('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
-            chrs = global_conf.global_get('chromimpute_preprocess', 'chromosomes').split(",")
+            chrs = global_conf.get('chromimpute_preprocess', 'chromosomes').split(",")
 
         chr_sizes_file_abs = os.path.join(self.output_dir, self.chromosome_file)
 
@@ -418,13 +418,13 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 
         # check ini file whether user has requested specific chromosomes or all chromosomes. Then change the input folder accordingly
-        chrs = global_conf.global_get('chromimpute_preprocess', 'chromosomes')
+        chrs = global_conf.get('chromimpute_preprocess', 'chromosomes')
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'))
+            genome_dict = os.path.expandvars(global_conf.get('DEFAULT', 'genome_dictionary', param_type='filepath'))
             all_chrs = genome.chr_names_conv(genome_dict)
         else:
-            all_chrs = global_conf.global_get('chromimpute_preprocess', 'chromosomes').split(",")
+            all_chrs = global_conf.get('chromimpute_preprocess', 'chromosomes').split(",")
 
         input_dir = self.output_dirs['bedgraph_converted_directory']
         output_dir = self.output_dirs['chromimpute_converted_directory']
@@ -573,7 +573,7 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
 
         histone_marks = set(histone_marks)
 
-        # train_data_path = global_conf.global_get('chromimpute_generate_train_data', 'pre_trained_data_path') #currently not supported
+        # train_data_path = global_conf.get('chromimpute_generate_train_data', 'pre_trained_data_path') #currently not supported
         train_data_path = ""
         # create temp inputinfo file with interneal indexes used in traindata step
         # this file will be used to get the integer index for list of output files
@@ -581,7 +581,7 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
         # job_temp_inputinfo = chromimpute.temp_inputinfo( inputinfofile, temp_inputinfofile)
         # jobs.append(job_temp_inputinfo)
 
-        # train_user_data = global_conf.global_get('DEFAULT', 'train_only_user_data') #currently not supported
+        # train_user_data = global_conf.get('DEFAULT', 'train_only_user_data') #currently not supported
         train_user_data = "F"
         # This file is generated by python dynamically while runnning GenPipes.
         # Note that, the user does not need to submit the job script file to the server to create this file.
@@ -688,7 +688,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
             # user data witharak train karanna
 
         # chroms = []
-        # with open(os.path.join(os.environ[global_conf.global_get('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")], global_conf.global_get('chromimpute', 'chromosome_size').replace(global_conf.global_get('chromimpute', 'chromosome_size').split("/")[0]+"/", "")), "r") as chrominfofile:#with open(global_conf.global_get('chromimpute', 'chrominfofile')) as chrominfofile:             os.environ[global_conf.global_get('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")]
+        # with open(os.path.join(os.environ[global_conf.get('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")], global_conf.get('chromimpute', 'chromosome_size').replace(global_conf.get('chromimpute', 'chromosome_size').split("/")[0]+"/", "")), "r") as chrominfofile:#with open(global_conf.get('chromimpute', 'chrominfofile')) as chrominfofile:             os.environ[global_conf.get('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")]
         #     for line in chrominfofile:
         #         chroms.append(line.split("\t")[0])
 
@@ -698,7 +698,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
         #         output_files = []
         #         indice = 0
         #         for sample in contrast.treatments:
-        #             with open(os.path.join(os.environ[global_conf.global_get('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")], global_conf.global_get('chromimpute', 'chromosome_size').replace(global_conf.global_get('chromimpute', 'chromosome_size').split("/")[0]+"/", "")), "r") as chrominfofile:
+        #             with open(os.path.join(os.environ[global_conf.get('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")], global_conf.get('chromimpute', 'chromosome_size').replace(global_conf.get('chromimpute', 'chromosome_size').split("/")[0]+"/", "")), "r") as chrominfofile:
         #                 for line in chrominfofile:
         #                     input_files.append(os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converted_directory'], "%s_%s.bedgraph.gz.wig.gz" % (line.split("\t")[0], sample.name)))
         #             input_files.append(os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distance_directory'], "%s_%s.txt" % (sample.name, contrast.real_name)))
@@ -815,8 +815,8 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
         chr_sizes_file = self.chromosome_file
         chr_sizes_file_abs = os.path.join(self.output_dir, chr_sizes_file)
 
-        percent1 = global_conf.global_get('chromimpute_eval', 'percent1')
-        percent2 = global_conf.global_get('chromimpute_eval', 'percent2')
+        percent1 = global_conf.get('chromimpute_eval', 'percent1')
+        percent2 = global_conf.get('chromimpute_eval', 'percent2')
         output_dir = self.output_dirs['chromimpute_eval']
 
         for sample in self.samples:
@@ -920,8 +920,8 @@ python $PYTHON_TOOLS/signal_noise.py \\
   -p2 {percent2} \\
   -o {output_dir}""".format(
                                     input_file=converted_bedgraph_file,
-                                    percent1=global_conf.global_get('signal_noise', 'percent1'),
-                                    percent2=global_conf.global_get('signal_noise', 'percent2'),
+                                    percent1=global_conf.get('signal_noise', 'percent1'),
+                                    percent2=global_conf.get('signal_noise', 'percent2'),
                                     output_dir=output_file
                                 )
                             )
@@ -1081,7 +1081,7 @@ fi""".format(
         #check wjether filter files are specified in the ini, if so get the paths
         #paths should be specified as absolute paths
         #if not filter step will be skipped
-        skip_filter_step = global_conf.global_get('epigeec', 'select') == '' and global_conf.global_get('epigeec', 'exclude') == ''
+        skip_filter_step = global_conf.get('epigeec', 'select') == '' and global_conf.get('epigeec', 'exclude') == ''
 
         hdf5_files = []
 

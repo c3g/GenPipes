@@ -65,14 +65,14 @@ $GRIDSS_HOME/gridss \\
     --labels {normal},{tumor} \\
     {input_normal} \\
     {input_tumor}""".format(
-            threads=global_conf.global_get('gridss_paired_somatic', 'threads', param_type='int'),
-            blacklist_bed=global_conf.global_get('gridss_paired_somatic', 'blacklist_bed', param_type='filepath'),
-            reference_sequence=global_conf.global_get('gridss_paired_somatic', 'genome_fasta', param_type='filepath'),
+            threads=global_conf.get('gridss_paired_somatic', 'threads', param_type='int'),
+            blacklist_bed=global_conf.get('gridss_paired_somatic', 'blacklist_bed', param_type='filepath'),
+            reference_sequence=global_conf.get('gridss_paired_somatic', 'genome_fasta', param_type='filepath'),
             outdir=os.path.dirname(gridss_vcf),
             gridss_vcf=gridss_vcf,
             gridss_bam=gridss_bam,
-            ram=global_conf.global_get('gridss_paired_somatic', 'ram'),
-            other_options=global_conf.global_get('gridss_paired_somatic', 'other_options', param_type='string'),
+            ram=global_conf.get('gridss_paired_somatic', 'ram'),
+            other_options=global_conf.get('gridss_paired_somatic', 'other_options', param_type='string'),
             normal=normal_name,
             tumor=tumor_name,
             input_normal=input_normal,

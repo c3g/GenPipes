@@ -166,9 +166,9 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
                 left_or_single_reads,
                 right_reads,
                 "fq",
-                global_conf.global_get('insilico_read_normalization_readsets', 'jellyfish_memory'),
+                global_conf.get('insilico_read_normalization_readsets', 'jellyfish_memory'),
                 normalization_directory,
-                global_conf.global_get('insilico_read_normalization_readsets', 'cpu', required=False, param_type='int')
+                global_conf.get('insilico_read_normalization_readsets', 'cpu', required=False, param_type='int')
             )
 
             job.name = "insilico_read_normalization_readsets." + readset.name
@@ -202,9 +202,9 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
             left_or_single_reads,
             right_reads,
             "fq",
-            global_conf.global_get('insilico_read_normalization_all', 'jellyfish_memory'),
+            global_conf.get('insilico_read_normalization_all', 'jellyfish_memory'),
             normalization_directory_all,
-            global_conf.global_get('insilico_read_normalization_all', 'cpu', required=False, param_type='int')
+            global_conf.get('insilico_read_normalization_all', 'cpu', required=False, param_type='int')
         )
 
         job.name = "insilico_read_normalization_all"
@@ -325,7 +325,7 @@ pandoc --to=markdown \\
         trinity_fasta = os.path.join(trinity_directory, "Trinity.fasta")
         trinity_fasta_for_blast = os.path.join(trinity_directory, "Trinity.fa")
         trinity_chunks_directory = os.path.join(trinity_directory, "Trinity.fasta_chunks")
-        num_fasta_chunks = global_conf.global_get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
+        num_fasta_chunks = global_conf.get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
 
         return [
             concat_jobs(
@@ -361,11 +361,11 @@ pandoc --to=markdown \\
         jobs = []
         trinity_chunks_directory = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta_chunks")
         blast_directory = self.output_dirs["blast_directory"]
-        num_fasta_chunks = global_conf.global_get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
+        num_fasta_chunks = global_conf.get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         program = "blastx"
-        swissprot_db = global_conf.global_get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
-        # uniref_db = global_conf.global_get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
-        cpu = global_conf.global_get('blastx_trinity_uniprot', 'cpu')
+        swissprot_db = global_conf.get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
+        # uniref_db = global_conf.get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
+        cpu = global_conf.get('blastx_trinity_uniprot', 'cpu')
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
@@ -402,11 +402,11 @@ pandoc --to=markdown \\
 
         jobs = []
         blast_directory = self.output_dirs["blast_directory"]
-        num_fasta_chunks = global_conf.global_get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
+        num_fasta_chunks = global_conf.get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         program = "blastx"
         blast_prefix = os.path.join(blast_directory, program + "_Trinity_")
-        swissprot_db = global_conf.global_get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
-        # uniref_db = global_conf.global_get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
+        swissprot_db = global_conf.get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
+        # uniref_db = global_conf.get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
@@ -521,7 +521,7 @@ pandoc --to=markdown \\
 
         blast_directory = os.path.join(self.output_dirs["trinotate_directory"], "blastp")
         transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
-        db = global_conf.global_get("blastp_transdecoder_uniprot", "swissprot_db", param_type='prefixpath')
+        db = global_conf.get("blastp_transdecoder_uniprot", "swissprot_db", param_type='prefixpath')
 
         jobs = trinotate.blastp_transdecoder_uniprot(
             blast_directory,
@@ -574,7 +574,7 @@ pandoc --to=markdown \\
         """
         jobs = []
 
-        swissprot_db = os.path.basename(global_conf.global_get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath'))
+        swissprot_db = os.path.basename(global_conf.get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath'))
         transdecoder_pep = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
 
         job = concat_jobs(
@@ -704,9 +704,9 @@ pandoc --to=markdown \\
         # Parse Trinotate results to obtain blast, go annotation and a filtered set of contigs
         isoforms_lengths = os.path.join(output_directory, "isoforms.lengths.tsv")
         trinotate_annotation_report = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
-        gene_id_column = "#gene_id" if not global_conf.global_get('trinotate', 'gene_column', required=False) else global_conf.global_get('trinotate', 'gene_column', required=False)
-        transcript_id_column = "transcript_id" if not global_conf.global_get('trinotate', 'transcript_column', required=False) else global_conf.global_get('trinotate', 'gene_column', required=False)
-        trinotate_filters = None if not global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
+        gene_id_column = "#gene_id" if not global_conf.get('trinotate', 'gene_column', required=False) else global_conf.get('trinotate', 'gene_column', required=False)
+        transcript_id_column = "transcript_id" if not global_conf.get('trinotate', 'transcript_column', required=False) else global_conf.get('trinotate', 'gene_column', required=False)
+        trinotate_filters = None if not global_conf.get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.get('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
 
         job = tools.py_parseTrinotateOutput(
             trinotate_annotation_report,
@@ -838,7 +838,7 @@ pandoc --to=markdown \\
                     basename_report_file=os.path.basename(report_file),
                     report_dir=self.output_dirs['report_directory'],
                     report_file=report_file,
-                    filter_string="" if not global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False)
+                    filter_string="" if not global_conf.get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.get('filter_annotated_components', 'filters_trinotate', required=False)
                 ),
                 name="filter_annotated_components_report",
                 report_files=[report_file],
@@ -941,9 +941,9 @@ pandoc --to=markdown \\
         design_file = os.path.relpath(self.design_file.name, self.output_dir)
 
         # Parameters from ini file
-        gene_id_column = "#gene_id" if not global_conf.global_get('trinotate', 'gene_column', required=False) else global_conf.global_get('trinotate', 'gene_column', required=False)
-        transcript_id_column = "transcript_id" if not global_conf.global_get('trinotate', 'transcript_column', required=False) else global_conf.global_get('trinotate', 'gene_column', required=False)
-        trinotate_columns_to_exclude = None if not global_conf.global_get('differential_expression', 'trinotate_columns_to_exclude', required=False) else global_conf.global_get('differential_expression', 'trinotate_columns_to_exclude', required=False)
+        gene_id_column = "#gene_id" if not global_conf.get('trinotate', 'gene_column', required=False) else global_conf.get('trinotate', 'gene_column', required=False)
+        transcript_id_column = "transcript_id" if not global_conf.get('trinotate', 'transcript_column', required=False) else global_conf.get('trinotate', 'gene_column', required=False)
+        trinotate_columns_to_exclude = None if not global_conf.get('differential_expression', 'trinotate_columns_to_exclude', required=False) else global_conf.get('differential_expression', 'trinotate_columns_to_exclude', required=False)
 
         # Run DGE and merge dge results with annotations
         matrix = os.path.join(output_directory, item + ".counts.matrix")
@@ -992,7 +992,7 @@ pandoc --to=markdown \\
             # Prepare GOseq job
             goseq_job = differential_expression.goseq(
                 os.path.join(output_directory, item, contrast.name, "dge_trinotate_results.csv"),
-                global_conf.global_get("differential_expression", "dge_input_columns"),
+                global_conf.get("differential_expression", "dge_input_columns"),
                 os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv"),
                 os.path.join(output_directory, item +".lengths.tsv.noheader.tsv"),
                 trinotate_annotation_report + "." + item + "_go.tsv"
@@ -1474,7 +1474,7 @@ rm {temp_out2}""".format(
         for contrast in self.contrasts:
             seq2fun_outputs =[]
             output_dir = os.path.join(output_directory, contrast.name)
-            profiling = (global_conf.global_get('seq2fun', 'profiling'))
+            profiling = (global_conf.get('seq2fun', 'profiling'))
             seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table.txt")
             if "--profiling" == profiling:
                 seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table_submit2networkanalyst.txt")
@@ -1753,7 +1753,7 @@ awk -v OFS="\t" '{{ print $1,$0}}' \\
         """
         jobs = []
         DGE_output_directory = f"{self.output_dirs['differential_expression_directory']}/seq2fun"
-        profiling = (global_conf.global_get('seq2fun', 'profiling'))
+        profiling = (global_conf.get('seq2fun', 'profiling'))
         if "--profiling" == profiling:
             for contrast in self.contrasts:
                 input_file = os.path.join(DGE_output_directory, contrast.name, "edger_results.csv")

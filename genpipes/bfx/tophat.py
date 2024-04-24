@@ -36,8 +36,8 @@ def tophat(
     rg_center=""
     ):
 
-    gtf = global_conf.global_get('tophat', 'gtf', required=False, param_type='filepath')
-    transcriptome_bowtie_index = global_conf.global_get('tophat', 'transcriptome_bowtie_index', required=False, param_type='prefixpath')
+    gtf = global_conf.get('tophat', 'gtf', required=False, param_type='filepath')
+    transcriptome_bowtie_index = global_conf.get('tophat', 'transcriptome_bowtie_index', required=False, param_type='prefixpath')
 
     return Job(
         [reads1, reads2],
@@ -61,7 +61,7 @@ tophat {other_options}{gtf}{transcriptome_index} \\
   --num-threads {num_threads} \\
   {bowtie_index} \\
   {reads1}{reads2}""".format(
-        other_options=global_conf.global_get('tophat', 'other_options', required=False),
+        other_options=global_conf.get('tophat', 'other_options', required=False),
         gtf=" \\\n  --GTF " + gtf if gtf else "",
         transcriptome_index=" \\\n  --transcriptome-index " + transcriptome_bowtie_index if transcriptome_bowtie_index else "",
         rg_id=rg_id,
@@ -70,10 +70,10 @@ tophat {other_options}{gtf}{transcriptome_index} \\
         rg_platform_unit=rg_platform_unit,
         rg_platform=rg_platform,
         rg_center=rg_center,
-        library_type=global_conf.global_get('DEFAULT', 'strand_info'),
+        library_type=global_conf.get('DEFAULT', 'strand_info'),
         output_directory=output_directory,
-        num_threads=global_conf.global_get('tophat', 'threads'),
-        bowtie_index=global_conf.global_get('tophat', 'genome_bowtie_index', param_type='prefixpath'),
+        num_threads=global_conf.get('tophat', 'threads'),
+        bowtie_index=global_conf.get('tophat', 'genome_bowtie_index', param_type='prefixpath'),
         reads1=reads1,
         reads2=" \\\n  " + reads2 if reads2 else ""
         )

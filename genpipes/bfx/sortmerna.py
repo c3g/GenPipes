@@ -49,11 +49,11 @@ sortmerna --threads {threads} {other_options} \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
 			input2=input2,
-        	threads=global_conf.global_get(ini_section, 'threads', required=True), 
+        	threads=global_conf.get(ini_section, 'threads', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
-        	other_options = global_conf.global_get('sortmerna', 'other_options')
+        	other_options = global_conf.get('sortmerna', 'other_options')
         )
 	)
 
@@ -80,10 +80,10 @@ sortmerna --threads {threads} {other_options} \\
     --readb {output_directory_sample}/readb \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
-        	threads=global_conf.global_get(ini_section, 'threads', required=True), 
+        	threads=global_conf.get(ini_section, 'threads', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
-        	other_options = global_conf.global_get('sortmerna', 'other_options')
+        	other_options = global_conf.get('sortmerna', 'other_options')
 		)
 	)
