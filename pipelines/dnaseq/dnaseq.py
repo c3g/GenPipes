@@ -3672,7 +3672,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         ),
                         pipe_jobs(
                             [
-                                vawk.single_germline(genotype_vcf, sample.name, None),
+                                vawk.single_germline(genotype_gzip, sample.name, None),
                                 vt.sort("-", "-", "-m full"),
                                 htslib.bgzip_tabix(None, germline_vcf),
                             ]

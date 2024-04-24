@@ -58,7 +58,7 @@ def run(
         purple_outputs.append(purple_sv)
 
     if structural_sv is not None:
-        circos_plot = os.path.join(output_dir, tumor_name + ".circos.png")
+        circos_plot = os.path.join(output_dir, "plot", tumor_name + ".circos.png")
         purple_outputs.append(circos_plot)
 
     return Job(
