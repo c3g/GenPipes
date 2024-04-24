@@ -105,7 +105,7 @@ class Scheduler:
         try:
             if "ppn" in cpu_str or '-c' in cpu_str:
                 # to be back compatible
-                cpu = re.search("(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
+                cpu = re.search(r"(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
             else:
                 cpu = re.search("[0-9]+", cpu_str).group()
         except AttributeError:
@@ -220,7 +220,7 @@ class Scheduler:
             tmp_dir = global_conf.global_get("DEFAULT", 'tmp_dir', required=True)
 
             append_command = f" | tee {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o "
-            test_condition = """
+            test_condition = r"""
 grep {pattern} {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o
 NO_PROBLEM_IN_LOG=\$?
 
@@ -479,7 +479,7 @@ chmod 755 $COMMAND
                         )
                     )
 
-                    cmd = """\
+                    cmd = r"""\
 echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
 GenPipes_STATE=\$PIPESTATUS
 echo GenPipesexitStatus:\$GenPipes_STATE
@@ -717,7 +717,7 @@ chmod 755 $COMMAND
                     )
                         )
 
-                    cmd = """\
+                    cmd = r"""\
 echo "#! /bin/bash
 echo '#######################################'
 echo 'SLURM FAKE PROLOGUE (GenPipes)'
