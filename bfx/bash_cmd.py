@@ -421,3 +421,51 @@ ls {path}""".format(
             path=target
         )
     )
+
+def tar(
+    inputs,
+    output,
+    options="-c",
+    file_list=False,
+    ):
+    """
+    Invokes tar compression tool.
+
+    By default it compresses inputs, but it can be used to extract the content
+    of a tar with option "-x" and supplying the tar in the output arg.
+        tar {options} -f {output} {inputs}
+
+    Args:
+        inputs      list
+            Paths/strings of files and folders to compress.
+        output      str
+            Filename preferably with extension .tar or .tar.gz.
+        options     str, default = "-c"
+            Arguments.
+        file_list   boolean, default = False, optional
+            Adds a second output file to the Job object.
+            The file is a list of the tar content in plain text.
+
+    Returns:
+        Job object
+    """
+    outputs = [output]
+    if file_list:
+        args = " ".join([options, "-vv"])
+        outputs.append(
+                "".join([os.path.splitext(os.path.splitext(output)[0])[0],
+                         ".list"])
+                )
+    else:
+        args = options
+    return Job(
+        inputs,
+        outputs,
+        command="""\
+tar {args} -f {output} {inputs}{stdout}""".format(
+            args=args,
+            output=output,
+            inputs=" ".join(inputs),
+            stdout=" ".join([" >", outputs[-1]]) if file_list else ""
+        )
+    )
