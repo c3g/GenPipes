@@ -2768,6 +2768,15 @@ class RunProcessing(common.MUGQICPipeline):
             bash.cp(self.readset_file, full_destination_folder)
         )
 
+        jobs_to_concat.append(
+            bash.tar(
+                ["job_output"],
+                os.path.join("job_output", "job_output.tar.gz"),
+                "".join(["-cpz --acls --exclude=\"",
+                         os.path.join("job_output", "job_output.*\"")]),
+                file_list=True)
+        )
+
         for lane in self.lanes:
 
             inputs = self.copy_job_inputs[lane]
