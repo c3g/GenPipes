@@ -1364,22 +1364,24 @@ pandoc --to=markdown \\
             [chao1_stat],
             [chao1_rarefied_stat],
             'single_rarefaction',
-            f"-i {chao1_stat} -j {chao1_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}"
+            f"-i {chao1_stat} -j {chao1_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}",
+            ini_section="qiime_single_rarefaction"
         )
 
         job_observed_species = tools.py_ampliconSeq(
             [observed_species_stat],
             [observed_species_rarefied_stat],
             'single_rarefaction',
-            f"-i {observed_species_stat} -j {observed_species_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}"
+            f"-i {observed_species_stat} -j {observed_species_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}",
+            ini_section="qiime_single_rarefaction"
         )
 
         job_shannon = tools.py_ampliconSeq(
             [shannon_stat],
             [shannon_rarefied_stat],
             'single_rarefaction',
-            f"-i {shannon_stat} -j {shannon_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}"
-
+            f"-i {shannon_stat} -j {shannon_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}",
+            ini_section="qiime_single_rarefaction"
         )
 
         jobs.append(
@@ -1446,19 +1448,22 @@ pandoc --to=markdown \\
             [chao1_stat],
             [chao1_rarefied_stat],
             'single_rarefaction',
-            f"-i {chao1_stat} -j {chao1_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}"
+            f"-i {chao1_stat} -j {chao1_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}",
+            ini_section="qiime_css_normalization"
         )
         job_observed_species = tools.py_ampliconSeq(
             [observed_species_stat],
             [observed_species_rarefied_stat],
             'single_rarefaction',
-            f"-i {observed_species_stat} -j {observed_species_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}"
+            f"-i {observed_species_stat} -j {observed_species_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}",
+            ini_section="qiime_css_normalization"
         )
         job_shannon = tools.py_ampliconSeq(
             [shannon_stat],
             [shannon_rarefied_stat],
             'single_rarefaction',
-            f"-i {shannon_stat} -j {shannon_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}"
+            f"-i {shannon_stat} -j {shannon_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}",
+            ini_section="qiime_css_normalization"
         )
 
         jobs.append(
