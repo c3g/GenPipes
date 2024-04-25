@@ -105,7 +105,7 @@ class Scheduler:
         try:
             if "ppn" in cpu_str or '-c' in cpu_str:
                 # to be back compatible
-                cpu = re.search(r"(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
+                cpu = re.search("(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
             else:
                 cpu = re.search("[0-9]+", cpu_str).group()
         except AttributeError:
@@ -124,7 +124,7 @@ class Scheduler:
             try:
                 if "nodes" in cpu_str or '-N' in cpu_str:
                     # to be back compatible
-                    return re.search(r"(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
+                    return re.search("(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
             except AttributeError as exc:
                 raise ValueError(f'"{cpu_str}" is not a valid entry for "cluster_cpu"') from exc
         try:
@@ -220,7 +220,7 @@ class Scheduler:
             tmp_dir = global_conf.get("DEFAULT", 'tmp_dir', required=True)
 
             append_command = f" | tee {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o "
-            test_condition = r"""
+            test_condition = """
 grep {pattern} {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o
 NO_PROBLEM_IN_LOG=\$?
 
@@ -479,7 +479,7 @@ chmod 755 $COMMAND
                         )
                     )
 
-                    cmd = r"""\
+                    cmd = """\
 echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
 GenPipes_STATE=\$PIPESTATUS
 echo GenPipesexitStatus:\$GenPipes_STATE
@@ -717,7 +717,7 @@ chmod 755 $COMMAND
                     )
                         )
 
-                    cmd = r"""\
+                    cmd = """\
 echo "#! /bin/bash
 echo '#######################################'
 echo 'SLURM FAKE PROLOGUE (GenPipes)'
