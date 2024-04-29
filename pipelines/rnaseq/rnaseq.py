@@ -1860,11 +1860,40 @@ pandoc \\
                 sample.name,
                 "pcgr"
             )
-            output = [
-                    os.path.join(pcgr_directory, sample.name[:35] + ".pcgr_acmg." + assembly + ".flexdb.html"),
-                    os.path.join(pcgr_directory, sample.name[:35] + ".pcgr_acmg." + assembly + ".maf"),
-                    os.path.join(pcgr_directory, sample.name[:35] + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv")
-                ]
+            # PCGR does not accept sample IDs longer than 35 characters and uses the sample ID to name output files.
+            # For samples that have longer sample IDs the output files will have non-matching names, so create symlinks with full-length names.
+            if sample.name != sample.name[:35]:
+                output = [
+                        os.path.join(pcgr_directory, sample.name[:35] + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                        os.path.join(pcgr_directory, sample.name[:35] + ".pcgr_acmg." + assembly + ".maf"),
+                        os.path.join(pcgr_directory, sample.name[:35] + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv")
+                    ]
+                final_command = concat_jobs(
+                        [
+                            bash.ln(
+                                os.path.relpath(output[0], pcgr_directory),
+                                os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                                input=output[0]
+                                ),
+                            bash.ln(
+                                os.path.relpath(output[1], pcgr_directory),
+                                os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".maf"),
+                                input=output[1]
+                                ),
+                            bash.ln(
+                                os.path.relpath(output[2], pcgr_directory),
+                                os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
+                                input=output[2]
+                                )
+                            ]
+                        )
+            else:
+                output = [
+                        os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                        os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".maf"),
+                        os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv")
+                    ]
+                final_command = bash.ls(output[0])
 
             jobs.append(
                 concat_jobs(
@@ -1878,7 +1907,7 @@ pandoc \\
                             pcgr_directory,
                             sample.name
                         ),
-                        bash.ls(output[0])
+                        final_command
                     ],
                     name="report_pcgr." + sample.name,
                     samples=[sample],
