@@ -459,7 +459,7 @@ def tar(
     else:
         args = options
     return Job(
-        inputs,
+        [None],
         outputs,
         command="""\
 tar {args} -f {output} {inputs}{stdout}""".format(

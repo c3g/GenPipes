@@ -2770,8 +2770,11 @@ class RunProcessing(common.MUGQICPipeline):
 
         jobs_to_concat.append(
             bash.tar(
-                ["job_output"],
-                os.path.join("job_output", "job_output.tar.gz"),
+                [os.path.join(self.output_dir,
+                              "job_output")],
+                os.path.join(self.output_dir,
+                             "job_output",
+                             "job_output.tar.gz"),
                 "".join(["-cpz --acls --exclude=\"",
                          os.path.join("job_output", "job_output.*\"")]),
                 file_list=True)
