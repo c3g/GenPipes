@@ -4914,7 +4914,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 tumor_pair.name,
                 "pcgr"
             )
-            
+           
+            # PCGR does not accept sample IDs longer than 35 characters and uses the sample ID to name output files.
+            # For samples that have longer sample IDs the output files will have non-matching names, so create symlinks with full-length names.
             if tumor_pair.name != tumor_pair.name[:35]:
                 output = [
                         os.path.join(pcgr_directory, tumor_pair.name[:35] + ".pcgr_acmg." + assembly + ".flexdb.html"),
