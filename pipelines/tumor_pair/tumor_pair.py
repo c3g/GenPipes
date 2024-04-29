@@ -4915,10 +4915,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 "pcgr"
             )
             output = [
-                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
-                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf"),
-                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
-                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".cna_segments.tsv.gz")
+                    os.path.join(pcgr_directory, tumor_pair.name[:35] + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                    os.path.join(pcgr_directory, tumor_pair.name[:35] + ".pcgr_acmg." + assembly + ".maf"),
+                    os.path.join(pcgr_directory, tumor_pair.name[:35] + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
+                    os.path.join(pcgr_directory, tumor_pair.name[:35] + ".pcgr_acmg." + assembly + ".cna_segments.tsv.gz")
                 ]
 
             jobs.append(
