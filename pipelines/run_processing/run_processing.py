@@ -976,11 +976,6 @@ class RunProcessing(common.MUGQICPipeline):
                         barcode_file = os.path.join(resources_dir, 'barcodes_by_sequence.i5rev.txt')
                     else:
                         barcode_file = os.path.join(resources_dir, 'barcodes_by_sequence.i5fwd.txt')
-                if (self.seqtype == 'novaseqx'):
-                    # The mask built from RunInfo.xml is inadequate for the
-                    # NovaseqX when the index is shorter than the number of
-                    # index cycles with the introduction of override cycles
-                    mask = self.mask[lane]
 
                 # CountIlluminaBarcode
                 lane_jobs.append(
