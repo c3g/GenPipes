@@ -325,8 +325,6 @@ For more information about and source code for a specific pipeline, visit:
 ### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/chipseq/)
 ### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
 ### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
-### [EpiQC Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/epiqc/)
-### [HiC-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/hicseq/)
 ### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
 ### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)
@@ -468,19 +466,19 @@ You can also add a list of other configuration files to `--config`.
 Files are read in the list order and each parameter value is overwritten if redefined in the next file.
 
 This is useful to customize settings for a specific cluster or genome.
-Each pipeline has a special configuration file for guillimin and mammouth clusters (`.guillimin.ini` and `.mammouth.ini` extensions respectively) in the same directory.
+Each cluster has a special configuration file available (for example, `beluga.ini` and `narval.ini`) in the common_ini directory.
 And various genome settings are available in `$MUGQIC_PIPELINES_HOME/resources/genomes/config/`.
 
-For example, to run the DNA-Seq pipeline on guillimin cluster with *Mus musculus* reference genome:
+For example, to run the DNA-Seq pipeline on the beluga cluster with *Mus musculus* reference genome:
 ```
 #!bash
-$MUGQIC_PIPELINES_HOME/pipelines/dnaseq/dnaseq.py --config $MUGQIC_PIPELINES_HOME/pipelines/dnaseq/dnaseq.base.ini $MUGQIC_PIPELINES_HOME/pipelines/dnaseq/dnaseq.guillimin.ini $MUGQIC_PIPELINES_HOME/resources/genomes/config/Mus_musculus.GRCm38.ini ...
+$MUGQIC_PIPELINES_HOME/pipelines/dnaseq/dnaseq.py --config $MUGQIC_PIPELINES_HOME/pipelines/dnaseq/dnaseq.base.ini $MUGQIC_PIPELINES_HOME/pipelines/common_ini/beluga.ini $MUGQIC_PIPELINES_HOME/resources/genomes/config/Mus_musculus.GRCm38.ini ...
 ```
 
 
 Design File
 -----------
-RNA-Seq, RNA-Seq De Novo Assembly and ChIP-Seq pipelines can perform differential expression analysis if they are provided with an input Design File.
+RNA-Seq, RNA-Seq De Novo Assembly, Methyl-Seq and ChIP-Seq pipelines can perform differential expression analysis if they are provided with an input Design File.
 
 The Design File is a TAB-separated values plain text file with one line per sample and the following columns:
 
