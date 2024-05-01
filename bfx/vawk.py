@@ -31,7 +31,7 @@ def paired_somatic(input, normal_name, tumor_name, output):
             ['vawk', 'module_vawk'],
         ],
         command="""\
-zless {input} | \\
+zcat {input} | \\
         vawk --header \\
         '(S${tumor_name}$GT!="0/0" && S${tumor_name}$GT!="./." \\
         && S${tumor_name}$GT!=S${normal_name}$GT) \\
@@ -52,7 +52,7 @@ def paired_germline(input, normal_name, tumor_name, output):
             ['vawk', 'module_vawk'],
         ],
         command="""\
-zless {input} | \\
+zcat {input} | \\
         vawk --header \\
         '(S${normal_name}$GT!="0/0" && S${normal_name}$GT!="./." && S${tumor_name}$GT!="./.")' \\
         {output}""".format(
@@ -71,7 +71,7 @@ def single_germline(input, normal_name, output):
             ['vawk', 'module_vawk'],
         ],
         command="""\
-zless {input} | \\
+zcat {input} | \\
         vawk --header \\
         '(S${normal_name}$GT!="0/0" && S${normal_name}$GT!="./.")' \\
         {output}""".format(
@@ -114,7 +114,7 @@ def format_cna(input, output):
         ],
         command="""\
 cat <(echo "Chromosome;Start;End;Segment_Mean" | tr ';' '\t') \\
-<(zless {input} | \\
+<(zcat {input} | \\
         vawk \\
         '{{print $1, $2, I$END, I$LOG_FOLD_CHANGE}}') \\
         {output}""".format(

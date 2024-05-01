@@ -4299,8 +4299,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     [
                         # Create output directory since it is not done by default by GATK tools
                         bash.mkdir(
-                            paired_ensemble_directory,
-                            remove=True
+                            paired_ensemble_directory
                         ),
                         # Remove any existing outputs because they cause silent error
                         bash.rm(
@@ -4915,12 +4914,48 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 tumor_pair.name,
                 "pcgr"
             )
-            output = [
-                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
-                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf"),
-                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
-                    os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".cna_segments.tsv.gz")
-                ]
+           
+            # PCGR does not accept sample IDs longer than 35 characters and uses the sample ID to name output files.
+            # For samples that have longer sample IDs the output files will have non-matching names, so create symlinks with full-length names.
+            if tumor_pair.name != tumor_pair.name[:35]:
+                output = [
+                        os.path.join(pcgr_directory, tumor_pair.name[:35] + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                        os.path.join(pcgr_directory, tumor_pair.name[:35] + ".pcgr_acmg." + assembly + ".maf"),
+                        os.path.join(pcgr_directory, tumor_pair.name[:35] + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
+                        os.path.join(pcgr_directory, tumor_pair.name[:35] + ".pcgr_acmg." + assembly + ".cna_segments.tsv.gz")
+                    ]
+                final_command = concat_jobs(
+                        [
+                            bash.ln(
+                                os.path.relpath(output[0], pcgr_directory),
+                                os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                                input=output[0]
+                                ),
+                            bash.ln(
+                                os.path.relpath(output[1], pcgr_directory),
+                                os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf"),
+                                input=output[1]
+                                ),
+                            bash.ln(
+                                os.path.relpath(output[2], pcgr_directory),
+                                os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
+                                input=output[2]
+                                ),
+                            bash.ln(
+                                os.path.relpath(output[3], pcgr_directory),
+                                os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".cna_segments.tsv.gz"),
+                                input=output[3]
+                                )
+                            ]
+                        )
+            else:
+                output = [
+                        os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                        os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf"),
+                        os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
+                        os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".cna_segments.tsv.gz")
+                    ]
+                final_command = bash.ls(output[0])
 
             jobs.append(
                 concat_jobs(
@@ -4950,7 +4985,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             tumor_pair.name,
                             input_cna=output_cna
                         ),
-                        bash.ls(output[0])
+                        final_command
                     ],
                     name="report_pcgr." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -5930,8 +5965,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 concat_jobs(
                     [
                         bash.mkdir(
-                            amber_dir,
-                            remove=True
+                            amber_dir
                         ),
                         amber.run(
                             input_normal,
@@ -5950,8 +5984,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 concat_jobs(
                     [
                         bash.mkdir(
-                            cobalt_dir,
-                            remove=True
+                            cobalt_dir
                         ),
                         cobalt.run(
                             input_normal,

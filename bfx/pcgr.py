@@ -32,6 +32,8 @@ def report(input_vcf, cpsr_report, output_dir, tumor_id, input_cna=None):
     else:
         call = 'pcgr.py'
 
+    tumor_id = tumor_id[:35]
+
     return Job(
         [
             input_vcf,

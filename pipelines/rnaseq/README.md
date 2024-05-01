@@ -17,7 +17,7 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-t {stringtie,variants,cancer}] [-d DESIGN] [-b BATCH]
                  [-r READSETS] [-v]
 
-Version: 4.5.0
+Version: 4.6.0
 
 For more documentation, visit our website: https://genpipes.readthedocs.io/en/latest/user_guide/user_guide.html
 
