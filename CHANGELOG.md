@@ -1,6 +1,74 @@
-46 tags, 10338 commits
+47 tags, 10392 commits
 
-HEAD        Fri Feb 9 13:19:06 2024 -0500        0 commits
+HEAD        Wed May 1 12:15:37 2024 -0400        0 commits
+
+4.6.0        Wed May 1 16:23:53 2024 +0000        54 commits
+
+  mareike.janiak@computationalgenomics.ca <mareike.janiak@computationalgenomics.ca>      6 commits
+
+       6094bf867 GenPipes rnaseq : pcgr report for samples with long names
+       bb2df08b4 GenPipes methylseq : add unzipped vcfs to removable files
+       95930482d Genpipes methylseq : clean up
+       bbc990f2f GenPipes methylseq : add bgzip to bisSNP outputs
+       08bc5186a GenPipes methylseq : revert bisSNP version to 0.82.2 due to corrupted vcfs from v.1.0.0
+       6ac0c626b GenPipes : add zipping of bisSNP output vcfs
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>      44 commits
+
+       71e208ff3 Merged in release_4.6.0 (pull request #495)
+       1427f2f14 Preparations for release
+       f8a4fa10d Merged in covseq_report (pull request #494)
+       9cee03bcc GenPipes covseq : resources for cit
+       8fcd9cc21 Merged in pcgr_name (pull request #493)
+       e5c7f73c4 GenPipes tumor_pair : add comment for pcgr
+       702579abe GenPipes rnaseq : pcgr output file links for long sample names
+       cc5cb7b54 GenPipes tumor_pair : pcgr output file symlinks for long sample names
+       1ac5cc3d7 GenPipes tumor_pair : pcgr report for samples with long names
+       7324ef302 Merged in pcgr_name (pull request #492)
+       5951014a7 GenPipes rnaseq : resource request format and amounts
+       860cacf58 GenPipes tumor_pair : prevent errors in pcgr due to long sample name
+       8e439b639 Merged in rocky_fix (pull request #490)
+       c8fda205e GenPipes rnaseq_denovo : trinotate cit walltime
+       256b1bfa3 GenPipes ampliconseq : prevent clashing python modules
+       a71e6d91f Merged in rocky_fix (pull request #489)
+       07b77c7ed GenPipes chipseq : add blacklist to genome ini
+       322284ac7 GenPipes chipseq : make blacklist optional via ini
+       8ffb138de GenPipes covseq : pandoc version update
+       4a447199c GenPipes covseq : cit memory debug
+       54cae254c debug
+       f3ecf8ec7 GenPipes covseq : report debug
+       4ff4cf3f8 GenPipes ampliconseq : otu_table debug
+       2b249d562 GenPipes qiime debug
+       cb1784d2e GenPipes ampliconseq : debug rarefaction
+       c29da576e bfx : debug
+       38a04c11b bfx : qiime debug
+       c87207b46 debug
+       d81af3308 GenPipes covseq : report debug
+       82c4a0cdf GenPipes covseq : debug cit
+       8af23ab9c bfx purple : fix plot output path to avoid restarts
+       d984ec327 bfx qiime : debug
+       a445da072 GenPipes ampliconseq : debug otu_table
+       f666c19a2 GenPipes covseq : update amplicon scheme and primer prefix
+       c04753559 GenPipes chipseq : increase resources to avoid homer timeout
+       079f83a9c GenPipes dnaseq : use gzipped vcf during lumpy step
+       4f6781f78 GenPipes : replace zless with zcat
+       1959b903c Merged in moh_clean_changes (pull request #488)
+       6c56a270b GenPipes tumor_pair : keep paired_ensemble, cobalt, and amber directories when generating clean commands
+       6e4cc0c10 Merged in methylseq_zip_fix (pull request #485)
+       ee2902c74 Version bump to 4.5.1-beta
+       a557e5fca Merged master into dev
+       ffdc708fd Merged in release_4.5.0 (pull request #483)
+       30562e7ff Version bump to 4.5.0
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      3 commits
+
+       b5848e56c Merged in HotFix_dev (pull request #484)
+       ccf987672 Escaping tab symbol to be resolved by bash and not python
+       237875943 Fixing missing readsets for merge_trimmomatic_stats
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      1 commits
+
+       56518aa43 Add ini for cardinal
 
 4.5.0        Fri Feb 9 18:32:12 2024 +0000        49 commits
 
