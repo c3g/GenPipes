@@ -167,30 +167,6 @@ cat {input_chunks} | grep -v '^#' >> {output}""".format(
     )
   )
 
-# Search Transdecoder-predicted coding regions for sequence homologies on UniProt using [blastp](http://blast.ncbi.nlm.nih.gov/).
-#def blastp_transdecoder_uniprot(
-#        blast_directory,
-#        transdecoder_fasta,
-#        db):
-#
-#    jobs = []
-#    cpu = config.param('blastp_transdecoder_uniprot', 'cpu')
-#    program = "blastp"
-#
-#    if not glob.glob(db + ".*phr"):
-#        raise Exception("Error: " + db + " BLAST db files do not exist!")
-#
-#    query = os.path.join(blast_directory, os.path.basename(transdecoder_fasta) + "_" + os.path.basename(db) + ".tsv")
-#    blast_result = os.path.join(blast_directory, program + "_" + os.path.basename(query))
-#    jobs.append(concat_jobs([
-#        Job(command="mkdir -p " + blast_directory),
-#        Job(command="ln -s -f " + os.path.relpath(transdecoder_fasta, os.path.dirname(query)) + " " + query, removable_files=[blast_directory]),
-#        blast.parallel_blast(transdecoder_fasta, query, blast_result, program, db, cpu)        
-#    ], name="blastp_transdecoder_uniprot." + os.path.basename(db)))
-#
-#    return jobs
-
-# Predict signal peptides using [SignalP](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp).
 def signalp(
         transdecoder_fasta,
         signalp_gff):

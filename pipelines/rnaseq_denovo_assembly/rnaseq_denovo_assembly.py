@@ -433,7 +433,6 @@ pandoc --to=markdown \\
         program = "blastx"
         blast_prefix = os.path.join(blast_directory, program + "_Trinity_")
         swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
-        # uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
