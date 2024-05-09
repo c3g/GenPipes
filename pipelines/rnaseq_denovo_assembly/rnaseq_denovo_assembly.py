@@ -400,9 +400,9 @@ pandoc --to=markdown \\
                 _raise(SanitycheckError("Error: " + db + " BLAST db files do not exist!"))
 
             for i in range(num_fasta_chunks):
-                trinity_chunk = os.path.join(trinity_chunks_directory, "Trinity.fa_chunk_{:07d}".format(i))
-                query_chunk = os.path.join(blast_directory, "query_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
-                blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i))
+                trinity_chunk = os.path.join(trinity_chunks_directory, f"Trinity.fa_chunk_{i:07d}")
+                query_chunk = os.path.join(blast_directory, "query_Trinity_" + os.path.basename(db) + f"_chunk_{i:07d}.tsv")
+                blast_chunk = os.path.join(blast_directory, program + "_Trinity_" + os.path.basename(db) + f"_chunk_{i:07d}.tsv")
                 jobs.append(
                     concat_jobs(
                         [
@@ -415,7 +415,7 @@ pandoc --to=markdown \\
                             blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db, cpu),
                         ],
                         input_dependency=[trinity_chunk],
-                        name="blastx_trinity_uniprot." + os.path.basename(db) + ".chunk_{:07d}".format(i),
+                        name="blastx_trinity_uniprot." + os.path.basename(db) + f".chunk_{i:07d}",
                         samples=self.samples,
                         removable_files=[blast_directory]
                     )
@@ -436,7 +436,7 @@ pandoc --to=markdown \\
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
-            blast_chunks = [os.path.join(blast_prefix + os.path.basename(db) + "_chunk_{:07d}.tsv".format(i)) for i in range(num_fasta_chunks)]
+            blast_chunks = [os.path.join(blast_prefix + os.path.basename(db) + f"_chunk_{i:07d}.tsv") for i in range(num_fasta_chunks)]
             blast_result = os.path.join(blast_prefix + os.path.basename(db) + ".tsv")
             jobs.append(
                 concat_jobs(
@@ -600,9 +600,9 @@ pandoc --to=markdown \\
         cm_db = os.path.join(trinotate_data, "Rfam.cm")
 
         for i in range(num_fasta_chunks):
-            trinity_chunk = os.path.join(trinity_chunks_directory, "Trinity.fa_chunk_{:07d}".format(i))
-            infernal_output = os.path.join(infernal_directory, "infernal.chunk_{:07d}.out".format(i))
-            infernal_log = os.path.join(infernal_directory, "infernal.chunk_{:07d}.log".format(i))
+            trinity_chunk = os.path.join(trinity_chunks_directory, f"Trinity.fa_chunk_{i:07d}")
+            infernal_output = os.path.join(infernal_directory, f"infernal.chunk_{i:07d}.out")
+            infernal_log = os.path.join(infernal_directory, f"infernal.chunk_{i:07d}.log")
             
             jobs.append(concat_jobs(
                 [
@@ -620,14 +620,14 @@ pandoc --to=markdown \\
                         infernal_log
                         )
                 ],
-                name="infernal_cmscan.chunk_{:07d}".format(i),
+                name=f"infernal_cmscan.chunk_{i:07d}",
                 samples=self.samples,
                 removable_files=[infernal_output,infernal_log]
                 )
             )
 
         # merge chunked infernal outputs into one file
-        infernal_chunks = [os.path.join(infernal_directory, "infernal.chunk_{:07d}.out".format(i)) for i in range(num_fasta_chunks)]
+        infernal_chunks = [os.path.join(infernal_directory, f"infernal.chunk_{i:07d}.out") for i in range(num_fasta_chunks)]
         infernal_output = os.path.join(infernal_directory, "infernal.out")
         
         job = trinotate.infernal_merge(
