@@ -2772,7 +2772,8 @@ class RunProcessing(common.MUGQICPipeline):
                              "job_output.tar.gz"),
                 "".join(["-cpz --acls --exclude=\"",
                          os.path.join("job_output", "job_output.*\"")]),
-                file_list=True)
+                file_list=True,
+                input_dependency=False)
         )
 
         for lane in self.lanes:
