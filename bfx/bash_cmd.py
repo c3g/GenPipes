@@ -427,6 +427,7 @@ def tar(
     output,
     options="-c",
     file_list=False,
+    input_dependency=True,
     ):
     """
     Invokes tar compression tool.
@@ -442,9 +443,12 @@ def tar(
             Filename preferably with extension .tar or .tar.gz.
         options     str, default = "-c"
             Arguments.
-        file_list   boolean, default = False, optional
+        file_list   boolean, default = False
             Adds a second output file to the Job object.
             The file is a list of the tar content in plain text.
+        input_dependency    boolean, defautlt = True
+            Adds dependencies to input files to the Job object.
+            Set to False to remove dependency.
 
     Returns:
         Job object
@@ -458,8 +462,12 @@ def tar(
                 )
     else:
         args = options
+    if input_dependency:
+        dependencies = inputs
+    else:
+        dependencies = [None]
     return Job(
-        [None],
+        dependencies,
         outputs,
         command="""\
 tar {args} -f {output} {inputs}{stdout}""".format(
