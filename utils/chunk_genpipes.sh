@@ -90,7 +90,7 @@ while read -r line ; do
 
     echo "$line" >> ${header}
 done < ${genpipes_in}
-echo "export JOB_CHUNK_SIZE=${max_chunk}" >> ${header}
+echo "export GENPIPES_CHUNK_SIZE=${max_chunk}" >> ${header}
 
 chunk=1
 out_file=/dev/null
