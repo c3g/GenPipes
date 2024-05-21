@@ -1,6 +1,16 @@
-47 tags, 10392 commits
+48 tags, 10397 commits
 
-HEAD        Wed May 1 12:15:37 2024 -0400        0 commits
+HEAD        Tue May 21 16:08:22 2024 -0400        0 commits
+
+4.6.1        Tue May 21 20:16:55 2024 +0000        5 commits
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>      5 commits
+
+       787f31123 Merged in release_4.6.1 (pull request #507)
+       89cac35f1 Version bump to 4.6.1
+       19ae08638 GenPipes dnaseq : added missing definition of strelka2_bed_file
+       ef612e9c1 Merged in release_4.6.0 (pull request #496)
+       06871c312 Version bump to 4.6.0
 
 4.6.0        Wed May 1 16:23:53 2024 +0000        54 commits
 
