@@ -3063,7 +3063,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
 
-    def manta_sv_calls(self):
+    def germline_manta(self):
         """
         Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads. It is optimized for
         analysis of germline variation in small sets of individuals and somatic variation in tumor/normal sample pairs.
@@ -3147,7 +3147,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         )
                     ],
                     input_dependency=[input],
-                    name="manta_sv." + sample.name,
+                    name="germline_manta." + sample.name,
                     samples=[sample]
                 )
             )
@@ -8060,7 +8060,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.run_multiqc,
                 self.delly_call_filter,
                 self.delly_sv_annotation,
-                self.manta_sv_calls,
+                self.germline_manta,
                 self.manta_sv_annotation,
                 self.lumpy_paired_sv,
                 self.lumpy_sv_annotation,
