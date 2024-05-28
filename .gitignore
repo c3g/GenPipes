@@ -1,8 +1,9 @@
+*egg-info
 *.pyc
-__pycache__
 resources/container/*
 !resources/container/get_wrapper.sh
 .idea
 .DS_Store
 .gitignore
 tmp/
+venv

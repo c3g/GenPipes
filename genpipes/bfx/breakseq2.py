@@ -1,0 +1,54 @@
+################################################################################
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+import os
+
+from ..core.config import global_conf
+from ..core.job import Job
+
+def run(input, sample_name, output_dir):
+	output = os.path.join(output_dir, "breakseq.vcf.gz")
+	return Job(
+        [input],
+        [output],
+        [
+            ['run_breakseq2', 'module_python'],
+	        ['run_breakseq2', 'module_breakseq2'],
+	        ['run_breakseq2', 'module_samtools'],
+	        ['run_breakseq2', 'module_bwa']
+        ],
+        command="""\
+bwa_path=`which bwa`; \\
+samtools_path=`which samtools`; \\
+run_breakseq2.py {options} --bwa "$bwa_path" --samtools "$samtools_path" \\
+    --nthreads {threads} \\
+    --reference {genome}  \\
+    --bplib_gff {gff} \\
+    --bams {input} \\
+    --sample {sample} \\
+    --work {output}""".format(
+            options=global_conf.global_get('run_breakseq2','options'),
+            threads=global_conf.global_get('run_breakseq2','threads'),
+            genome=global_conf.global_get('run_breakseq2','genome_fasta', param_type='filepath'),
+	        gff=global_conf.global_get('run_breakseq2','gff', param_type='filepath'),
+	        output=output_dir,
+	        input=input,
+	        sample=sample_name
+        )
+    )
