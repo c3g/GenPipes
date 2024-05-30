@@ -315,8 +315,7 @@ class Illumina(MUGQICPipeline):
                         fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.single.fastq.gz")
                         fastq2 = None
                     else:
-                        _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                        _raise(SanitycheckError(f"Error: run type {readset.run_type} is invalid for readset {readset.name} (should be PAIRED_END or SINGLE_END)!"))
 
                     mkdir_job = bash.mkdir(rawReadsDirectory)
                     jobs.append(
@@ -562,7 +561,7 @@ END
                 )
             else:
                 raise Exception(
-                    "Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_file parameter in config file!")
+                    f"Error: missing adapter1 for SINGLE_END readset {readset.name}, or missing adapter_file parameter in config file!")
         
         elif readset.run_type == "PAIRED_END":
             if readset.adapter1 and readset.adapter2:
@@ -639,8 +638,7 @@ END
                 fastq2 = None
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"Error: run type {readset.run_type} is invalid for readset {readset.name} (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
                 concat_jobs(
@@ -876,8 +874,7 @@ END
                 fastq2 = None
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"Error: run type {readset.run_type} is invalid for readset {readset.name} (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
                 concat_jobs(
@@ -1194,14 +1191,6 @@ END
 
         verify_bam_results = []
 
-        jobs.append(
-            Job(
-                [known_variants_annotated],
-                [variants_directory, verify_bam_id_directory],
-                command=f"mkdir -p {variants_directory} {verify_bam_id_directory}",
-                name=f"verify_bam_id_create_directories"
-        ))
-
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
 
@@ -1215,15 +1204,20 @@ END
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
             # Run verifyBamID
-            job = verify_bam_id.verify(
-                input_bam,
-                output_prefix
-            )
-            job.name = f"verify_bam_id.{sample.name}"
-            job.samples = [sample]
-
-            jobs.append(job)
-
+            jobs.append(concat_jobs(
+                [
+                    bash.mkdir(variants_directory),
+                    bash.mkdir(verify_bam_id_directory),
+                    verify_bam_id.verify(
+                        input_bam,
+                        output_prefix
+                    )
+                ],
+                name = f"verify_bam_id.{sample.name}",
+                samples = [sample]
+                )
+            ) 
+            
             verify_bam_results.extend([f"{output_prefix}.selfSM" ])
 
         # Coverage bed is null if whole genome experiment

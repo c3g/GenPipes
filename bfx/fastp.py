@@ -74,7 +74,7 @@ def trim(
         output2,
         output_json_path,
         output_html_path=None,
-        ini_section = 'DEFAULT'
+        ini_section = None
 ):
 
     if input2:
