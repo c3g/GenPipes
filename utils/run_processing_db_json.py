@@ -55,12 +55,10 @@ def read_run_jsons(json_list):
     Returns:
         Dictionary of the json, with content available to call with keys. 
     """
-    print("As list:", json_list)
     read_dict = {}
     for json_file in json_list:
         read_dict[json_file] = json.load(open(json_file,
                             mode="r"))
-    print("As keys:", read_dict.keys())
     return read_dict
 
 class database_json(object):
@@ -98,39 +96,45 @@ platform.""".format(
 
     @property
     def run_fms_id(self):
-        run_obj_id = []
-        for run_validation_json in self._json_dict.keys():
-            if self._json_dict[run_validation_json]["run_obj_id"] not in run_obj_id:
-                run_obj_id.append(self._json_dict[run_validation_json]["run_obj_id"])
-        if len(run_obj_id) == 1:
-            return run_obj_id
-        else:
-            LOGGER.error("Multiple runs detected")
-            raise Exception("Single run at the time")
+        if self.is_same_value_between_jsons("run_obj_id"):
+            return self._json_dict[sorted(self._json_dict)[0]]["run_obj_id"]
 
     @property
-    def run_name(self): #TODO incomplete value And need to turn the checks in a function
-        run_name = []
-        for run_validation_json in self._json_dict.keys():
-            if self._json_dict[run_validation_json]["run"] not in run_name:
-                run_name.append(self._json_dict[run_validation_json]["run"])
-        if len(run_name) == 1:
-            return run_name
-        else:
-            LOGGER.error("Multiple run names detected")
-            raise Exception("Single run at the time")
+    def run_name(self):
+        if self.is_same_value_between_jsons("run"):
+            return "".join([
+                self._json_dict[sorted(self._json_dict)[0]]["run"],
+                "-",
+                self._json_dict[sorted(self._json_dict)[0]]["seqtype"],
+                ])
 
     @property
-    def run_instrument(self): #TODO Need to turn the checks in a function
-        run_instrument = []
+    def run_instrument(self):
+        if self.is_same_value_between_jsons("seqtype"):
+            return self._json_dict[sorted(self._json_dict)[0]]["seqtype"]
+
+    def properties(self):
+        class_items = self.__class__.__dict__.items()
+        return dict((k, getattr(self, k)) 
+                    for k, v in class_items 
+                    if isinstance(v, property))
+
+    def is_same_value_between_jsons(self, run_validation_field):
+        values = []
         for run_validation_json in self._json_dict.keys():
-            if self._json_dict[run_validation_json]["seqtype"] not in run_instrument:
-                run_instrument.append(self._json_dict[run_validation_json]["seqtype"])
-        if len(run_instrument) == 1:
-            return run_instrument
+            if self._json_dict[run_validation_json][run_validation_field] not in values:
+                values.append(self._json_dict[run_validation_json][run_validation_field])
+        if len(values) == 1:
+            return True
         else:
-            LOGGER.error("Multiple run instrument detected")
-            raise Exception("Single run at the time")
+            LOGGER.error("Multiple {run_validation_field} detected".format(
+                run_validation_field=run_validation_field,
+                ))
+            raise Exception("Conflict in input values for \
+\"{run_validation_field}\". Confirm that the input files are \
+from a single run".format(
+                run_validation_field=run_validation_field,
+                ))
 
 def main():
     args = arg_parse()
@@ -153,14 +157,14 @@ def main():
                         project=content["project_name"],
                         ),
                     )
-    print(projects)
     databases = {}
     for project in projects.items():
         databases[project] = database_json(args, project)
         databases[project].operation_platform
         print("TEST CURRENT:",
-              [a for a in dir(databases[project]) if not a.startswith('_')],
-              databases[project].run_name,
+              #[a for a in dir(databases[project]) if not a.startswith('_')],
+              databases[project].properties(),
+              databases[project].run_name
               )
     print("End of main()")
 
