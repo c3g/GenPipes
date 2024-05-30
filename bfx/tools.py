@@ -331,6 +331,7 @@ def chunkBedbyFileNumber(
         input,
         output,
         chunk,
+        ini_section='vardict_scatter_jobs'
 ):
     output_list = [os.path.join(output,
                                 f"{idx:04d}-scattered.bed") for idx in range(1, chunk + 1)]
@@ -338,8 +339,8 @@ def chunkBedbyFileNumber(
         [input],
         output_list,
         [
-            ['vardict_scatter_jobs', 'module_mugqic_tools'],
-            ['vardict_scatter_jobs', 'module_python']
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_python']
         ],
         command="""\
 python3 $PYTHON_TOOLS/chunkBedbyFileNumber.py \\
