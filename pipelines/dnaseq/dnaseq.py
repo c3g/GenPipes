@@ -83,7 +83,7 @@ from bfx import (
     varscan,
     vawk,
     vcftools,
-    verify_bam_id2,
+    verify_bam_id,
     vt,
     wham
     )
@@ -1584,13 +1584,13 @@ END
                 bed_file = coverage_bed
 
             output = os.path.join(metrics_directory, f"{sample.name}.selfSM")
-            job_name = f"verify_bam_id2.{sample.name}"
+            job_name = f"verify_bam_id.{sample.name}"
             
             job_project_tracking_metrics = []
             if self.project_tracking_json:
                 job_project_tracking_metrics = concat_jobs(
                     [
-                        verify_bam_id2.parse_contamination_freemix_metrics(output),
+                        verify_bam_id.parse_contamination_freemix_metrics(output),
                         job2json_project_tracking.run(
                             input_file=output,
                             pipeline=self,
@@ -1608,7 +1608,7 @@ END
                             metrics_directory,
                             remove=False
                         ),
-                        verify_bam_id2.verify(
+                        verify_bam_id.verify2(
                             input,
                             os.path.join(metrics_directory, sample.name),
                             bed_file
