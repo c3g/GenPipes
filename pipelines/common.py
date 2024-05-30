@@ -1262,7 +1262,7 @@ END
                                      [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
                                      [os.path.join(alignment_directory, f"{sample.name}.sorted_noRG.bam")],
                                      [os.path.join(alignment_directory, f"{sample.name}.sorted.UMI.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]]  #DNAseq; TumorPair
+                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]]
             
             [input_bam] = self.select_input_files(candidate_input_files)
 
