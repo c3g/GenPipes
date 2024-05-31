@@ -7,6 +7,8 @@ import json
 import logging
 import argparse
 
+from datetime import datetime
+
 def arg_parse():
     """
     Argument parser.
@@ -19,7 +21,13 @@ def arg_parse():
                      successful run processing",
         )
     parser.add_argument(
+        "runinfofile",
+        metavar="RUNINFOFILE",
+        help="Run info file supplied by Freezeman as json"
+        )
+    parser.add_argument(
         "json",
+        metavar="JSON",
         nargs="+",
         help="Run validation json file(s)"
         )
@@ -42,7 +50,7 @@ def arg_parse():
         )
     return parser.parse_args()
 
-def read_run_jsons(json_list):
+def read_jsons(json_list):
     """
     Convert the list of jsons files supplied via arguments into a dictionary
     of json parsed objects.
@@ -57,15 +65,15 @@ def read_run_jsons(json_list):
     """
     read_dict = {}
     for json_file in json_list:
-        read_dict[json_file] = json.load(open(json_file,
-                            mode="r"))
+        read_dict[json_file] = json.load(open(json_file, mode="r"))
     return read_dict
 
 class database_json(object):
 
     def __init__(self, args, project):
         print("Init", self)
-        self._json_dict =  read_run_jsons(args.json)
+        self._json_dict =  read_jsons(args.json)
+        self._runinfo_dict = json.load(open(args.runinfofile, mode="r"))
         self._args = args
         self._project = project
 
@@ -100,18 +108,27 @@ platform.""".format(
             return self._json_dict[sorted(self._json_dict)[0]]["run_obj_id"]
 
     @property
-    def run_name(self):
+    def run_name(self): #TODO complete here, validate against folder?
         if self.is_same_value_between_jsons("run"):
-            return "".join([
+            return "_".join([
+                datetime.strftime(
+                    datetime.strptime(self._runinfo_dict["run_start_date"],
+                                      "%Y-%m-%d"), "%y%m%d"),
                 self._json_dict[sorted(self._json_dict)[0]]["run"],
-                "-",
-                self._json_dict[sorted(self._json_dict)[0]]["seqtype"],
+                self._runinfo_dict["container_barcode"],
+                "-".join([self._project[1],
+                          self._json_dict[sorted(self._json_dict)[0]]["seqtype"],
+                          ])
                 ])
 
     @property
     def run_instrument(self):
         if self.is_same_value_between_jsons("seqtype"):
             return self._json_dict[sorted(self._json_dict)[0]]["seqtype"]
+
+    @property
+    def run_date(self):
+        return self._runinfo_dict["run_start_date"]
 
     def properties(self):
         class_items = self.__class__.__dict__.items()
@@ -141,11 +158,9 @@ def main():
     global LOGGER 
     logging.basicConfig(level=30-args.verbose*10+args.quiet*10)
     LOGGER = logging.getLogger(__name__)
-    json_dict = read_run_jsons(args.json)
-    # Need to loop through the values that must be unique by database entry:
-    #   project based info: project_id, project_name
-    #   run based info:     run_name, run_date, etc
+    json_dict = read_jsons(args.json)
     projects = {}
+    # Separate projects into different database_json objects
     for json_path, json_content in json_dict.items():
         for sample, content in json_content["readsets"].items():
             if content["project_obj_id"] not in projects.keys() \
