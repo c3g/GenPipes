@@ -26,7 +26,8 @@ def somatic_config(
     input_tumor,
     output_dir,
     callRegions=None,
-    mantaIndels=None
+    mantaIndels=None,
+    ini_section='strelka2_paired_somatic'
     ):
 
     inputs = [input_normal, input_tumor]
@@ -38,8 +39,8 @@ def somatic_config(
         inputs,
         [os.path.join(output_dir, "runWorkflow.py")],
         [
-            ['strelka2_paired_somatic', 'module_python'],
-            ['strelka2_paired_somatic', 'module_strelka2']
+            [ini_section, 'module_python'],
+            [ini_section, 'module_strelka2']
         ],
         command="""\
 rm -f {workflow} && \\
@@ -52,8 +53,8 @@ python $STRELKA2_HOME/bin/configureStrelkaSomaticWorkflow.py \\
             workflow=os.path.join(output_dir, "runWorkflow.py"),
             normal=input_normal,
             tumor=input_tumor,
-            genome=config.param('strelka2_paired_somatic','genome_fasta', param_type='filepath'),
-            experiment_type=config.param('strelka2_paired_somatic','experiment_type_option') if config.param('strelka2_paired_somatic','experiment_type_option') else "",
+            genome=config.param(ini_section,'genome_fasta', param_type='filepath'),
+            experiment_type=config.param(ini_section,'experiment_type_option') if config.param(ini_section,'experiment_type_option') else "",
             callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
             mantaIndels="\\\n  --indelCandidates " + mantaIndels if mantaIndels else "",
             output=output_dir
@@ -63,7 +64,8 @@ python $STRELKA2_HOME/bin/configureStrelkaSomaticWorkflow.py \\
 def germline_config(
     input_normal,
     output_dir,
-    callRegions=None
+    callRegions=None,
+    ini_section='strelka2_paired_germline'
     ):
 
     if not isinstance(input_normal, list):
@@ -73,8 +75,8 @@ def germline_config(
         input_normal,
         [os.path.join(output_dir, "runWorkflow.py")],
         [
-            ['strelka2_paired_germline', 'module_python'],
-            ['strelka2_paired_germline', 'module_strelka2']
+            [ini_section, 'module_python'],
+            [ini_section, 'module_strelka2']
         ],
         command="""\
 rm -f {workflow} && \\
@@ -85,8 +87,8 @@ python $STRELKA2_HOME/bin/configureStrelkaGermlineWorkflow.py \\
   --runDir {output}""".format(
             workflow=os.path.join(output_dir, "runWorkflow.py"),
             normal="".join(" \\\n  --bam " + input for input in input_normal),
-            genome=config.param('strelka2_paired_germline','genome_fasta', param_type='filepath'),
-            experiment_type=config.param('strelka2_paired_germline','experiment_type_option') if config.param('strelka2_paired_germline','experiment_type_option') else "",
+            genome=config.param(ini_section,'genome_fasta', param_type='filepath'),
+            experiment_type=config.param(ini_section,'experiment_type_option') if config.param(ini_section,'experiment_type_option') else "",
             callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
             output=output_dir
         )
@@ -94,10 +96,11 @@ python $STRELKA2_HOME/bin/configureStrelkaGermlineWorkflow.py \\
 
 def run(
     input_dir,
-    output_dep=[]
+    output_dep=[],
+    ini_section='strelka2_paired_somatic'
     ):
 
-    ram = config.param('strelka2_paired_somatic', 'ram')
+    ram = config.param(ini_section, 'ram')
     ram_num = re.match('[0-9]+', ram)
     ram_GB = ram_num.group()
     if 'm' in ram.lower():
@@ -110,8 +113,8 @@ def run(
         [os.path.join(input_dir, "runWorkflow.py")],
         output_dep,
         [
-            ['strelka2_paired_somatic', 'module_python'],
-            ['strelka2_paired_somatic', 'module_strelka2']
+            [ini_section, 'module_python'],
+            [ini_section, 'module_strelka2']
         ],
         command="""\
 python {input_dir}/runWorkflow.py \\
@@ -120,8 +123,8 @@ python {input_dir}/runWorkflow.py \\
   -g {ram} \\
   --quiet""".format(
             input_dir=input_dir,
-            mode=config.param('strelka2_paired_somatic','option_mode'),
-            nodes=config.param('strelka2_paired_somatic','option_nodes'),
+            mode=config.param(ini_section,'option_mode'),
+            nodes=config.param(ini_section,'option_nodes'),
             ram=ram_GB
         )
     )

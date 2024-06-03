@@ -54,7 +54,8 @@ def ln(
     target_file,
     link,
     input=None,
-    output=None
+    output=None,
+    remove=False
     ):
 
     inputs = [input] if input else [target_file]
@@ -70,7 +71,7 @@ ln -s -f \\
             target_file=target_file,
             link=link
         ),
-        removable_files=[link]
+        removable_files=[link] if remove else []
     )
 
 def mv(

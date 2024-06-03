@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -23,28 +23,40 @@
 from core.config import *
 from core.job import *
 
-def index(input):
+def index(
+        input,
+        ini_section='samtools_index'
+):
+    output = [re.sub(r'\b(bam|cram)\b',
+                      lambda match: match.group() + (".bai" if match.group() == "bam" else ".crai"),
+                      input)]
 
     return Job(
         [input],
-        [input + ".bai"],
+        output,
         [
-            ['samtools_index', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools index \\
+  {options} \\
   {input}""".format(
+            options=config.param(ini_section, 'options'),
             input=input
             )
         )
 
-def faidx(input, filter=None):
+def faidx(
+        input,
+        filter=None,
+        ini_section='samtools_faidx'
+):
 
     return Job(
         [input],
         [input + ".fai"],
         [
-            ['samtools_index', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools faidx \\
@@ -55,26 +67,37 @@ samtools faidx \\
             )
         )
 
-def flagstat(input, output):
+def flagstat(
+        input,
+        output,
+        ini_section='samtools_flagstat'
+):
 
     return Job(
         [input],
         [output],
         [
-            ['samtools_flagstat', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
-samtools flagstat \\
+samtools flagstat {other_options} \\
+  {threads} \\
   {input} \\
   > {output}""".format(
+            other_options=config.param(ini_section, 'other_options') if config.param(ini_section, 'other_options') else "",
+            threads="--threads " + config.param(ini_section, 'threads'),
             input=input,
             output=output
-            ),
-        removable_files=[output]
+            )
         )
 
-def mpileup(inputs, output, other_options=None, region=None, regionFile=None, ini_section='rawmpileup'):
-
+def mpileup(
+        inputs,
+        output,
+        region=None,
+        regionFile=None,
+        ini_section='rawmpileup'
+):
     if not isinstance(inputs, list):
         inputs = [inputs]
 
@@ -91,36 +114,52 @@ samtools mpileup {other_options} \\
   {regionFile} \\
   {input_bams} \\
   {output}""".format(
-            other_options=other_options,
-            reference_fasta="-f " + config.param('samtools_mpileup', 'genome_fasta', param_type='filepath') if config.param('samtools_mpileup', 'genome_fasta', param_type='filepath') else "",
-            region="-r " + region if region else "",
-            regionFile="-l " + regionFile if regionFile else "",
-            input_bams=" \\\n  ".join([input_bam for input_bam in inputs]),
-            output="> " + output if output else ""
+            other_options = config.param(ini_section, 'mpileup_other_options'),
+            reference_fasta = "-f " + config.param(ini_section, 'genome_fasta', param_type='filepath') if config.param(ini_section, 'genome_fasta', param_type='filepath') else "",
+            region = "-r " + region if region else "",
+            regionFile = "-l " + regionFile if regionFile else "",
+            input_bams = " \\\n  ".join([input_bam for input_bam in inputs]),
+            output = "> " + output if output else ""
             )
         )
 
-def merge(sample_output, input_bams):
+def merge(
+        sample_output,
+        input_bams,
+        ini_section='hicup_align'
+):
     """
     merges an array of bams into a single bam
     """
-
+    postfix = sample_output.split('.')[-1].upper()
+    
     return Job(
         input_bams,
         [sample_output],
         [
-            ['hicup_align', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
-samtools merge \\
-  {sample_output} \\
+samtools merge -f --write-index \\
+  --output-fmt {output_format} \\
+  {threads} \\
+  -o {sample_output} \\
   {input_bams}""".format(
+            output_format=postfix,
+            threads="--threads " + config.param(ini_section, 'threads'),
             sample_output=sample_output,
-            input_bams=" ".join(map(str.strip, input_bams))
+            input_bams="".join([" \\\n  " + input_bam for input_bam in input_bams]),
         )
     )
 
-def bcftools_mpileup(inputs, output, options, region=None, regionFile=None, ini_section='rawmpileup'):
+def bcftools_mpileup(
+        inputs,
+        output,
+        options,
+        region=None,
+        regionFile=None,
+        ini_section='rawmpileup'
+):
 
     return Job(
         inputs,
@@ -140,34 +179,48 @@ bcftools mpileup {options} \\
          )
     )
 
-def sort(input_bam, output_prefix, sort_by_name=False):
-    output_bam = output_prefix + ".bam"
+def sort(
+        input,
+        output,
+        sort_by_name=False,
+        ini_section='samtools_sort'
+):
+    
     return Job(
-        [input_bam],
-        [output_bam],
+        [input],
+        [output],
         [
-            ['samtools_sort', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools sort \\
   {other_options} {sort_by_name} \\
-  {input_bam} \\
-  {output_prefix}""".format(
-            other_options=config.param('samtools_sort', 'other_options', required=False),
+  {reference} \\
+  {tmp_dir} \\
+  {output_prefix} \\
+  {input_bam}""".format(
+            other_options=config.param(ini_section, 'other_options', required=False),
             sort_by_name="-n " if sort_by_name else " ",
-            input_bam=input_bam,
-            output_prefix=output_prefix if config.param('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_bam
+            tmp_dir="-T " + config.param(ini_section, 'tmp_dir'),
+            reference="--reference " + config.param(ini_section, 'genome_fasta'),
+            input_bam=input,
+            output_prefix="-o " + output
             ),
-        removable_files=[output_bam]
         )
 
-def view(input, output=None, options="", removable=True):
+def view(
+        input,
+        output=None,
+        options="",
+        removable=False,
+        ini_section='samtools_view'
+):
 
     return Job(
         [input],
         [output],
         [
-            ['samtools_view', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools view \\
@@ -181,13 +234,18 @@ samtools view \\
         removable_files=[output if removable else ""]
     )
 
-def fixmate(input, output=None, options=""):
+def fixmate(
+        input,
+        output=None,
+        options="",
+        ini_section='samtools_fixmate'
+):
 
     return Job(
         [input],
         [output],
         [
-            ['samtools_fixmate', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools fixmate \\
@@ -200,7 +258,11 @@ samtools fixmate \\
             )
         )
 
-def bcftools_cat(inputs, output):
+def bcftools_cat(
+        inputs,
+        output,
+        ini_section='samtools_cat'
+):
 
     if not isinstance(inputs, list):
         inputs = [inputs]
@@ -209,7 +271,7 @@ def bcftools_cat(inputs, output):
         inputs,
         [output],
         [
-            ['bcftools_cat', 'module_bcftools']
+            [ini_section, 'module_bcftools']
         ],
         command="""\
 bcftools concat \\
@@ -220,13 +282,19 @@ bcftools concat \\
             )
         )
 
-def bcftools_view(input, output, options="", pair_calling=False):
+def bcftools_view(
+        input,
+        output,
+        options="",
+        pair_calling=False,
+        ini_section='samtools_view'
+):
 
     return Job(
         [input],
         [output],
         [
-            ['bcftools_view', 'module_bcftools']
+            [ini_section, 'module_bcftools']
         ],
         command="""\
 bcftools view \\
@@ -240,13 +308,19 @@ bcftools view \\
             )
         )
 
-def bcftools_call(input, output, options="", pair_calling=False):
+def bcftools_call(
+        input,
+        output,
+        options="",
+        pair_calling=False,
+        ini_section='samtools_call'
+):
 
     return Job(
         [input],
         [output],
         [
-            ['bcftools_call', 'module_bcftools']
+            [ini_section, 'module_bcftools']
         ],
         command="""\
 bcftools call \\
@@ -260,13 +334,19 @@ bcftools call \\
             )
         )
 
-def bcftools_call_pair(input, output, options="", pair_calling=False):
+def bcftools_call_pair(
+        input,
+        output,
+        options="",
+        pair_calling=False,
+        ini_section='samtools_paired'
+):
 
     return Job(
         [input],
         [output],
         [
-            ['samtools_paired', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 $BCFTOOLS_BIN/bcftools view \\
@@ -280,7 +360,11 @@ $BCFTOOLS_BIN/bcftools view \\
             )
         )
 
-def bcftools_cat_pair(inputs, output):
+def bcftools_cat_pair(
+        inputs,
+        output,
+        ini_section='samtools_paired'
+):
 
     if not isinstance(inputs, list):
         inputs = [inputs]
@@ -289,7 +373,7 @@ def bcftools_cat_pair(inputs, output):
         inputs,
         [output],
         [
-            ['samtools_paired', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 $BCFTOOLS_BIN/bcftools cat \\
@@ -300,13 +384,19 @@ $BCFTOOLS_BIN/bcftools cat \\
             )
         )
 
-def bcftools_view_pair(input, output, options="", pair_calling=False):
+def bcftools_view_pair(
+        input,
+        output,
+        options="",
+        pair_calling=False,
+        ini_section='samtools_paired'
+):
 
     return Job(
         [input],
         [output],
         [
-            ['samtools_paired', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 $BCFTOOLS_BIN/bcftools view \\
@@ -321,13 +411,19 @@ $BCFTOOLS_BIN/bcftools view \\
         )
 
 
-def mapped_count(bam, output=None, bed=None, options=None):
+def mapped_count(
+        bam,
+        output=None,
+        bed=None,
+        options=None,
+        ini_section='samtools_count'
+):
 
     return Job(
         [bam],
         [output],
         [
-            ['samtools_count', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools view -F4 {options} -c \\
@@ -339,10 +435,16 @@ samtools view -F4 {options} -c \\
             output="> " + output if output else " ",
             target_option="-L " + bed if bed else " "
             ),
-        removable_files=[output]
         )
 
-def bam2fq(input_bam, output_pair1, output_pair2, output_other, output_single, ini_section='samtools_bam2fq'):
+def bam2fq(
+        input_bam,
+        output_pair1,
+        output_pair2,
+        output_other,
+        output_single,
+        ini_section='samtools_bam2fq'
+):
     if output_pair2:  # Paired end reads
         outputs = [output_pair1, output_pair2, output_other, output_single]
     else:   # Single end reads
@@ -369,13 +471,18 @@ samtools bam2fq {other_options} \\
       )
         )
 
-def quickcheck(input, output=None, options=None):
+def quickcheck(
+        input,
+        output=None,
+        options=None,
+        ini_section='samtools'
+):
 
     return Job(
             [input],
             [output],
             [
-                ['samtools', 'module_samtools'],
+                [ini_section, 'module_samtools'],
             ],
             command="""\
 samtools quickcheck {options} \\

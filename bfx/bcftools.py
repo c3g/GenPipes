@@ -301,9 +301,10 @@ def split(input, output, options, ini_section='bcftools_split'):
     """
     split vcf by sample
     """
+    
     return Job(
         [input],
-        [output],
+        output,
         [
             [ini_section, 'module_bcftools']
         ],

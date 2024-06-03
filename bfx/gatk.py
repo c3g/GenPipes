@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -30,7 +30,6 @@ from . import picard
 from . import picard2
 
 config = core.config.config
-
 def base_recalibrator(input, output, intervals):
     if intervals:
         inputs = [input, intervals]
@@ -227,31 +226,23 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
 
 def haplotype_caller(
-    inputs,
+    input,
     output,
-    intervals=[],
-    exclude_intervals=[],
-    interval_list=None
+    interval_list
     ):
     interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
-    if not isinstance(inputs, list):
-        inputs = [inputs]
-
-    inputs_list = inputs.copy()
-    if not interval_list is None:
-       inputs_list.extend([interval_list])
+    if not isinstance(input, list):
+        inputs = [input, interval_list]
 
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] >= "4":
         return gatk4.haplotype_caller(
             inputs,
             output,
-            intervals=intervals,
-            exclude_intervals=exclude_intervals,
             interval_list=interval_list
         )
     else:
         return Job(
-            inputs_list,
+            inputs,
             [output, output + ".tbi"],
             [
                 ['gatk_haplotype_caller', 'module_java'],
@@ -263,22 +254,21 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
-  --out {output}{interval_padding} {interval_list}{intervals}{exclude_intervals}""".format(
+  --out {output} \\
+{interval_list} {interval_padding}""".format(
             tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
             java_other_options=config.param('gatk_haplotype_caller', 'java_other_options'),
             ram=config.param('gatk_haplotype_caller', 'ram'),
             options=config.param('gatk_haplotype_caller', 'options'),
             reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
-            interval_list=" --intervals " + interval_list if interval_list else "",
+            interval_list="--intervals " + str(interval_list) if interval_list else "",
             interval_padding=" \\\n --interval_padding " + str(interval_padding) if interval_padding else "",
-            input=" \\\n  ".join(input for input in inputs),
+            input=input,
             output=output,
-            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
-def mutect(inputNormal, inputTumor, outputStats, outputVCF, intervals=[], exclude_intervals=[]):
+def mutect(inputNormal, inputTumor, outputStats, outputVCF):
     cosmic = config.param('gatk_mutect', 'cosmic', param_type='filepath', required=False)
     # if set add arg prefix
     if cosmic :
@@ -299,7 +289,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR 
   --input_file:normal {inputNormal} \\
   --input_file:tumor {inputTumor} \\
   --out {outputStats} \\
-  --vcf {outputVCF}{intervals}{exclude_intervals}""".format(
+  --vcf {outputVCF}""".format(
             tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
             java_other_options=config.param('gatk_mutect', 'java_other_options'),
             ram=config.param('gatk_mutect', 'ram'),
@@ -310,9 +300,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR 
             inputNormal=inputNormal,
             inputTumor=inputTumor,
             outputStats=outputStats,
-            outputVCF=outputVCF,
-            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+            outputVCF=outputVCF
         )
     )
 
@@ -357,7 +345,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
             inputNormal=inputNormal,
             inputTumor=inputTumor,
             outputVCF=outputVCF,
-            #interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
             interval_list=" \\\n  --intervals " + interval_list if interval_list else "",
             intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
             exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
@@ -595,7 +582,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         reference_sequence=config.param('gatk_variant_recalibrator', 'genome_fasta', param_type='filepath'),
         variants="".join(" \\\n  -input " + variant for variant in variants),
         other_options=other_options,
-        #tmp_dir="--TMP_DIR " + tmp_dir if tmp_dir else "",
         recal_output=recal_output,
         tranches_output=tranches_output,
         small_sample_option=small_sample_option,

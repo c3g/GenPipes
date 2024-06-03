@@ -24,45 +24,35 @@ import os
 from core.config import *
 from core.job import *
 
-
-def report(
-    input,
-    output_dir,
-    tumor_id,
-    ini_section ='report_cpsr'
-    ):
-
-    assembly = config.param(ini_section, 'assembly')
-    output = [
-        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
-        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html")
-    ]
-
-    if config.param(ini_section, 'module_pcgr').split("/")[2] >= "1":
-        call = 'cpsr'
-        module = 'module_pcgr'
-    else:
-        call = 'cpsr.py'
-        module = 'module_cpsr'
-
+def index(input):
     return Job(
         [input],
-        output,
-        [
-            [ini_section, module],
-        ],
+        [input + ".bwt.2bit.64"],
+        [['bwa_mem2', 'module_bwa2']],
         command="""\
-{call} {options} \\
-    --input_vcf {input} \\
-    --pcgr_dir $PCGR_DATA \\
-    --output_dir {output_dir} \\
-    --genome_assembly {assembly} \\
-    --sample_id {tumor_id}""".format(
-            call=call,
-            options=config.param(ini_section, 'options'),
-            input=input,
-            output_dir=output_dir,
-            assembly=config.param(ini_section, 'assembly'),
-            tumor_id=tumor_id
+bwa index \\
+  {input}""".format(
+      input=input
+      )
         )
+
+def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None, ini_section='bwa_mem2'):
+
+    return Job(
+        [in1fastq, in2fastq, ref + ".bwt.2bit.64" if ref else None],
+        [out_sam],
+        [[ini_section, "module_bwa2"]],
+        command="""\
+bwa-mem2 mem {other_options} \\
+  {read_group} \\
+  {idxbase} \\
+  {in1fastq}{in2fastq}{out_sam}""".format(
+          other_options=config.param(ini_section, 'bwa_other_options', required=False),
+          read_group=" \\\n  -R " + read_group if read_group else "",
+          idxbase=ref if ref else config.param(ini_section, 'genome_bwa2_index', param_type='filepath'),
+          in1fastq=in1fastq,
+          in2fastq=" \\\n  " + in2fastq if in2fastq else "",
+          out_sam=" \\\n  > " + out_sam if out_sam else ""
+        ),
+        removable_files=[out_sam]
     )

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -37,7 +37,8 @@ def run(
     sv_recovery=None,
     somatic_hotspots=None,
     germline_hotspots=None,
-    driver_gene_panel=None
+    driver_gene_panel=None,
+    ini_section='purple'
     ):
 
     amber_input = os.path.join(amber, tumor_name + ".amber.baf.pcf")
@@ -55,7 +56,11 @@ def run(
         input_files.append(structural_sv)
         input_files.append(sv_recovery)
         purple_sv = os.path.join(output_dir, tumor_name + ".purple.sv.vcf.gz")
+        driver_somatic = os.path.join(output_dir, tumor_name + ".driver.catalog.somatic.tsv")
+        driver_germline = os.path.join(output_dir, tumor_name + ".driver.catalog.germline.tsv")
         purple_outputs.append(purple_sv)
+        purple_outputs.append(driver_somatic)
+        purple_outputs.append(driver_germline)
 
     if structural_sv is not None:
         circos_plot = os.path.join(output_dir, "plot", tumor_name + ".circos.png")
@@ -65,17 +70,16 @@ def run(
         input_files,
         purple_outputs,
         [
-            ['purple', 'module_java'],
-            ['purple', 'module_R'],
-            ['purple', 'module_perl'],
-            ['purple', 'module_circos'],
-            ['purple', 'module_cobalt'],
-            ['purple', 'module_purple'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_R'],
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_circos'],
+            [ini_section, 'module_cobalt'],
+            [ini_section, 'module_purple'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR \\
   {other_options} \\
-  {run_drivers} \\
   -threads {threads} \\
   -ref_genome_version {reference_sequence_version} \\
   -ref_genome {reference_sequence} \\
@@ -87,48 +91,52 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
   -ensembl_data_dir {ensembl_data_dir} \\
   -somatic_vcf {somatic_snv} {structural_sv} {sv_recovery} {somatic_hotspots} {germline_hotspots} {driver_gene_panel} {circos} \\
   -output_dir {output_dir}""".format(
-            tmp_dir=config.param('purple', 'tmp_dir'),
-            java_other_options=config.param('purple', 'java_other_options'),
-            other_options=config.param('purple', 'other_options', required=False),
+            tmp_dir=config.param(ini_section, 'tmp_dir'),
+            java_other_options=config.param(ini_section, 'java_other_options'),
+            other_options=config.param(ini_section, 'other_options', required=False),
             run_drivers="\\\n  -run_drivers" if structural_sv else "",
-            threads=config.param('purple', 'threads'),
-            ram=config.param('purple', 'ram'),
-            gc_profile=config.param('purple', 'gc_profile'),
+            threads=config.param(ini_section, 'threads'),
+            ram=config.param(ini_section, 'ram'),
+            gc_profile=config.param(ini_section, 'gc_profile'),
             reference_sequence_version=config.param('DEFAULT', 'assembly_alias2'),
-            reference_sequence=config.param('purple', 'genome_fasta', param_type='filepath'),
+            reference_sequence=config.param(ini_section, 'genome_fasta', param_type='filepath'),
             reference=normal_name,
             tumor=tumor_name,
             amber=amber,
             cobalt=cobalt,
             ensembl_data_dir=ensembl_data_dir,
             somatic_snv=somatic_snv,
-            structural_sv=" \\\n  -structural_vcf " +  structural_sv if structural_sv else "",
+            structural_sv=" \\\n  -somatic_sv_vcf " +  structural_sv if structural_sv else "",
             sv_recovery=" \\\n  -sv_recovery_vcf " +  sv_recovery if sv_recovery else "",
             somatic_hotspots=" \\\n  -somatic_hotspots " + somatic_hotspots if somatic_hotspots else "",
             germline_hotspots=" \\\n  -germline_hotspots " + germline_hotspots if germline_hotspots else "",
             driver_gene_panel=" \\\n  -driver_gene_panel " + driver_gene_panel if driver_gene_panel else "",
-            circos="\\\n  -circos circos" if structural_sv else "",
+            circos="\\\n  -circos `which circos`" if structural_sv else "",   # full path to circos binary required
             output_dir=output_dir
         )
     )
 
-def strelka2_convert(input, output):
+def strelka2_convert(
+        input,
+        output,
+        ini_section='purple_convert_strelka2'
+):
 
     return Job(
         [input],
         [output],
         [
-            ['purple', 'module_java'],
-            ['purple', 'module_R'],
-            ['purple', 'module_purple'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_R'],
+            [ini_section, 'module_purple'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $PURPLE_JAR com.hartwig.hmftools.purple.tools.AnnotateStrelkaWithAllelicDepth \\
   -in {input} \\
   -out {output}""".format(
-            tmp_dir=config.param('purple', 'tmp_dir'),
-            java_other_options=config.param('purple', 'java_other_options'),
-            ram=config.param('purple', 'ram'),
+            tmp_dir=config.param(ini_section, 'tmp_dir'),
+            java_other_options=config.param(ini_section, 'java_other_options'),
+            ram=config.param(ini_section, 'ram'),
             input=input,
             output=output,
         )

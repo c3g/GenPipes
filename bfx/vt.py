@@ -23,7 +23,10 @@
 from core.config import *
 from core.job import *
 
-def decompose_and_normalize_mnps(inputs, vt_output=None):
+def decompose_and_normalize_mnps(
+        inputs,
+        vt_output=None
+):
     if not isinstance(inputs, list):
         inputs = [inputs]
 
@@ -43,7 +46,11 @@ zcat {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt n
         )
     )
 
-def sort(input, output, options):
+def sort(
+        input,
+        output,
+        options
+):
 
     return Job(
         [input],

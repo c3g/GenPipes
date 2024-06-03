@@ -23,12 +23,27 @@
 from core.config import *
 from core.job import *
 
-def compute_effects(input, output, split=False, cancer_sample_file=[], options=[], ini_section='compute_effects'):
-    output_stats = output + ".stats.csv"
-    output_stats_html = output + ".stats.html"
+def compute_effects(
+        input,
+        output,
+        split=False,
+        cancer_sample_file=None,
+        options=[],
+        ini_section='compute_effects'
+):
+    
+    output_stats = f"{output}.stats.csv"
+    output_stats_html = f"{output}.stats.html"
+    
+    outputs = []
+    if not isinstance(output, list):
+        outputs = [output]
+    
+    outputs += [output_stats, output_stats_html]
+    
     job = Job(
         [input],
-        [output, output_stats],
+        outputs,
         [
             ['compute_effects', 'module_java'],
             ['compute_effects', 'module_snpeff']
@@ -99,22 +114,22 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         removable_files=[output]
     )
 
-def snpsift_dbnsfp(input, output):
+def snpsift_dbnsfp(input, output, ini_section='dbnsfp_annotation'):
     return Job(
         [input],
         [output],
         [
-            ['snpsift_dbnsfp', 'module_java'],
-            ['snpsift_dbnsfp', 'module_snpeff']
+            [ ini_section, 'module_java'],
+            [ ini_section, 'module_snpeff']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar dbnsfp \\
   -v -db {db_nsfp} \\
   {input}{output}""".format(
-        tmp_dir=config.param('snpsift_dbnsfp', 'tmp_dir'),
-        java_other_options=config.param('snpsift_dbnsfp', 'java_other_options'),
-        ram=config.param('snpsift_dbnsfp', 'ram'),
-        db_nsfp=config.param('snpsift_dbnsfp', 'dbnsfp', param_type='filepath'),
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
+        db_nsfp=config.param(ini_section, 'dbnsfp', param_type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
         )

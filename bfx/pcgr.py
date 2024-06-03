@@ -25,7 +25,13 @@ from core.config import *
 from core.job import *
 
 
-def report(input_vcf, cpsr_report, output_dir, tumor_id, input_cna=None):
+def report(input_vcf,
+           cpsr_report,
+           output_dir,
+           tumor_id,
+           input_cna,
+           ini_section='report_pcgr'
+           ):
     
     if config.param('report_pcgr', 'module_pcgr').split("/")[2] >= "1":
         call = 'pcgr'
@@ -37,12 +43,18 @@ def report(input_vcf, cpsr_report, output_dir, tumor_id, input_cna=None):
     return Job(
         [
             input_vcf,
+            input_cna
         ],
         output_dir,
         [
-            ['report_pcgr', 'module_pcgr'],
+            [ini_section, 'module_pcgr'],
         ],
         command="""\
+if [ -e {input_cna}.pass ]; then
+    export input_cna="--input_cna {input_cna}"
+ else
+    export input_cna=""
+fi && \\
 {call} {options} \\
     {tumor_type} \\
     {assay} \\
@@ -53,25 +65,26 @@ def report(input_vcf, cpsr_report, output_dir, tumor_id, input_cna=None):
     {msi_options} \\
     --input_vcf {input_vcf} \\
     --cpsr_report {cpsr_report} \\
-    {input_cna} \\
+    $input_cna \\
     --pcgr_dir $PCGR_DATA \\
     --output_dir {output_dir} \\
     --genome_assembly {assembly} \\
     --sample_id {tumor_id}""".format(
             call=call,
-            options=config.param('report_pcgr', 'options'),
-            tumor_type=config.param('report_pcgr', 'tumor_type'),
-            assay=config.param('report_pcgr', 'assay'),
-            tumor_options=config.param('report_pcgr', 'tumor_options'),
-            normal_options=config.param('report_pcgr', 'normal_options'),
-            mutsig_options=config.param('report_pcgr', 'mutsig_options'),
-            tmb_options=config.param('report_pcgr', 'tmb_options'),
-            msi_options=config.param('report_pcgr', 'msi_options'),
+            options=config.param(ini_section, 'options'),
+            tumor_type=config.param(ini_section, 'tumor_type'),
+            assay=config.param(ini_section, 'assay'),
+            tumor_options=config.param(ini_section, 'tumor_options'),
+            normal_options=config.param(ini_section, 'normal_options'),
+            mutsig_options=config.param(ini_section, 'mutsig_options'),
+            tmb_options=config.param(ini_section, 'tmb_options'),
+            msi_options=config.param(ini_section, 'msi_options'),
             input_vcf=input_vcf,
             cpsr_report=cpsr_report,
-            input_cna=" \\\n --input_cna " + input_cna if input_cna else "",
+            input_cna=input_cna,
+            #input_cna=" \\\n    --input_cna " + input_cna if input_cna else "",
             output_dir=output_dir,
-            assembly=config.param('report_pcgr', 'assembly'),
+            assembly=config.param(ini_section, 'assembly'),
             tumor_id=tumor_id
         )
     )

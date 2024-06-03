@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -23,68 +23,86 @@
 from core.config import *
 from core.job import *
 
-def paired(input_normal, input_tumor, tumor_name, output=None, region=[]):
+def paired(
+        input_normal,
+        input_tumor,
+        tumor_name,
+        output=None,
+        region=[],
+        ini_section='vardict_paired'
+):
     return Job(
         [input_normal, input_tumor, region],
         [output],
         [
-        ['vardict_paired', 'module_vardict'],
-        ['vardict_paired', 'module_samtools'],
-        ['vardict_paired', 'module_perl'],
-        ['vardict_paired', 'module_R']
+        [ini_section, 'module_vardict'],
+        [ini_section, 'module_samtools'],
+        [ini_section, 'module_perl'],
+        [ini_section, 'module_R']
         ],
         command="""\
 vardict \\
-  -G {reference_fasta} \\
+  -G {reference} \\
   -N {tumor_name} \\
   -b "{paired_samples}" \\
   {vardict_options}{region}{output}""".format(
-        reference_fasta=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
+        reference=config.param(ini_section, 'genome_fasta', param_type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
-        vardict_options=config.param('vardict_paired', 'vardict_options'),
+        vardict_options=config.param(ini_section, 'vardict_options'),
         region=" \\\n  " + region if region else "",
         output=" \\\n  > " + output if output else ""
         )
     )
 
-def paired_java(input_normal, input_tumor, tumor_name, output=None, region=[]):
+def paired_java(
+        input_normal,
+        input_tumor,
+        tumor_name,
+        output=None,
+        region=[],
+        ini_section='vardict_paired'
+):
     return Job(
         [input_normal, input_tumor, region],
         [output],
         [
-        ['vardict_paired', 'module_java'],
-        ['vardict_paired', 'module_vardict_java'],
-        ['vardict_paired', 'module_samtools'],
-        ['vardict_paired', 'module_perl'],
-        ['vardict_paired', 'module_R']
+        [ini_section, 'module_java'],
+        [ini_section, 'module_vardict_java'],
+        [ini_section, 'module_samtools'],
+        [ini_section, 'module_perl'],
+        [ini_section, 'module_R']
         ],
         command="""\
 java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpath {classpath} \\
-  -G {reference_fasta} \\
+  -G {reference} \\
   -N {tumor_name} \\
   -b "{paired_samples}" \\
   {vardict_options}{region}{output}""".format(
-        tmp_dir=config.param('vardict_paired', 'tmp_dir'),
-        reference_fasta=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        reference=config.param(ini_section, 'genome_fasta', param_type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
-        java_other_options=config.param('vardict_paired', 'java_other_options'),
-        ram=config.param('vardict_paired', 'ram'),
-        classpath=config.param('vardict_paired', 'classpath'),
-        vardict_options=config.param('vardict_paired', 'vardict_options'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
+        classpath=config.param(ini_section, 'classpath'),
+        vardict_options=config.param(ini_section, 'vardict_options'),
         region=" \\\n  " + region if region else "",
         output=" \\\n  > " + output if output else ""
         )
     )
 
-def testsomatic(input=None, output=None):
+def testsomatic(
+        input=None,
+        output=None,
+        ini_section='vardict_paired'
+):
     return Job(
         [input],
         [output],
         [
-        ['vardict_paired', 'module_vardict_java'],
-        ['vardict_paired', 'module_R']
+        [ini_section, 'module_vardict_java'],
+        [ini_section, 'module_R']
         ],
         command="""\
 $VARDICT_BIN/testsomatic.R {input} {output}""".format(
@@ -94,40 +112,50 @@ $VARDICT_BIN/testsomatic.R {input} {output}""".format(
     )
 
 
-def var2vcf(output, normal_name, tumor_name, input=None):
+def var2vcf(
+        output,
+        normal_name,
+        tumor_name,
+        input=None,
+        ini_section='vardict_paired'
+):
     return Job(
         [input],
         [output],
         [
-        ['vardict_paired', 'module_vardict_java'],
-        ['vardict_paired', 'module_perl']
+        [ini_section, 'module_vardict_java'],
+        [ini_section, 'module_perl']
         ],
         command="""\
 perl $VARDICT_BIN/var2vcf_paired.pl \\
     -N "{pairNames}" \\
     {var2vcf_options}{input}{output}""".format(
         pairNames=tumor_name + "|" + normal_name,
-        var2vcf_options=config.param('vardict_paired', 'var2vcf_options'),
+        var2vcf_options=config.param(ini_section, 'var2vcf_options'),
         input=" \\\n " + input if input else "",
         output=" \\\n  > " + output if output else ""
         )
     )
 
-def dict2beds(dictionary,beds):
+def dict2beds(
+        dictionary,
+        beds,
+        ini_section='vardict_paired'
+):
     return Job(
         [dictionary],
         beds,
         [
-            ['vardict_paired', 'module_mugqic_tools'],
-            ['vardict_paired', 'module_python']
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_python']
         ],
         command="""\
 dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds} {dict2bed_options}""".format(
-        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', param_type='filepath'),
+        dictionary=dictionary if dictionary else config.param(ini_section, 'genome_dictionary', param_type='filepath'),
         beds=' '.join(beds),
-        dict2bed_options=config.param('vardict_paired', 'dict2bed_options')
+        dict2bed_options=config.param(ini_section, 'dict2bed_options')
         )
     )
 

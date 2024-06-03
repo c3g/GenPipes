@@ -483,6 +483,7 @@ class Pipeline:
                 log.debug(f"Job name: {job.name}")
                 log.debug(f"Job input files:\n  {nl.join(job.input_files)}")
                 log.debug(f"Job output files:\n  {nl.join(job.output_files)}\n")
+                #log.debug(f"Job removable files:\n  {nl.join(job.removable_files)}\n")
 
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.

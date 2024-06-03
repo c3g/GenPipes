@@ -67,7 +67,7 @@ cnvkit.py batch {options} \\
             target_bed="--targets " + target_bed if target_bed else "",
             output_cnn="--output-reference " + output_cnn if output_cnn else "",
             outdir=outdir,
-            normal_bam=normal_bam,
+            normal_bam=normal_bam if normal_bam else "",
             tumor_bam=tumor_bam if tumor_bam else "",
         )
     )
@@ -322,3 +322,22 @@ def read_metrics_file(in_file):
         header = next(in_handle).strip().split("\t")[1:]
         vals = map(float, next(in_handle).strip().split("\t")[1:])
     return dict(zip(header, vals))
+
+def file_check(
+        input,
+        output
+):
+    return Job(
+        [input],
+        [output],
+        [
+        ],
+        command="""\
+`line_count=$(wc -l < {input})
+if [ "$line_count" -gt 1 ]; then
+    touch {output}
+fi`""".format(
+            input=input,
+            output=output,
+        )
+    )
