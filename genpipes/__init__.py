@@ -17,16 +17,12 @@ PIPELINES = [
 "ChipSeq",
 "CoVSeq",
 "DnaSeq",
-"DnaSeq_High_Coverage",
-"EpiQC",
-"HicSeq",
 "MethylSeq",
 "Nanopore",
 "Nanopore_CoVSeq",
 "RnaSeq",
 "RnaSeq_DeNovo_Assembly",
-"RnaSeq_Light",
-"Tumor_Pair",
+"RnaSeq_Light"
 ]
 
 __VERSION__ = "5.0.0"
