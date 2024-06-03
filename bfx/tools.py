@@ -246,17 +246,13 @@ $PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
 
 def dict2beds(
         dictionary,
-        beds,
+        bed,
         ini_section='py_processIntervals'
         ):
-    
-    inputs = []
-    if not isinstance(beds, list):
-        inputs = [beds]
-    
+        
     return Job(
         [dictionary],
-        inputs,
+        [bed],
         [
             [ini_section, 'module_mugqic_tools'],
             [ini_section, 'module_python']
@@ -264,11 +260,11 @@ def dict2beds(
         command="""\
 python3 $PYTHON_TOOLS/dict2BEDs.py \\
   --dict {dictionary} \\
-  --beds {beds}{chunk}{overlap}""".format(
+  --beds {bed}{chunk}{overlap}""".format(
             dictionary=dictionary if dictionary else config.param(ini_section, 'genome_dictionary', param_type='filepath'),
             chunk=" --chunk " + config.param(ini_section, 'chunk') if config.param(ini_section, 'chunk') else "",
             overlap=" --overlap " + config.param(ini_section, 'overlap') if config.param(ini_section, 'overlap') else "",
-            beds=' '.join(inputs)
+            bed=bed
         )
     )
 
