@@ -19,6 +19,7 @@
 
 # Python Standard Modules
 import os
+import re
 
 # MUGQIC Modules
 from ..core.config import global_conf
