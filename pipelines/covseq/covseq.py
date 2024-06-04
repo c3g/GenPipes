@@ -976,7 +976,6 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                                 samtools.mpileup(
                                     input_bam,
                                     output=None,
-                                    other_options=config.param('ivar_call_variants', 'mpileup_options'),
                                     region=None,
                                     regionFile=None,
                                     ini_section='ivar_call_variants'
@@ -1183,7 +1182,6 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                                 samtools.mpileup(
                                     input_bam,
                                     output=None,
-                                    other_options=config.param('ivar_create_consensus', 'mpileup_options'),
                                     region=None,
                                     regionFile=None,
                                     ini_section='ivar_create_consensus'
