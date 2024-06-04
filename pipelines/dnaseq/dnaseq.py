@@ -4102,7 +4102,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ]
             )
 
-            isize_file = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "picard_metrics.all.metrics.insert_size_metrics")
+            isize_file = os.path.join(self.output_dirs['metrics_directory'], sample.name, sample.name + ".all.metrics.insert_size_metrics")
             gatk_vcf = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.vcf.gz")
             gatk_pass = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.flt.vcf.gz")
             lumpy_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
