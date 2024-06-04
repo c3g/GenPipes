@@ -468,6 +468,8 @@ def haplotype_caller(
     input,
     output,
     interval_list,
+    intervals=None,
+    exclude_intervals=None,
     ini_section='gatk_haplotype_caller'
     ):
 
@@ -504,7 +506,7 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
   --reference {reference_sequence} \\
   --input {input} \\
   --output {output} \\
-  {interval_list} {interval_padding}""".format(
+  {interval_list} {interval_padding}{intervals}{exclude_intervals}""".format(
                 tmp_dir=config.param(ini_section, 'tmp_dir'),
                 java_other_options=config.param(ini_section, 'gatk_java_options'),
                 ram=config.param(ini_section, 'ram'),
@@ -514,7 +516,9 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
                 interval_list="--intervals " + str(interval_list) if interval_list else "",
                 interval_padding=" \\\n --interval-padding " + str(interval_padding)  if interval_padding else "",
                 input=input,
-                output=output
+                output=output,
+                intervals="".join(" \\\n  --intervals " + interval for interval in intervals) if intervals else "",
+                exclude_intervals="".join(" \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals) if exclude_intervals else ""
             )
         )
 
