@@ -1704,15 +1704,13 @@ pandoc \\
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
         for sample in self.samples:
-            temp_dir = os.path.join(self.output_dirs["alignment_directory"])
             input_file_prefix = os.path.join(temp_dir, sample.name, sample.name)
 
             job = concat_jobs(
                 [
                     gemini.gemini_annotations(
                         input_file_prefix + ".hc.snpeff.vcf.gz",
-                        input_file_prefix + ".gemini." + gemini_version + ".db",
-                        temp_dir
+                        input_file_prefix + ".gemini." + gemini_version + ".db"
                     )
                 ],
                 name="gemini_annotations." + sample.name,
@@ -1903,7 +1901,8 @@ pandoc \\
                             input,
                             input_cpsr,
                             pcgr_directory,
-                            sample.name
+                            sample.name,
+                            input_cna=None
                         ),
                         final_command
                     ],
