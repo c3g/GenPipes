@@ -1448,7 +1448,8 @@ pandoc \\
                         bash.mkdir(haplotype_directory),
                         gatk4.haplotype_caller(
                             input,
-                            os.path.join(haplotype_directory, sample.name + ".hc.vcf.gz")
+                            os.path.join(haplotype_directory, sample.name + ".hc.vcf.gz"),
+                            interval_list=None
                         )
                     ],
                     removable_files=[haplotype_directory],
