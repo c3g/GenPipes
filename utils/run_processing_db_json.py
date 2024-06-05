@@ -156,91 +156,99 @@ platform.""".format(
 
     @property
     def patient(self):
-        if self.is_same_value_between_jsons("readsets"):
-            list_of_dict = list()
-            for json_path in self._json_dict.keys():
-                for rdst in self._json_dict[json_path]["readsets"]:
-                    list_of_dict.append(
-                        {"patient_fms_id": None,
-                         "patient_name": (self._json_dict
-                                          [json_path]
-                                          ["readsets"]
-                                          [rdst]
-                                          ["sample_name"]),
-                         "patient_cohort": None,
-                         "patient_institution": None,
-                         "sample":[
-                             {"sample_fms_id": (self._json_dict
+#        if self.is_same_value_between_jsons("readsets"):
+        # TODO Cases where same patients/samples accross lanes to be reviewed
+        list_of_dict = list()
+        for json_path in self._json_dict.keys():
+            for rdst in self._json_dict[json_path]["readsets"]:
+                runinfo_sample = [self._runinfo_dict["samples"][i] for i, sample in enumerate(self._runinfo_dict["samples"]) if self._runinfo_dict["samples"][i]["sample_name"] == self._json_dict[json_path]["readsets"][rdst]["sample_name"]][0] #TODO Unacceptably complex
+                list_of_dict.append(
+                    {"patient_fms_id": None,
+                     "patient_name": (self._json_dict
+                                      [json_path]
+                                      ["readsets"]
+                                      [rdst]
+                                      ["sample_name"]),
+                     "patient_cohort": None,
+                     "patient_institution": None,
+                     "sample":[
+                         {"sample_fms_id": (self._json_dict
+                                            [json_path]
+                                            ["readsets"]
+                                            [rdst]
+                                            ["derived_sample_obj_id"]),
+                          "sample_name": rdst,
+                          "sample_tumour": None,
+                          "readset":[
+                              {"experiment_sequencing_technology": None,
+                               "experiment_type": (self._json_dict
+                                                   [json_path]
+                                                   ["readsets"]
+                                                   [rdst]
+                                                   ["library_type"]),
+                               "experiment_nucleic_acid_type": None, #TODO
+                               "experiment_library_kit": (runinfo_sample
+                                                          ["library_kit"]),
+                               "experiment_kit_expiration_date": None,
+                               "readset_name": "".join([
+                                   rdst,
+                                   ".",
+                                   self._json_dict[json_path]["run"],
+                                   "_",
+                                   self._json_dict[json_path]["lane"],
+                                   ]),
+                               "readset_lane": (self._json_dict
                                                 [json_path]
-                                                ["readsets"]
-                                                [rdst]
-                                                ["derived_sample_obj_id"]),
-                              "sample_name": rdst,
-                              "sample_tumour": None,
-                              "readset":[
-                                  {"experiment_sequencing_technology": None,
-                                   "experiment_type": (self._json_dict
-                                                       [json_path]
-                                                       ["readsets"]
-                                                       [rdst]
-                                                       ["library_type"]),
-                                   "experiment_nucleic_acid_type": None, #TODO
-                                   "experiment_library_kit": None,
-                                   "experiment_kit_expiration_date": None,
-                                   "readset_name": "".join([
-                                       rdst,
-                                       ".",
-                                       self._json_dict[json_path]["run"],
-                                       "_",
-                                       self._json_dict[json_path]["lane"],
-                                       ]),
-                                   "readset_lane": (self._json_dict
+                                                ["lane"]),
+                               "readset_index_name": (self._json_dict
+                                                      [json_path]
+                                                      ["readsets"]
+                                                      [rdst]
+                                                      ["barcodes"][0]
+                                                      ["INDEX_NAME"]),
+                               "readset_index1": (self._json_dict
+                                                  [json_path]
+                                                  ["readsets"]
+                                                  [rdst]
+                                                  ["barcodes"][0]
+                                                  ["INDEX1"]),
+                               "readset_index2": (self._json_dict
+                                                  [json_path]
+                                                  ["readsets"]
+                                                  [rdst]
+                                                  ["barcodes"][0]
+                                                  ["INDEX2"]),
+                               "readset_adapteri7": (self._json_dict
                                                     [json_path]
-                                                    ["lane"]),
-                                   "readset_index_name": (self._json_dict
-                                                          [json_path]
-                                                          ["readsets"]
-                                                          [rdst]
-                                                          ["barcodes"][0]
-                                                          ["INDEX_NAME"]),
-                                   "readset_index1": (self._json_dict
-                                                      [json_path]
-                                                      ["readsets"]
-                                                      [rdst]
-                                                      ["barcodes"][0]
-                                                      ["INDEX1"]),
-                                   "readset_index2": (self._json_dict
-                                                      [json_path]
-                                                      ["readsets"]
-                                                      [rdst]
-                                                      ["barcodes"][0]
-                                                      ["INDEX2"]),
-                                   "readset_adapteri7": (self._json_dict
-                                                        [json_path]
-                                                        ["readsets"]
-                                                        [rdst]
-                                                        ["barcodes"][0]
-                                                        ["ADAPTERi7"]),
-                                   "readset_adapteri5": (self._json_dict
-                                                        [json_path]
-                                                        ["readsets"]
-                                                        [rdst]
-                                                        ["barcodes"][0]
-                                                        ["ADAPTERi5"]),
-                                   "readset_barcode": (self._json_dict
-                                                       [json_path]
-                                                       ["readsets"]
-                                                       [rdst]
-                                                       ["barcodes"][0]
-                                                       ["BARCODE_SEQUENCE"]),
-                                   "readset_sequencing_type": None, #TODO
-                                   "readset_quality_offset": None, #TODO
-                                   "file": self.return_files(json_path, rdst)
-                                   }]
-                              }]
-                        } 
-                    )
-            return list_of_dict
+                                                    ["readsets"]
+                                                    [rdst]
+                                                    ["barcodes"][0]
+                                                    ["ADAPTERi7"]),
+                               "readset_adapteri5": (self._json_dict
+                                                    [json_path]
+                                                    ["readsets"]
+                                                    [rdst]
+                                                    ["barcodes"][0]
+                                                    ["ADAPTERi5"]),
+                               "readset_barcode": (self._json_dict
+                                                   [json_path]
+                                                   ["readsets"]
+                                                   [rdst]
+                                                   ["barcodes"][0]
+                                                   ["BARCODE_SEQUENCE"]),
+                               "readset_sequencing_type": (self._json_dict
+                                                           [json_path]
+                                                           ["sequencing_method"]),
+                               "readset_quality_offset": None, #TODO
+                               "file": self.return_files(json_path,
+                                                         rdst),
+                               "metric": self.return_metrics(json_path,
+                                                             rdst),
+                               }]
+                          }]
+                    } 
+                )
+        return list_of_dict
 
     #@property
     #def readset(self):
@@ -270,28 +278,64 @@ from a single run".format(
                 ))
 
     def return_files(self, json_path, rdst):
+        filetype = ["fastq_1","fastq_2","bam","bai"]
         files = []
-        if self._json_dict[json_path]["readsets"][rdst]["fastq_1"]["final_path"]:
-            files.append({"location_uri": "/".join(["abacus:",
-                                                    "","",
-                                                    (self._json_dict
-                                                     [json_path]
-                                                     ["readsets"]
-                                                     [rdst]
-                                                     ["fastq_1"]
-                                                     ["final_path"]
-                                                     ).lstrip("/"),
-                                                    ]),
-                          "file_name": os.path.basename((self._json_dict
+        for ftype in filetype:
+            if self._json_dict[json_path]["readsets"][rdst][ftype]["final_path"]:
+                files.append({"location_uri": "/".join(["abacus:",
+                                                        "","",
+                                                        (self._json_dict
                                                          [json_path]
                                                          ["readsets"]
                                                          [rdst]
-                                                         ["fastq_1"]
-                                                         ["final_path"]),
-                                                        ),
-                          "file_deliverable": None, #TODO
-                          })
+                                                         [ftype]
+                                                         ["final_path"]
+                                                         ).lstrip("/"),
+                                                        ]),
+                              "file_name": os.path.basename((self._json_dict
+                                                             [json_path]
+                                                             ["readsets"]
+                                                             [rdst]
+                                                             [ftype]
+                                                             ["final_path"]),
+                                                            ),
+                              "file_deliverable": False, #TODO
+                              })
         return files
+
+    def return_metrics(self, json_path, rdst):
+        metric_matches = {"raw_read_counts": ["qc", "nb_reads"],
+                          "raw_duplication_rate": ["qc", "duplicate_rate"],
+                          "raw_median_insert_size": [None, None], #TODO to be added to run_validation
+                          "raw_mean_insert_size": [None, None], #TODO could be "average_aligned_insert_size"
+                          "raw_mean_coverage": ["alignment", "mean_coverage"]
+                          }
+        metrics = []
+        for db_key, run_v_key in metric_matches.items():
+            for run_v in self._json_dict[json_path]["run_validation"]:
+                if run_v["sample"] == rdst \
+                  and run_v_key[0] \
+                  and run_v[run_v_key[0]][run_v_key[1]] != None:
+                    metrics.append({"metric_name": db_key,
+                                    "metric_value": (run_v
+                                                     [run_v_key[0]]
+                                                     [run_v_key[1]]
+                                                     ),
+                                    "metric_flag": "MISSING",
+                                    })
+                elif run_v["sample"] == rdst \
+                  and not run_v_key[0]:
+                    metrics.append({"metric_name": db_key,
+                                    "metric_value": None,
+                                    "metric_flag": "MISSING",
+                                    })
+                elif run_v["sample"] == rdst \
+                  and run_v[run_v_key[0]][run_v_key[1]] == None:
+                    metrics.append({"metric_name": db_key,
+                                    "metric_value": None,
+                                    "metric_flag": "MISSING",
+                                    })
+        return metrics
 
 def main():
     args = arg_parse()
