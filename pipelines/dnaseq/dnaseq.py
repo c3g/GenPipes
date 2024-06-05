@@ -4933,14 +4933,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")],
-                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")],
-                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
                 ]
             )
             manta_somatic_output = os.path.join(manta_directory, "results/variants/somaticSV.vcf.gz")
