@@ -88,7 +88,7 @@ def trim(
         outputs = [output1, output_json_path, output_html_path]
 
     num_threads = config.param(ini_section, 'threads', required=False, param_type='posint')
-    paramters = config.param(ini_section, 'options', required=False)
+    parameters = config.param(ini_section, 'options', required=False)
 
     return Job(
         inputs,
@@ -107,7 +107,7 @@ fastp -V \\
   {cpus} \\
   {json} \\
   {html}""".format(
-            options = "  "                  + paramters,
+            options = "  "                  + parameters,
             adapter = "  --adapter_fasta "  + adapter,
             rds1 = "  --in1 "               + input1,
             rds2 = "  --in2 "               + input2 if input2 else "",
