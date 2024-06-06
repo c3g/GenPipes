@@ -3743,14 +3743,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
                 [inputNormal] = self.select_input_files(
                     [
-                        [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")],
-                        [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")]
+                        [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                        [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")]
                     ]
                 )
                 [inputTumor] = self.select_input_files(
                     [
-                        [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")],
-                        [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")]
+                        [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                        [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")]
                     ]
                 )
                 
