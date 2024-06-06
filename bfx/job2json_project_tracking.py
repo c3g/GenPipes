@@ -29,13 +29,6 @@ def run(input_file, pipeline, samples, readsets, job_name, metrics):
     """
     Calls job2json_project_tracking within jobs to update metrics
     """
-    pipeline_output_dir = pipeline.output_dir
-    json_folder = os.path.join(pipeline_output_dir, "json")
-    timestamp = pipeline.timestamp
-    try:
-        json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{timestamp}.json")
-    except AttributeError:
-        json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}_{timestamp}.json")
 
     return Job(
         [input_file],
@@ -47,7 +40,7 @@ module load {module_python}
   -s {samples} \\
   -r {readsets} \\
   -j {job_name} \\
-  -o {json_outfile} \\
+  -o $PT_JSON_OUTFILE \\
   -m {metrics}
 module unload {module_python}""".format(
     module_python=config.param('DEFAULT', 'module_python'),
@@ -55,7 +48,6 @@ module unload {module_python}""".format(
     samples=samples,
     readsets=readsets,
     job_name=job_name,
-    metrics=metrics,
-    json_outfile=json_outfile
+    metrics=metrics
     )
   )

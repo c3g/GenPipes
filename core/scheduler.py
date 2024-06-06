@@ -363,6 +363,7 @@ module load {module_python}
   -j \\"{job_name}\\" \\{metrics}
   -o \\"{json_outfile}\\" \\
   -f {status}
+export PT_JSON_OUTFILE=\\"{json_outfile}\\"
 module unload {module_python} {command_separator}
 """.format(
             module_python=config.param('DEFAULT', 'module_python'),
