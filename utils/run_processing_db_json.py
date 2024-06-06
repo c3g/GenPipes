@@ -17,8 +17,8 @@ def arg_parse():
     """
     parser = argparse.ArgumentParser(
         prog=os.path.basename(__file__),
-        description="Aggregate database information in json format following \
-                     successful run processing",
+        description=("Aggregate database information in json format following "
+                     "successful run processing"),
         )
     parser.add_argument(
         "runinfofile",
@@ -109,13 +109,13 @@ class database_json(object):
     def operation_platform(self):
         platform = self._args.platform
         if not re.search(self._args.platform, os.uname()[1]):
-            LOGGER.warning("""Operation platform supplied is \
-\"{platform}\", but running from a different hostname \"{host}\". The \
-specified platform will be used but it is recommended to run on the same \
-platform.""".format(
-                    platform=platform,
-                    host=os.uname()[1])
-                )
+            LOGGER.warning(inspect.cleandoc(
+                "Operation platform supplied is \"{platform}\", but running "
+                "from a different hostname \"{host}\". The specified platform "
+                "will be used but it is recommended to run on the same "
+                "platform.".format(platform=platform,
+                                   host=os.uname()[1])
+                ))
         return platform
 
     @property
@@ -132,8 +132,55 @@ platform.""".format(
             return self._json_dict[sorted(self._json_dict)[0]]["run_obj_id"]
 
     @property
-    def run_name(self): #TODO complete here, validate against folder?
+    def run_name(self):
         if self.is_same_value_between_jsons("run"):
+            return self._runinfo_dict["run_name"]
+
+    @property
+    def run_folder(self): #TODO complete here, validate against folder?
+        if self.is_same_value_between_jsons("run"):
+            print([re.search("".join([
+                datetime.strftime(
+                    datetime.strptime(self._runinfo_dict["run_start_date"],
+                                      "%Y-%m-%d"), "%y%m%d"), "_",
+                self._json_dict[sorted(self._json_dict)[0]]["run"], "_.",
+                self._runinfo_dict["container_barcode"], "_.+-",
+                self._json_dict[sorted(self._json_dict)[0]]["seqtype"],
+                ]), a) for a in os.listdir(os.path.join(os.sep,
+                             "lb",
+                             "robot",
+                             "research",
+                             "freezeman-processing",
+                             (self._json_dict
+                              [sorted(self._json_dict)[0]]
+                              ["seqtype"]),
+                             datetime.strftime(
+                                 datetime.strptime(
+                                     self._runinfo_dict["run_start_date"],
+                                     "%Y-%m-%d"),
+                                     "%Y"),
+                             ))]
+                  )
+            print(os.path.join(os.sep,
+                             "lb",
+                             "robot",
+                             "research",
+                             "freezeman-processing",
+                             (self._json_dict
+                              [sorted(self._json_dict)[0]]
+                              ["seqtype"]),
+                             datetime.strftime(
+                                 datetime.strptime(
+                                     self._runinfo_dict["run_start_date"],
+                                     "%Y-%m-%d"),
+                                     "%Y"),
+                             ))
+            if True: #not os.path.exists():
+                LOGGER.warning("Missing run folder {constructed} from "
+                    "/lb/robot/. The run_folder value was constructed from "
+                    "available information found in the runinfofile and the "
+                    "run validation jsons. Validate the copy step towards "
+                    "/lb/robot/.".format(constructed="TOBEFIXED"))
             return "_".join([
                 datetime.strftime(
                     datetime.strptime(self._runinfo_dict["run_start_date"],
@@ -161,7 +208,7 @@ platform.""".format(
         list_of_dict = list()
         for json_path in self._json_dict.keys():
             for rdst in self._json_dict[json_path]["readsets"]:
-                runinfo_sample = [self._runinfo_dict["samples"][i] for i, sample in enumerate(self._runinfo_dict["samples"]) if self._runinfo_dict["samples"][i]["sample_name"] == self._json_dict[json_path]["readsets"][rdst]["sample_name"]][0] #TODO Unacceptably complex
+                runinfo_sample = self.runinfo_sample(json_path, rdst)
                 list_of_dict.append(
                     {"patient_fms_id": None,
                      "patient_name": (self._json_dict
@@ -330,12 +377,25 @@ from a single run".format(
                                     "metric_flag": "MISSING",
                                     })
                 elif run_v["sample"] == rdst \
-                  and run_v[run_v_key[0]][run_v_key[1]] == None:
+                  and run_v[run_v_key[0]][run_v_key[1]] == None \
+                  and self.runinfo_sample(json_path, rdst)["reference_genome"] == None:
                     metrics.append({"metric_name": db_key,
                                     "metric_value": None,
-                                    "metric_flag": "MISSING",
+                                    "metric_flag": "NOT_APPLICABLE",
                                     })
         return metrics
+
+    def runinfo_sample(self, json_path, sample_name):
+        return [self._runinfo_dict["samples"][i]
+                for i, sample in enumerate(self._runinfo_dict["samples"])
+                if (self._runinfo_dict
+                    ["samples"][i]
+                    ["sample_name"]) == (self._json_dict
+                                         [json_path]
+                                         ["readsets"]
+                                         [sample_name]
+                                         ["sample_name"])
+                ][0]
 
 def main():
     args = arg_parse()
@@ -360,12 +420,6 @@ def main():
     for project in projects.items():
         databases[project] = database_json(args, project)
         databases[project].operation_platform
-        #print("TEST CURRENT:",
-        #      #[a for a in dir(databases[project]) if not a.startswith('_')],
-        #      databases[project].properties(),
-        #      "\n",
-        #      databases[project].run_name
-        #      )
         if args.output_folder:
             write_json(databases[project].properties(),
                        filename=os.path.join(args.output_folder,
