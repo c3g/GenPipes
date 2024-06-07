@@ -355,6 +355,9 @@ module unload {module_python} {command_separator}
             json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{timestamp}.json")
         except AttributeError:
             json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}_{timestamp}.json")
+
+        # The project tracking json file is exported here as a variable for use by job2json_project_tracking.py.
+        # Avoids restarts in steps that used to reference the json file name with timestamp in the name.
         return """\
 module load {module_python}
 {job2json_project_tracking_script} \\

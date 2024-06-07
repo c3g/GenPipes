@@ -29,7 +29,9 @@ def run(input_file, pipeline, samples, readsets, job_name, metrics):
     """
     Calls job2json_project_tracking within jobs to update metrics
     """
-    
+    # The project tracking json file is provided as an environment variable.
+    # Variable is exported prior to job submission to avoid having the json filename in the job script.
+    # The json filename contains a timestamp that caused unwanted restarts.
     return Job(
         [input_file],
         [],
