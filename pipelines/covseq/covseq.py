@@ -37,6 +37,7 @@ from pipelines.dnaseq import dnaseq
 
 from bfx import bcftools
 from bfx import bedtools
+from bfx import bvatools
 from bfx import bwa
 from bfx import covseq_tools
 from bfx import cutadapt
@@ -44,10 +45,13 @@ from bfx import fgbio
 from bfx import freebayes
 from bfx import gatk4
 from bfx import htslib
+from bfx import igvtools
 from bfx import ivar
 from bfx import kraken2
 from bfx import multiqc
 from bfx import ncovtools
+from bfx import picard2
+from bfx import qualimap
 from bfx import quast
 from bfx import sambamba
 from bfx import samtools
@@ -694,9 +698,235 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                 )
         return jobs
 
+    def metrics_dna_sample_qualimap(self):
+        """
+        Generates metrics with qualimap bamqc:
+        BAM QC reports information for the evaluation of the quality of the provided alignment data (a BAM file). 
+        In short, the basic statistics of the alignment (number of reads, coverage, GC-content, etc.) are summarized and a number of useful graphs are produced.
+        http://qualimap.conesalab.org/doc_html/analysis.html#bamqc
+        """
+
+        jobs = []
+        for sample in self.samples:
+            qualimap_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "qualimap", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            [input] = self.select_input_files(
+                [
+                    # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
+            output = os.path.join(qualimap_directory, "genome_results.txt")
+
+            use_bed = config.param('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
+
+            options = None
+            if use_bed:
+                bed = self.samples[0].readsets[0].beds[0]
+                options = config.param('dna_sample_qualimap', 'qualimap_options') + " --feature-file " + bed
+
+            else:
+                options = config.param('dna_sample_qualimap', 'qualimap_options')
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            qualimap_directory,
+                            remove=False
+                        ),
+                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                        qualimap.bamqc(
+                            input,
+                            qualimap_directory,
+                            output,
+                            options,
+                            'dna_sample_qualimap'
+                        ),
+                        bash.ln(
+                            os.path.relpath(output, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(output)),
+                            input=output
+                        )
+                    ],
+                    name="dna_sample_qualimap."+sample.name,
+                    samples=[sample]
+                )
+            )
+            self.multiqc_inputs.append(output)
+        return jobs
+
+
+    def picard_calculate_hs_metrics(self):
+        """
+        Compute on target percent of hybridisation based capture.
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            if coverage_bed:
+                if os.path.isfile(re.sub("\.[^.]+$", ".interval_list", coverage_bed)):
+                    interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                else:
+                    interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
+                    job = picard2.bed2interval_list(
+                        None,
+                        coverage_bed,
+                        interval_list
+                    )
+                    job.name = "interval_list." + os.path.basename(coverage_bed)
+                    jobs.append(job)
+
+                alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+                [input] = self.select_input_files(
+                    [
+                        # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                        [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                        [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                        [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
+                        [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                        [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                    ]
+                )
+                job = gatk4.calculate_hs_metrics(
+                    input,
+                    re.sub("bam$", "onTarget.tsv", input),
+                    interval_list
+                )
+                job.name = "picard_calculate_hs_metrics." + sample.name
+                job.samples = [sample]
+                jobs.append(job)
+
+        return jobs
+
+    def metrics(self):
+        """
+        Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
+        Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
+        Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
+        covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads)
+        whole genome or targeted percentage of bases covered at X reads (%_bases_above_50 means the % of exons
+        bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
+        for easy visualization of coverage in the IGV browser.
+        """
+
+        ##check the library status
+        library = {}
+        for readset in self.readsets:
+            if not readset.sample in library:
+                library[readset.sample] = "SINGLE_END"
+            if readset.run_type == "PAIRED_END":
+                library[readset.sample] = "PAIRED_END"
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            [input] = self.select_input_files(
+                [
+                    # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
+            input_file_prefix = re.sub("bam$", "", input)
+
+            mkdir_job_normal = bash.mkdir(
+                os.path.dirname(input_file_prefix),
+                remove=True
+            )
+
+            collect_multiple_metrics_normal_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                    gatk4.collect_multiple_metrics(
+                        input,
+                        input_file_prefix + "all.metrics",
+                        library_type=library[sample]
+                    ),
+                ]
+            )
+            for outfile in collect_multiple_metrics_normal_job.report_files:
+                self.multiqc_inputs.append(outfile)
+                collect_multiple_metrics_normal_job = concat_jobs(
+                    [
+                        collect_multiple_metrics_normal_job,
+                        bash.ln(
+                            os.path.relpath(outfile, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(outfile)),
+                            input=outfile
+                        )
+                    ]
+                )
+            collect_multiple_metrics_normal_job.name = "picard_collect_multiple_metrics." + sample.name
+            collect_multiple_metrics_normal_job.samples = [sample]
+            jobs.append(collect_multiple_metrics_normal_job)
+
+            # Compute genome coverage with gatk4
+            gatk_depth_of_coverage_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    gatk4.depth_of_coverage(
+                        input,
+                        input_file_prefix + "all.coverage",
+                        bvatools.resolve_readset_coverage_bed(
+                            sample.readsets[0]
+                        )
+                    ),
+                ],
+                name="gatk_depth_of_coverage." + sample.name + ".genome",
+                samples=[sample]
+            )
+            jobs.append(gatk_depth_of_coverage_job)
+
+            # Compute genome or target coverage with BVATools
+            bvatools_depth_of_coverage_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    bvatools.depth_of_coverage(
+                        input,
+                        input_file_prefix + "coverage.tsv",
+                        bvatools.resolve_readset_coverage_bed(
+                            sample.readsets[0]
+                        ),
+                        other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+                    )
+                ],
+                name="bvatools_depth_of_coverage." + sample.name,
+                samples=[sample]
+            )
+            jobs.append(bvatools_depth_of_coverage_job)
+
+            igvtools_compute_tdf_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    igvtools.compute_tdf(
+                        input,
+                        re.sub("\.bam$", ".tdf", input)
+                    )
+                ],
+                name="igvtools_compute_tdf." + sample.name,
+                samples=[sample]
+            )
+            jobs.append(igvtools_compute_tdf_job)
+
+        return jobs
+
     def covseq_metrics(self):
         """
-        Gathering multiple metrics. (coming from dnaseq pipeline)
+        Gathering multiple metrics.
         """
 
         jobs = []
@@ -746,7 +976,6 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                                 samtools.mpileup(
                                     input_bam,
                                     output=None,
-                                    other_options=config.param('ivar_call_variants', 'mpileup_options'),
                                     region=None,
                                     regionFile=None,
                                     ini_section='ivar_call_variants'
@@ -953,7 +1182,6 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                                 samtools.mpileup(
                                     input_bam,
                                     output=None,
-                                    other_options=config.param('ivar_create_consensus', 'mpileup_options'),
                                     region=None,
                                     regionFile=None,
                                     ini_section='ivar_create_consensus'

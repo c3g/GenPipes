@@ -84,7 +84,7 @@ samtools flagstat {other_options} \\
   {threads} \\
   {input} \\
   > {output}""".format(
-            other_options=config.param(ini_section, 'other_options') if config.param(ini_section, 'other_options') else "",
+            other_options=config.param(ini_section, 'other_options', required=False),
             threads="--threads " + config.param(ini_section, 'threads'),
             input=input,
             output=output
