@@ -618,11 +618,21 @@ pandoc --to=markdown \\
                 inputs = [os.path.join(alignment_directory, readset.name, "Aligned.sortedByCoord.out.bam") for readset in sample.readsets]
                 output = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-                job = picard.merge_sam_files(inputs, output)
-                job.name = "picard_merge_sam_files." + sample.name
-                job.samples = [sample]
-                job.readsets = list(sample.readsets)
-                jobs.append(job)
+                jobs.append(
+                        concat_jobs(
+                            [
+                                bash.rm(output),
+                                picard.merge_sam_files(
+                                    inputs,
+                                    output
+                                    )
+                            ],
+                            name = "picard_merge_sam_files." + sample.name,
+                            samples = [sample],
+                            readsets = list(sample.readsets)
+                        )
+                    )
+        
         return jobs
 
     def picard_sort_sam(self):
