@@ -3538,7 +3538,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             bcftools.view(
                                 input_vcf,
                                 None,
-                                filter_options="-f PASS -i '%QUAL>=50' -m2 -M2 -v snps"
+                                filter_options=config.param('cnvkit_batch', 'filter_options')
                             ),
                             bash.sed(
                                 None,
@@ -3813,7 +3813,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         bcftools.view(
                             input_vcf,
                             None,
-                            filter_options="-f PASS -i '%QUAL>=50' -m2 -M2 -v snps"
+                            filter_options=config.param('cnvkit_batch', 'filter_options')
                         ),
                         bash.sed(
                             None,
