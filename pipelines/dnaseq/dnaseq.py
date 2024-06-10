@@ -3511,6 +3511,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
                 tarcov_cnn = os.path.join(cnvkit_dir, f"{sample.name}.sorted.dup.targetcoverage.cnn")
                 antitarcov_cnn = os.path.join(cnvkit_dir, f"{sample.name}.sorted.dup.antitargetcoverage.cnn")
+
+                if 'germline_sv' in self.get_protocol():
+                    filter_options = "-i '%QUAL>=50' -m2 -M2 -v snps"
+                else:
+                    filter_options = "-f PASS -i '%QUAL>=50' -m2 -M2 -v snps"
                 
                 ## Set coverage bed if using exome
                 coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
@@ -3538,7 +3543,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             bcftools.view(
                                 input_vcf,
                                 None,
-                                filter_options="-f PASS -i '%QUAL>=50' -m2 -M2 -v snps"
+                                filter_options=filter_options
                             ),
                             bash.sed(
                                 None,

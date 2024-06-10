@@ -1108,9 +1108,10 @@ END
                 [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.UMI.bam") for readset in
                  sample.readsets],
                 [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.cram") for readset in
-                 sample.readsets], [readset.bam for readset in sample.readsets if readset.bam],
+                 sample.readsets],
                 [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam") for readset in
-                 sample.readsets], [readset.bam for readset in sample.readsets if readset.bam]
+                 sample.readsets], 
+                [readset.bam for readset in sample.readsets if readset.bam]
             ]
             input = self.select_input_files(candidate_readset_bams)
 
