@@ -172,7 +172,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $LINX_JAR com
   -plot_out {linx_dir}/plot/ \\
   -data_out {linx_dir}/circos/ \\
   -vis_file_dir {linx_dir} \\
-  -circos circos""".format(
+  -circos `which circos`""".format(
             tmp_dir=config.param(ini_section, 'tmp_dir'),
             java_other_options=config.param(ini_section, 'java_other_options'),
             ram=config.param(ini_section, 'ram'),
