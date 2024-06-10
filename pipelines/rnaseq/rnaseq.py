@@ -625,7 +625,8 @@ pandoc --to=markdown \\
                         ],
                         name = "picard_merge_sam_files." + sample.name,
                         samples = [sample],
-                        readsets = list(sample.readsets)
+                        readsets = list(sample.readsets),
+                        input_dependency = inputs
                     )
                 )
 
