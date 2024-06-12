@@ -7268,14 +7268,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                            "rawAnnotation")
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")],
-                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")],
-                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")]
                 ]
             )
             input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name,
@@ -7389,14 +7389,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                            "rawAnnotation")
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")],
-                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")]
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.cram")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")],
-                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")]
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.cram")]
                 ]
             )
             input_germline_variants = os.path.join(ensemble_directory, tumor_pair.name,
