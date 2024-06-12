@@ -988,7 +988,7 @@ pandoc \\
                     [
                     bash.mkdir(output_directory),
                     gtex_pipeline.collapse_gtf(
-                        input_gtf=config.param('DEFAULT', 'gtf', param_type='filepath', required=True),
+                        input_gtf=config.param('rnaseqc2', 'gtf', param_type='filepath', required=True),
                         output_gtf=os.path.join(output_directory, scientific_name + "_collapsed.gtf")
                     )
                     ],
