@@ -44,6 +44,7 @@ def quast(input, output_dir, ini_section='quast_consensus_metrics'):
         ],
 
         command="""\
+export LC_ALL=en_CA.UTF-8 && \\
 quast.py {reference} \\
   {output_dir} \\
   {features} \\
