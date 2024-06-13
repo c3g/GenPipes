@@ -113,8 +113,7 @@ class DnaSeqRaw(common.Illumina):
     is more information about DNA-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self, *args, protocol=None, pairs_file=None, profyle=None, **kwargs):
-        self._protocol = protocol
+    def __init__(self, *args, pairs_file=None, profyle=None, **kwargs):
         self.pairs = pairs_file
         self.profyle = profyle
         # Add pipeline specific arguments
@@ -8186,7 +8185,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         }
 class DnaSeq(DnaSeqRaw):
     __doc__ = DnaSeqRaw.__doc__
-    def __init__(self, *args, protocol=None, **kwargs):
+    def __init__(self, *args, protocol="germline_snv", **kwargs):
         self._protocol = protocol
         # Add pipeline specific arguments
         super(DnaSeq, self).__init__(*args, **kwargs)
