@@ -327,7 +327,7 @@ class DnaSeqRaw(common.Illumina):
                         self.output_dir,
                         type="raw_reads",
                         sample=key,
-                        profyle=self.args.profyle
+                        profyle=self.profyle
                     )
                     dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
                     # do not compute md5sum in the readset input directory
@@ -710,7 +710,7 @@ END
                                     self.output_dir,
                                     type="alignment",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     f"{input_file}.md5",
@@ -718,7 +718,7 @@ END
                                     self.output_dir,
                                     type="alignment",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 )
                             ],
                             name=f"sym_link_final_bam.pairs.{str(idx)}.{tumor_pair.name}.{key}",
@@ -1259,7 +1259,7 @@ END
                                     self.output_dir,
                                     type="metrics",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 )
                             ],
                             name=f"sym_link_fastq.report.{str(idx)}.{tumor_pair.name}.{key}",
@@ -4672,7 +4672,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     self.output_dir,
                                     type="sv/cnv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 )
                             ],
                             name=f"sym_link.sequenza.{str(idx)}.{tumor_pair.name}.{key}",
@@ -4818,7 +4818,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     tumor_pair, self.output_dir,
                                     type="snv/panel",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix, f"{tumor_pair.name}.varscan2.vcf.gz.tbi"),
@@ -4826,7 +4826,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     self.output_dir,
                                     type="snv/panel",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix, f"{tumor_pair.name}.varscan2.somatic.annot.flt.vcf.gz"),
@@ -4834,7 +4834,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     self.output_dir,
                                     type="snv/panel",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix,
@@ -4843,7 +4843,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     self.output_dir,
                                     type="snv/panel",
                                     sample=key,
-                                    profyle=self.args.profyle),
+                                    profyle=self.profyle),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix,
                                                  f"{tumor_pair.name}.varscan2.germline.annot.flt.vcf.gz"),
@@ -4851,7 +4851,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     self.output_dir,
                                     type="snv/panel",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix,
@@ -4860,7 +4860,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     self.output_dir,
                                     type="snv/panel",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix, "cpsr",
@@ -4869,7 +4869,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     self.output_dir,
                                     type="snv/panel",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     os.path.join(sample_prefix, "pcgr",
@@ -4878,7 +4878,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     self.output_dir,
                                     type="snv/panel",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 )
                             ],
                             name=f"sym_link_panel.{str(idx)}.{tumor_pair.name}.{key}",
@@ -7752,7 +7752,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     self.output_dir,
                                     type="snv/ensemble",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     f"{sample_prefix}.ensemble.somatic.vt.annot.vcf.gz",
@@ -7760,7 +7760,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     self.output_dir,
                                     type="snv/ensemble",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     f"{sample_prefix}.ensemble.somatic.vt.annot.vcf.gz.tbi",
@@ -7768,7 +7768,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     self.output_dir,
                                     type="snv/ensemble",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.md5sum(
                                     f"{sample_prefix}.ensemble.germline.vt.annot.vcf.gz",
@@ -7781,7 +7781,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     self.output_dir,
                                     type="snv/ensemble",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     f"{sample_prefix}.ensemble.germline.vt.annot.vcf.gz",
@@ -7789,7 +7789,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     self.output_dir,
                                     type="snv/ensemble",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     f"{sample_prefix}.ensemble.germline.vt.annot.vcf.gz.tbi",
@@ -7797,7 +7797,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     self.output_dir,
                                     type="snv/ensemble",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 )
                             ],
                             name=f"sym_link_ensemble.{str(idx)}.{tumor_pair.name}.{key}",
