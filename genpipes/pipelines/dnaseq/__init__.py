@@ -113,7 +113,7 @@ class DnaSeqRaw(common.Illumina):
     is more information about DNA-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self, *args, protocol='germline_snv', pairs_file=None, profyle=None, **kwargs):
+    def __init__(self, *args, protocol=None, pairs_file=None, profyle=None, **kwargs):
         self._protocol = protocol
         self.pairs = pairs_file
         self.profyle = profyle
