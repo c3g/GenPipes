@@ -41,7 +41,7 @@ gemini load -v {variants} \\
             options=global_conf.global_get('gemini_annotations', 'options'),
             variants=variants,
             output=gemini_output,
-            temp=config.param('DEFAULT', 'tmp_dir')
+            temp=global_conf.global_get('DEFAULT', 'tmp_dir')
         )
     )
 
