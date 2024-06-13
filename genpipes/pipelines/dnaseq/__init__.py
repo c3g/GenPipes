@@ -120,7 +120,7 @@ class DnaSeqRaw(common.Illumina):
     @property
     def tumor_pairs(self):
         #Create property only if somatic protocols called
-        if 'somatic' in self.get_protocol() and 'tumor_only' not in self.get_protocol():
+        if 'somatic' in self.protocol and 'tumor_only' not in self.protocol:
             if not hasattr(self, "_tumor_pairs"):
                 self._tumor_pairs = parse_tumor_pair_file(
                     self.pairs.name,
@@ -142,7 +142,7 @@ class DnaSeqRaw(common.Illumina):
             'report_directory': os.path.relpath(os.path.join(self.output_dir, "report"), self.output_dir)
         }
         # Somatic protocol properties only
-        if 'somatic' in self.get_protocol() and 'tumor_only' not in self.get_protocol():
+        if 'somatic' in self.protocol and 'tumor_only' not in self.protocol:
             for tumor_pair in self.tumor_pairs.values():
                 dirs['metrics_directory'][tumor_pair.name] = os.path.relpath(
                     os.path.join(self.output_dir, "metrics", tumor_pair.name),
@@ -164,7 +164,7 @@ class DnaSeqRaw(common.Illumina):
             for sample in self.samples:
                 self._multiqc_inputs[sample.name] = []
                 
-            if 'somatic' in self.get_protocol() and 'tumor_only' not in self.get_protocol():
+            if 'somatic' in self.protocol and 'tumor_only' not in self.protocol:
                 for tumor_pair in self.tumor_pairs.values():
                     self._multiqc_inputs[tumor_pair.name] = []
         return self._multiqc_inputs
@@ -1188,7 +1188,7 @@ END
         jobs = []
         
         # Generate multiqc report for dnaseq and tumor only protocols
-        if 'germline' in self.get_protocol() or 'tumor_only' in self.get_protocol():
+        if 'germline' in self.protocol or 'tumor_only' in self.protocol:
             multiqc_files_paths = [item for sample in self.samples for item in self.multiqc_inputs[sample.name]]
     
             multiqc_input_path = [os.path.join(self.output_dirs['metrics_directory'][sample.name]) for sample in self.samples]
@@ -1208,7 +1208,7 @@ END
             jobs.append(job)
 
         # Generate multiqc reports for somatics protocols excluding tumor only protocol
-        elif 'somatic' in self.get_protocol() and 'tumor_only' not in self.get_protocol():
+        elif 'somatic' in self.protocol and 'tumor_only' not in self.protocol:
             report_directory = os.path.join(self.output_dirs['report_directory'])
             for tumor_pair in self.tumor_pairs.values():
                 patient_folders = [
@@ -2295,7 +2295,7 @@ END
         
         jobs = []
         
-        if "high_cov" in self.get_protocol():
+        if "high_cov" in self.protocol:
             [input] = ["variants/allSamples.vt.vcf.gz"]
             [output] = ["variants/allSamples.vt.snpeff.vcf"]
             job_name = "snp_effect.high_cov"
@@ -2402,7 +2402,7 @@ END
         http://gemini.readthedocs.org/en/latest/index.html
         """
         
-        if "high_cov" in self.get_protocol():
+        if "high_cov" in self.protocol:
             input= f"variants/allSamples.vt.snpeff.vcf.gz"
             
         job = gemini.gemini_annotations(
@@ -2509,7 +2509,7 @@ END
         jobs = []
         
         #Set directory, ini_section, job and sample name for dnaseq tumor only protocol
-        if 'tumor_only' in self.get_protocol():
+        if 'tumor_only' in self.protocol:
             output_directory = f"{self.output_dirs['variants_directory']}/split"
             ini_section = 'report_cpsr_tumor_only'
             
@@ -2550,7 +2550,7 @@ END
         else:
             for tumor_pair in self.tumor_pairs.values():
                 #Set directory, ini_section, job and sample name for tumor pair Fastpass protocol
-                if 'fastpass' in self.get_protocol():
+                if 'fastpass' in self.protocol:
                     panel_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
                     ini_section = 'report_cpsr_fastpass'
                     job_name = "report_cpsr_fastpass." + tumor_pair.name
@@ -2564,7 +2564,7 @@ END
                         "cpsr"
                     )
                 #Set directory, ini_section, job and sample name for tumor pair ensemble protocol
-                elif 'ensemble' in self.get_protocol():
+                elif 'ensemble' in self.protocol:
                     ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
                     ini_section = 'report_cpsr'
                     job_name = f"report_cpsr.{tumor_pair.name}"
@@ -2610,7 +2610,7 @@ END
         jobs = []
         
         # Set directory, ini_section, job and sample name for dnaseq tumor only protocol
-        if 'tumor_only' in self.get_protocol():
+        if 'tumor_only' in self.protocol:
             output_directory = f"{self.output_dirs['variants_directory']}/split"
             ini_section = 'report_pcgr_tumor_only'
             assembly = global_conf.global_get(ini_section, 'assembly')
@@ -2680,7 +2680,7 @@ END
         else:
             for tumor_pair in self.tumor_pairs.values():
                 # Set directory, ini_section, job and sample name for tumor pair Fastpass protocol
-                if 'fastpass'  in self.get_protocol():
+                if 'fastpass'  in self.protocol:
                     panel_directory = os.path.join(
                         self.output_dirs['paired_variants_directory'],
                         tumor_pair.name,
@@ -2703,7 +2703,7 @@ END
                         "pcgr"
                     )
                 # Set directory, ini_section, job and sample name for tumor pair Ensemble protocol
-                elif 'ensemble' in self.get_protocol():
+                elif 'ensemble' in self.protocol:
                     ensemble_directory = os.path.join(
                         self.output_dirs['paired_variants_directory'],
                         "ensemble"
@@ -3457,7 +3457,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         """
         jobs = []
 
-        if 'germline' in self.get_protocol() or 'tumor_only' in self.get_protocol():
+        if 'germline' in self.protocol or 'tumor_only' in self.protocol:
             for sample in self.samples:
                 input_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)
     
@@ -3491,7 +3491,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 tarcov_cnn = os.path.join(cnvkit_dir, f"{sample.name}.sorted.dup.targetcoverage.cnn")
                 antitarcov_cnn = os.path.join(cnvkit_dir, f"{sample.name}.sorted.dup.antitargetcoverage.cnn")
 
-                if 'germline_sv' in self.get_protocol():
+                if 'germline_sv' in self.protocol:
                     filter_options = "-i '%QUAL>=50' -m2 -M2 -v snps"
                 else:
                     filter_options = "-f PASS -i '%QUAL>=50' -m2 -M2 -v snps"
@@ -3740,7 +3740,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
                 sample_name = tumor_pair.name
                 
-                if 'fastpass' in self.get_protocol():
+                if 'fastpass' in self.protocol:
                     input_vcf = os.path.join(self.output_dirs['paired_variants_directory'],
                                              tumor_pair.name,
                                              "panel",
@@ -4196,7 +4196,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         dictionary = global_conf.global_get('gatk_scatterIntervalsByNs', 'genome_dictionary', param_type='filepath')
         scatter_jobs = global_conf.global_get('gatk_splitInterval', 'scatter_jobs', param_type='posint')
         
-        if 'tumor_only' in self.get_protocol() or 'germline' in self.get_protocol():
+        if 'tumor_only' in self.protocol or 'germline' in self.protocol:
             for sample in self.samples:
                 interval_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name, "intervals")
                 output = os.path.join(interval_directory,
@@ -4322,7 +4322,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         )
                     )
                     
-        if 'somatic' in self.get_protocol() and 'tumor_only' not in self.get_protocol():
+        if 'somatic' in self.protocol and 'tumor_only' not in self.protocol:
             for tumor_pair in self.tumor_pairs.values():
                 interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name,
                                                   "intervals")
@@ -4334,7 +4334,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     tumor_pair.normal.readsets[0]
                 )
                 
-                if self.get_protocol() == "fastpass":
+                if self.protocol == "fastpass":
                     coverage_bed = global_conf.global_get('rawmpileup_panel', 'panel')
                 
                 if coverage_bed:
@@ -4690,7 +4690,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         
         jobs = []
         
-        if 'fastpass' in self.get_protocol():
+        if 'fastpass' in self.protocol:
             for tumor_pair in self.tumor_pairs.values():
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
                 prefix = os.path.join(pair_directory, tumor_pair.name)
@@ -4731,7 +4731,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     )
                 )
                 
-        if 'high_cov' in self.get_protocol():
+        if 'high_cov' in self.protocol:
             prefix = os.path.join(self.output_dirs['variants_directory'], "allSamples")
             outputPreprocess = f"{prefix}.tmp.vcf.gz"
             outputFix = f"{prefix}.fix.vcf.gz"
@@ -5772,7 +5772,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 ]
             )
             
-            if 'fastpass' in self.get_protocol():
+            if 'fastpass' in self.protocol:
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
                 ini_section = 'rawmpileup_panel'
                 scatter_jobs = global_conf.global_get(ini_section, 'nb_jobs', param_type='posint')
@@ -5873,7 +5873,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
         
         for tumor_pair in self.tumor_pairs.values():
-            if 'fastpass' in self.get_protocol():
+            if 'fastpass' in self.protocol:
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
                 ini_section = 'varscan2_somatic_panel'
                 job_name = f"varscan2_somatic_panel.{tumor_pair.name}"
@@ -6068,7 +6068,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
         
         for tumor_pair in self.tumor_pairs.values():
-            if 'fastpass' in self.get_protocol():
+            if 'fastpass' in self.protocol:
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
                 scatter_jobs = global_conf.global_get('rawmpileup_panel', 'nb_jobs', param_type='posint')
                 job_name = f"merge_varscan2_panel.{tumor_pair.name}"
@@ -7559,7 +7559,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         jobs = []
         
         for tumor_pair in self.tumor_pairs.values():
-            if 'fastpass' in self.get_protocol():
+            if 'fastpass' in self.protocol:
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
                 
                 input = os.path.join(
@@ -7651,7 +7651,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         """
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
-            if 'fastpass' in self.get_protocol():
+            if 'fastpass' in self.protocol:
                 pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, 'panel')
                 
                 input = os.path.join(
