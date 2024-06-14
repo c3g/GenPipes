@@ -432,12 +432,12 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                     concat_jobs(
                         [
                             bash.ln(
-                                os.rel.path(trimmedReadsR1, lnkRawReadsFolder),
+                                os.path.relpath(trimmedReadsR1, lnkRawReadsFolder),
                                 left_or_single_reads,
                                 input=trimmedReadsR1
                             ),
                             bash.ln(
-                                os.rel.path(trimmedReadsR2, lnkRawReadsFolder),
+                                os.path.relpath(trimmedReadsR2, lnkRawReadsFolder),
                                 right_reads,
                                 input=trimmedReadsR2
                             )
@@ -450,7 +450,7 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                 left_or_single_reads = readSetPrefix + ".single.fastq.gz"
                 raw_reads_jobs.append(
                     bash.ln(
-                        os.rel.path(trimmedReadsR1, lnkRawReadsFolder),
+                        os.path.relpath(trimmedReadsR1, lnkRawReadsFolder),
                         left_or_single_reads,
                         input=trimmedReadsR1
                     )
