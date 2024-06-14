@@ -388,10 +388,11 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                         readset=readset.name,
                         stats=readset_merge_flash_stats,
                         ),
-                    samples=[readset.sample],
-                    name = "ampliconLengthParser.run"
-                )
-            ])
+                    )
+                ],
+                samples=[readset.sample],
+                name="ampliconLengthParser.run"
+            )
 
         jobs.append(job)
 
