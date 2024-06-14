@@ -431,17 +431,15 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                 raw_reads_jobs.append(
                     concat_jobs(
                         [
-                            Job(
-                                [trimmedReadsR1],
-                                [left_or_single_reads],
-                                command="ln -nsf " + os.path.abspath(os.path.join(self.output_dir, trimmedReadsR1)) + " " + left_or_single_reads,
-                                samples=[readset.sample]
+                            bash.ln(
+                                os.rel.path(trimmedReadsR1, lnkRawReadsFolder),
+                                left_or_single_reads,
+                                input=trimmedReadsR1
                             ),
-                            Job(
-                                [trimmedReadsR2],
-                                [right_reads],
-                                command="ln -nsf " + os.path.abspath(os.path.join(self.output_dir, trimmedReadsR2)) + " " + right_reads,
-                                samples=[readset.sample]
+                            bash.ln(
+                                os.rel.path(trimmedReadsR2, lnkRawReadsFolder),
+                                right_reads,
+                                input=trimmedReadsR2
                             )
                         ]
                     )
@@ -451,11 +449,10 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
             elif readset.run_type == "SINGLE_END":
                 left_or_single_reads = readSetPrefix + ".single.fastq.gz"
                 raw_reads_jobs.append(
-                    Job(
-                        [trimmedReadsR1],
-                        [left_or_single_reads],
-                        command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads,
-                        samples=[readset.sample]
+                    bash.ln(
+                        os.rel.path(trimmedReadsR1, lnkRawReadsFolder),
+                        left_or_single_reads,
+                        input=trimmedReadsR1
                     )
                 )
                 dada2_inputs.append(left_or_single_reads)
