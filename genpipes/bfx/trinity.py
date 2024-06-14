@@ -98,10 +98,10 @@ def trinity(input_files, trinity_fasta, output_directory, reads_option):
         ],
         command="""\
 Trinity {other_options} \\
-  --max_memory {max_memory} \\
-  --CPU {cpu} \\
-  {reads_option} \\
-  --output {output_directory}""".format(
+    --max_memory {max_memory} \\
+    --CPU {cpu} \\
+    {reads_option} \\
+    --output {output_directory}""".format(
             other_options=global_conf.global_get('trinity', 'other_options'),
             max_memory=global_conf.global_get('trinity', 'max_memory'),
             cpu=global_conf.global_get('trinity', 'cpu'),
