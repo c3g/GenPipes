@@ -31,6 +31,7 @@ from ...core.config import global_conf, _raise, SanitycheckError
 from ...core.job import Job, concat_jobs
 from .. import common
 from ...bfx import tools
+from ...bfx import bash_cmd as bash
 from ...bfx import dada2
 from ...bfx import flash
 from ...bfx import vsearch
@@ -52,6 +53,18 @@ class AmpliconSeq(common.Illumina):
             self._protocol = protocol
         # Add pipeline specific arguments
         super(AmpliconSeq, self).__init__(*args, **kwargs)
+
+    @property
+    def output_dirs(self):
+        dirs = {
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'merge_directory': os.path.relpath(os.path.join(self.output_dir, 'merge'), self.output_dir),
+            'dada2_analysis_directory': os.path.relpath(os.path.join(self.output_dir, 'dada2_Analysis'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
+        }
+        return dirs
 
     def trimmomatic16S(self):
         """
@@ -197,8 +210,8 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
         jobs = []
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            merge_directory = os.path.join("merge", readset.sample.name)
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+            merge_directory = os.path.join(self.output_dirs["merge_directory"], readset.sample.name)
             flash_fastq = os.path.join(merge_directory, readset.name + ".flash_pass2.extendedFrags.fastq") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.extendedFrags.fastq")
             flash_log = os.path.join(merge_directory, readset.name + ".flash_pass2.log") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.log")
             flash_hist = os.path.join(merge_directory, readset.name + ".flash_pass2.hist") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.hist")
@@ -237,7 +250,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
         return jobs
 
     def flash_pass2(self):
-        flash_stats_file = os.path.join("metrics", "FlashLengths.tsv")
+        flash_stats_file = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
         jobs = self.flash(flash_stats_file)
         return jobs
 
@@ -246,20 +259,23 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
         The paired end merge statistics per readset are merged at this step.
         """
 
-        readset_merge_flash_stats = os.path.join("metrics", "mergeReadsetTable.tsv")
-        job = concat_jobs([
-            Job(command="mkdir -p metrics"),
-            Job(command="echo 'Sample\tReadset\tTrim Paired Reads #\tMerged Paired Reads #\tMerged Paired Reads %' > " + readset_merge_flash_stats)
-        ])
+        readset_merge_flash_stats = os.path.join(self.output_dirs["metrics_directory"], "mergeReadsetTable.tsv")
+        job = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs["metrics_directory"]),
+                Job(command="echo 'Sample\\tReadset\\tTrim Paired Reads #\\tMerged Paired Reads #\\tMerged Paired Reads %' > " + readset_merge_flash_stats)
+            ]
+        )
 
         for readset in self.readsets:
-            flash_log = os.path.join("merge", readset.sample.name, readset.name + ".flash_pass2.log")
+            flash_log = os.path.join(self.output_dirs["merge_directory"], readset.sample.name, readset.name + ".flash_pass2.log")
 
-            job = concat_jobs([
-                job,
-                Job(
-                    command="""\
-printf '{sample}\t{readset}\t' \\
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        command="""\
+printf '{sample}\\t{readset}\\t' \\
   >> {stats}""".format(
                         sample=readset.sample.name,
                         readset=readset.name,
@@ -271,36 +287,39 @@ printf '{sample}\t{readset}\t' \\
 
             # Retrieve merge statistics using re search in python.
             python_command = """\
-module load {module_python}; \\
 python -c 'import re; \\
-import sys; \\
-log_file = open("{flash_log}","r"); \\
-merge_stat=[]; \\
-merge_stat.append([i.split()[3] for i in log_file if re.search("Total pairs",i)][0]); \\
-log_file.seek(0); \\
-merge_stat.append([i.split()[3] for i in log_file if re.search("Combined pairs",i)][0]); \\
-log_file.seek(0); \\
-merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
-log_file.close(); \\
-print "\t".join(merge_stat)'""".format(
-                module_python=global_conf.global_get('DEFAULT', 'module_python'),
+    import sys; \\
+    log_file = open("{flash_log}","r"); \\
+    merge_stat=[]; \\
+    merge_stat.append([i.split()[3] for i in log_file if re.search("Total pairs",i)][0]); \\
+    log_file.seek(0); \\
+    merge_stat.append([i.split()[3] for i in log_file if re.search("Combined pairs",i)][0]); \\
+    log_file.seek(0); \\
+    merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
+    log_file.close(); \\
+    print "\t".join(merge_stat)'""".format(
                 flash_log=flash_log
             )
 
-            job = concat_jobs([
-                job,
-                Job(
-                    [flash_log],
-                    [readset_merge_flash_stats],
-                    # Create readset merging stats TSV file with paired read count using python.
-                    command="""\
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        [flash_log],
+                        [readset_merge_flash_stats],
+                        [
+                            ['merge_flash_stats', 'module_python']
+                        ],
+                        # Create readset merging stats TSV file with paired read count using python.
+                        command="""\
 {python_command} \\
   >> {readset_merge_flash_stats}""".format(
                         python_command=python_command,
                         readset_merge_flash_stats=readset_merge_flash_stats
+                        )
                     )
-                )
-            ])
+                ]
+            )
 
         sample_merge_flash_stats = os.path.join("metrics", "mergeSampleTable.tsv")
         report_file = os.path.join("report", "Illumina.flash_stats.md")
@@ -327,15 +346,17 @@ cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/""".format(
         look at FLASH output to set amplicon lengths input for dada2. As minimum elligible length, a given length needs to have at least 1% of the total number of amplicons
         """
         jobs = []
-        readset_merge_flash_stats = os.path.join("metrics", "FlashLengths.tsv")
+        readset_merge_flash_stats = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
 
-        job = concat_jobs([
-            Job(command="mkdir -p metrics"),
-            Job(command="echo 'Sample\tReadset\tMinimum Amplicon Length\tMaximum Amplicon Length\tMinimum Flash Overlap\tMaximum Flash Overlap' > " + readset_merge_flash_stats)
-        ])
+        job = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs["metrics_directory"]),
+                Job(command="echo 'Sample\\tReadset\\tMinimum Amplicon Length\\tMaximum Amplicon Length\\tMinimum Flash Overlap\\tMaximum Flash Overlap' > " + readset_merge_flash_stats)
+            ]
+        )
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -346,20 +367,20 @@ cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/""".format(
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
-            flash_hist = os.path.join("merge", readset.sample.name, readset.name + ".flash.hist")
+            flash_hist = os.path.join(self.output_dirs["merge_directory"], readset.sample.name, readset.name + ".flash.hist")
             job = concat_jobs([
                 job,
                 Job(
                     [fastq1, flash_hist],
                     [readset_merge_flash_stats],
                     command="""\
-frag_length=$(zless {fastq} | head -n2 | tail -n1 | awk '{{print length($0)}}')
+frag_length=$(zcat {fastq} | head -n2 | tail -n1 | awk '{{print length($0)}}')
 minCount=$(cut -f2 {hist} | sort -n | awk ' {{ sum+=$1;i++ }} END {{ print sum/100; }}' | cut -d"." -f1)
-minLen=$(awk -F'\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -g | head -n1)
-maxLen=$(awk -F'\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -gr | head -n1)
+minLen=$(awk -F'\\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -g | head -n1)
+maxLen=$(awk -F'\\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -gr | head -n1)
 minFlashOverlap=$(( 2 * frag_length - maxLen ))
 maxFlashOverlap=$(( 2 * frag_length - minLen ))
-printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{maxFlashOverlap}}\n" \\
+printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\\t${{maxFlashOverlap}}\\n" \\
   >> {stats}""".format(
                         fastq=fastq1,
                         hist=flash_hist,
@@ -367,13 +388,12 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
                         readset=readset.name,
                         stats=readset_merge_flash_stats,
                         ),
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    name = "ampliconLengthParser.run"
                 )
             ])
 
-        jobs.append(concat_jobs([
-            job,
-        ], name="ampliconLengthParser.run"))
+        jobs.append(job)
 
         return jobs
 
@@ -382,16 +402,14 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
         check for design file (required for PCA plots)
         """
 
-        design_file_rel_path = os.path.relpath(self.design_file.name, self.output_dir)
+        designFile = os.path.relpath(self.design_file.name, self.output_dir)
 
         jobs = []
 
         #Create folders in the output folder
-        dada2_directory = "dada2_Analysis"
+        dada2_directory = self.output_dirs["dada2_analysis_directory"]
         lnkRawReadsFolder = os.path.join(dada2_directory, "trim")
-        ampliconLengthFile = os.path.join("metrics/FlashLengths.tsv")
-
-        mkdir_job = Job(command="mkdir -p " + lnkRawReadsFolder)
+        ampliconLengthFile = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
 
         #We'll link the readset fastq files into the raw_reads folder just created
         raw_reads_jobs = []
@@ -399,8 +417,8 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
         for readset in self.readsets:
             readSetPrefix = os.path.join(lnkRawReadsFolder, readset.name)
 
-            trimmedReadsR1 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
-            trimmedReadsR2 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
+            trimmedReadsR1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
+            trimmedReadsR2 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
 
             if readset.run_type == "PAIRED_END":
                 left_or_single_reads = readSetPrefix + ".pair1.fastq.gz"
@@ -409,43 +427,58 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
                 right_reads = readSetPrefix + ".pair2.fastq.gz"
                 dada2_inputs.append(right_reads)
 
-                raw_reads_jobs.append(concat_jobs([
-                    Job(
-                        [trimmedReadsR1],
-                        [left_or_single_reads],
-                        command="ln -nsf " + os.path.abspath(os.path.join(self.output_dir, trimmedReadsR1)) + " " + left_or_single_reads,
-                        samples=[readset.sample]
-                    ),
-                    Job(
-                        [trimmedReadsR2],
-                        [right_reads],
-                        command="ln -nsf " + os.path.abspath(os.path.join(self.output_dir, trimmedReadsR2)) + " " + right_reads,
-                        samples=[readset.sample]
+                raw_reads_jobs.append(
+                    concat_jobs(
+                        [
+                            Job(
+                                [trimmedReadsR1],
+                                [left_or_single_reads],
+                                command="ln -nsf " + os.path.abspath(os.path.join(self.output_dir, trimmedReadsR1)) + " " + left_or_single_reads,
+                                samples=[readset.sample]
+                            ),
+                            Job(
+                                [trimmedReadsR2],
+                                [right_reads],
+                                command="ln -nsf " + os.path.abspath(os.path.join(self.output_dir, trimmedReadsR2)) + " " + right_reads,
+                                samples=[readset.sample]
+                            )
+                        ]
                     )
-                ]))
+                )
 
             #single reads will mainly be for PacBio CCS although I didn't test it yet
             elif readset.run_type == "SINGLE_END":
                 left_or_single_reads = readSetPrefix + ".single.fastq.gz"
-                raw_reads_jobs.append(concat_jobs([
+                raw_reads_jobs.append(
                     Job(
                         [trimmedReadsR1],
                         [left_or_single_reads],
                         command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads,
                         samples=[readset.sample]
                     )
-                ]))
+                )
                 dada2_inputs.append(left_or_single_reads)
 
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-        jobs.append(concat_jobs(
-            [mkdir_job] +
-            raw_reads_jobs +
-            [dada2.dada2(dada2_inputs, ampliconLengthFile, lnkRawReadsFolder, design_file_rel_path, dada2_directory)]
-            , name="dada2.run"))
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(lnkRawReadsFolder),
+                    raw_reads_jobs,
+                    dada2.dada2(
+                        dada2_inputs,
+                        ampliconLengthFile,
+                        lnkRawReadsFolder,
+                        designFile,
+                        dada2_directory
+                    )
+                ],
+                name="dada2.run"
+            )
+        )
 
         return jobs
 
@@ -461,8 +494,9 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
                 self.ampliconLengthParser,
                 self.flash_pass2,
                 self.merge_flash_stats,
-                self.asva]
-                }
+                self.asva
+                ]
+            }
 
 
 def main(parsed_args):
