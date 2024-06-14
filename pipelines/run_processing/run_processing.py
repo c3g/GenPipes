@@ -941,14 +941,14 @@ class RunProcessing(common.MUGQICPipeline):
         self.readsets
 
         # Builds the mask from the ReadInfo.xml
-        mask = ""
+        cycles_mask = ""
         for read in self.read_infos:
             if read.is_index:
-                mask += str(read.nb_cycles) + "B"
+                cycles_mask += str(read.nb_cycles) + "B"
                 break
             else:
-                mask += str(read.nb_cycles) + 'T'
-        if "B" not in mask:
+                cycles_mask += str(read.nb_cycles) + 'T'
+        if "B" not in cycles_mask:
             log.info(" ".join(["No indexes cycles set on the sequencer,",
                                "*NOT* Generating index counts"]))
         else:
@@ -961,6 +961,8 @@ class RunProcessing(common.MUGQICPipeline):
 
                 lane_jobs = []
 
+                # If masks are defined per lanes in the RunProcessing object
+                # use them .
                 if self.mask[lane]:
                     mask = ""
                     for component in self.mask[lane].split(","):
@@ -969,6 +971,8 @@ class RunProcessing(common.MUGQICPipeline):
                         elif component[0] == "I":
                             mask += re.search("\d+",component)[0] + "B"
                             break
+                else:
+                    mask = cycles_mask
 
                 input = os.path.join(self.run_dir, "RunInfo.xml")
                 output = os.path.join(self.output_dirs[lane]["index_directory"],  f"{self.run_id}_{lane}.metrics")
