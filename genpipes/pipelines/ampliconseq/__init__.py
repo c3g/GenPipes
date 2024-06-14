@@ -441,7 +441,8 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                                 right_reads,
                                 input=trimmedReadsR2
                             )
-                        ]
+                        ],
+                        samples=[readset.sample]
                     )
                 )
 
@@ -449,10 +450,15 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
             elif readset.run_type == "SINGLE_END":
                 left_or_single_reads = readSetPrefix + ".single.fastq.gz"
                 raw_reads_jobs.append(
-                    bash.ln(
-                        os.path.relpath(trimmedReadsR1, lnkRawReadsFolder),
-                        left_or_single_reads,
-                        input=trimmedReadsR1
+                    concat_jobs(
+                        [
+                            bash.ln(
+                                os.path.relpath(trimmedReadsR1, lnkRawReadsFolder),
+                                left_or_single_reads,
+                                input=trimmedReadsR1
+                            )
+                        ],
+                        samples=[readset.sample]
                     )
                 )
                 dada2_inputs.append(left_or_single_reads)
@@ -464,8 +470,8 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
         jobs.append(
             concat_jobs(
                 [
-                    bash.mkdir(lnkRawReadsFolder),
-                    raw_reads_jobs,
+                    bash.mkdir(lnkRawReadsFolder)
+                ] + raw_reads_jobs + [
                     dada2.dada2(
                         dada2_inputs,
                         ampliconLengthFile,
