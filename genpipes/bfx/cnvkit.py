@@ -97,8 +97,14 @@ cnvkit.py fix {options} \\
     )
 
 def segment(input_cnr, output_cns, vcf=None, sample_id=None, normal_id=None):
+    
+    if vcf:
+        inputs = [input_cnr, vcf]
+    else:
+        inputs = [input_cnr]
+    
     return Job(
-        [input_cnr],
+        inputs,
         [output_cns],
         [
             ['cnvkit_batch', 'module_cnvkit'],
