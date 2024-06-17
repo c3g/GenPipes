@@ -127,13 +127,13 @@ def align_and_estimate_abundance(trinity_fasta, output_directory=None, prep_refe
                 ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
             command="""\
 align_and_estimate_abundance.pl \\
-  --transcripts {transcripts} \\
-  --seqType fa \\
-  --est_method RSEM \\
-  --aln_method bowtie2 \\
-  --trinity_mode \\
-  --output_dir {output_directory} \\
-  --prep_reference""".format(
+    --transcripts {transcripts} \\
+    --seqType fa \\
+    --est_method RSEM \\
+    --aln_method bowtie2 \\
+    --trinity_mode \\
+    --output_dir {output_directory} \\
+    --prep_reference""".format(
                 transcripts=trinity_fasta,
                 output_directory=output_directory
             ),
@@ -150,15 +150,15 @@ align_and_estimate_abundance.pl \\
                 ['align_and_estimate_abundance_prep_reference', 'module_trinity']],
             command="""\
 align_and_estimate_abundance.pl {other_options} \\
-  --transcripts {transcripts} \\
-  --seqType fq \\
-  --est_method RSEM \\
-  --aln_method bowtie2 \\
-  --trinity_mode \\
-  --coordsort_bam \\
-  --output_dir {output_directory} \\
-  --thread_count {cpu} \\
-  {left_or_single_reads}{right_reads}""".format(
+    --transcripts {transcripts} \\
+    --seqType fq \\
+    --est_method RSEM \\
+    --aln_method bowtie2 \\
+    --trinity_mode \\
+    --coordsort_bam \\
+    --output_dir {output_directory} \\
+    --thread_count {cpu} \\
+    {left_or_single_reads}{right_reads}""".format(
                 other_options=global_conf.global_get('align_and_estimate_abundance', 'other_options'),
                 transcripts=trinity_fasta,
                 sample_name=sample_name,
