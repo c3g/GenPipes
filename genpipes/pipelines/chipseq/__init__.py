@@ -757,9 +757,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/""".format(
 
         readset_file = os.path.relpath(self.readsets_file.name, self.output_dir)
 
-        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.qc_metrics.md")
         output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.marks]
-        output_files.append(report_file)
 
         jobs = []
 
@@ -795,9 +793,7 @@ done""".format(
                 ),
                 name="qc_plots_R", 
                 samples=self.samples,
-                removable_files=output_files,
-                report_files=[report_file]
-            )
+                removable_files=output_files            )
         )
         return jobs
 
