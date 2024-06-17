@@ -1063,8 +1063,8 @@ END
             [input] = self.select_input_files(
                 [
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
-                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")],
                 ]
