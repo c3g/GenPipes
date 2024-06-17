@@ -156,7 +156,7 @@ class AmpliconSeq(common.Illumina):
 
         read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
         readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv")
-        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats)])
+        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo -e 'Sample\\tReadset\\tRaw {read_type} Reads #\\tSurviving {read_type} Reads #\\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats)])
         for readset in self.readsets:
             trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
@@ -263,7 +263,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
         job = concat_jobs(
             [
                 bash.mkdir(self.output_dirs["metrics_directory"]),
-                Job(command="echo 'Sample\\tReadset\\tTrim Paired Reads #\\tMerged Paired Reads #\\tMerged Paired Reads %' > " + readset_merge_flash_stats)
+                Job(command="echo -e 'Sample\\tReadset\\tTrim Paired Reads #\\tMerged Paired Reads #\\tMerged Paired Reads %' > " + readset_merge_flash_stats)
             ]
         )
 
@@ -351,7 +351,7 @@ cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/""".format(
         job = concat_jobs(
             [
                 bash.mkdir(self.output_dirs["metrics_directory"]),
-                Job(command="echo 'Sample\\tReadset\\tMinimum Amplicon Length\\tMaximum Amplicon Length\\tMinimum Flash Overlap\\tMaximum Flash Overlap' > " + readset_merge_flash_stats)
+                Job(command="echo -e 'Sample\\tReadset\\tMinimum Amplicon Length\\tMaximum Amplicon Length\\tMinimum Flash Overlap\\tMaximum Flash Overlap' > " + readset_merge_flash_stats)
             ]
         )
 
