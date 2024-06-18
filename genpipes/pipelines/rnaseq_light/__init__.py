@@ -18,12 +18,9 @@
 ################################################################################
 
 # Python Standard Modules
-import argparse
 import logging
-import math
 import os
 import re
-import subprocess
 
 # MUGQIC Modules
 from ...core.config import global_conf, _raise, SanitycheckError
@@ -35,6 +32,7 @@ from ...bfx import (
     gq_seq_utils,
     job2json_project_tracking,
     kallisto,
+    multiqc,
     rmarkdown,
     tools
     )
@@ -185,6 +183,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
     def kallisto_count_matrix(self):
         """
         Use the output from Kallisto to create a transcript count matrix.
+        Create a summary table to be included in the multiqc report.
         """
 
         jobs=[]
@@ -238,25 +237,95 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                 readsets=self.readsets
             )
         )
-
         # Create kallisto report
-        readset_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimReadsetTable.tsv") # set in merge trimmomatic stats
+        link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+
+        inputs = [
+            os.path.join(self.output_dirs["metrics_directory"], "trimReadsetTable.tsv"),
+            os.path.join(output_dir, "all_readsets.abundance_genes.csv"),
+            os.path.join(output_dir, "all_readsets.abundance_transcripts.csv")
+            ]
+        kallisto_report_file = os.path.join(output_dir, "all_readsets.kallisto_report.tsv")
+        kallisto_multiqc_file = os.path.join(link_directory, "all_readsets.kallisto_mqc.txt")
+        
+        kallisto_report_job = tools.r_create_kallisto_report(
+            report_dir,
+            inputs,
+            kallisto_report_file
+        )
+
+        kallisto_multiqc_format_job = Job(
+            [kallisto_report_file],
+            [kallisto_multiqc_file],
+            command="""\
+echo -e "# plot_type: 'table'
+# section_name: 'Kallisto' 
+# headers:
+#   RawReads:
+#       title: 'Raw Reads'
+#       description: 'total number of reads obtained from the sequencer'
+#       format: '{{:,.0f}}'
+#       placement: 930
+#   SurvivingReads:
+#       title: 'Surviving Reads'
+#       description: 'number of remaining reads after the trimming step'
+#       format: '{{:,.0f}}'
+#       placement: 940
+#   PercSurviving:
+#       title: '% Surviving'
+#       description: 'Surviving Reads / Raw Reads * 100'
+#       placement: 950
+#   Transcriptome:
+#       title: 'Transcriptome targets'
+#       description: 'number of transcript targets'
+#       format: '{{:,.0f}}'
+#       placement: 960
+#   Transcripts:
+#       title: 'Transcripts'
+#       description: 'number of transcripts with at least 5 reads'
+#       format: '{{:,.0f}}'
+#       placement: 970
+#   TranscriptsReads:
+#       title: 'Transcripts reads'
+#       description: 'total number of reads covering the transcripts'
+#       format: '{{:,.0f}}'
+#       placement: 980
+#   PercTranscriptsReads:
+#       title: '% Transcripts Reads'
+#       description: 'Transcripts Reads # / Surviving reads * 100'
+#       placement: 990
+#   Genes:
+#       title: 'Genes'
+#       description: 'number of Genes with at least 5 reads'
+#       format: '{{:,.0f}}'
+#       placement: 1000
+#   GenesReads:
+#       title: 'Genes Reads'
+#       description: 'total number of reads covering the genes'
+#       format: '{{:,.0f}}'
+#       placement: 1010
+#   PercGenesReads:
+#       title: '% Genes Reads'
+#       description: 'Genes Reads # / Surviving reads * 100'
+#       placement: 1020" > {kallisto_multiqc_file}
+
+cat {kallisto_report_file} >> {kallisto_multiqc_file}""".format(
+    kallisto_report_file=kallisto_report_file,
+    kallisto_multiqc_file=kallisto_multiqc_file
+    )
+)
+
         jobs.append(
-            rmarkdown.render(
-                job_input=[
-                    os.path.join(output_dir, "all_readsets.abundance_genes.csv"),
-                    os.path.join(output_dir, "all_readsets.abundance_transcripts.csv"),
-                    readset_merge_trim_stats
+            concat_jobs(
+                [
+                    bash.mkdir(link_directory),
+                    kallisto_report_job,
+                    kallisto_multiqc_format_job
                 ],
-                job_name="report.kallisto_count_matrix",
-                input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd"),
-                samples=self.samples,
-                readsets=self.readsets,
-                render_output_dir=self.output_dirs['report_directory'],
-                module_section='report',
-                prerun_r=f'report_dir="{self.output_dirs["report_directory"]}";'
+                name="report.kallisto_count_matrix"
             )
         )
+        self.multiqc_inputs.append(kallisto_multiqc_file)
 
         return jobs
 
@@ -324,6 +393,28 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                 name="sleuth_differential_expression"
             )
         ]
+    
+    def multiqc(self):
+        """
+        A quality control report for all samples is generated.
+        For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+        """
+        jobs = []
+        
+        input_links = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            
+        output = os.path.join(self.output_dirs['report_output_directory'], "RnaSeqLight.multiqc")
+
+        job = multiqc.run(
+            input_links,
+            output,
+            ini_section='multiqc'
+        )
+        job.name = "multiqc"
+
+        jobs.append(job)
+
+        return jobs
 
     @property
     def step_list(self):
@@ -337,7 +428,8 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
             self.kallisto,
             self.kallisto_count_matrix,
             self.gq_seq_utils_exploratory_analysis_rnaseq_light,
-            self.sleuth_differential_expression
+            self.sleuth_differential_expression,
+            self.multiqc
         ]}
 
 def main(parsed_args):

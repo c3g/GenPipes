@@ -583,6 +583,28 @@ R --no-save --args \\
         )
     )
 
+def r_create_kallisto_report(
+        report_dir,
+        inputs,
+        output_file,
+        ini_section='report'
+        ):
+    return Job(
+        inputs,
+        [output_file],
+        [
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_R']
+        ],
+        command="""\
+R --no-save --args \\
+    {report_dir} {output_file} \\
+    < $R_TOOLS/kallistoReport.R""".format(
+        report_dir=report_dir,
+        output_file=output_file
+    )
+)
+
 def r_select_scaffolds(
         inputs, 
         outputs, 
