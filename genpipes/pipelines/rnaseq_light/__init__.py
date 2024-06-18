@@ -389,7 +389,7 @@ cat {kallisto_report_file} >> {kallisto_multiqc_file}""".format(
         
         input_links = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
             
-        output = os.path.join(self.output_dirs['report_output_directory'], "RnaSeqLight.multiqc")
+        output = os.path.join(self.output_dirs['report_directory'], "RnaSeqLight.multiqc")
 
         job = multiqc.run(
             input_links,
