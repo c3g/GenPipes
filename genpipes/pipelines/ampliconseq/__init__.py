@@ -261,6 +261,9 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
             if flash_stats_file:
                 link_job = concat_jobs(
                     [
+                        bash.mkdir(
+                            link_directory
+                        ),
                         bash.ln(
                             os.path.relpath(flash_log, link_directory),
                             os.path.join(link_directory, readset.name + ".flash.log"),
