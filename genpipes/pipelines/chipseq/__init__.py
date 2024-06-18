@@ -277,7 +277,7 @@ END
                 )
             ], name="trimmomatic." + readset.name, samples=[readset.sample]))
 
-        self.multiqc_inputs.append(os.path.join(link_directory, readset.name + ".trim.log"))
+            self.multiqc_inputs.append(os.path.join(link_directory, readset.name + ".trim.log"))
         return jobs
 
     def merge_trimmomatic_stats(self):

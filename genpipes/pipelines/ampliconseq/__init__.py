@@ -18,23 +18,19 @@
 ################################################################################
 
 # Python Standard Modules
-import argparse
 import logging
-import math
 import os
 import re
-import sys
 from os.path import basename
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
 from ...core.job import Job, concat_jobs
 from .. import common
-from ...bfx import tools
 from ...bfx import bash_cmd as bash
 from ...bfx import dada2
 from ...bfx import flash
-from ...bfx import vsearch
+from ...bfx import multiqc
 from ...bfx import trimmomatic
 
 log = logging.getLogger(__name__)
@@ -65,6 +61,16 @@ class AmpliconSeq(common.Illumina):
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
+    
+    @property
+    def multiqc_inputs(self):
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = []
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
 
     def trimmomatic16S(self):
         """
@@ -78,6 +84,9 @@ class AmpliconSeq(common.Illumina):
         """
 
         jobs = []
+
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
         #We'll trim the first 5 nucleotides anyway (to account for quality bias)
         headcropValue=5
         for readset in self.readsets:
@@ -142,11 +151,23 @@ class AmpliconSeq(common.Illumina):
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-            jobs.append(concat_jobs([
-                # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
-                job
-            ], name="trimmomatic16S." + readset.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(trim_directory),
+                        bash.mkdir(link_directory),
+                        job,
+                        bash.ln(
+                            os.path.relpath(trim_log, link_directory),
+                            os.path.join(link_directory, readset.name + ".trim.log"),
+                            input = trim_log
+                        )
+                    ], 
+                    name="trimmomatic16S." + readset.name
+                    )
+                )
+            self.multiqc_inputs.append(os.path.join(link_directory, readset.name + ".trim.log"))
+
         return jobs
 
     def merge_trimmomatic_stats16S(self):
@@ -208,6 +229,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
         Merge paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/).
         """
         jobs = []
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
@@ -235,14 +257,40 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
                 flash_hist,
                 flash_stats_file
             )
+
+            if flash_stats_file:
+                link_job = concat_jobs(
+                    [
+                        bash.ln(
+                            os.path.relpath(flash_log, link_directory),
+                            os.path.join(link_directory, readset.name + ".flash.log"),
+                            input = flash_log
+                        ),
+                        bash.ln(
+                            os.path.relpath(flash_hist, link_directory),
+                            os.path.join(link_directory, readset.name + ".flash.hist"),
+                            input = flash_hist
+                        )
+                    ]
+                )
+                self.multiqc_inputs.append(os.path.join(link_directory, readset.name + ".flash.log"))
+                self.multiqc_inputs.append(os.path.join(link_directory, readset.name + ".flash.hist"))
+            else:
+                link_job = None
+
             job.samples = [readset.sample]
 
-            jobs.append(concat_jobs([
-                # FLASh does not create output directory by default
-                Job(command="mkdir -p " + merge_directory),
-                job
-            ], name=job_name_prefix + readset.sample.name))
-
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(merge_directory),
+                        job,
+                        link_job
+                    ], 
+                    name=job_name_prefix + readset.sample.name
+                )
+            )
+            
         return jobs
 
     def flash_pass1(self):
@@ -322,7 +370,7 @@ python -c 'import re; \\
             )
 
         sample_merge_flash_stats = os.path.join("metrics", "mergeSampleTable.tsv")
-        report_file = os.path.join("report", "Illumina.flash_stats.md")
+
         return [concat_jobs([
             job,
             Job(
@@ -485,6 +533,29 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
         )
 
         return jobs
+    
+    def multiqc(self):
+        """
+        A quality control report for all samples is generated.
+        For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+        """
+        jobs = []
+        
+        input_links = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            
+        output = os.path.join(self.output_dirs['report_directory'], f"AmpliconSeq.multiqc")
+
+        job = multiqc.run(
+            input_links,
+            output,
+            ini_section='multiqc'
+            )
+        
+        job.name = "multiqc"
+        jobs.append(job)
+
+        return jobs        
+
 
     @property
     def step_list(self):
@@ -498,7 +569,8 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                 self.ampliconLengthParser,
                 self.flash_pass2,
                 self.merge_flash_stats,
-                self.asva
+                self.asva,
+                self.multiqc
                 ]
             }
 
