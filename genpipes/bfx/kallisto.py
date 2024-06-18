@@ -52,7 +52,7 @@ kallisto quant \\
   -i {transcriptome} \\
   -o {output_dir} \\
   {infiles} \\
-  > {output_dir}/kallisto_quant.log""".format(
+  2> {output_dir}/kallisto_quant.log""".format(
             parameters=parameters,
             threads=global_conf.global_get('kallisto', 'threads'),
             transcriptome=transcriptome,
