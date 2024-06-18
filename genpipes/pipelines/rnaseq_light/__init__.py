@@ -33,7 +33,6 @@ from ...bfx import (
     job2json_project_tracking,
     kallisto,
     multiqc,
-    rmarkdown,
     tools
     )
 
@@ -347,19 +346,6 @@ cat {kallisto_report_file} >> {kallisto_multiqc_file}""".format(
             name="gq_seq_utils_exploratory_analysis_rnaseq_light",
             samples=self.samples,
             readsets=self.readsets
-            )
-        )
-
-        jobs.append(
-            rmarkdown.render(
-                job_input=os.path.join(self.output_dirs['exploratory_directory'], "index.tsv"),
-                job_name="report.gq_seq_utils_exploratory_analysis_rnaseq",
-                input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd"),
-                samples=self.samples,
-                readsets=self.readsets,
-                render_output_dir=self.output_dirs['report_directory'],
-                module_section='report',
-                prerun_r=f'report_dir="{self.output_dirs["report_directory"]}";'
             )
         )
 
