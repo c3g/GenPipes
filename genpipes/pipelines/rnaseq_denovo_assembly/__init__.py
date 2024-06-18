@@ -436,6 +436,7 @@ pandoc --to=markdown \\
         for db in [swissprot_db]:
             blast_chunks = [os.path.join(blast_prefix + os.path.basename(db) + f"_chunk_{i:07d}.tsv") for i in range(num_fasta_chunks)]
             blast_result = os.path.join(blast_prefix + os.path.basename(db) + ".tsv")
+            report_dir = self.output_dirs['report_directory']
             jobs.append(
                 concat_jobs(
                     [
@@ -448,38 +449,41 @@ pandoc --to=markdown \\
                             [blast_result],
                             [blast_result + ".zip"],
                             command=f"zip -j {blast_result}.zip {blast_result}"
-                        )
+                        ),
+                        bash.cp(
+                            f"{blast_result}.zip", 
+                            f"{report_dir}/")
                     ],
                     name="blastx_trinity_" + os.path.basename(db) + "_merge",
                     samples=self.samples
                 )
             )
 
-        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.blastx_trinity_uniprot_merge.md")
-        jobs.append(
-            Job(
-                [blast_prefix + os.path.basename(swissprot_db) + ".tsv.zip"],
-                [report_file],
-                [['blastx_trinity_uniprot_merge', 'module_pandoc']],
-                command="""\
-mkdir -p {report_dir} && \\
-cp {blast_prefix}{blast_db}.tsv.zip  {report_dir}/ && \\
-pandoc --to=markdown \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable blast_db="{blast_db}" \\
-  {report_template_dir}/{basename_report_file} \\
-  > {report_file}""".format(
-                    blast_prefix=blast_prefix,
-                    blast_db=os.path.basename(swissprot_db),
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_dir=self.output_dirs['report_directory'],
-                    report_file=report_file
-                ),
-                report_files=[report_file],
-                name="blastx_trinity_uniprot_merge_report",
-                samples=self.samples)
-        )
+#        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.blastx_trinity_uniprot_merge.md")
+#        jobs.append(
+#            Job(
+#                [blast_prefix + os.path.basename(swissprot_db) + ".tsv.zip"],
+#                [report_file],
+#                [['blastx_trinity_uniprot_merge', 'module_pandoc']],
+#                command="""\
+#mkdir -p {report_dir} && \\
+#cp {blast_prefix}{blast_db}.tsv.zip  {report_dir}/ && \\
+#pandoc --to=markdown \\
+#  --template {report_template_dir}/{basename_report_file} \\
+#  --variable blast_db="{blast_db}" \\
+#  {report_template_dir}/{basename_report_file} \\
+#  > {report_file}""".format(
+#                    blast_prefix=blast_prefix,
+#                    blast_db=os.path.basename(swissprot_db),
+#                    report_template_dir=self.report_template_dir,
+#                    basename_report_file=os.path.basename(report_file),
+#                    report_dir=self.output_dirs['report_directory'],
+#                    report_file=report_file
+#                ),
+#                report_files=[report_file],
+#                name="blastx_trinity_uniprot_merge_report",
+#                samples=self.samples)
+#        )
 
         return jobs
 
@@ -934,19 +938,6 @@ pandoc --to=markdown \\
             )
         )
 
-        # Render Rmarkdown Report
-        jobs.append(
-            rmarkdown.render(
-                job_input=os.path.join(self.output_dirs["exploratory_directory"], "index.tsv"),
-                job_name="gq_seq_utils_exploratory_analysis_rnaseq_denovo_report",
-                input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq.Rmd"),
-                samples=self.samples,
-                readsets=self.readsets,
-                render_output_dir=self.output_dirs["report_directory"],
-                module_section='report', # TODO: this or exploratory?
-                prerun_r=f'report_dir="{self.output_dirs["report_directory"]}";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
-             )
-        )
         return jobs
 
     def filter_annotated_components(self):
@@ -996,7 +987,7 @@ pandoc --to=markdown \\
                 samples=self.samples
             )
         )
-        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.filtered.trinity.md")
+  #      report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.filtered.trinity.md")
 
         jobs.append(
             Job(
@@ -1006,30 +997,19 @@ pandoc --to=markdown \\
                     trinity_stats_prefix + ".jpg",
                     trinity_stats_prefix + ".pdf"
                 ],
-                [report_file],
+                [],
                 [['trinity', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
 cp {trinity_filtered}.zip {report_dir}/{output_zip}.zip && \\
-cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
-assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
-pandoc --to=markdown \\
---template {report_template_dir}/{basename_report_file} \\
---variable assembly_table="$assembly_table" \\
---variable filter_string="{filter_string}" \\
-{report_template_dir}/{basename_report_file} \\
-> {report_file}""".format(
+cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/""".format(
                     trinity_filtered=trinity_filtered,
                     output_zip=os.path.basename(output_directory),
                     trinity_stats_prefix=trinity_stats_prefix,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
                     report_dir=self.output_dirs['report_directory'],
-                    report_file=report_file,
                     filter_string="" if not global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False) else global_conf.global_get('filter_annotated_components', 'filters_trinotate', required=False)
                 ),
                 name="filter_annotated_components_report",
-                report_files=[report_file],
                 samples=self.samples
             )
         )
@@ -1102,19 +1082,6 @@ pandoc --to=markdown \\
             )
         )
 
-        # Render Rmarkdown Report
-        jobs.append(
-            rmarkdown.render(
-                job_input=os.path.join(exploratory_output_dir, "index.tsv"),
-                job_name="gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered_report",
-                input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.gq_seq_utils_exploratory_analysis_rnaseq_filtered.Rmd"),
-                samples=self.samples,
-                readsets=self.readsets,
-                render_output_dir=self.output_dirs["report_directory"],
-                module_section='report',
-                prerun_r=f'report_dir="{self.output_dirs["report_directory"]}/filtered_assembly"; exploratory_dir="{exploratory_output_dir}";'
-            )
-        )
         return jobs
 
 
