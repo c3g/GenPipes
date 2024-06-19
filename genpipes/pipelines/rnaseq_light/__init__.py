@@ -118,6 +118,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                     "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             output_dir = os.path.join(self.output_dirs["kallisto_directory"], sample.name)
+            link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
             parameters = " ".join([other_param, parameters]) if other_param else parameters
             job_name = f"kallisto.{sample.name}"
             job_project_tracking_metrics = []
@@ -147,11 +148,17 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                 concat_jobs(
                     [
                         bash.mkdir(output_dir),
+                        bash.mkdir(link_directory),
                         kallisto.quant(
                             input_fastqs,
                             output_dir,
                             transcriptome_file,
                             parameters
+                        ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(output_dir, "kallisto_quant.log"), link_directory),
+                            os.path.join(link_directory, sample.name + ".kallisto_quant.log"),
+                            input=os.path.join(output_dir, "kallisto_quant.log")
                         ),
                         bash.mv(
                             os.path.join(output_dir, "abundance.tsv"),
