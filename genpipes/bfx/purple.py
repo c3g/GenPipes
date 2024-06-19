@@ -47,16 +47,16 @@ def run(
     purple_outputs = [
         os.path.join(output_dir, tumor_name + ".purple.purity.tsv"),
         os.path.join(output_dir, tumor_name + ".purple.qc"),
-        os.path.join(output_dir, tumor_name + ".driver.catalog.somatic.tsv"),
-        os.path.join(output_dir, tumor_name + ".driver.catalog.germline.tsv")
+        os.path.join(output_dir, tumor_name + ".purple.driver.catalog.somatic.tsv"),
+        os.path.join(output_dir, tumor_name + ".purple.driver.catalog.germline.tsv")
     ]
 
     if structural_sv is not None and sv_recovery is not None:
         input_files.append(structural_sv)
         input_files.append(sv_recovery)
         purple_sv = os.path.join(output_dir, tumor_name + ".purple.sv.vcf.gz")
-        driver_somatic = os.path.join(output_dir, tumor_name + ".driver.catalog.somatic.tsv")
-        driver_germline = os.path.join(output_dir, tumor_name + ".driver.catalog.germline.tsv")
+        driver_somatic = os.path.join(output_dir, tumor_name + ".purple.driver.catalog.somatic.tsv")
+        driver_germline = os.path.join(output_dir, tumor_name + ".purple.driver.catalog.germline.tsv")
         purple_outputs.append(purple_sv)
         purple_outputs.append(driver_somatic)
         purple_outputs.append(driver_germline)
