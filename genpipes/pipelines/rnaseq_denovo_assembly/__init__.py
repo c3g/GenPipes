@@ -334,7 +334,6 @@ echo -e "{readset}\\t`cut -f2 {normalization_stats_file}` \\
             Job(
                 [trinity_zip, trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
                 [report_file],
-                [['trinity', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
 mkdir -p {link_directory} && \\
@@ -1196,8 +1195,8 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
         jobs = []
         trinotate_annotation_report = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
         report_dir = self.output_dirs["report_directory"]
-        input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq.Rmd")
-
+       # input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq.Rmd")
+        input_rmarkdown_file = global_conf.global_get('differential_expression_goseq_rnaseq_denovo_report', 'report_template')
         # Run DGE and merge dge results with annotations
         for item in "gene", "isoform":
             jobs.append(
@@ -1239,7 +1238,8 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
         jobs = []
         trinotate_annotation_report = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
         report_dir = os.path.join(self.output_dirs["report_directory"], "filtered_assembly")
-        input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq_filtered.Rmd")
+       # input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq_filtered.Rmd")
+        input_rmarkdown_file = global_conf.global_get('differential_expression_goseq_rnaseq_denovo_filtered_report', 'report_template')
 
         # Filter input files
         trinotate_annotation_report_filtered = trinotate_annotation_report + ".isoform_filtered.tsv"
