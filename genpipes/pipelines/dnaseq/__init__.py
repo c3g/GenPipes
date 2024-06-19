@@ -1201,7 +1201,7 @@ END
                 multiqc_input_path,
                 output
             )
-            job.name = "multiqc_all_samples"
+            job.name = "multiqc.all_samples"
             job.samples = self.samples
             job.readsets = self.readsets
             job.input_files = multiqc_files_paths
