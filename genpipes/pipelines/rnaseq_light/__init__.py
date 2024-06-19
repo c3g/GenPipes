@@ -183,6 +183,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                     readsets=sample.readsets
                 )
             )
+            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".kallisto_quant.log"))
 
         return jobs
 
