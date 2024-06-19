@@ -338,7 +338,7 @@ echo -e "{readset}\\t`cut -f2 {normalization_stats_file}` \\
 mkdir -p {report_dir} && \\
 mkdir -p {link_directory} && \\
 cp {trinity_zip} {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
-cp {trinity_stats_prefix}.jpg {link_dir}/Trinity.stats_mqc.jpg && \\
+cp {trinity_stats_prefix}.jpg {link_directory}/Trinity.stats_mqc.jpg && \\
 echo -e "# plot_type: 'table'
 # description: 'The transcriptome has been assembled on normalized reads using the [Trinity] assembler [@trinity]. Trinity has created a `Trinity.fasta` file with a list of contigs representing the transcriptome isoforms. Those transcripts are grouped in components loosely representing genes.'
 Metric\tstats" > {report_file} && \\

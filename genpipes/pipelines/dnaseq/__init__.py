@@ -1195,7 +1195,7 @@ END
     
             multiqc_input_path = [os.path.join(self.output_dirs['metrics_directory'][sample.name]) for sample in self.samples]
             
-            output = os.path.join(self.output_dirs['report_directory'], "multiqc_report")
+            output = os.path.join(self.output_dirs['report_directory'], "DnaSeq.{self.protocol}.multiqc")
     
             job = multiqc.run(
                 multiqc_input_path,
@@ -1225,7 +1225,7 @@ END
                         self.multiqc_inputs[tumor_pair.tumor.name]):
                     multiqc_input_paths.append(metrics)
                 
-                output = os.path.join(report_directory, f"{tumor_pair.name}.multiqc")
+                output = os.path.join(report_directory, f"TumorPair.{tumor_pair.name}.multiqc")
                 job = multiqc.run(
                     patient_folders,
                     output
@@ -1246,7 +1246,7 @@ END
         
         inputs = {}
         for tumor_pair in self.tumor_pairs.values():
-            inputs["Tumor"] = [os.path.join(self.output_dirs['report_directory'], f"{tumor_pair.name}.multiqc.html")]
+            inputs["Tumor"] = [os.path.join(self.output_dirs['report_directory'], f"TumorPair.{tumor_pair.name}.multiqc.html")]
             
             for key, input_files in inputs.items():
                 for idx, report_file in enumerate(input_files):
