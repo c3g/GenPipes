@@ -29,6 +29,7 @@ from ...bfx import bash_cmd as bash
 from ...bfx import blast
 from ...bfx import differential_expression
 from ...bfx import exonerate
+from ...bfx import multiqc
 from ...bfx import gq_seq_utils
 from ...bfx import rmarkdown
 from ...bfx import seq2fun
@@ -142,6 +143,16 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
+    
+    @property
+    def multiqc_inputs(self):
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = []
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
 
     def insilico_read_normalization_readsets(self):
         """
@@ -211,36 +222,43 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
         job.name = "insilico_read_normalization_all"
         job.samples = self.samples
         jobs.append(job)
+        
+        link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+        report_file = os.path.join(link_directory, "Normalization.stats_mqc.txt")
 
-        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.insilico_read_normalization_all.md")
-        normalization_stats_file = os.path.join(self.output_dirs["insilico_read_normalization_directory"], "all", "normalization.stats.tsv")
-        jobs.append(
-            Job(
-                [normalization_stats_file, os.path.join(self.output_dirs["report_directory"], "trimReadsetTable.tsv")],
-                [report_file],
-                [['insilico_read_normalization_all', 'module_pandoc']],
-                command="""\
-mkdir -p {report_dir} && \\
-sum_norm=`cut -f2 {normalization_stats_file}` && \\
-normalization_table=`sed '1d' {report_dir}/trimReadsetTable.tsv | LC_NUMERIC=en_CA awk -v sum_norm=$sum_norm '{{sum_trim+=$4}}END{{print sprintf("%\\47d", sum_trim)"|"sprintf("%\\47d", sum_norm)"|"sprintf("%.2f", sum_norm / sum_trim * 100)}}'` && \\
-pandoc --to=markdown \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable read_type="{read_type}" \\
-  --variable normalization_table="$normalization_table" \\
-  {report_template_dir}/{basename_report_file} \\
-  > {report_file}""".format(
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    read_type="Paired" if self.run_type == 'PAIRED_END' else "Single",
-                    normalization_stats_file=normalization_stats_file,
-                    report_dir=self.output_dirs['report_directory'],
-                    report_file=report_file
-                ),
-                report_files=[report_file],
-                name="insilico_read_normalization_all_report",
-                samples=self.samples)
+        job = concat_jobs(
+            [
+                bash.mkdir(link_directory),
+                Job(command="""\
+echo -e "Sample\\tNormalizedReads" > {report_file}""".format(
+            report_file=report_file
+            )
         )
+    ]
+)        
+        for readset in self.readsets:
+            normalization_stats_file = os.path.join(self.output_dirs["insilico_read_normalization_directory"], readset.name, "normalization.stats.tsv")
 
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        [normalization_stats_file],
+                        [report_file],
+                        command="""\
+echo -e "{readset}\\t`cut -f2 {normalization_stats_file}` \\
+    >> {report_file}""".format(
+        readset=readset.name,
+        normalization_stats_file=normalization_stats_file,
+        report_file=report_file
+        ),
+        samples=[readset.sample]
+        )
+    ]
+)
+        job.name = "insilico_read_normalization_all_report"
+        jobs.append(job)
+        
         return jobs
 
     def trinity(self):
@@ -310,7 +328,8 @@ pandoc --to=markdown \\
             )
         )
 
-        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.trinity.md")
+        link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+        report_file = os.path.join(link_directory, "Assembly.stats_mqc.txt")
         jobs.append(
             Job(
                 [trinity_zip, trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
@@ -318,18 +337,18 @@ pandoc --to=markdown \\
                 [['trinity', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
+mkdir -p {link_directory} && \\
 cp {trinity_zip} {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
-assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
-pandoc --to=markdown \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable assembly_table="$assembly_table" \\
-  {report_template_dir}/{basename_report_file} \\
-  > {report_file}""".format(
+cp {trinity_stats_prefix}.jpg {link_dir}/Trinity.stats_mqc.jpg && \\
+echo -e "# plot_type: 'table'
+# description: 'The transcriptome has been assembled on normalized reads using the [Trinity] assembler [@trinity]. Trinity has created a `Trinity.fasta` file with a list of contigs representing the transcriptome isoforms. Those transcripts are grouped in components loosely representing genes.'
+Metric\tstats" > {report_file} && \\
+tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
                     trinity_zip=trinity_zip,
                     trinity_stats_prefix=trinity_stats_prefix,
                     report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
                     report_dir=self.output_dirs['report_directory'],
+                    link_directory=link_directory,
                     report_file=report_file
                 ),
                 report_files=[report_file],
@@ -337,6 +356,8 @@ pandoc --to=markdown \\
                 samples=self.samples
             )
         )
+        self.multiqc_inputs.append(report_file)
+        self.multiqc_inputs.append(os.path.join(link_directory, "Trinity.stats_mqc.jpg"))
 
         return jobs
 
@@ -781,19 +802,6 @@ pandoc --to=markdown \\
         )
         jobs.append(job)
 
-        # Render Rmarkdown Report
-        jobs.append(
-            rmarkdown.render(
-                job_input=os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv"),
-                job_name="trinotate_report",
-                input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.trinotate.Rmd"),
-                samples=self.samples,
-                readsets=self.readsets,
-                render_output_dir=self.output_dirs["report_directory"],
-                module_section='report',
-                prerun_r=f'report_dir="{self.output_dirs["trinotate_directory"]}"; source_dir="{self.output_dirs["trinotate_directory"]}";'
-            )
-        )
         return jobs
 
     def align_and_estimate_abundance_prep_reference(self):
@@ -998,7 +1006,6 @@ pandoc --to=markdown \\
                     trinity_stats_prefix + ".pdf"
                 ],
                 [],
-                [['trinity', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
 cp {trinity_filtered}.zip {report_dir}/{output_zip}.zip && \\
@@ -1314,6 +1321,32 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
                          f'top_n_results=10; contrasts=c("{",".join(contrast.name for contrast in self.contrasts)}");'
             )
         )
+        return jobs
+    
+    def multiqc(self):
+        """
+        Aggregate results from bioinformatics analyses across many samples into a single report.
+        MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
+        perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
+        """
+        jobs = []
+
+        input_links = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+        output = os.path.join(self.output_dirs['report_directory'], f"RnaSeqDenovo.{self.protocol}.multiqc")
+
+        job = concat_jobs(
+            [
+                bash.mkdir(os.path.join(self.output_dirs['report_directory'])),
+                multiqc.run(
+                    [input_links],
+                    output
+                )
+            ]
+        )
+        job.name = "multiqc"
+        job.input_files = self.multiqc_inputs
+        jobs.append(job)
+
         return jobs
 
     def merge_fastq(self):
@@ -1960,7 +1993,8 @@ awk -v OFS="\t" '{{ print $1,$0}}' \\
                 self.differential_expression,
                 self.filter_annotated_components,
                 self.gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered,
-                self.differential_expression_filtered
+                self.differential_expression_filtered,
+                self.multiqc
             ], 'seq2fun':
             [
                 self.picard_sam_to_fastq,
