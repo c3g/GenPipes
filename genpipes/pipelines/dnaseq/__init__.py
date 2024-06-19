@@ -1195,7 +1195,7 @@ END
     
             multiqc_input_path = [os.path.join(self.output_dirs['metrics_directory'][sample.name]) for sample in self.samples]
             
-            output = os.path.join(self.output_dirs['report_directory'], "DnaSeq.{self.protocol}.multiqc")
+            output = os.path.join(self.output_dirs['report_directory'], f"DnaSeq.{self.protocol}.multiqc")
     
             job = multiqc.run(
                 multiqc_input_path,
