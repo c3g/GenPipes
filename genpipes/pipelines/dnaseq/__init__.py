@@ -1225,7 +1225,7 @@ END
                         self.multiqc_inputs[tumor_pair.tumor.name]):
                     multiqc_input_paths.append(metrics)
                 
-                output = os.path.join(report_directory, f"TumorPair.{tumor_pair.name}.multiqc")
+                output = os.path.join(report_directory, f"{tumor_pair.name}.{self.protocol}.multiqc")
                 job = multiqc.run(
                     patient_folders,
                     output
@@ -8180,6 +8180,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.linx_annotations_somatic,
                 self.linx_annotations_germline,  # 15
                 self.linx_plot,
+                self.run_multiqc,
                 self.cram_output
             ]
         }
