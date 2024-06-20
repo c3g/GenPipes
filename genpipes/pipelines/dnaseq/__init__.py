@@ -8075,6 +8075,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.preprocess_vcf,
                 self.snp_effect,
                 self.gemini_annotations,
+                self.run_multiqc,
                 self.cram_output
             ], 'somatic_tumor_only':
             [
