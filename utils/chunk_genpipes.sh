@@ -75,15 +75,12 @@ out_dir=$2
 
 rm -rf ${out_dir}/chunk_* 2>/dev/null
 mkdir -p ${out_dir}
-TIMESTAMP=`date +%FT%H.%M.%S`
 header=${out_dir}/header.sh
 echo '# header for all chunks' > ${header}
 while read -r line ; do
     if [[ $line =~ ^STEP=.*$ ]]; then
       STEP=${line#STEP=}
       break
-    elif [[ "$line" =~ ^TIMESTAMP=.*$ ]]; then
-      line="export TIMESTAMP=${TIMESTAMP}"
     elif [[ $line =~ ^[^[:space:]]*=[^[:space:]]  ]]; then
         line="export ${line}"
     fi
