@@ -1246,7 +1246,7 @@ END
         
         inputs = {}
         for tumor_pair in self.tumor_pairs.values():
-            inputs["Tumor"] = [os.path.join(self.output_dirs['report_directory'], f"TumorPair.{tumor_pair.name}.multiqc.html")]
+            inputs["Tumor"] = [os.path.join(self.output_dirs['report_directory'], f"{tumor_pair.name}.{self.protocol}.multiqc.html")]
             
             for key, input_files in inputs.items():
                 for idx, report_file in enumerate(input_files):
