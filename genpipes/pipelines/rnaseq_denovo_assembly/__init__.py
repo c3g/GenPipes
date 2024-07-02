@@ -472,9 +472,11 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
                         ),
                         bash.cp(
                             f"{blast_result}.zip", 
-                            f"{report_dir}/")
+                            os.path.join(report_dir, os.path.basename(blast_result) + ".zip")
+                        )
                     ],
                     name="blastx_trinity_" + os.path.basename(db) + "_merge",
+
                     samples=self.samples
                 )
             )
