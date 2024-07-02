@@ -1295,3 +1295,70 @@ Rscript $R_TOOLS/somaticSignatureAlexandrov.R \\
         output=output
         ),removable_files=remove_file
     )
+
+def design_report(
+        input,
+        output):
+    return Job(
+        [input],
+        [output],
+        command="""\
+echo -e "# plot_type: 'table'
+# section_name: 'Differential Analysis Design'
+# description: 'The designs used in differential analysis are presented in the following table, which contains the sample names as well as the sample group membership per design. For each experimental design (column name), three conditions/groups are possible: 0, 1 and 2. If a sample is assigned 0, it is not included in a particular analysis. If a sample is assigned 1, the sample is considered as a member of the control group. If a sample is assigned 2, the sample is considered as a member of the test/case group.'"
+ > {output}
+cat {design_file} >> {output}""".format(
+    design_file=input,
+    output=output
+)
+    )
+
+def diff_exp_report(
+        input,
+        output,
+        section_name,
+        contrast):
+    return Job(
+        [input],
+        [output],
+        command="""\
+echo -e "# plot_type: 'table'
+# section_name: {section_name}
+# description: 'Differential Expression for contrast {contrast}'
+# headers:
+#   gene_symbol:
+#       title: 'Gene Symbol'
+#       description: 'Gene symbol if available, component ID otherwise'
+#       placement: 970
+#   log_FC:
+#       title: 'log2FC'
+#       description: 'log2 Fold Change of gene level expression'
+#       placement: 980
+#   log_CPM:
+#       title: 'log2CPM'
+#       description: 'log2 Counts Per Million of gene level expression'
+#       placement: 990
+#   deseq2.p.value:
+#       title: 'DESeq p-value'
+#       description: 'DESeq nominal p-value'
+#       placement: 1000
+#   deseq2.adj.pvalue:
+#       title: 'DESeq adj p-value'
+#       description: 'DESeq False Discovery Rate (FDR) adjusted p-value'
+#       placement: 1010
+#   edger.p.value:
+#       title: 'edgeR p-value'
+#       description: 'edgeR nominal p-value'
+#       placement: 1020
+#   edger.adj.p.value:
+#       title: 'edgeR adj p-value'
+#       description: 'edgeR False Discovery Rate (FDR) adjusted p-value'
+#       placement: 1030" > {output}
+
+cut -f1-8 {input} | head -n 11 >> {output}""".format(
+        section_name=section_name,
+        contrast=contrast,
+        output=output,
+        input=input
+    )
+)

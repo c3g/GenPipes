@@ -1197,8 +1197,7 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
         jobs = []
         trinotate_annotation_report = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
         report_dir = self.output_dirs["report_directory"]
-       # input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq.Rmd")
-        input_rmarkdown_file = global_conf.global_get('differential_expression_goseq_rnaseq_denovo_report', 'report_template')
+        link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
         # Run DGE and merge dge results with annotations
         for item in "gene", "isoform":
             jobs.append(
@@ -1214,22 +1213,37 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
             output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
 
         # DGE Report
-        # Render Rmarkdown Report
-        jobs.append(
-            rmarkdown.render(
-                job_input=output_files,
-                job_name="differential_expression_goseq_rnaseq_denovo_report",
-                input_rmarkdown_file=input_rmarkdown_file,
-                samples=self.samples,
-                readsets=self.readsets,
-                render_output_dir=self.output_dirs["report_directory"],
-                module_section='report',
-                prerun_r=f'design_file="{os.path.relpath(self.design_file.name, self.output_dir)}"; ' +
-                         f'report_dir="{report_dir}"; ' +
-                         f'source_dir="{output_directory}"; ' +
-                         f'top_n_results=10; contrasts=c("{",".join(contrast.name for contrast in self.contrasts)}");'
-            )
+        #create design file table for multiqc
+        job = concat_jobs(
+            [
+                bash.mkdir(report_dir),
+                bash.mkdir(link_directory),
+                tools.design_report(
+                    os.path.relpath(self.design_file.name, self.output_dir),
+                    os.path.join(link_directory, "design_mqc.txt")
+                )
+            ]
         )
+        self.multiqc_inputs.append(os.path.join(link_directory, "design_mqc.txt"))
+        # create a MultiQC readable table for each contrast
+        for item in "gene", "isoform":
+            for contrast in self.contrasts:
+                job = concat_jobs(
+                    [
+                    job,
+                    tools.diff_exp_report(
+                        os.path.join(output_directory, item, contrast, "dge_results.csv"),
+                        os.path.join(link_directory, item + "_" + contrast + ".dge_results_mqc.tsv"),
+                        f"Differential Expression {item} {contrast}",
+                        contrast
+                    )
+                ]
+            )
+                self.multiqc_inputs.append(os.path.join(link_directory, item + "_" + contrast + ".dge_results_mqc.tsv"))
+
+        job.name = "differential_expression_report"
+        job.samples = self.samples
+        
         return jobs
 
     def differential_expression_filtered(self):
@@ -1239,9 +1253,6 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
         output_directory = os.path.join(self.output_dirs["filtered_assembly_directory"],"differential_expression")
         jobs = []
         trinotate_annotation_report = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv")
-        report_dir = os.path.join(self.output_dirs["report_directory"], "filtered_assembly")
-       # input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqDeNovoAssembly.differential_expression_goseq_filtered.Rmd")
-        input_rmarkdown_file = global_conf.global_get('differential_expression_goseq_rnaseq_denovo_filtered_report', 'report_template')
 
         # Filter input files
         trinotate_annotation_report_filtered = trinotate_annotation_report + ".isoform_filtered.tsv"
@@ -1303,26 +1314,10 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
             )
 
         # Dependencies for report
-        output_files = []
-        for job in jobs:
-            output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
+       # output_files = []
+       # for job in jobs:
+       #     output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
 
-        # DGE Report
-        # Render Rmarkdown Report
-        jobs.append(
-            rmarkdown.render(
-                job_input=output_files,
-                job_name="differential_expression_goseq_rnaseq_denovo_filtered_report",
-                input_rmarkdown_file=input_rmarkdown_file,
-                samples=self.samples,
-                readsets=self.readsets,
-                render_output_dir=self.output_dirs["report_directory"],
-                module_section='report',
-                prerun_r=f'report_dir="{report_dir}"; ' +
-                         f'source_dir="{output_directory}"; ' +
-                         f'top_n_results=10; contrasts=c("{",".join(contrast.name for contrast in self.contrasts)}");'
-            )
-        )
         return jobs
     
     def multiqc(self):

@@ -2547,6 +2547,7 @@ END
 
         output_directory = self.output_dirs["DGE_directory"]
         count_matrix = os.path.join(output_directory, "rawCountMatrix.tsv")
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
         edger_job = differential_expression.edger(
             design_file,
@@ -2581,6 +2582,28 @@ END
                 [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "deseq2_results.csv") for contrast in self.contrasts],
                 batch_file
             )
+        diff_exp_report_job = concat_jobs(
+            [
+                bash.mkdir(link_directory),
+                tools.design_report(
+                    design_file,
+                    os.path.join(link_directory, "design_mqc.txt")
+                )
+            ]
+        )
+        for contrast in self.contrasts:
+            diff_exp_report_job = concat_jobs(
+                [
+                    diff_exp_report_job,
+                    tools.diff_exp_report(
+                        os.path.join(output_directory, contrast.name, "dge_results.csv"),
+                        os.path.join(link_directory, contrast.name + ".dge_results_mqc.tsv"),
+                        f"Differential Expression {contrast.name}",
+                        contrast
+                    )
+                ]
+            )
+            
 
         return [
             concat_jobs(
@@ -2589,7 +2612,8 @@ END
                     bash.mkdir(f"{output_directory}_batch_corrected") if self.batch_file else None,
                     edger_job,
                     deseq_job,
-                    deseq_job_batch_corrected if self.batch_file else None
+                    deseq_job_batch_corrected if self.batch_file else None,                    
+                    diff_exp_report_job
                 ],
                 name="differential_expression",
                 samples=self.samples,
