@@ -2591,6 +2591,8 @@ END
                 )
             ]
         )
+        self.multiqc_inputs.append(os.path.join(link_directory, "design_mqc.txt"))
+
         for contrast in self.contrasts:
             diff_exp_report_job = concat_jobs(
                 [
@@ -2603,6 +2605,8 @@ END
                     )
                 ]
             )
+            self.multiqc_inputs.append(os.path.join(link_directory, contrast.name + ".dge_results_mqc.tsv"))
+
             
 
         return [

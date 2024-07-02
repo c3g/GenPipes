@@ -1232,14 +1232,14 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
                     [
                     job,
                     tools.diff_exp_report(
-                        os.path.join(output_directory, item, contrast, "dge_results.csv"),
-                        os.path.join(link_directory, item + "_" + contrast + ".dge_results_mqc.tsv"),
-                        f"Differential Expression {item} {contrast}",
-                        contrast
+                        os.path.join(output_directory, item, contrast.name, "dge_results.csv"),
+                        os.path.join(link_directory, item + "_" + contrast.name + ".dge_results_mqc.tsv"),
+                        f"Differential Expression {item} {contrast.name}",
+                        contrast.name
                     )
                 ]
             )
-                self.multiqc_inputs.append(os.path.join(link_directory, item + "_" + contrast + ".dge_results_mqc.tsv"))
+                self.multiqc_inputs.append(os.path.join(link_directory, item + "_" + contrast.name + ".dge_results_mqc.tsv"))
 
         job.name = "differential_expression_report"
         job.samples = self.samples
