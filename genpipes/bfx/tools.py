@@ -1340,18 +1340,22 @@ echo -e "# plot_type: 'table'
 #   deseq2.p.value:
 #       title: 'DESeq p-value'
 #       description: 'DESeq nominal p-value'
+#       format: '{{:,s}}'
 #       placement: 1000
 #   deseq2.adj.pvalue:
 #       title: 'DESeq adj p-value'
 #       description: 'DESeq False Discovery Rate (FDR) adjusted p-value'
+#       format: '{{:,s}}'
 #       placement: 1010
 #   edger.p.value:
 #       title: 'edgeR p-value'
 #       description: 'edgeR nominal p-value'
+#       format: '{{:,s}}'
 #       placement: 1020
 #   edger.adj.p.value:
 #       title: 'edgeR adj p-value'
 #       description: 'edgeR False Discovery Rate (FDR) adjusted p-value'
+#       format: '{{:,s}}'
 #       placement: 1030" > {output}
 
 cut -f1-8 {input} | head -n 11 >> {output}""".format(
