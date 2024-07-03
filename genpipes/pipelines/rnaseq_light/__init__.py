@@ -370,6 +370,7 @@ cat {kallisto_report_file} >> {kallisto_multiqc_file}""".format(
         if self.contrasts:
             design_file = os.path.relpath(self.design_file.name, self.output_dir)
         output_directory = self.output_dirs["sleuth_directory"]
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
         count_matrix = os.path.join(self.output_dirs["kallisto_directory"], "All_readsets", "all_readsets.abundance_genes.csv")
         tx2gene = global_conf.global_get('sleuth_differential_expression', 'tx2gene')
 
@@ -378,11 +379,40 @@ cat {kallisto_report_file} >> {kallisto_multiqc_file}""".format(
         sleuth_job.samples = self.samples
         sleuth_job.readsets = self.readsets
 
+        multiqc_job = bash.mkdir(link_directory)
+        for contrast in self.contrasts:
+            heatmap = os.path.join(output_directory, contrast.name, "heatmap.topFCgenes.png")
+            pca = os.path.join(output_directory, contrast.name, "pca_plot.trx.png")
+            sleuth_job.output_files.extend([heatmap, pca])
+
+            multiqc_job = concat_jobs(
+                [
+                    multiqc_job,
+                    bash.ln(
+                        os.path.relpath(heatmap, link_directory),
+                        os.path.join(link_directory, f"Heatmap_{contrast.name}_mqc.png"),
+                        input = heatmap
+                    ),
+                    bash.ln(
+                        os.path.relpath(pca, link_directory),
+                        os.path.join(link_directory, f"PCA_{contrast.name}_mqc.png"),
+                        input = pca
+                    )
+                ]
+            )
+            self.multiqc_inputs.extend(
+                [
+                    os.path.join(link_directory, f"Heatmap_{contrast.name}_mqc.png"),
+                    os.path.join(link_directory, f"PCA_{contrast.name}_mqc.png")
+                ]
+            )
+
         return [
             concat_jobs(
                 [
                     bash.mkdir(output_directory),
-                    sleuth_job
+                    sleuth_job,
+                    multiqc_job
                 ],
                 name="sleuth_differential_expression"
             )
