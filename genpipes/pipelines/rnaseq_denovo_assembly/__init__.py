@@ -246,7 +246,7 @@ echo -e "Sample\\tNormalizedReads" > {report_file}""".format(
                         [normalization_stats_file],
                         [report_file],
                         command="""\
-echo -e "{readset}\\t`cut -f2 {normalization_stats_file}` \\
+echo -e "{readset}\\t`cut -f2 {normalization_stats_file}`" \\
     >> {report_file}""".format(
         readset=readset.name,
         normalization_stats_file=normalization_stats_file,
