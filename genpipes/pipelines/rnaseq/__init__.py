@@ -2601,7 +2601,7 @@ END
                         os.path.join(output_directory, contrast.name, "dge_results.csv"),
                         os.path.join(link_directory, contrast.name + ".dge_results_mqc.tsv"),
                         f"Differential Expression {contrast.name}",
-                        contrast
+                        contrast.name
                     )
                 ]
             )

@@ -1305,8 +1305,7 @@ def design_report(
         command="""\
 echo -e "# plot_type: 'table'
 # section_name: 'Differential Analysis Design'
-# description: 'The designs used in differential analysis are presented in the following table, which contains the sample names as well as the sample group membership per design. For each experimental design (column name), three conditions/groups are possible: 0, 1 and 2. If a sample is assigned 0, it is not included in a particular analysis. If a sample is assigned 1, the sample is considered as a member of the control group. If a sample is assigned 2, the sample is considered as a member of the test/case group.'"
- > {output}
+# description: 'The designs used in differential analysis are presented in the following table, which contains the sample names as well as the sample group membership per design. For each experimental design (column name), three conditions/groups are possible: 0, 1 and 2. If a sample is assigned 0, it is not included in a particular analysis. If a sample is assigned 1, the sample is considered as a member of the control group. If a sample is assigned 2, the sample is considered as a member of the test/case group.'" > {output}
 cat {design_file} >> {output}""".format(
     design_file=input,
     output=output

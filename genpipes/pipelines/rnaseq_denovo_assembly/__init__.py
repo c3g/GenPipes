@@ -1243,6 +1243,7 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
 
         job.name = "differential_expression_report"
         job.samples = self.samples
+        jobs.append(job)
         
         return jobs
 
