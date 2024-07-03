@@ -997,6 +997,8 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
             )
         )
   #      report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.filtered.trinity.md")
+        report_filtered_assembly = os.path.join(self.output_dirs['report_directory'], os.path.basename(output_directory) + ".zip")
+        report_dir_prefix = os.path.join(self.output_dirs['report_directory'], "trinity_filtered.stats")
 
         jobs.append(
             Job(
@@ -1006,7 +1008,12 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
                     trinity_stats_prefix + ".jpg",
                     trinity_stats_prefix + ".pdf"
                 ],
-                [],
+                [
+                    report_filtered_assembly,
+                    report_dir_prefix + ".csv",
+                    report_dir_prefix + ".jpg",
+                    report_dir_prefix + ".pdf"
+                ],
                 command="""\
 mkdir -p {report_dir} && \\
 cp {trinity_filtered}.zip {report_dir}/{output_zip}.zip && \\
