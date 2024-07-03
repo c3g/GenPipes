@@ -1236,10 +1236,16 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
                         os.path.join(link_directory, item + "_" + contrast.name + ".dge_results_mqc.tsv"),
                         f"Differential Expression {item} {contrast.name}",
                         contrast.name
+                    ),
+                    bash.ln(
+                        os.path.relpath(os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv"), link_directory),
+                        os.path.join(link_directory, f"Gene_Ontology_{contrast.name}_{item}_mqc.txt"),
+                        input = os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv")
                     )
                 ]
             )
                 self.multiqc_inputs.append(os.path.join(link_directory, item + "_" + contrast.name + ".dge_results_mqc.tsv"))
+                self.multiqc_inputs.append(os.path.join(link_directory, f"Gene_Ontology_{contrast.name}_{item}_mqc.txt"))
 
         job.name = "differential_expression_report"
         job.samples = self.samples
