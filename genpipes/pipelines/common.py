@@ -23,7 +23,6 @@ import logging
 import os
 import re
 import socket
-import string
 import sys
 import collections
 

@@ -23,7 +23,6 @@ import logging
 import os
 import re
 import subprocess
-import sys
 import io
 
 from ..utils import utils

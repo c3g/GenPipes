@@ -51,7 +51,7 @@ class Pipeline(object):
 
     def __init__(self, config_files, sanity_check=False,
                  output_dir=None, job_scheduler=None, container=None, genpipes_file=None, no_json=False,
-                 json_pt=None, steps=None, report=False, clean=False, force=False):
+                 json_pt=None, steps=None, clean=False, force=False):
 
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H.%M.%S")
 
@@ -145,13 +145,8 @@ class Pipeline(object):
         self._sample_list = []
         self._sample_paths = []
 
-        # For job reporting, all jobs must be created first, no matter whether they are up to date or not
-        if report:
-            self._force_jobs = True
-            self.create_jobs()
-            self.report_jobs()
         # For job cleaning, all jobs must be created first, no matter whether they are up to date or not
-        elif clean:
+        if clean:
             self._force_jobs = True
             self.create_jobs()
             self.clean_jobs()
@@ -221,12 +216,6 @@ class Pipeline(object):
             cls._argparser.add_argument("--json-pt", help="create JSON file for project_tracking database ingestion "
                                                           "(default: false i.e. JSON file will NOT be created)",
                                        action="store_true")
-
-            cls._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report "
-                                                         "files in the given step range into HTML, if they exist; if "
-                                                         "--report is set, --job-scheduler, --force, --clean options "
-                                                         "and job up-to-date status are ignored (default: false)",
-                                        action="store_true")
 
             cls._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given"
                                                         " step range, if they exist; if --clean is set,"
@@ -468,65 +457,7 @@ class Pipeline(object):
         Submits jobs
         """
         self.job_scheduler.submit(self)
-
-    def report_jobs(self, output_dir=None):
-        """
-        Pandoc reporting system (to be deprecated and replaced by MultiQC)
-        """
-        if not output_dir:
-            output_dir = self.output_dir  # Default to pipeline output directory
-        report_files = []
-        for job in self.jobs:
-            # Retrieve absolute paths of report files
-            for report_file in job.report_files:
-                if report_file not in report_files:
-                    if os.path.exists(os.path.join(output_dir, report_file)) :
-                        report_files.append(report_file)
-                    else:
-                        log.warning(f"Report file: {report_file} not found!... skipping")
-        if report_files:
-            # Copy images and other HTML dependencies into report directory
-            # Print pandoc command with all markdown report files and config/references sections at the end
-            print("""\
-#!/bin/bash
-# Exit immediately on error
-set -eu -o pipefail
-
-module load {module_pandoc}
-cd {output_dir}
-mkdir -p report
-cp -r \\
-  {self.report_template_dir}/css/ \\
-  {self.report_template_dir}/images/ \\
-  {self.report_template_dir}/_js/ \\
-  {self.report_template_dir}/config_and_references.md \\
-  report/
-cp {config_file} report/config.ini
-pandoc \\
-  --toc \\
-  --toc-depth=6 \\
-  --template={self.report_template_dir}/template.html \\
-  --css=css/style.css \\
-  --metadata title="{title}" \\
-  --citeproc \\
-  <(pandoc --to=markdown \\
-    --template {introduction} \\
-    --variable date="{date}" \\
-    {introduction} \\
-  ) \\
-  {report_files} \\
-  report/config_and_references.md \\
-  --output report/index.html""".format(
-                module_pandoc=self.config_parser.get('report', 'module_pandoc'),
-                output_dir=output_dir,
-                config_file=self.config_parser.filepath,
-                self=self,
-                title=self.config_parser.get('report', 'title'),
-                introduction=os.path.join(self.report_template_dir, self.__class__.__name__ + '.introduction.md'),
-                date=datetime.datetime.now().strftime("%Y-%m-%d"),
-                report_files=" \\\n  ".join(report_files)
-            ))
-
+ 
     def clean_jobs(self):
         """
         Cleans jobs

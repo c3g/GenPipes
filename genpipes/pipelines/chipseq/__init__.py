@@ -1981,7 +1981,6 @@ def main(parsed_args):
     genpipes_file = parsed_args.genpipes_file
     container = parsed_args.container
     clean = parsed_args.clean
-    report = parsed_args.report
     no_json = parsed_args.no_json
     force = parsed_args.force
     job_scheduler = parsed_args.job_scheduler
@@ -1994,7 +1993,7 @@ def main(parsed_args):
     protocol = parsed_args.protocol
 
     pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                       clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                       clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
                        design_file=design_file, no_json=no_json, container=container,
                        protocol=protocol)
 
