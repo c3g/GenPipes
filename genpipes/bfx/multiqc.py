@@ -18,6 +18,7 @@
 ################################################################################
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
@@ -34,12 +35,16 @@ def run(inputs, output, ini_section='multiqc'):
             [ini_section, 'module_multiqc']
         ],
         command="""\
+mkdir -p {tmp_output} && \\
+TMPDIR={tmp_output} && \\
 multiqc -f {options} \\
 {input} \\
--n {output}""".format(
+-n {output} && \\
+rm -rf {tmp_output}""".format(
             options=global_conf.global_get(ini_section, 'options', required=False),
             input=" ".join([" \\\n  " + input for input in inputs]),
-            output=output
+            output=output,
+            tmp_output=os.path.join(os.path.dirname(output), "tmp_multiqc")
         )
     )
 
