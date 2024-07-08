@@ -8,7 +8,7 @@ setuptools.setup(
     license='GNU Lesser General Public License',
     author='Canadian Center for Computational Genomics',
     author_email='pipelines@computationalgenomics.ca',
-    maintainer_email='po.quirion@mcgill.com, edouard.henrion@computationalgenomics.ca',
+    maintainer_email='paul.stretenowich@mcgill.ca, mareike.janiak@computationalgenomics.ca, po.quirion@mcgill.com, edouard.henrion@computationalgenomics.ca',
     description='Several bioinformatics pipelines developed at McGill University Genome Centre',
     entry_points = {
     "console_scripts": [
