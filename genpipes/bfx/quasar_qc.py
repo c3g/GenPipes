@@ -19,7 +19,6 @@
 
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
@@ -34,11 +33,11 @@ def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr,
             ['quality_scores', 'module_python']
         ],
         command="""\
-            mkdir -p {output_dir}/{temp_dir} &&
-            hifive fends \\
-            -L {chromosome_lengths} \\
-            --binned={res_chr} \\
-            {output_file}""".format(
+mkdir -p {output_dir}/{temp_dir} &&
+hifive fends \\
+    -L {chromosome_lengths} \\
+    --binned={res_chr} \\
+    {output_file}""".format(
             chromosome_lengths=chromosome_lengths_file,
             output_file=output_file,
             res_chr=res_chr,
@@ -57,12 +56,12 @@ def restructure_matrix(input_file_path, output_file_path,  output_dir, bin, temp
             ['quality_scores', 'module_R']
         ],
         command="""\
-            mkdir -p {output_dir}/{temp_dir} &&
-            awk -v OFS="\\t" '{{if(NR!=1) {{split($1,a,"-"); print a[1]":"a[2]"-"{bin}+a[2],$0 }} else {{print "V1",$0}} }}' {input_file} | \\
-            cut -f2 --complement | \\
-            Rscript -e 'library(data.table); a <- fread("file:///dev/stdin", data.table=F,sep="\\t", na.strings=c("",NA,"NULL")); a[is.na(a)] <- 0; rownames(a)<-a[,1]; a<- a[,-1]; if(!all(as.matrix(a)%%1==0)){{a<-a[,] *10;}};  write.table(a,"file:///dev/stdout",row.names=TRUE,col.names=FALSE,sep="\\t",quote=FALSE)' | \\
-            awk '{{ printf $1"\\t"; for( i = 2; i <= NF; i++) {{ printf "%.0f\\t", $i;  }} printf "\\n"}}' > \\
-            {output_file}""".format(
+mkdir -p {output_dir}/{temp_dir} &&
+awk -v OFS="\\t" '{{if(NR!=1) {{split($1,a,"-"); print a[1]":"a[2]"-"{bin}+a[2],$0 }} else {{print "V1",$0}} }}' {input_file} | \\
+    cut -f2 --complement | \\
+    Rscript -e 'library(data.table); a <- fread("file:///dev/stdin", data.table=F,sep="\\t", na.strings=c("",NA,"NULL")); a[is.na(a)] <- 0; rownames(a)<-a[,1]; a<- a[,-1]; if(!all(as.matrix(a)%%1==0)){{a<-a[,] *10;}};  write.table(a,"file:///dev/stdout",row.names=TRUE,col.names=FALSE,sep="\\t",quote=FALSE)' | \\
+    awk '{{ printf $1"\\t"; for( i = 2; i <= NF; i++) {{ printf "%.0f\\t", $i;  }} printf "\\n"}}' > \\
+    {output_file}""".format(
             input_file=input_file_path,
             output_file=output_file_path,
             output_dir=output_dir,
@@ -87,9 +86,9 @@ def quality_analysis(quasr_temp_files, input_files, output_file_prefix, output_d
             ['quality_scores', 'module_python']
         ],
         command="""\
-            hifive hic-data -X "{input_files}" {fend_file} {output_data_file} &&
-            hifive hic-project {output_data_file} {output_project_file} &&
-            hifive quasar -p {output_project_file} -r {res} -d {coverage} -o {report_file} {quasar_file} --seed 12345
+hifive hic-data -X "{input_files}" {fend_file} {output_data_file} &&
+hifive hic-project {output_data_file} {output_project_file} &&
+hifive quasar -p {output_project_file} -r {res} -d {coverage} -o {report_file} {quasar_file} --seed 12345
             """.format(
             input_files=input_files,
             output_data_file=output_data_file,
@@ -112,16 +111,16 @@ def merge_all_reports(out_dir, input_files, output_file, res, enzyme, quasr_pref
             ['quality_scores', 'module_python']
         ],
         command="""\
-            if test -f "{output_file}"; then
-            rm {output_file} 
-            fi &&
-            i=1 &&
-            for f in {out_dir}/{temp_dir}/*_{quasr_prefix}_{res}_{enzyme}_report.txt ;do awk -v OFS="\\t" '{{if($1=="Resolution") {{print $0}} else {{print FILENAME,$0 }} }}' $f | \\
-            tr -d " \\r" | \\
-            awk -v OFS="\\t" '{{if(NF>3){{print $0}} }}' | \\
-            awk -v i="$i" -v OFS="\\t" '{{if(NR==1 && i==1){{print "Sample","Sample",$0}} else {{if($2=="{quasar_resolution}") {{split($1,fname,"_{quasr_prefix}_"); split(fname[1],sname,"{out_dir}/{temp_dir}/"); print sname[2], $0}} }} }}' | \\
-            cut -f2 --complement >> \\
-            {output_file}; i=$(($i+1)); done
+if test -f "{output_file}"; then
+    rm {output_file} 
+fi &&
+i=1 &&
+for f in {out_dir}/{temp_dir}/*_{quasr_prefix}_{res}_{enzyme}_report.txt ;do awk -v OFS="\\t" '{{if($1=="Resolution") {{print $0}} else {{print FILENAME,$0 }} }}' $f | \\
+    tr -d " \\r" | \\
+    awk -v OFS="\\t" '{{if(NF>3){{print $0}} }}' | \\
+    awk -v i="$i" -v OFS="\\t" '{{if(NR==1 && i==1){{print "Sample","Sample",$0}} else {{if($2=="{quasar_resolution}") {{split($1,fname,"_{quasr_prefix}_"); split(fname[1],sname,"{out_dir}/{temp_dir}/"); print sname[2], $0}} }} }}' | \\
+    cut -f2 --complement >> \\
+    {output_file}; i=$(($i+1)); done
             """.format(
             input_files=input_files,
             output_file=output_file,

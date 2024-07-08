@@ -32,16 +32,17 @@ def reference(
     outfile,
     prefix3,
     infile2,
-    outfile2
+    outfile2,
+    ini_section='mummer_reference'
     ):
 
     job = Job(
         [fasta_reference, fasta_consensus],
         [outfile, outfile + ".png", outfile2],
         [
-            ['mummer_reference', 'module_perl'],
-            ['mummer_reference', 'module_mummer'],
-            ['mummer_reference', 'module_gnuplot']
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_mummer'],
+            [ini_section, 'module_gnuplot']
         ],
         command="""\
 promer --maxmatch \\
@@ -61,7 +62,7 @@ show-snps -rlTC \\
   -x {x} \\
   {infile2} \\
   > {outfile2}""".format(
-        c=global_conf.global_get('mummer_reference', 'c', param_type='posint'),
+        c=global_conf.global_get(ini_section, 'c', param_type='posint'),
         prefix1=prefix1,
         fasta_reference=fasta_reference,
         fasta_consensus=fasta_consensus,
@@ -69,14 +70,14 @@ show-snps -rlTC \\
         prefix2=prefix2,
         outfile=outfile,
         prefix3=prefix3,
-        x=global_conf.global_get('mummer_reference', 'x', param_type='posint'),
+        x=global_conf.global_get(ini_section, 'x', param_type='posint'),
         infile2=infile2,
         outfile2=outfile2
     ))
 
     # Mammouth does not have libgd by default. Module must be loaded explicitely
-    if global_conf.global_get('mummer_reference', 'module_libgd', required=False):
-        job.modules.append(global_conf.global_get('mummer_reference', 'module_libgd', required=False))
+    if global_conf.global_get(ini_section, 'module_libgd', required=False):
+        job.modules.append(global_conf.global_get(ini_section, 'module_libgd', required=False))
 
     return job
 
@@ -85,16 +86,17 @@ def self(
     fasta_consensus,
     title,
     prefix2,
-    outfile
+    outfile,
+    ini_section='mummer_self'
     ):
 
     job = Job(
         [fasta_consensus],
         [outfile, outfile + ".png"],
         [
-            ['mummer_self', 'module_perl'],
-            ['mummer_self', 'module_mummer'],
-            ['mummer_self', 'module_gnuplot']
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_mummer'],
+            [ini_section, 'module_gnuplot']
         ],
         command="""\
 nucmer --maxmatch \\
@@ -106,7 +108,7 @@ mummerplot --png --layout --filter \\
   --title {title} \\
   --prefix {prefix2} \\
   {outfile}""".format(
-        c=global_conf.global_get('mummer_self', 'c', param_type='posint'),
+        c=global_conf.global_get(ini_section, 'c', param_type='posint'),
         prefix1=prefix1,
         fasta_consensus=fasta_consensus,
         title=title,
@@ -115,7 +117,7 @@ mummerplot --png --layout --filter \\
     ))
 
     # Mammouth does not have libgd by default. Module must be loaded explicitely
-    if global_conf.global_get('mummer_self', 'module_libgd', required=False):
-        job.modules.append(global_conf.global_get('mummer_self', 'module_libgd', required=False))
+    if global_conf.global_get(ini_section, 'module_libgd', required=False):
+        job.modules.append(global_conf.global_get(ini_section, 'module_libgd', required=False))
 
     return job

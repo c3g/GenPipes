@@ -33,8 +33,8 @@ def bgzip(input, output):
         ],
         command="""\
 bgzip -cf \\
-{input} > \\
-{output}""".format(
+    {input} > \\
+    {output}""".format(
         input=" \\\n " + input if input else "",
         output=output
         )
@@ -50,8 +50,7 @@ def tabix(input, options=None):
         ],
         command="""\
 tabix {options}  \\
-{input} \\
-&& sleep 15""".format(
+    {input}""".format(
         input=input,
         options=options,
         )

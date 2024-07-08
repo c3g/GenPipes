@@ -19,8 +19,6 @@
 
 # Python Standard Modules
 import logging
-import os
-import gzip
 import re
 
 # MUGQIC Modules

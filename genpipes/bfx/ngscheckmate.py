@@ -24,24 +24,24 @@ import os
 from ..core.config import global_conf
 from ..core.job import Job
 
-def run(input, output_dir):
+def run(input, output_dir, ini_section='run_checkmate'):
 	output = os.path.join(output_dir, "output_corr_matrix.txt")
 	return Job(
         [input],
         [output],
         [
-            ['run_checkmate', 'module_python'],
-	        ['run_checkmate', 'module_checkmate'],
-	        ['run_checkmate', 'module_samtools'],
-	        ['run_checkmate', 'module_bcftools']
+            [ini_section, 'module_python'],
+	        [ini_section, 'module_checkmate'],
+	        [ini_section, 'module_samtools'],
+	        [ini_section, 'module_bcftools']
         ],
         command="""\
 python $CHECKMATE_PATH/ncm.py {options} \\
     -bed {bed} \\
     -l {input} \\
     -O {output}""".format(
-            options=global_conf.global_get('run_checkmate', 'options'),
-	        bed=global_conf.global_get('run_checkmate', 'bed', param_type='filepath'),
+            options=global_conf.global_get(ini_section, 'options'),
+	        bed=global_conf.global_get(ini_section, 'bed', param_type='filepath'),
 	        input=input,
 	        output=output_dir,
         )

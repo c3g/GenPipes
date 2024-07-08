@@ -84,8 +84,8 @@ makeTagDirectory \\
             input_bam=input_bam,
             genome=genome,
             illuminaPE=" \\\n -illuminaPE" if illuminaPE else "",
-            restriction_site=" \\\n -restrictionSite " + restriction_site if restriction_site is not None else "",
-            other_options=" \\\n " + other_options if other_options is not None else ""
+            restriction_site=" \\\n -restrictionSite " + restriction_site if restriction_site else "",
+            other_options=" \\\n " + other_options if other_options else ""
         ),
         name="homer_make_tag_directory",
         report_files=outputs

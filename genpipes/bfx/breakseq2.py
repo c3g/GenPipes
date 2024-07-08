@@ -22,16 +22,16 @@ import os
 from ..core.config import global_conf
 from ..core.job import Job
 
-def run(input, sample_name, output_dir):
+def run(input, sample_name, output_dir, ini_section='run_breakseq2'):
 	output = os.path.join(output_dir, "breakseq.vcf.gz")
 	return Job(
         [input],
         [output],
         [
-            ['run_breakseq2', 'module_python'],
-	        ['run_breakseq2', 'module_breakseq2'],
-	        ['run_breakseq2', 'module_samtools'],
-	        ['run_breakseq2', 'module_bwa']
+            [ini_section, 'module_python'],
+	        [ini_section, 'module_breakseq2'],
+	        [ini_section, 'module_samtools'],
+	        [ini_section, 'module_bwa']
         ],
         command="""\
 bwa_path=`which bwa`; \\
@@ -43,10 +43,10 @@ run_breakseq2.py {options} --bwa "$bwa_path" --samtools "$samtools_path" \\
     --bams {input} \\
     --sample {sample} \\
     --work {output}""".format(
-            options=global_conf.global_get('run_breakseq2','options'),
-            threads=global_conf.global_get('run_breakseq2','threads'),
-            genome=global_conf.global_get('run_breakseq2','genome_fasta', param_type='filepath'),
-	        gff=global_conf.global_get('run_breakseq2','gff', param_type='filepath'),
+            options=global_conf.global_get(ini_section,'options'),
+            threads=global_conf.global_get(ini_section,'threads'),
+            genome=global_conf.global_get(ini_section,'genome_fasta', param_type='filepath'),
+	        gff=global_conf.global_get(ini_section,'gff', param_type='filepath'),
 	        output=output_dir,
 	        input=input,
 	        sample=sample_name

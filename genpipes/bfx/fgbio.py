@@ -19,7 +19,6 @@
 
 # Python Standard Modules
 import logging
-import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
@@ -31,7 +30,8 @@ def addumi(
     input_bam,
     input_umi,
     output_bam,
-    output_bai
+    output_bai,
+    ini_section='fgbio_addumi'
     ):
 
     inputs = [input_bam, input_umi]
@@ -40,8 +40,8 @@ def addumi(
         inputs,
         outputs,
         [
-            ['fgbio_addumi', 'module_java'],
-            ['fgbio_addumi', 'module_fgbio']
+            [ini_section, 'module_java'],
+            [ini_section, 'module_fgbio']
         ],
 
         command="""\
@@ -50,13 +50,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR A
   --fastq {input_umi} \\
   --output {output_bam} \\
   {other_options}""".format(
-            tmp_dir=global_conf.global_get('fgbio_addumi', 'tmp_dir'),
-            java_other_options=global_conf.global_get('fgbio_addumi', 'java_other_options'),
-            ram=global_conf.global_get('fgbio_addumi', 'ram'),
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+            java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+            ram=global_conf.global_get(ini_section, 'ram'),
             input_bam=input_bam,
             input_umi=input_umi,
             output_bam=output_bam,
-            other_options=global_conf.global_get('fgbio_addumi', 'other_options') if global_conf.global_get('fgbio_addumi', 'other_options', required=False) else ""
+            other_options=global_conf.global_get(ini_section, 'other_options') if global_conf.global_get(ini_section, 'other_options', required=False) else ""
             ),
         removable_files=[output_bam]
         )
@@ -88,7 +88,7 @@ def correct_readname(
     )
 
 
-def trim_primers(input_bam, output_bam, hard_clip=False):
+def trim_primers(input_bam, output_bam, hard_clip=False, ini_section='fgbio_trim_primers'):
     inputs = [input_bam]
     outputs = [output_bam]
 
@@ -96,8 +96,8 @@ def trim_primers(input_bam, output_bam, hard_clip=False):
         inputs,
         outputs,
         [
-            ['fgbio_trim_primers', 'module_java'],
-            ['fgbio_trim_primers', 'module_fgbio']
+            [ini_section, 'module_java'],
+            [ini_section, 'module_fgbio']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR TrimPrimers \\
@@ -106,13 +106,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR T
   --output {output_bam} \\
   {hard_clip} \\
   {other_options}""".format(
-            tmp_dir=global_conf.global_get('fgbio_trim_primers', 'tmp_dir'),
-            java_other_options=global_conf.global_get('fgbio_trim_primers', 'java_other_options'),
-            ram=global_conf.global_get('fgbio_trim_primers', 'ram'),
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+            java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+            ram=global_conf.global_get(ini_section, 'ram'),
             input_bam=input_bam,
-            primers=global_conf.global_get('fgbio_trim_primers', 'primers'),
+            primers=global_conf.global_get(ini_section, 'primers'),
             output_bam=output_bam,
             hard_clip="-H" if hard_clip else "",
-            other_options=global_conf.global_get('fgbio_trim_primers', 'other_options')
+            other_options=global_conf.global_get(ini_section, 'other_options')
             )
         )

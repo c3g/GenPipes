@@ -33,9 +33,9 @@ def create_input(bam_input, sample_name):
         ],
         command="""
 bash CreateHicFileInput.sh \\
-{bam} \\
-{name} \\
-{tmpDir}""".format(
+    {bam} \\
+    {name} \\
+    {tmpDir}""".format(
             bam=bam_input,
             name=sample_name,
             tmpDir=os.path.expandvars("$(pwd)")
@@ -58,7 +58,7 @@ java -jar $juicer_JAR \\
   {input} \\
   {output} \\
   {assembly}""".format(
-	q=global_conf.global_get('create_hic_file', 'q'),
+	        q=global_conf.global_get('create_hic_file', 'q'),
             input=juicebox_input,
             output=hic_output,
             assembly=assembly

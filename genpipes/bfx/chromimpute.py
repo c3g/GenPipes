@@ -19,7 +19,7 @@
 
 
 # Python Standard Modules
-import os
+
 # MUGQIC Modules
 
 from ..core.job import Job
@@ -70,14 +70,15 @@ def convert_chr_bedgraph(input_file, output_file, chr, outputdir):
 
     )
 
-def convert(input_dir, input_file, output_dir, output_files, inputinfofile, histone_mark, sample, chr_sizes_file):
-    # input = input_files.extend(inputinfofile)
+def convert(input_dir, input_file, output_dir, output_files, inputinfofile, histone_mark, sample, chr_sizes_file, ini_section='chromimpute'):
 
     return Job(
-        [inputinfofile, input_file, chr_sizes_file],
+        [input_file],
         output_files,
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_convert." + sample + "." + histone_mark,
+        [
+            [ini_section, 'module_java'], 
+            [ini_section, 'module_chromimpute']
+        ],
         command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   Convert \\
@@ -88,11 +89,11 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-      java_other_options=global_conf.global_get('DEFAULT', 'java_other_options'),
-      ram=global_conf.global_get('chromimpute', 'ram'),
+      java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+      ram=global_conf.global_get(ini_section, 'ram'),
       histone_mark=histone_mark,
       convertsample=sample,
-      resolution=global_conf.global_get('chromimpute', 'resolution'),
+      resolution=global_conf.global_get(ini_section, 'resolution'),
       path_to_dataset=input_dir,
       inputinfofile=inputinfofile,
       chrom_sizes=chr_sizes_file,
@@ -103,10 +104,12 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
 def compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile, histone_mark, chr_sizes_file):
 
     return Job(
-        (input_files),
-       # input_files,
+        input_files,
         output_files,
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
+        [
+            ['java', 'module_java'], 
+            ['chromimpute', 'module_chromimpute']
+        ],
         name="chromimpute_compute_global_dist." + histone_mark,
         command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\

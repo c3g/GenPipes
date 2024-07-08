@@ -90,7 +90,7 @@ class Config(configparser.ConfigParser):
         log.info("module check finished\n")
 
     # Retrieve param in config files with optional definition check and type validation
-    # By default, parameter is required to be defined in one of the config filete
+    # By default, parameter is required to be defined in one of the config file
     def global_get(self, section, option, required=True, param_type='string', **kwargs):
         # Store original section for future error message, in case 'DEFAULT' section is used eventually
         original_section = section

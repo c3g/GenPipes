@@ -18,7 +18,6 @@
 ################################################################################
 
 # Python Standard Modules
-import logging
 import os
 
 # MUGQIC Modules
@@ -171,7 +170,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $LINX_JAR com
   -plot_out {linx_dir}/plot/ \\
   -data_out {linx_dir}/circos/ \\
   -vis_file_dir {linx_dir} \\
-  -circos `which circos`""".format(
+  -circos `which circos`""".format(     # full path to circos binary needed
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
             java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
             ram=global_conf.global_get(ini_section, 'ram'),

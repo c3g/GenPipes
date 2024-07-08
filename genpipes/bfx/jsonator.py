@@ -97,8 +97,6 @@ def create(pipeline, sample):
             }
         )
 
-    #with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r') as version_file:
-    #    general_info['pipeline_version'] = re.sub("\n?$", "", version_file.readlines()[0])
     general_info['pipeline_version'] = pipeline.version
 
     # Check if 'force_jobs' is 'True'

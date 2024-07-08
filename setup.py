@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='genpipes-suite',
-    version='0.0_alpha',
+    version='5.0.0_beta',
     packages=setuptools.find_packages(),
     url='https://bitbucket.org/mugqic/genpipes/',
     license='GNU Lesser General Public License',

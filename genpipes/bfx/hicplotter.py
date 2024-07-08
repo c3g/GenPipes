@@ -51,7 +51,7 @@ mv {fileNamePlot} {newFileNamePlot}""".format(
             fileNamePlot=fileNamePlot,
             newFileNamePlot=newFileNamePlot
         ),
-        name="interaction_matrices_Chr.plotting."+sample_name+"_"+chrom+"_res"+res
+        name=f"interaction_matrices_Chr.plotting.{sample_name}_{chrom}_res{res}"
     )
 
 def genome_wide_matrix_plot(fileNameRN, sample_name, res, output_dir, output_file):
@@ -79,5 +79,5 @@ HiCPlotter.py \\
             output_dir=output_dir,
             hmc=global_conf.global_get('interaction_matrices_Chr', 'hmc')
         ),
-        name="interaction_matrices_genome.plotting."+sample_name+"_res"+res
+        name=f"interaction_matrices_genome.plotting.{sample_name}_res{res}"
     )

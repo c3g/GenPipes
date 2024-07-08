@@ -18,6 +18,7 @@
 ################################################################################
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
@@ -33,7 +34,8 @@ def assembly_stats(
     suffix,
     estimated_genome_size,
     smrt_cells,
-    outdir
+    outdir,
+    ini_section='pacbio_tools_assembly_stats'
     ):
 
     return Job(
@@ -48,9 +50,9 @@ def assembly_stats(
             os.path.join(outdir, "summaryTableReads2.tsv")
         ],
         [
-            ['pacbio_tools_assembly_stats', 'module_perl'],
-            ['pacbio_tools_assembly_stats', 'module_R'],
-            ['pacbio_tools_assembly_stats', 'module_mugqic_tools']
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_R'],
+            [ini_section, 'module_mugqic_tools']
         ],
         command="""\
 pacBioAssemblyStats.pl \\
@@ -79,15 +81,16 @@ pacBioAssemblyStats.pl \\
 def celera_config(
     mer_size,
     infile,
-    outfile
+    outfile,
+    ini_section='pacbio_tools_celera_config'
     ):
 
     return Job(
         [infile],
         [outfile],
         [
-            ['pacbio_tools_celera_config', 'module_perl'],
-            ['pacbio_tools_celera_config', 'module_mugqic_tools']
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_mugqic_tools']
         ],
         command="""\
 pacBioAssemblyCeleraConfig.pl \\
@@ -110,22 +113,22 @@ pacBioAssemblyCeleraConfig.pl \\
   --unitigger {unitigger} \\
   > {outfile}""".format(
         infile=infile,
-        meryl_threads=global_conf.global_get('pacbio_tools_celera_config', 'meryl_threads', param_type='int'),
-        ovl_threads=global_conf.global_get('pacbio_tools_celera_config', 'ovl_threads', param_type='int'),
-        overlapper=global_conf.global_get('pacbio_tools_celera_config', 'overlapper'),
-        mer_compression=global_conf.global_get('pacbio_tools_celera_config', 'mer_compression'),
+        meryl_threads=global_conf.global_get(ini_section, 'meryl_threads', param_type='int'),
+        ovl_threads=global_conf.global_get(ini_section, 'ovl_threads', param_type='int'),
+        overlapper=global_conf.global_get(ini_section, 'overlapper'),
+        mer_compression=global_conf.global_get(ini_section, 'mer_compression'),
         mer_size=mer_size,
-        meryl_memory=global_conf.global_get('pacbio_tools_celera_config', 'meryl_memory'),
-        ovl_error_rate=global_conf.global_get('pacbio_tools_celera_config', 'ovl_error_rate', param_type='float'),
-        ovl_min_len=global_conf.global_get('pacbio_tools_celera_config', 'ovl_min_len', param_type='int'),
-        frg_min_len=global_conf.global_get('pacbio_tools_celera_config', 'frg_min_len', param_type='int'),
-        ovl_store_memory=global_conf.global_get('pacbio_tools_celera_config', 'ovl_store_memory', param_type='int'),
-        ovl_concurrency=global_conf.global_get('pacbio_tools_celera_config', 'ovl_concurrency'),
-        ovl_corr_concurrency=global_conf.global_get('pacbio_tools_celera_config', 'ovl_corr_concurrency', param_type='int'),
-        cns_concurrency=global_conf.global_get('pacbio_tools_celera_config', 'cns_concurrency', param_type='int'),
-        frg_corr_threads=global_conf.global_get('pacbio_tools_celera_config', 'frg_corr_threads', param_type='int'),
-        stop_after=global_conf.global_get('pacbio_tools_celera_config', 'stop_after'),
-        unitigger=global_conf.global_get('pacbio_tools_celera_config', 'unitigger'),
+        meryl_memory=global_conf.global_get(ini_section, 'meryl_memory'),
+        ovl_error_rate=global_conf.global_get(ini_section, 'ovl_error_rate', param_type='float'),
+        ovl_min_len=global_conf.global_get(ini_section, 'ovl_min_len', param_type='int'),
+        frg_min_len=global_conf.global_get(ini_section, 'frg_min_len', param_type='int'),
+        ovl_store_memory=global_conf.global_get(ini_section, 'ovl_store_memory', param_type='int'),
+        ovl_concurrency=global_conf.global_get(ini_section, 'ovl_concurrency'),
+        ovl_corr_concurrency=global_conf.global_get(ini_section, 'ovl_corr_concurrency', param_type='int'),
+        cns_concurrency=global_conf.global_get(ini_section, 'cns_concurrency', param_type='int'),
+        frg_corr_threads=global_conf.global_get(ini_section, 'frg_corr_threads', param_type='int'),
+        stop_after=global_conf.global_get(ini_section, 'stop_after'),
+        unitigger=global_conf.global_get(ini_section, 'unitigger'),
         outfile=outfile
     ))
 
@@ -133,7 +136,8 @@ def compile(
     indir,
     sample_name,
     estimated_genome_size,
-    outfile
+    outfile,
+    ini_section='pacbio_tools_get_cutoff'
     ):
 
     return Job(
@@ -141,8 +145,8 @@ def compile(
         [None],
         [outfile],
         [
-            ['pacbio_tools_get_cutoff', 'module_perl'],
-            ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_mugqic_tools']
         ],
         command="""\
 pacBioCompileStats.pl \\
@@ -161,15 +165,16 @@ def get_cutoff(
     coverage,
     genome_size,
     coverage_cutoff,
-    outfile
+    outfile,
+    ini_section='pacbio_tools_get_cutoff'
     ):
 
     return Job(
         [infile],
         [outfile],
         [
-            ['pacbio_tools_get_cutoff', 'module_perl'],
-            ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_mugqic_tools']
         ],
         command="""\
 pacBioGetCutoff.pl \\
@@ -189,15 +194,16 @@ def split_reads(
     infile,
     cutoff, # a file containing the cutoff number is actually passed in arg here.
     short_reads,
-    long_reads
+    long_reads,
+    ini_section='pacbio_tools_get_cutoff'
     ):
 
     return Job(
         [infile, cutoff],
         [short_reads, long_reads],
         [
-            ['pacbio_tools_get_cutoff', 'module_perl'],
-            ['pacbio_tools_get_cutoff', 'module_mugqic_tools']
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_mugqic_tools']
         ],
         command="""\
 pacBioSplitReads.pl \\
