@@ -155,7 +155,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
                     candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
-                # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
+                # Note : these files will then be renamed (using a "mv" command) to fit with the GenPipes nomenclature (cf. no_readgroup_bam)
                 bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_pe.bam", os.path.basename(fastq1)))
                 bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_PE_report.txt", os.path.basename(fastq1)))
                 report_suffix = "_bismark_bt2_PE_report.txt"
@@ -168,7 +168,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
                 # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
-                # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
+                # Note : these files will then be renamed (using a "mv" command) to fit with the GenPipes nomenclature (cf. no_readgroup_bam)
                 bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2.bam", os.path.basename(fastq1)))
                 bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_SE_report.txt", os.path.basename(fastq1)))
                 report_suffix = "_bismark_bt2_SE_report.txt"
