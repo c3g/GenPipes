@@ -85,7 +85,7 @@ delly merge {options} \\
     -t {sv_type}    \\
     -o {output}     \\
     {input_bcfs}""".format(
-            options=global_conf.global_get('delly_merge_germline', 'options') if global_conf.global_get('delly_merge_germline', 'options') else "",
+            options=global_conf.global_get('delly_merge_germline', 'options', required=False),
             sv_type=sv_type,
             output=output,
             input_bcfs="".join(" \\\n " + bcf for bcf in input_bcfs)

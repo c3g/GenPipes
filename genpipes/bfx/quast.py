@@ -51,9 +51,9 @@ quast.py {reference} \\
   {features} \\
   {nthread} \\
   {input}""".format(
-      reference="-r " + global_conf.global_get(ini_section, 'reference_genome', required=False),
+      reference="-r " + global_conf.global_get(ini_section, 'reference_genome') if global_conf.global_get(ini_section, 'reference_genome', required=False) else "",
       features="--features " + global_conf.global_get(ini_section, 'genomic_feature', required=False) if global_conf.global_get(ini_section, 'genomic_feature', required=False) else "",
-      nthread="--threads " + global_conf.global_get(ini_section, 'threads', required=False),
+      nthread="--threads " + global_conf.global_get(ini_section, 'threads') if global_conf.global_get(ini_section, 'threads', required=False) else "",
       output_dir="--output-dir " + output_dir,
       input=input
       ),

@@ -51,7 +51,7 @@ def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
             normal=input_normal,
             tumor="--tumorBam " + input_tumor if input_tumor else "",
             genome=global_conf.global_get('manta_sv','genome_fasta', param_type='filepath'),
-            experiment_type=global_conf.global_get('manta_sv', 'experiment_type_option') if global_conf.global_get('manta_sv', 'experiment_type_option') else "",
+            experiment_type=global_conf.global_get('manta_sv', 'experiment_type_option'),
             callRegion="\\\n        --callRegions " + callRegion if callRegion else "",
             output=output_dir
         )

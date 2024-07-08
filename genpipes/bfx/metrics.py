@@ -59,7 +59,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
   -o {output_directory} \\
   -r {reference_genome_fasta} \\
   -s {sample_file} \\
-  -t {gtf_file}{other_options}{single_end}{ribosomal_interval_file}""".format(
+  -t {gtf_file} {other_options}{single_end}{ribosomal_interval_file}""".format(
             tmp_dir=global_conf.global_get('rnaseqc', 'tmp_dir'),
             java_other_options=global_conf.global_get('rnaseqc', 'java_other_options'),
             ram=global_conf.global_get('rnaseqc', 'ram'),
@@ -68,7 +68,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
             reference_genome_fasta=reference if reference else global_conf.global_get('rnaseqc', 'genome_fasta', param_type='filepath'),
             sample_file=sample_file,
             gtf_file=gtf_file if gtf_file else global_conf.global_get('rnaseqc', 'gtf', param_type='filepath'),
-            other_options=" \\\n  " + global_conf.global_get('rnaseqc', 'other_options', required=False) if global_conf.global_get('rnaseqc', 'other_options', required=False) else "",
+            other_options=global_conf.global_get('rnaseqc', 'other_options', required=False),
             single_end=" \\\n  -singleEnd" if is_single_end else "",
             ribosomal_interval_file=" \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else "\\\n  -BWArRNA dummy_rRNA.fa"
         ),

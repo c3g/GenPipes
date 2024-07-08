@@ -18,7 +18,6 @@
 ################################################################################
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
@@ -50,7 +49,7 @@ python3 $CONPAIR_SCRIPTS/run_gatk_pileup_for_sample.py -t {tmp_dir} \\
         reference_sequence=global_conf.global_get('conpair_concordance_contamination', 'genome_fasta', param_type='filepath'),
         markers=global_conf.global_get('conpair_concordance_contamination', 'markers_bed'),
         input=input_bam,
-        other_options=" \\\n  " + global_conf.global_get('conpair_concordance_contamination', 'other_options', required= False) if global_conf.global_get('conpair_concordance_contamination', 'other_options', required= False) else "",
+        other_options=global_conf.global_get('conpair_concordance_contamination', 'other_options', required= False),
         output=output
         )
     )
@@ -72,7 +71,7 @@ python $CONPAIR_SCRIPTS/verify_concordance.py {options} \\
   --normal_pileup {input_normal} \\
   --tumor_pileup {input_tumor} \\ 
   --outfile {output}""".format(
-        options=global_conf.global_get('conpair_concordance_contamination', 'concord_options'),
+        options=global_conf.global_get('conpair_concordance_contamination', 'concord_options', required=False),
         markers=global_conf.global_get('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
         input_tumor=input_tumor,

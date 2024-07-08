@@ -56,7 +56,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR A
             input_bam=input_bam,
             input_umi=input_umi,
             output_bam=output_bam,
-            other_options=global_conf.global_get(ini_section, 'other_options') if global_conf.global_get(ini_section, 'other_options', required=False) else ""
+            other_options=global_conf.global_get(ini_section, 'other_options', required=False)
             ),
         removable_files=[output_bam]
         )

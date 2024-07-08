@@ -41,7 +41,7 @@ macs2 callpeak {options} {other_options} \\
   --name {output_prefix_name} \\
   >& {output_prefix_name}.diag.macs.out""".format(
                 options=options,
-                other_options=global_conf.global_get(ini_section, 'other_options') if global_conf.global_get(ini_section, 'other_options') else "",
+                other_options=global_conf.global_get(ini_section, 'other_options', required=False),
                 tmp_dir=global_conf.global_get(ini_section, "tmp_dir"),
                 genome_size=genome_size,
                 treatment_files=" \\\n  ".join(treatment_files),

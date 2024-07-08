@@ -56,7 +56,7 @@ python $STRELKA2_HOME/bin/configureStrelkaSomaticWorkflow.py \\
             normal=input_normal,
             tumor=input_tumor,
             genome=global_conf.global_get(ini_section,'genome_fasta', param_type='filepath'),
-            experiment_type=global_conf.global_get(ini_section,'experiment_type_option') if global_conf.global_get(ini_section,'experiment_type_option') else "",
+            experiment_type=global_conf.global_get(ini_section,'experiment_type_option', required=False),
             callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
             mantaIndels="\\\n  --indelCandidates " + mantaIndels if mantaIndels else "",
             output=output_dir
@@ -90,7 +90,7 @@ python $STRELKA2_HOME/bin/configureStrelkaGermlineWorkflow.py \\
             workflow=os.path.join(output_dir, "runWorkflow.py"),
             normal="".join(" \\\n  --bam " + input for input in input_normal),
             genome=global_conf.global_get(ini_section,'genome_fasta', param_type='filepath'),
-            experiment_type=global_conf.global_get(ini_section,'experiment_type_option') if global_conf.global_get(ini_section,'experiment_type_option') else "",
+            experiment_type=global_conf.global_get(ini_section,'experiment_type_option', required=False),
             callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
             output=output_dir
         )

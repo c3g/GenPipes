@@ -38,7 +38,7 @@ def scones_pair(bined_file, output_basename, window):
         -o {output_basename} \\
         -c {GC_map_bed} \\
         -b {window} """.format(
-            options=global_conf.global_get('scones_pair', 'other_options') if global_conf.global_get('scones_pair', 'other_options') else "",
+            options=global_conf.global_get('scones_pair', 'other_options', required=False),
             bined_file=bined_file,
             output_basename=output_basename,
             GC_map_bed=global_conf.global_get('scones_pair', 'gc_map_bedfile', param_type='filepath', required=True),
