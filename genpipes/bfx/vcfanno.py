@@ -18,19 +18,18 @@
 ################################################################################
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
 from ..core.job import Job
 
 
-def run(input, output):
+def run(input, output, ini_section='run_vcfanno'):
     return Job(
         [input],
         [output],
         [
-            ['run_vcfanno', 'module_vcfanno'],
+            [ini_section, 'module_vcfanno'],
         ],
         
         command="""\\
@@ -38,9 +37,9 @@ vcfanno {options} \\
     -lua {lua} {config} \\
     {input} \\
     {output}""".format(
-            options=global_conf.global_get('run_vcfanno', 'options'),
-            lua=global_conf.global_get('run_vcfanno', 'lua'),
-            config=global_conf.global_get('run_vcfanno', 'config'),
+            options=global_conf.global_get(ini_section, 'options'),
+            lua=global_conf.global_get(ini_section, 'lua'),
+            config=global_conf.global_get(ini_section, 'config'),
             input=input,
             output=" \\\n > " + output if output else "",
         )

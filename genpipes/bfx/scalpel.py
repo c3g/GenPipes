@@ -24,14 +24,14 @@ import os
 from ..core.config import global_conf
 from ..core.job import Job
 
-def scalpel_somatic(inputNormal, inputTumor, outputDir, bed):
+def scalpel_somatic(inputNormal, inputTumor, outputDir, bed, ini_section='scalpel'):
 
     return Job(
         [inputNormal, inputTumor, bed],
         [os.path.join(outputDir, 'main', 'somatic.5x.indel.vcf'), os.path.join(outputDir, 'main', 'common.5x.indel.vcf')],
         [
-            ['scalpel', 'module_perl'],
-            ['scalpel', 'module_scalpel']
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_scalpel']
         ],
         command="""\
 scalpel-discovery --somatic \\
@@ -41,23 +41,23 @@ scalpel-discovery --somatic \\
   --dir {outputDir} \\
   --numprocs {cores_per_job} \\
   --bed {bed}""".format(
-        reference_sequence=global_conf.global_get('scalpel', 'genome_fasta', param_type='filepath'),
+        reference_sequence=global_conf.global_get(ini_section, 'genome_fasta', param_type='filepath'),
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputDir=outputDir,
-        cores_per_job=global_conf.global_get('scalpel', 'cores_per_job'),
+        cores_per_job=global_conf.global_get(ini_section, 'cores_per_job'),
         bed=bed
         )
     )
 
-def scalpel_somatic_2pass(inputNormal, inputTumor, outputDir, bed):
+def scalpel_somatic_2pass(inputNormal, inputTumor, outputDir, bed, ini_section='scalpel'):
 
     return Job(
         [inputNormal, inputTumor, bed],
         [os.path.join(outputDir, 'main', 'somatic.5x.indel.vcf'), os.path.join(outputDir, 'main', 'common.5x.indel.vcf')],
         [
-            ['scalpel', 'module_perl'],
-            ['scalpel', 'module_scalpel']
+            [ini_section, 'module_perl'],
+            [ini_section, 'module_scalpel']
         ],
         command="""\
 scalpel-discovery --somatic --two-pass \\
@@ -67,11 +67,11 @@ scalpel-discovery --somatic --two-pass \\
   --dir {outputDir} \\
   --numprocs {cores_per_job} \\
   --bed {bed}""".format(
-        reference_sequence=global_conf.global_get('scalpel', 'genome_fasta', param_type='filepath'),
+        reference_sequence=global_conf.global_get(ini_section, 'genome_fasta', param_type='filepath'),
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputDir=outputDir,
-        cores_per_job=global_conf.global_get('scalpel', 'cores_per_job'),
+        cores_per_job=global_conf.global_get(ini_section, 'cores_per_job'),
         bed=bed
         )
     )

@@ -18,7 +18,6 @@
 ################################################################################
 
 # Python Standard Modules
-import logging
 import os
 
 # MUGQIC Modules
@@ -26,15 +25,15 @@ from ..core.config import global_conf
 from ..core.job import Job
 
 
-def processing( input_files, output_file, sample_file, profiling):
-    genemap = global_conf.global_get('seq2fun', 'genemap')
-    tfmi = global_conf.global_get('seq2fun', 'tfmi')
-    other_options = global_conf.global_get('seq2fun', 'other_options')
+def processing(input_files, output_file, sample_file, profiling, ini_section='seq2fun'):
+    genemap = global_conf.global_get(ini_section, 'genemap')
+    tfmi = global_conf.global_get(ini_section, 'tfmi')
+    other_options = global_conf.global_get(ini_section, 'other_options')
     return Job(
         input_files,
         output_file,
         [
-            ['seq2fun', 'module_seq2fun']
+            [ini_section, 'module_seq2fun']
         ],
         command="""seq2fun --sampletable {sample_file} --tfmi {tfmi} --genemap {genemap} {profiling} {other_options}""".format(
             sample_file=sample_file,
@@ -49,7 +48,8 @@ def processing( input_files, output_file, sample_file, profiling):
 def deseq2(
     design_file,
     count_matrix,
-    output_dir
+    output_dir, 
+    ini_section='seq2fun'
     ):
 
     localfit = "-l" if global_conf.global_get('differential_expression_deseq', 'localfit') else ""
@@ -58,8 +58,8 @@ def deseq2(
         [count_matrix],
         [os.path.join(output_dir, "deseq_results.csv"), os.path.join(output_dir, "dge_results.csv")],
         [
-            ['seq2fun', 'module_R'],
-            ['seq2fun', 'module_mugqic_tools'],
+            [ini_section, 'module_R'],
+            [ini_section, 'module_mugqic_tools'],
         ],
         command="""\
 Rscript $R_TOOLS/deseq2.R \\
@@ -74,11 +74,11 @@ Rscript $R_TOOLS/deseq2.R \\
     ))
 
 
-def ko_pathway_analysis(diff_report, output_prefix,   output_dir):
-    fdr = global_conf.global_get('seq2fun_pathway', 'fdr')
-    rds_file = global_conf.global_get('seq2fun_pathway', 'rds')
-    map_list = global_conf.global_get('seq2fun_pathway', 'user_pathway_list')
-    kegg_all = global_conf.global_get('seq2fun_pathway', 'kegg_all')
+def ko_pathway_analysis(diff_report, output_prefix, output_dir, ini_section='seq2fun_pathway'):
+    fdr = global_conf.global_get(ini_section, 'fdr')
+    rds_file = global_conf.global_get(ini_section, 'rds')
+    map_list = global_conf.global_get(ini_section, 'user_pathway_list')
+    kegg_all = global_conf.global_get(ini_section, 'kegg_all')
     return Job(
         [diff_report],
         [os.path.join(output_dir, output_prefix + ".txt")],
@@ -87,19 +87,19 @@ def ko_pathway_analysis(diff_report, output_prefix,   output_dir):
             ['seq2fun', 'module_mugqic_tools']
         ],
         command="""\
-    Rscript $R_TOOLS/KOPathawayAnalysis.R \\
-      -i {diff_report} \\
-      -map {map_list} \\
-      -o {output_dir} \\
-      -p {output_prefix} \\
-      -rds {rds_file} \\
-      -kegg {kegg_all} \\
-      -fdr {fdr}""".format(
+Rscript $R_TOOLS/KOPathawayAnalysis.R \\
+    -i {diff_report} \\
+    -map {map_list} \\
+    -o {output_dir} \\
+    -p {output_prefix} \\
+    -rds {rds_file} \\
+    -kegg {kegg_all} \\
+    -fdr {fdr}""".format(
             diff_report=diff_report,
             map_list=map_list,
             output_dir=output_dir,
             fdr=fdr,
             output_prefix=output_prefix,
-            rds_file= rds_file,
-            kegg_all= kegg_all
+            rds_file=rds_file,
+            kegg_all=kegg_all
         ))

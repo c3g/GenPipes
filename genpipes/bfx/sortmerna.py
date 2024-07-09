@@ -53,7 +53,7 @@ sortmerna --threads {threads} {other_options} \\
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
-        	other_options = global_conf.global_get('sortmerna', 'other_options')
+        	other_options = global_conf.global_get(ini_section, 'other_options')
         )
 	)
 
@@ -84,6 +84,6 @@ sortmerna --threads {threads} {other_options} \\
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
-        	other_options = global_conf.global_get('sortmerna', 'other_options')
+        	other_options = global_conf.global_get(ini_section, 'other_options')
 		)
 	)

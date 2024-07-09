@@ -18,7 +18,6 @@
 ################################################################################
 
 # Python Standard Modules
-import logging
 import os
 
 # MUGQIC Modules
@@ -29,7 +28,8 @@ def run(
     input_bam,
     sample,
     output_dir,
-    junction_file=None
+    junction_file=None,
+    ini_section='sv_prep'
     ):
     inputs = [input_bam]
     if junction_file:
@@ -41,8 +41,8 @@ def run(
             os.path.join(output_dir, f"{sample}.sv_prep.junctions.csv")
         ],
         [
-            ['sv_prep', 'module_java'],
-            ['sv_prep', 'module_sv_prep']
+            [ini_section, 'module_java'],
+            [ini_section, 'module_sv_prep']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SVPREP_JAR  \\
@@ -55,16 +55,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SVPREP_JAR 
   -known_fusion_bed {known_fusion} \\
   {junction_file} \\
   -output_dir {outdir}""".format(
-            tmp_dir=global_conf.global_get('sv_prep', 'tmp_dir'),
-            java_other_options=global_conf.global_get('sv_prep', 'java_other_options'),
-            ram=global_conf.global_get('sv_prep', 'ram'),
-            threads=global_conf.global_get('sv_prep', 'threads'),
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+            java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+            ram=global_conf.global_get(ini_section, 'ram'),
+            threads=global_conf.global_get(ini_section, 'threads'),
             sample=sample,
             bam_file=input_bam,
-            reference_sequence=global_conf.global_get('sv_prep', 'genome_fasta', param_type='filepath'),
-            build=global_conf.global_get('sv_prep', 'assembly_alias2'),
-            blacklist_bed=global_conf.global_get('sv_prep', 'blacklist_bed', param_type='filepath'),
-            known_fusion=global_conf.global_get('sv_prep', 'known_fusion', param_type='filepath'),
+            reference_sequence=global_conf.global_get(ini_section, 'genome_fasta', param_type='filepath'),
+            build=global_conf.global_get(ini_section, 'assembly_alias2'),
+            blacklist_bed=global_conf.global_get(ini_section, 'blacklist_bed', param_type='filepath'),
+            known_fusion=global_conf.global_get(ini_section, 'known_fusion', param_type='filepath'),
             junction_file=f"-existing_junction_file {junction_file}" if junction_file else "",
             outdir=output_dir
         )

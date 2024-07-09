@@ -28,30 +28,30 @@ from ..core.job import Job
 
 log = logging.getLogger(__name__)
 
-def bam_stat(input, output):
+def bam_stat(input, output, ini_section='rseqc'):
     return Job(
         [input],
         [output],
         [
-            ['rseqc','module_rseqc']
+            [ini_section,'module_rseqc']
         ],
 
     command="""\
     bam_stat.py {options} \\
         -i {input} \\
         > {output}""".format(
-            options=global_conf.global_get('rseqc', 'bam_stat_options'),
+            options=global_conf.global_get(ini_section, 'bam_stat_options'),
             input=input,
             output=output,
         ),
     )
 
-def gene_body_coverage(input_bam, output):
+def gene_body_coverage(input_bam, output, ini_section='rseqc'):
     return Job(
         [input_bam],
         [output],
         [
-            ['rseqc', 'module_rseqc']
+            [ini_section, 'module_rseqc']
         ],
 
         command="""\
@@ -59,18 +59,18 @@ def gene_body_coverage(input_bam, output):
             -r {geneBody} \\
             -i {input} \\
             -o {output}""".format(
-            geneBody=global_conf.global_get('rseqc', 'housekeeping'),
+            geneBody=global_conf.global_get(ini_section, 'housekeeping'),
             input=input_bam,
             output=output,
         ),
     )
 
-def infer_experiment(input, output):
+def infer_experiment(input, output, ini_section='rseqc'):
     return Job(
         [input],
         [output],
         [
-            ['rseqc', 'module_rseqc']
+            [ini_section, 'module_rseqc']
         ],
 
         command="""\
@@ -78,18 +78,18 @@ def infer_experiment(input, output):
             -r {ref_gene_model} \\
             -i {input} \\
             > {output}""".format(
-            ref_gene_model=global_conf.global_get('rseqc', 'ref_gene_model'),
+            ref_gene_model=global_conf.global_get(ini_section, 'ref_gene_model'),
             input=input,
             output=output,
         ),
     )
 
-def inner_distance(input, output):
+def inner_distance(input, output, ini_section='rseqc'):
     return Job(
         [input],
         [output],
         [
-            ['rseqc', 'module_rseqc']
+            [ini_section, 'module_rseqc']
         ],
 
         command="""\
@@ -97,18 +97,18 @@ def inner_distance(input, output):
             -r {ref_gene_model} \\
             -i {input} \\
             -o {output}""".format(
-            ref_gene_model=global_conf.global_get('rseqc', 'ref_gene_model'),
+            ref_gene_model=global_conf.global_get(ini_section, 'ref_gene_model'),
             input=input,
             output=output,
         ),
     )
 
-def junction_annotation(input, output):
+def junction_annotation(input, output, ini_section='rseqc'):
     return Job(
         [input],
         [output],
         [
-            ['rseqc', 'module_rseqc']
+            [ini_section, 'module_rseqc']
         ],
 
         command="""\
@@ -116,21 +116,21 @@ def junction_annotation(input, output):
             -r {refseq} \\
             -i {input} \\
             -o {output}""".format(
-            refseq=global_conf.global_get('rseqc', 'refseq'),
+            refseq=global_conf.global_get(ini_section, 'refseq'),
             input=input,
             output=output,
         ),
     )
 
-def junction_saturation(input, output):
+def junction_saturation(input, output, ini_section='rseqc'):
     output_file=output + ".log"
     
     return Job(
         [input],
         [output_file],
         [
-            ['rseqc', 'module_rseqc'],
-            ['rseqc', 'module_R']
+            [ini_section, 'module_rseqc'],
+            [ini_section, 'module_R']
         ],
 
         command="""\
@@ -139,27 +139,27 @@ def junction_saturation(input, output):
             -i {input} \\
             -o {output} 2> \\
             {output}.log""".format(
-            ref_gene_model=global_conf.global_get('rseqc', 'ref_gene_model'),
+            ref_gene_model=global_conf.global_get(ini_section, 'ref_gene_model'),
             input=input,
             output=output,
         ),
     )
 
-def tin(input, output_dir):
+def tin(input, output_dir, ini_section='rseqc'):
     file = re.sub("\.bam$", ".summary.txt", os.path.basename(input))
     output = os.path.join(output_dir, file)
     return Job(
         [input],
         [output],
         [
-            ['rseqc', 'module_rseqc']
+            [ini_section, 'module_rseqc']
         ],
 
         command="""\
         tin.py \\
             -r {ref_gene_model} \\
             -i {input}""".format(
-            ref_gene_model=global_conf.global_get('rseqc', 'ref_gene_model'),
+            ref_gene_model=global_conf.global_get(ini_section, 'ref_gene_model'),
             input=input
         ),
     )

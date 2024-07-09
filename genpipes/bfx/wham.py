@@ -21,7 +21,7 @@
 from ..core.config import global_conf
 from ..core.job import Job
 
-def call_sv(input_normal, input_tumor, output):
+def call_sv(input_normal, input_tumor, output, ini_section='wham_call_sv'):
     if input_tumor is not None:
         inputs = [input_normal, input_tumor]
         
@@ -32,7 +32,7 @@ def call_sv(input_normal, input_tumor, output):
         inputs,
         [output],
         [
-            ['wham_call_sv', 'module_wham']
+            [ini_section, 'module_wham']
         ],
         command="""\
 export EXCLUDE={exclude}
@@ -43,21 +43,21 @@ WHAM-GRAPHENING \\
     -a {genome} \\
     -f {input_tumor}{input_normal} \\
     {output}""".format(
-            exclude=global_conf.global_get('wham_call_sv', 'exclude'),
-            cores=global_conf.global_get('wham_call_sv', 'cores'),
-            genome=global_conf.global_get('wham_call_sv', 'genome_fasta', param_type='filepath'),
+            exclude=global_conf.global_get(ini_section, 'exclude'),
+            cores=global_conf.global_get(ini_section, 'cores'),
+            genome=global_conf.global_get(ini_section, 'genome_fasta', param_type='filepath'),
             input_tumor=input_tumor + "," if input_tumor else "",
             input_normal=input_normal,
             output=" \\\n  > " + output if output else ""
         )
     )
 
-def merge(input_vcf, output_vcf):
+def merge(input_vcf, output_vcf, ini_section='wham_call_sv'):
     return Job(
         [input_vcf],
         [output_vcf],
         [
-            ['wham_call_sv', 'module_wham']
+            [ini_section, 'module_wham']
         ],
         command="""\
 mergeIndvs  \\
@@ -69,7 +69,7 @@ mergeIndvs  \\
     )
 
 
-def genotype(input_vcf, input_normal, input_tumor, output):
+def genotype(input_vcf, input_normal, input_tumor, output, ini_section='wham_call_sv'):
     if input_tumor is not None:
         inputs = [input_vcf, input_normal, input_tumor]
     
@@ -80,7 +80,7 @@ def genotype(input_vcf, input_normal, input_tumor, output):
         inputs,
         [output],
         [
-            ['wham_call_sv', 'module_wham']
+            [ini_section, 'module_wham']
         ],
         command="""\
 WHAM-GRAPHENING \\
@@ -90,8 +90,8 @@ WHAM-GRAPHENING \\
     -f {input_tumor}{input_normal} \\
     {output}""".format(
             input_vcf=input_vcf,
-            cores=global_conf.global_get('wham_call_sv', 'cores'),
-            genome=global_conf.global_get('wham_call_sv', 'genome_fasta', param_type='filepath'),
+            cores=global_conf.global_get(ini_section, 'cores'),
+            genome=global_conf.global_get(ini_section, 'genome_fasta', param_type='filepath'),
             input_tumor=input_tumor + "," if input_tumor else "",
             input_normal=input_normal,
             output=" \\\n  > " + output if output else ""

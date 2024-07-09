@@ -25,7 +25,7 @@ import os
 import re
 
 # GenPipes Modules
-from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
+from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner
 from .sample import Sample, NanoporeSample
 
 log = logging.getLogger(__name__)

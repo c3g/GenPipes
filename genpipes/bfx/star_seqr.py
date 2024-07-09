@@ -27,7 +27,7 @@ from ..core.job import Job
 
 log = logging.getLogger(__name__)
 
-def run(fastqs1, fastqs2, output_dir):
+def run(fastqs1, fastqs2, output_dir, ini_section='run_star_seqr'):
     if not isinstance(fastqs1, list):
         fastqs1 = [fastqs1]
         
@@ -39,7 +39,7 @@ def run(fastqs1, fastqs2, output_dir):
         fastqs1,
         [output_file],
         [
-            ['run_star_seqr', 'module_conda']
+            [ini_section, 'module_conda']
         ],
 
         command="""\
@@ -50,11 +50,11 @@ def run(fastqs1, fastqs2, output_dir):
       -1 {fastq1} \\
       -2 {fastq2} \\
       -p {output_dir}""".format(
-            genome_build=global_conf.global_get('run_star_seqr', 'genome_build'),
-            gene_annot=global_conf.global_get('run_star_seqr', 'gene_annot'),
-            reference=global_conf.global_get('run_star_seqr', 'reference'),
-            threads=global_conf.global_get('run_star_seqr', 'threads', param_type='posint'),
-            options=global_conf.global_get('run_star_seqr', 'options'),
+            genome_build=global_conf.global_get(ini_section, 'genome_build'),
+            gene_annot=global_conf.global_get(ini_section, 'gene_annot'),
+            reference=global_conf.global_get(ini_section, 'reference'),
+            threads=global_conf.global_get(ini_section, 'threads', param_type='posint'),
+            options=global_conf.global_get(ini_section, 'options'),
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
             fastq2=",".join(fastq2 for fastq2 in fastqs2),
             output_dir=output_dir,

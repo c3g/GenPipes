@@ -24,13 +24,13 @@ from ..core.job import Job
 
 #Assuming that the module file has already been written and the scripts have been added to path
 
-def genome_gz(output):
+def genome_gz(output, ini_section='sequenza'):
     return Job(
         [None],
         [output],
         [
-            ['sequenza', 'module_sequenza_utils'],
-            ['sequenza', 'module_R'],
+            [ini_section, 'module_sequenza_utils'],
+            [ini_section, 'module_R'],
         ],
         command="""\\
 sequenza-utils \\
@@ -40,18 +40,18 @@ sequenza-utils \\
     {out}""".format(
         input=global_conf.global_get('samtools_mpileup', 'genome_fasta', param_type='filepath'),
         out=output,
-        window=global_conf.global_get('sequenza', 'window_length')
+        window=global_conf.global_get(ini_section, 'window_length')
     ),
   )
 
 
-def bam2seqz_mpileup(normal_gz, tumor_gz, genome, output):
+def bam2seqz_mpileup(normal_gz, tumor_gz, genome, output, ini_section='sequenza'):
     return Job(
         [normal_gz, tumor_gz],
         [output],
         [
-            ['sequenza', 'module_python'],
-            ['sequenza', 'module_R'],
+            [ini_section, 'module_python'],
+            [ini_section, 'module_R'],
         ],
         command="""\\
 sequenza-utils \\
@@ -62,19 +62,19 @@ sequenza-utils \\
         gen=genome,
         normal=normal_gz,
         tumor=tumor_gz,
-        pileup_options=global_conf.global_get('sequenza', 'pileup_options'),
+        pileup_options=global_conf.global_get(ini_section, 'pileup_options'),
         out=" \\\n > " + output if output else ""
         )
     )
 
-def bam2seqz(normal, tumor, genome, output, chr=None):
+def bam2seqz(normal, tumor, genome, output, chr=None, ini_section='sequenza'):
     return Job(
         [normal, tumor],
         [output],
         [
-            ['sequenza', 'module_sequenza_utils'],
-            ['sequenza', 'module_samtools'],
-            ['sequenza', 'module_htslib'],
+            [ini_section, 'module_sequenza_utils'],
+            [ini_section, 'module_samtools'],
+            [ini_section, 'module_htslib'],
         ],
         command="""\\
 sequenza-utils \\
@@ -87,21 +87,21 @@ sequenza-utils \\
     --output {out}""".format(
         chr="\\\n    --chromosome " + chr if chr else "",
         gen=genome,
-        reference_sequence=global_conf.global_get('sequenza', 'genome_fasta', param_type='filepath'),
+        reference_sequence=global_conf.global_get(ini_section, 'genome_fasta', param_type='filepath'),
         normal=normal,
         tumor=tumor,
-        pileup_options=global_conf.global_get('sequenza', 'pileup_options'),
+        pileup_options=global_conf.global_get(ini_section, 'pileup_options'),
         out=output
         )
     )
 
-def bin(seqz_gz, output):
+def bin(seqz_gz, output, ini_section='sequenza'):
     return Job(
         [seqz_gz],
         [output],
         [
-            ['sequenza', 'module_sequenza_utils'],
-            ['sequenza', 'module_R'],
+            [ini_section, 'module_sequenza_utils'],
+            [ini_section, 'module_R'],
         ],
         command="""\\
 sequenza-utils  \\
@@ -109,7 +109,7 @@ sequenza-utils  \\
     -w {window}  \\
     -s {seqz_gz} \\
     -o {output}""".format(
-        window=global_conf.global_get('sequenza', 'bin_window_size'),
+        window=global_conf.global_get(ini_section, 'bin_window_size'),
         seqz_gz=seqz_gz,
         output=output,
         )
@@ -145,12 +145,12 @@ Rscript $R_TOOLS/RunSequenza_analysis.R \\
         )
     )
 
-def filter(calls, pair_name, output):
+def filter(calls, pair_name, output, ini_section='sequenza'):
      return Job(
          [calls],
          [output],
          [
-             ['sequenza', 'module_mugqic_tools']
+             [ini_section, 'module_mugqic_tools']
          ],
          command="""\
 sequenza_filterOut.sh \\
@@ -163,7 +163,7 @@ sequenza_filterOut.sh \\
          )
      )
 
-def annotate(calls_filtered, output_basename, tmp_basename):
+def annotate(calls_filtered, output_basename, tmp_basename, ini_section='scones_annotate'):
      scones_outputs = [output_basename + ".counts.filteredSV.annotate.txt",
                        output_basename + ".other.filteredSV.annotate.txt",
                        output_basename + ".TumS.filteredSV.annotate.txt"]
@@ -186,12 +186,12 @@ sequenza_filterAnnotCNV.sh \\
     {output_basename} \\
     {tmp_basename} """.format(
              scones_calls_filtered=calls_filtered,
-             excluded_regions=global_conf.global_get('scones_annotate', 'excluded_regions_bed', param_type='filepath', required=True),
-             genes=global_conf.global_get('scones_annotate', 'genes_bed', param_type='filepath', required=True),
-             DGV=global_conf.global_get('scones_annotate', 'dgv_bed', param_type='filepath', required=True),
-             microsat=global_conf.global_get('scones_annotate', 'microsat_bed', param_type='filepath', required=True),
-             repeatMasker=global_conf.global_get('scones_annotate', 'repeat_masker_bed', param_type='filepath', required=True),
-             AutosomeSize=global_conf.global_get('scones_annotate', 'autosome_size_file', param_type='filepath', required=True),
+             excluded_regions=global_conf.global_get(ini_section, 'excluded_regions_bed', param_type='filepath', required=True),
+             genes=global_conf.global_get(ini_section, 'genes_bed', param_type='filepath', required=True),
+             DGV=global_conf.global_get(ini_section, 'dgv_bed', param_type='filepath', required=True),
+             microsat=global_conf.global_get(ini_section, 'microsat_bed', param_type='filepath', required=True),
+             repeatMasker=global_conf.global_get(ini_section, 'repeat_masker_bed', param_type='filepath', required=True),
+             AutosomeSize=global_conf.global_get(ini_section, 'autosome_size_file', param_type='filepath', required=True),
              output_basename=output_basename,
              tmp_basename=tmp_basename
          )

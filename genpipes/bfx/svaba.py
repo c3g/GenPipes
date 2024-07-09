@@ -23,7 +23,7 @@
 from ..core.config import global_conf
 from ..core.job import Job
 
-def run(tumor, patient_name, normal, bed):
+def run(tumor, patient_name, normal, bed, ini_section='svaba_run'):
     outputs = [patient_name + ".svaba.sv.vcf"]
     
     if normal:
@@ -35,8 +35,7 @@ def run(tumor, patient_name, normal, bed):
         [tumor, normal],
         outputs,
         [
-            ['svaba_run', 'module_svaba'],
-#            ['svaba_run', 'module_gcc']
+            [ini_section, 'module_svaba']
         ],
         command="""\
 svaba run {options} \\
@@ -45,9 +44,9 @@ svaba run {options} \\
         -a {name} \\
         -t {tumor} \\
         {normal}""".format(
-            options=global_conf.global_get('svaba_run', 'options'),
-            ref=global_conf.global_get('svaba_run', 'ref', param_type='filepath'),
-            dbsnp=global_conf.global_get('svaba_run', 'dbsnp'),
+            options=global_conf.global_get(ini_section, 'options'),
+            ref=global_conf.global_get(ini_section, 'ref', param_type='filepath'),
+            dbsnp=global_conf.global_get(ini_section, 'dbsnp'),
             bed=" -k " + bed if bed else "",
             name=patient_name,
             normal="-n " + normal if normal else "",

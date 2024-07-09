@@ -79,8 +79,7 @@ def parse_chipseq_design_file(design_file, samples):
             sample = matching_samples[0]
 
         else:
-            _raise(SanitycheckError("Error: Sample " + sample_name + " and MarkName " + markname + " in design file " +
-                                    design_file + " not found in pipeline samples!"))
+            _raise(SanitycheckError(f"Error: Sample {sample_name} and MarkName {markname} in design file {design_file} not found in pipeline samples!"))
         for contrast in contrasts:
             sample_contrast_type = line[contrast.name]
             # Empty or '0' types are ignored
@@ -100,6 +99,7 @@ def parse_chipseq_design_file(design_file, samples):
         log.info(
             f"Contrast {contrast.name} (controls: {str(len(contrast.controls))}, treatments: {str(len(contrast.treatments))}) created")
     log.info(str(len(contrasts)) + " contrast" + ("s" if len(contrasts) > 1 else "") + " parsed\n")
+    design_file.close()
     return contrasts
 
 
@@ -122,7 +122,7 @@ def parse_design_file(design_file, samples):
             # There should be only one matching sample
             sample = matching_samples[0]
         else:
-            _raise(SanitycheckError("Error: sample " + sample_name + " in design file " + design_file + " not found in pipeline samples!"))
+            _raise(SanitycheckError(f"Error: sample {sample_name} in design file {design_file} not found in pipeline samples!"))
 
         for contrast in contrasts:
             sample_contrast_type = line[contrast.name]
@@ -134,12 +134,11 @@ def parse_design_file(design_file, samples):
             elif sample_contrast_type == "2":
                 contrast.treatments.append(sample)
             else:
-                _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and contrast "
-                                        + contrast.name + " in design file " + design_file.name +
-                                        "(should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
+                _raise(SanitycheckError(f"Error: invalid value for sample {sample_name} and contrast {contrast.name} in design file {design_file.name} 
+                                        (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
 
     for contrast in contrasts:
         log.info(f"Contrast {contrast.name} (controls: {str(len(contrast.controls))}, treatments: {str(len(contrast.treatments))}) created")
     log.info(str(len(contrasts)) + " contrast" + ("s" if len(contrasts) > 1 else "") + " parsed\n")
-
+    design_file.close()
     return contrasts

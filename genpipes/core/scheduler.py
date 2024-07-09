@@ -254,11 +254,8 @@ set -eu -o pipefail
                 separator_line=separator_line,
                 pipeline=pipeline,
                 scheduler=self,
-                steps="\n".join(["#   " + step.name + ": " + str(len(step.jobs)) + " job" +
-                                 ("s" if len(step.jobs) > 1 else "" if step.jobs else "... skipping")
-                                 for step in pipeline.step_to_execute]) + \
-                "\n#   TOTAL: " + str(len(pipeline.jobs)) + " job" +
-                      ("s" if len(pipeline.jobs) > 1 else "" if pipeline.jobs else "... skipping")
+                steps="\n".join(["#   " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "" if step.jobs else "... skipping") for step in pipeline.step_to_execute]) + \
+                "\n#   TOTAL: " + str(len(pipeline.jobs)) + " job" + ("s" if len(pipeline.jobs) > 1 else "" if pipeline.jobs else "... skipping")
             )
         )
 
@@ -451,15 +448,13 @@ class PBSScheduler(Scheduler):
             import math
             cpu_ = math.ceil(mem/adapt_mem)
             cpu = max(cpu, cpu_)
-# unsure which of these cpu functions should be kept. 
-   # def cpu(self, job_name_prefix):
-   #     cpu = super().cpu(job_name_prefix)
-   #     node = self.node(job_name_prefix)
-   #     gpu = self.gpu(job_name_prefix)
-   #     if gpu:
-   #         return f"-l nodes={node}:ppn={cpu}:gpu{gpu}"
-   #     else:
-   #         return f"-l nodes={node}:ppn={cpu}"
+
+        node = self.node(job_name_prefix)
+        gpu = self.gpu(job_name_prefix)
+        if gpu:
+            return f"-l nodes={node}:ppn={cpu}:gpu{gpu}"
+        else:
+            return f"-l nodes={node}:ppn={cpu}"
 
     def submit(self, pipeline):
         self.print_header(pipeline)

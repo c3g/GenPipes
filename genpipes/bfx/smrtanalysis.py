@@ -30,7 +30,8 @@ def blasr(
     infile_long,
     outfile,
     outfile_fofn,
-    sam=False
+    sam=False, 
+    ini_section='smrtanalysis_blasr'
     ):
 
     outfile_filtered = outfile + ".filtered"
@@ -39,7 +40,7 @@ def blasr(
         [infile, infile_long],
         [outfile_filtered, outfile_fofn],
         [
-            ['smrtanalysis_blasr', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -60,13 +61,13 @@ filterm4.py {outfile} > {outfile_filtered} 2> {outfile_filtered}.log'""".format(
             infile=infile,
             infile_long=infile_long,
             outfile=outfile,
-            m=global_conf.global_get('smrtanalysis_blasr', 'm', param_type='int'),
-            threads=global_conf.global_get('smrtanalysis_blasr', 'threads', param_type='posint'),
-            bestn=global_conf.global_get('smrtanalysis_blasr', 'bestn', param_type='int'),
-            n_candidates=global_conf.global_get('smrtanalysis_blasr', 'n_candidates', param_type='int'),
-            min_read_length=global_conf.global_get('smrtanalysis_blasr', 'min_read_length', param_type='int'),
-            max_score=global_conf.global_get('smrtanalysis_blasr', 'max_score', param_type='int'),
-            max_lcp_length=global_conf.global_get('smrtanalysis_blasr', 'max_lcp_length', param_type='int'),
+            m=global_conf.global_get(ini_section, 'm', param_type='int'),
+            threads=global_conf.global_get(ini_section, 'threads', param_type='posint'),
+            bestn=global_conf.global_get(ini_section, 'bestn', param_type='int'),
+            n_candidates=global_conf.global_get(ini_section, 'n_candidates', param_type='int'),
+            min_read_length=global_conf.global_get(ini_section, 'min_read_length', param_type='int'),
+            max_score=global_conf.global_get(ini_section, 'max_score', param_type='int'),
+            max_lcp_length=global_conf.global_get(ini_section, 'max_lcp_length', param_type='int'),
             sam=" \\\n  -sam" if sam else "",
             outfile_fofn=outfile_fofn,
             outfile_filtered=outfile_filtered
@@ -74,14 +75,15 @@ filterm4.py {outfile} > {outfile_filtered} 2> {outfile_filtered}.log'""".format(
 
 def cmph5tools_sort(
     cmph5,
-    cmph5_out
+    cmph5_out,
+    ini_section='smrtanalysis_cmph5tools_sort'
     ):
 
     return Job(
         [cmph5],
         [cmph5_out],
         [
-            ['smrtanalysis_cmph5tools_sort', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -96,14 +98,15 @@ cmph5tools.py -vv sort --deep --inPlace \\
 def fastq_to_ca(
     libraryname,
     reads,
-    outfile
+    outfile,
+    ini_section='smrtanalysis_fastq_to_ca'
     ):
 
     return Job(
         [reads],
         [outfile],
         [
-            ['smrtanalysis_fastq_to_ca', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -119,18 +122,18 @@ fastqToCA \\
     )
 
 
-def filtering(fofn, input_xml, params_xml, output_dir, log):
+def filtering(fofn, input_xml, params_xml, output_dir, log, ini_section='smrtanalysis_filtering'):
 
-    ref_params_xml = global_conf.global_get('smrtanalysis_filtering', 'filtering_settings')
+    ref_params_xml = global_conf.global_get(ini_section, 'filtering_settings')
 
     output_prefix = os.path.join(output_dir, "data", "filtered_subreads.")
     input_fofn = os.path.join(output_dir, "input.fofn")
     output_fastq = output_prefix + "fastq"
 
-    white_path = global_conf.global_get('smrtanalysis_filtering', 'whitelist_path', required=False)
+    white_path = global_conf.global_get(ini_section, 'whitelist_path', required=False)
 
-    temp_dir = global_conf.global_get('smrtanalysis_filtering', 'tmp_dir')
-    if (global_conf.global_get('smrtanalysis_filtering', 'tmp_dir').startswith("$")):
+    temp_dir = global_conf.global_get(ini_section, 'tmp_dir')
+    if (global_conf.global_get(ini_section, 'tmp_dir').startswith("$")):
         temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
         temp_dir = temp_dir.replace('{', '')
         temp_dir = temp_dir.replace('}', '')
@@ -139,8 +142,8 @@ def filtering(fofn, input_xml, params_xml, output_dir, log):
         [fofn, ref_params_xml],
         [input_fofn, output_fastq, output_prefix + "fasta", os.path.join(output_dir, "data", "filtered_summary.csv")],
         [
-            ['smrtanalysis_filtering', 'module_prinseq'],
-            ['smrtanalysis_filtering', 'module_smrtanalysis']
+            [ini_section, 'module_prinseq'],
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -ic 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -164,13 +167,13 @@ prinseq-lite.pl \\
             fofn=fofn,
             input_fofn=input_fofn,
             input_xml=input_xml,
-            min_subread_length=global_conf.global_get('smrtanalysis_filtering', 'min_subread_length'),
-            min_read_length=global_conf.global_get('smrtanalysis_filtering', 'min_read_length'),
-            min_qual=global_conf.global_get('smrtanalysis_filtering', 'min_qual'),
+            min_subread_length=global_conf.global_get(ini_section, 'min_subread_length'),
+            min_read_length=global_conf.global_get(ini_section, 'min_read_length'),
+            min_qual=global_conf.global_get(ini_section, 'min_qual'),
             whitelist_param=' -e "s|<\!-- WHITELISTCOM||g" -e "s|WHITELISTCOM -->||g" -e "s|WHITELISTFILEPATH|'+white_path+'|g"' if white_path != "" else '',
             ref_params_xml=ref_params_xml,
             params_xml=params_xml,
-            threads=global_conf.global_get('smrtanalysis_filtering', 'threads'),
+            threads=global_conf.global_get(ini_section, 'threads'),
             tmp_dir=temp_dir,
             output_dir=output_dir,
             log=log,
@@ -180,14 +183,15 @@ prinseq-lite.pl \\
 def load_chemistry(
     cmph5,
     input_fofn,
-    cmph5_output
+    cmph5_output,
+    ini_section='smrtanalysis_load_chemistry'
     ):
 
     return Job(
         [input_fofn, cmph5],
         [cmph5_output],
         [
-            ['smrtanalysis_load_chemistry', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         # Copy cmph5 file since loadChemistry.py modifies the input cmph5 directly
         command="""\
@@ -204,14 +208,15 @@ loadChemistry.py \\
 def load_pulses(
     cmph5,
     input_fofn,
-    cmph5_output
+    cmph5_output,
+    ini_section='smrtanalysis_load_pulses'
     ):
 
     return Job(
         [input_fofn, cmph5],
         [cmph5_output],
         [
-            ['smrtanalysis_load_pulses', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         # Copy cmph5 file since loadPulses modifies the input cmph5 directly
         command="""\
@@ -230,14 +235,15 @@ def m4topre(
     infile,
     allm4,
     subreads,
-    outfile
+    outfile,
+    ini_section='smrtanalysis_m4topre'
     ):
 
     return Job(
         [infile],
         [outfile],
         [
-            ['smrtanalysis_m4topre', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -250,14 +256,15 @@ m4topre.py \\
             infile=infile,
             allm4=allm4,
             subreads=subreads,
-            bestn=global_conf.global_get('smrtanalysis_m4topre', 'bestn', param_type='int'),
+            bestn=global_conf.global_get(ini_section, 'bestn', param_type='int'),
             outfile=outfile
     ))
 
 def pbalign(
     polishing_round_directory,
     sample_name,
-    sample_cutoff_mer_size_polishing_round
+    sample_cutoff_mer_size_polishing_round,
+    ini_section='smrtanalysis_pbalign'
     ):
 
     input_fofn = os.path.join(sample_name, "filtering", "input.fofn")
@@ -277,7 +284,7 @@ def pbalign(
         [input_fofn, ref_upload],
         [cmph5],
         [
-            ['smrtanalysis_pbalign', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -294,21 +301,22 @@ pbalign \\
             ref_upload=ref_upload,
             cmph5=cmph5,
             tmp_dir=temp_dir,
-            threads=global_conf.global_get('smrtanalysis_pbalign', 'threads', param_type='posint'),
+            threads=global_conf.global_get(ini_section, 'threads', param_type='posint'),
             control_regions_fofn=control_regions_fofn
     ))
 
 def pbdagcon(
     infile,
     outfile,
-    outfile_fastq
+    outfile_fastq,
+    ini_section='smrtanalysis_pbdagcon'
     ):
 
     return Job(
         [infile],
         [outfile, outfile_fastq],
         [
-            ['smrtanalysis_pbdagcon', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -317,14 +325,14 @@ pbdagcon -a -j {threads} \\
   > {outfile}' && \\
 awk '{{if ($0~/>/) {{sub(/>/,"@",$0);print;}} else {{l=length($0);q=""; while (l--) {{q=q "9"}}printf("%s\\n+\\n%s\\n",$0,q)}}}}' {outfile} \\
   > {outfile_fastq}""".format(
-            threads=global_conf.global_get('smrtanalysis_pbdagcon', 'threads', param_type='posint'),
+            threads=global_conf.global_get(ini_section, 'threads', param_type='posint'),
             infile=infile,
             outfile=outfile,
             outfile_fastq=outfile_fastq
     ))
 
 
-def pbutgcns(assembly_directory, sample_cutoff_mer_size, mer_size_directory):
+def pbutgcns(assembly_directory, sample_cutoff_mer_size, mer_size_directory, ini_section='smrtanalysis_pbutgcns'):
 
     gpk_store = os.path.join(assembly_directory, sample_cutoff_mer_size + ".gkpStore")
     tig_store = os.path.join(assembly_directory, sample_cutoff_mer_size + ".tigStore")
@@ -336,7 +344,7 @@ def pbutgcns(assembly_directory, sample_cutoff_mer_size, mer_size_directory):
     outdir = os.path.join(assembly_directory, "9-terminator")
 
     temp_dir = os.path.join(global_conf.global_get('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size)
-    if (global_conf.global_get('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
+    if (global_conf.global_get(ini_section, 'tmp_dir').startswith("$")):
         temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
         temp_dir = temp_dir.replace('{', '')
         temp_dir = temp_dir.replace('}', '')
@@ -345,7 +353,7 @@ def pbutgcns(assembly_directory, sample_cutoff_mer_size, mer_size_directory):
         [gpk_store, tig_store],
         [outfile],
         [
-            ['smrtanalysis_pbutgcns', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 tigStore \\
@@ -368,21 +376,22 @@ pbutgcns_wf.sh'""".format(
             outdir=outdir,
             tmp_dir=temp_dir,
             prefix=prefix,
-            threads=global_conf.global_get('smrtanalysis_pbutgcns', 'threads', param_type='posint'),
+            threads=global_conf.global_get(ini_section, 'threads', param_type='posint'),
             outfile=outfile
     ))
 
 def reference_uploader(
     prefix,
     sample_name,
-    fasta
+    fasta,
+    ini_section='smrtanalysis_reference_uploader'
     ):
 
     return Job(
         [fasta],
         [os.path.join(prefix, sample_name, "sequence", sample_name + ".fasta")],
         [
-            ['smrtanalysis_reference_uploader', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         # Preload assembled contigs as reference
         command="""\
@@ -404,7 +413,8 @@ def run_ca(
     infile,
     ini,
     prefix,
-    outdir
+    outdir,
+    ini_section='smrtanalysis_run_ca'
     ):
 
     return Job(
@@ -415,7 +425,7 @@ def run_ca(
             os.path.join(outdir, prefix + ".gkpStore")
         ],
         [
-            ['smrtanalysis_run_ca', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -498,7 +508,8 @@ def variant_caller(
     ref_fasta,
     outfile_variants,
     outfile_fasta,
-    outfile_fastq
+    outfile_fastq,
+    ini_section='smrtanalysis_variant_caller'
     ):
 
     outfile_fasta_uncompressed = re.sub("\.(gz|gzip)$", "", outfile_fasta)
@@ -507,7 +518,7 @@ def variant_caller(
         [cmph5, ref_fasta],
         [outfile_variants, outfile_fasta, outfile_fastq, re.sub("\.gz$", "", outfile_fasta_uncompressed)],
         [
-            ['smrtanalysis_variant_caller', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -525,9 +536,9 @@ variantCaller.py \\
 gunzip -c \\
   {outfile_fasta} \\
   > {outfile_fasta_uncompressed}""".format(
-            protocol=global_conf.global_get('smrtanalysis_variant_caller', 'protocol', param_type='dirpath'),
-            threads=global_conf.global_get('smrtanalysis_variant_caller', 'threads', param_type='posint'),
-            algorithm=global_conf.global_get('smrtanalysis_variant_caller', 'algorithm'),
+            protocol=global_conf.global_get(ini_section, 'protocol', param_type='dirpath'),
+            threads=global_conf.global_get(ini_section, 'threads', param_type='posint'),
+            algorithm=global_conf.global_get(ini_section, 'algorithm'),
             cmph5=cmph5,
             ref_fasta=ref_fasta,
             outfile_variants=outfile_variants,
@@ -542,14 +553,15 @@ def basemodification(
     aligned_reads,
     basemodification_file_prefix,
     mer_size_directory,
-    polishing_rounds
+    polishing_rounds,
+    ini_section='basemodification'
     ):
 
     return Job(
         [fasta_consensus, aligned_reads],
         [basemodification_file_prefix],
         [
-            ['basemodification', 'module_smrtanalysis']
+            [ini_section, 'module_smrtanalysis']
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\
@@ -570,15 +582,16 @@ def motifMaker(
     basemodification_file_prefix,
     mer_size_directory,
     polishing_rounds,
-    motifMaker_file
+    motifMaker_file,
+    ini_section='motifMaker'
     ):
 
     return Job(
         [fasta_consensus, basemodification_file_prefix],
         [motifMaker_file],
         [
-                  ['motifMaker', 'module_smrtanalysis'],
-                  ['motifMaker', 'module_java'],
+                  [ini_section, 'module_smrtanalysis'],
+                  [ini_section, 'module_java'],
         ],
         command="""\
 bash -c 'set +u && source $SEYMOUR_HOME/etc/setup.sh && set -u && \\

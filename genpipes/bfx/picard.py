@@ -206,7 +206,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
                 output=output,
                 metrics_file=metrics_file,
                 max_records_in_ram=global_conf.global_get(ini_section, 'max_records_in_ram', param_type='int'),
-                other_options= global_conf.global_get(ini_section, 'other_options',required = False) if global_conf.global_get(ini_section, 'other_options',required = False) else ""
+                other_options= global_conf.global_get(ini_section, 'other_options',required = False)
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
