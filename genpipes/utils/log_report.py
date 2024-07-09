@@ -25,7 +25,6 @@ import csv
 import datetime
 import logging
 import os
-import sys
 import re
 import subprocess
 
@@ -76,7 +75,7 @@ class JobStat(object):
         self._sacct_start = None
         self._sacct_stop = None
         self._parsed_after_header = parsed_after_header
-        self._mugqic_exit_status = None
+        self._genpipes_exit_status = None
         self.set_remote(remote_hpc)
         self._slurm_state = None
         self._sub_id = None
@@ -157,7 +156,7 @@ class JobStat(object):
         n = 0
         lines_to_parse = []
         if os.path.isfile(log_file_path):  # Make sure the file exists
-            for line in open(log_file_path):
+            for line in open(log_file_path, encoding='utf-8', errors='ignore'):
 
                 if "SLURM FAKE PROLOGUE" in line:
                     n = 0
@@ -165,8 +164,8 @@ class JobStat(object):
                 elif "SLURM FAKE EPILOGUE" in line:
                     n = 0
                     to_parse = True
-                elif "MUGQICexitStatus" in line:
-                    self._mugqic_exit_status = line.strip('\n')
+                elif "GenPipesExitStatus" in line:
+                    self._genpipes_exit_status = line.strip('\n')
 
                 if n >= self._parsed_after_header:
                     to_parse = False
@@ -233,7 +232,7 @@ class JobStat(object):
     @property
     def log_file_exit_status(self):
         try:
-            return self._mugqic_exit_status.split(':')[1]
+            return self._genpipes_exit_status.split(':')[1]
         except AttributeError:
             return None
 

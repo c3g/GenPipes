@@ -501,7 +501,7 @@ chmod 755 $COMMAND
                     cmd = """\
 echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
 GenPipes_STATE=\$PIPESTATUS
-echo GenPipesexitStatus:\$GenPipes_STATE
+echo GenPipesExitStatus:\$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
@@ -623,7 +623,7 @@ echo "Begin GenPipes Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
 rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} $COMMAND &> $JOB_OUTPUT
 GenPipes_STATE=$?
 echo "End GenPipes Job $JOB_NAME at `date +%FT%H:%M:%S`"
-echo GenPipesexitStatus:$GenPipes_STATE
+echo GenPipesExitStatus:$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 if [ $GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $GenPipes_STATE ; fi
@@ -746,7 +746,7 @@ sstat -j \$SLURM_JOBID.batch
 echo '#######################################'
 rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
 GenPipes_STATE=\$PIPESTATUS
-echo GenPipesexitStatus:\$GenPipes_STATE
+echo GenPipesExitStatus:\$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}

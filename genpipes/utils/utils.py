@@ -19,11 +19,9 @@
 
 # Python Standard Modules
 import argparse
-import glob
 import logging
 import os
 import re
-import string
 import sys
 import shutil
 import subprocess
@@ -146,7 +144,7 @@ def expandvars(path, skip_escaped=False):
 
 def container_wrapper_argparse(script, argv):
     """
-        This method start the pipeline inside de system put in place by the genpipe_in_a_container
+        This method starts the pipeline inside the system put in place by the genpipes_in_a_container
         cvmfs/container wrapper if --wrap is present in the argv.
 
     Args:
@@ -160,9 +158,8 @@ def container_wrapper_argparse(script, argv):
 
         script_dir_current = os.path.dirname(os.path.realpath(__file__))
         parser = argparse.ArgumentParser(conflict_handler='resolve')
-        parser.add_argument('--wrap', type=str, help="Path to the genpipe cvmfs wrapper script.\n"
-                                                     "Default is "
-                                                     "genpipes/ressources/container/bin/container_wrapper.sh",
+        parser.add_argument('--wrap', type=str, help="Path to the genpipes cvmfs wrapper script.\n"
+                                                     "Default is genpipes/resources/container/bin/container_wrapper.sh",
                             nargs='?')
         parsed, argv = parser.parse_known_args(argv)
         if parsed.wrap is None:

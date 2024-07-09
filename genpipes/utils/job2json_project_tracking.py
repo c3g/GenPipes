@@ -7,7 +7,6 @@ import argparse
 import os
 import errno
 import sys
-import re
 import json
 import time
 import random

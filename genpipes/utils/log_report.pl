@@ -137,8 +137,8 @@ sub readJobLogListFile {
           } elsif ($jobLine =~ /^Job ID:\s+(\S+)/) {
             $jobLog{'jobFullId'} = $1;
           # Job GenPipes exit status
-          } elsif ($jobLine =~ /GenPipesexitStatus:(\S+)/) {
-            $jobLog{'GenPipesexitStatus'} = $1;
+          } elsif ($jobLine =~ /GenPipesExitStatus:(\S+)/) {
+            $jobLog{'GenPipesExitStatus'} = $1;
           # Username
           } elsif ($jobLine =~ /^Username:\s+(\S+)/) {
             $jobLog{'username'} = $1;
@@ -193,9 +193,9 @@ sub readJobLogListFile {
       if (not(defined($successOption)) or    # Keep all jobs
           (defined($successOption) and
            # Keep successful jobs only
-           ($successOption and exists($jobLog{'GenPipesexitStatus'}) and $jobLog{'GenPipesexitStatus'} == 0) or
+           ($successOption and exists($jobLog{'GenPipesExitStatus'}) and $jobLog{'GenPipesExitStatus'} == 0) or
            # Keep unsuccessful jobs only
-           (not($successOption) and (not(exists($jobLog{'GenPipesexitStatus'})) or $jobLog{'GenPipesexitStatus'} != 0)))) {
+           (not($successOption) and (not(exists($jobLog{'GenPipesExitStatus'})) or $jobLog{'GenPipesExitStatus'} != 0)))) {
         push (@$rAoH_jobLogList, \%jobLog);
       }
     }
@@ -229,11 +229,11 @@ sub getLogTextReport {
   my $highestMemoryJob;
 
   for my $jobLog (@AoH_jobLogList) {
-    if (exists $jobLog->{'GenPipesexitStatus'} and $jobLog->{'GenPipesexitStatus'} eq 0) {
+    if (exists $jobLog->{'GenPipesExitStatus'} and $jobLog->{'GenPipesExitStatus'} eq 0) {
       $successfulJobCount++;
       $jobLog->{'status'} = "SUCCESS";
     } elsif (exists $jobLog->{'endSecondsSinceEpoch'}) {
-      # If job end date exists and GenPipesexitStatus != 0, job failed
+      # If job end date exists and GenPipesExitStatus != 0, job failed
       $failedJobCount++;
       $jobLog->{'status'} = "FAILED";
     } elsif (exists $jobLog->{'startSecondsSinceEpoch'}) {
@@ -338,7 +338,7 @@ sub getLogTextReport {
       exists $jobLog->{'jobDependencies'} ? $jobLog->{'jobDependencies'} : "N/A",
       exists $jobLog->{'status'} ? $jobLog->{'status'} : "N/A",
       exists $jobLog->{'exitStatus'} ? $jobLog->{'exitStatus'} : "N/A",
-      exists $jobLog->{'GenPipesexitStatus'} ? $jobLog->{'GenPipesexitStatus'} : "N/A",
+      exists $jobLog->{'GenPipesExitStatus'} ? $jobLog->{'GenPipesExitStatus'} : "N/A",
       exists $jobLog->{'walltime'} ? $jobLog->{'walltime'} . " (" . formatDuration($jobLog->{'duration'}) . ")" : "N/A",
       exists $jobLog->{'startSecondsSinceEpoch'} ? strftime('%FT%T', localtime($jobLog->{'startSecondsSinceEpoch'})) : "N/A",
       exists $jobLog->{'endSecondsSinceEpoch'} ? strftime('%FT%T', localtime($jobLog->{'endSecondsSinceEpoch'})) : "N/A",
