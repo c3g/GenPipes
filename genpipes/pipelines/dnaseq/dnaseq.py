@@ -22,9 +22,6 @@
 # Python Standard Modules
 import argparse
 import logging
-import math
-import os
-import re
 import sys
 
 # GenPipes Modules
@@ -33,47 +30,6 @@ from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import common
 from ...bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 from ... import utils
-
-from ...bfx import adapters
-from ...bfx import bvatools
-from ...bfx import bwa
-from ...bfx import bwakit
-from ...bfx import gatk4
-from ...bfx import igvtools
-from ...bfx import metrics
-from ...bfx import samtools
-from ...bfx import snpeff
-from ...bfx import tools
-from ...bfx import vcftools
-from ...bfx import skewer
-from ...bfx import sambamba
-from ...bfx import picard2
-from ...bfx import vt
-from ...bfx import htslib
-from ...bfx import gemini
-from ...bfx import qualimap
-from ...bfx import fastqc
-from ...bfx import ngscheckmate
-from ...bfx import peddy
-from ...bfx import verify_bam_id
-from ...bfx import multiqc
-from ...bfx import deliverables
-
-from ...bfx import bash_cmd as bash
-
-##Structural variants
-from ...bfx import delly
-from ...bfx import manta
-from ...bfx import lumpy
-from ...bfx import wham
-from ...bfx import cnvkit
-from ...bfx import breakseq2
-from ...bfx import metasv
-from ...bfx import svtyper
-from ...bfx import bcftools
-from ...bfx import metric_tools
-from ...bfx import vawk
-from ...bfx import svaba
 
 log = logging.getLogger(__name__)
 

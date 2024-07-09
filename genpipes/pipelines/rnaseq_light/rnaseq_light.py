@@ -22,26 +22,16 @@
 # Python Standard Modules
 import argparse
 import logging
-import math
-import os
-import re
 import sys
-import subprocess
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
 from ...core.job import Job, concat_jobs
 import utils.utils
 
-from ...bfx import bash_cmd as bash
-from ...bfx import gq_seq_utils
-from ...bfx import picard
-from ...bfx import rmarkdown
-from ...bfx import differential_expression
-from ...bfx import tools
-
 from .. import common
 from ..rnaseq import rnaseq
+from ..rnaseq_light import RnaSeqLight
 
 log = logging.getLogger(__name__)
 
