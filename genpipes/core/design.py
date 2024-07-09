@@ -134,8 +134,7 @@ def parse_design_file(design_file, samples):
             elif sample_contrast_type == "2":
                 contrast.treatments.append(sample)
             else:
-                _raise(SanitycheckError(f"Error: invalid value for sample {sample_name} and contrast {contrast.name} in design file {design_file.name} 
-                                        (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
+                _raise(SanitycheckError(f"Error: invalid value for sample {sample_name} and contrast {contrast.name} in design file {design_file.name} (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
 
     for contrast in contrasts:
         log.info(f"Contrast {contrast.name} (controls: {str(len(contrast.controls))}, treatments: {str(len(contrast.treatments))}) created")
