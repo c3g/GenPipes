@@ -29,23 +29,24 @@ from ...core.design import parse_chipseq_design_file
 from ...core.readset import parse_illumina_readset_file
 from .. import common
 
-from ...bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
+from ...bfx.sequence_dictionary import parse_sequence_dictionary_file
 
-from ...bfx import bedtools
-from ...bfx import bwa
-from ...bfx import gatk4
-from ...bfx import homer
-from ...bfx import macs2
-from ...bfx import multiqc
-from ...bfx import picard
-from ...bfx import sambamba
-from ...bfx import samtools
-from ...bfx import tools
-from ...bfx import trimmomatic
-from ...bfx import ucsc
-from ...bfx import differential_binding
-
-from ...bfx import bash_cmd as bash
+from ...bfx import(
+    bash_cmd as bash,
+    bedtools,
+    bwa,
+    differential_binding,
+    gatk4,
+    homer,
+    macs2,
+    multiqc,
+    picard,
+    sambamba,
+    samtools,
+    tools,
+    trimmomatic,
+    ucsc
+    )
 
 log = logging.getLogger(__name__)
 
@@ -751,10 +752,6 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/""".format(
         Sequencing quality metrics as tag count, tag autocorrelation, sequence bias and GC bias are generated.
         """
 
-        # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        # if self.contrasts:
-        #     design_file = os.path.relpath(self.design_file.name, self.output_dir)
-
         readset_file = os.path.relpath(self.readsets_file.name, self.output_dir)
 
         output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.marks]
@@ -793,7 +790,8 @@ done""".format(
                 ),
                 name="qc_plots_R", 
                 samples=self.samples,
-                removable_files=output_files            )
+                removable_files=output_files
+            )
         )
         return jobs
 
@@ -1992,10 +1990,7 @@ def main(parsed_args):
     # Specific pipeline options
     protocol = parsed_args.protocol
 
-    pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                       clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                       design_file=design_file, no_json=no_json, container=container,
-                       protocol=protocol)
+    pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
 
     pipeline.submit_jobs()
 

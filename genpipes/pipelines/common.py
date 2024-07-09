@@ -370,7 +370,7 @@ class Illumina(GenPipesPipeline):
     def trimmomatic(self):
         """
         Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-        If an adapter FASTA file is specified in the config file (section 'trimmomatic', get 'adapter_fasta'),
+        If an adapter FASTA file is specified in the config file (section 'trimmomatic', parameter 'adapter_fasta'),
         it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
         an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
         reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
@@ -384,7 +384,7 @@ utput_dir
         """
         jobs = []
         for readset in self.readsets:
-            trim_directory = os.path.join("trim", readset.sample.name)
+            trim_directory = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
             link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
@@ -492,7 +492,7 @@ END
             Job(command=f"echo 'Sample\\tReadset\\tRaw {read_type} Reads #\\tSurviving {read_type} Reads #\\tSurviving {read_type} Reads %' > {readset_merge_trim_stats}")
             ])
         for readset in self.readsets:
-            trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
+            trim_log = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
                 # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
                 perl_command = f"perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\\t{readset.name}\\t\\1\\t\\2/'"

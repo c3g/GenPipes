@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes.
 #
@@ -21,17 +21,19 @@
 import logging
 import os
 import re
-from os.path import basename
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
 from ...core.job import Job, concat_jobs
 from .. import common
-from ...bfx import bash_cmd as bash
-from ...bfx import dada2
-from ...bfx import flash
-from ...bfx import multiqc
-from ...bfx import trimmomatic
+
+from ...bfx import (
+    bash_cmd as bash,
+    dada2,
+    flash,
+    multiqc,
+    trimmomatic
+    )
 
 log = logging.getLogger(__name__)
 
@@ -45,8 +47,6 @@ class AmpliconSeq(common.Illumina):
     def __init__(self, *args, protocol=None, **kwargs):
         if protocol is None:
             self._protocol = 'default'
-        else:
-            self._protocol = protocol
         # Add pipeline specific arguments
         super(AmpliconSeq, self).__init__(*args, **kwargs)
 
@@ -75,7 +75,7 @@ class AmpliconSeq(common.Illumina):
     def trimmomatic16S(self):
         """
         MiSeq raw reads adapter & primers trimming and basic QC is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-        If an adapter FASTA file is specified in the config file (section 'trimmomatic', get 'adapter_fasta'),
+        If an adapter FASTA file is specified in the config file (section 'trimmomatic', parameter 'adapter_fasta'),
         it is used first. Else, Adapter1, Adapter2, Primer1 and Primer2 columns from the readset file are used to create
         an adapter FASTA file, given then to Trimmomatic. Sequences are reversed-complemented and swapped.
 
@@ -90,13 +90,12 @@ class AmpliconSeq(common.Illumina):
         #We'll trim the first 5 nucleotides anyway (to account for quality bias)
         headcropValue=5
         for readset in self.readsets:
-            trim_directory = os.path.join("trim", readset.sample.name)
+            trim_directory = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
             adapter_fasta = global_conf.global_get('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
-            adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
                 if readset.primer1 and readset.primer2:
@@ -116,7 +115,12 @@ class AmpliconSeq(common.Illumina):
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    candidate_input_files.append(
+                        [
+                            re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), 
+                            re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                        ]
+                    )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic16S(
                     fastq1,
@@ -176,23 +180,29 @@ class AmpliconSeq(common.Illumina):
         """
 
         read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
-        readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv")
-        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo -e 'Sample\\tReadset\\tRaw {read_type} Reads #\\tSurviving {read_type} Reads #\\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats)])
+        readset_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimReadsetTable.tsv")
+        job = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs["metrics_directory"]),
+                Job(command="echo -e 'Sample\\tReadset\\tRaw {read_type} Reads #\\tSurviving {read_type} Reads #\\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats)
+            ]
+        )
         for readset in self.readsets:
-            trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
+            trim_log = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
                 # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
                 perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
             elif readset.run_type == "SINGLE_END":
                 perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
 
-            job = concat_jobs([
-                job,
-                Job(
-                    [trim_log],
-                    [readset_merge_trim_stats],
-                    # Create readset trimming stats TSV file with paired or single read count using ugly awk
-                    command="""\
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        [trim_log],
+                        [readset_merge_trim_stats],
+                        # Create readset trimming stats TSV file with paired or single read count using ugly awk
+                        command="""\
 grep ^Input {trim_log} | \\
 {perl_command} | \\
 awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
@@ -206,13 +216,14 @@ awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
             ])
 
         sample_merge_trim_stats = os.path.join("metrics", "trimSampleTable.tsv")
-        return [concat_jobs([
-            job,
-            Job(
-                [readset_merge_trim_stats],
-                [sample_merge_trim_stats],
-                # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
-                command="""\
+        return [concat_jobs(
+            [
+                job,
+                Job(
+                    [readset_merge_trim_stats],
+                    [sample_merge_trim_stats],
+                    # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
+                    command="""\
 cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired=1}};print "Sample", "Raw Reads #", "Surviving Reads #", "Surviving %"}} else {{if (paired) {{$2=$2*2; $3=$3*2}}; raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
   > {sample_merge_trim_stats} && \\
 mkdir -p report && \\
@@ -373,13 +384,14 @@ python -c 'import re; \\
 
         sample_merge_flash_stats = os.path.join("metrics", "mergeSampleTable.tsv")
 
-        return [concat_jobs([
-            job,
-            Job(
-                [readset_merge_flash_stats],
-                [sample_merge_flash_stats],
-                # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
-                command="""\
+        return [concat_jobs(
+            [
+                job,
+                Job(
+                    [readset_merge_flash_stats],
+                    [sample_merge_flash_stats],
+                    # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
+                    command="""\
 cut -f1,3- {readset_merge_flash_stats} | \\
 awk -F"\t" '{{OFS="\t"; if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired=1}};print "Sample", "Trim Reads #", "Merged Reads #", "Merged %"}} else {{if (paired) {{$2=$2*2; $3=$3*2}}; raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
   > {sample_merge_flash_stats} && \\
@@ -418,12 +430,13 @@ cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/""".format(
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
             flash_hist = os.path.join(self.output_dirs["merge_directory"], readset.sample.name, readset.name + ".flash.hist")
-            job = concat_jobs([
-                job,
-                Job(
-                    [fastq1, flash_hist],
-                    [readset_merge_flash_stats],
-                    command="""\
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        [fastq1, flash_hist],
+                        [readset_merge_flash_stats],
+                        command="""\
 frag_length=$(zcat {fastq} | head -n2 | tail -n1 | awk '{{print length($0)}}')
 minCount=$(cut -f2 {hist} | sort -n | awk ' {{ sum+=$1;i++ }} END {{ print sum/100; }}' | cut -d"." -f1)
 minLen=$(awk -F'\\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -g | head -n1)
@@ -597,8 +610,6 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     design_file = parsed_args.design_file
 
-    pipeline = AmpliconSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                           clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                           design_file=design_file, no_json=no_json, container=container)
+    pipeline = AmpliconSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container)
 
     pipeline.submit_jobs()

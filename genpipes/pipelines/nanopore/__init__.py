@@ -26,14 +26,17 @@ import re
 from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import common
-from ...bfx import minimap2
-from ...bfx import sambamba
-from ...bfx import svim
-from ...bfx import pycoqc
-from ...bfx import tools
-from ...bfx import gatk4
-from ...bfx import bash_cmd as bash
-from ...bfx import samtools
+
+from ...bfx import (
+    bash_cmd as bash,
+    gatk4,
+    minimap2,
+    pycoqc,
+    sambamba,
+    samtools,
+    svim,
+    tools
+    )
 
 log = logging.getLogger(__name__)
 
@@ -339,9 +342,7 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     design_file = parsed_args.design_file
 
-    pipeline = Nanopore(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                        clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                        design_file=design_file, no_json=no_json, container=container)
+    pipeline = Nanopore(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container)
 
     pipeline.submit_jobs()
 

@@ -23,28 +23,31 @@ import os
 import re
 
 # GenPipes Modules
-from ...bfx import bcftools
-from ...bfx import bedtools
-from ...bfx import bvatools
-from ...bfx import bwa
-from ...bfx import covseq_tools
-from ...bfx import cutadapt
-from ...bfx import fgbio
-from ...bfx import freebayes
-from ...bfx import gatk4
-from ...bfx import htslib
-from ...bfx import igvtools
-from ...bfx import ivar
-from ...bfx import kraken2
-from ...bfx import multiqc
-from ...bfx import ncovtools
-from ...bfx import picard2
-from ...bfx import qualimap
-from ...bfx import quast
-from ...bfx import sambamba
-from ...bfx import samtools
-from ...bfx import snpeff
-from ...bfx import bash_cmd as bash
+from ...bfx import (
+    bash_cmd as bash,
+    bcftools,
+    bedtools,
+    bvatools,
+    bwa,
+    covseq_tools,
+    cutadapt,
+    fgbio,
+    freebayes,
+    gatk4,
+    htslib,
+    igvtools,
+    ivar,
+    kraken2,
+    multiqc,
+    ncovtools,
+    picard2,
+    qualimap,
+    quast,
+    sambamba,
+    samtools,
+    snpeff
+    )
+
 from ...core.config import global_conf, _raise, SanitycheckError
 from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import dnaseq
@@ -1998,8 +2001,6 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     design_file = parsed_args.design_file
 
-    pipeline = CoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                      clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                      design_file=design_file, no_json=no_json, container=container)
+    pipeline = CoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container)
 
     pipeline.submit_jobs()

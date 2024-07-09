@@ -28,23 +28,25 @@ from ...core.config import global_conf, _raise, SanitycheckError
 from ...core.job import Job, concat_jobs
 from .. import dnaseq
 
-from ...bfx import bvatools
-from ...bfx import bismark
-from ...bfx import picard2 as picard
-from ...bfx import bedtools
-from ...bfx import samtools
-from ...bfx import sambamba
-from ...bfx import gatk
-from ...bfx import igvtools
-from ...bfx import bissnp
-from ...bfx import tools
-from ...bfx import htslib
-from ...bfx import ucsc
-from ...bfx import fgbio
-from ...bfx import metrics
-from ...bfx import bash_cmd as bash
-from ...bfx import dragen
-from ...bfx import multiqc
+from ...bfx import (
+    bash_cmd as bash,
+    bedtools,
+    bismark,
+    bissnp,
+    bvatools,
+    dragen,
+    fgbio,
+    gatk,
+    htslib,
+    igvtools,
+    metrics,
+    multiqc,
+    picard2 as picard,
+    sambamba,
+    samtools,
+    tools,
+    ucsc
+    )
 
 log = logging.getLogger(__name__)
 
@@ -95,11 +97,9 @@ However, if you would like to setup and use dragen in own cluster please refer o
         # extra check on readsets
         for readset in super().readsets:
             if readset._run == "":
-                _raise(SanitycheckError("Error: no run was provided for readset \"" + readset.name +
-                                        "\"... Run has to be provided for all the readsets in order to use this pipeline."))
+                _raise(SanitycheckError(f"Error: no run was provided for readset {readset.name}... Run has to be provided for all the readsets in order to use this pipeline."))
             if readset._lane == "":
-                _raise(SanitycheckError("Error: no lane provided for readset \"" + readset.name +
-                                        "\"... Lane has to be provided for all the readsets in order to use this pipeline."))
+                _raise(SanitycheckError(f"Error: no lane provided for readset {readset.name}... Lane has to be provided for all the readsets in order to use this pipeline."))
 
         return self._readsets
 
@@ -1151,7 +1151,6 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         Align reads with [Dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) both hybrid and dragen protocols use this step to align reads.
         The Dragen parameters can be changed using other_options of the ini configuration.
         """
-       # duplicate_marking = global_conf.global_get('dragen_align', 'duplicate_marking', param_type='string').lower()
 
         jobs = []
         methylseq_protocol = self.protocol
@@ -1306,7 +1305,6 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         """
         Call methylation with Dragen using the 2nd run of Dragen alignment.
         """
-       # duplicate_marking = global_conf.global_get('dragen_align', 'duplicate_marking', param_type='string').lower()
 
         jobs = []
         for sample in self.samples:
@@ -1575,8 +1573,6 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = MethylSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                         clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                         design_file=design_file, no_json=no_json, container=container, protocol=protocol)
+    pipeline = MethylSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
 
     pipeline.submit_jobs()

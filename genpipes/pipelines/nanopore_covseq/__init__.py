@@ -24,20 +24,23 @@ import os
 import re
 
 # GenPipes Modules
-from ...bfx import artic
-from ...bfx import bash_cmd as bash
-from ...bfx import covseq_tools
-from ...bfx import guppy
-from ...bfx import htslib
-from ...bfx import kraken2
-from ...bfx import minimap2
-from ...bfx import ncovtools
-from ...bfx import pycoqc
-from ...bfx import quast
-from ...bfx import sambamba
-from ...bfx import samtools
-from ...bfx import snpeff
-from ...bfx import wub
+from ...bfx import (
+    artic,
+    bash_cmd as bash,
+    covseq_tools,
+    guppy,
+    htslib,
+    kraken2,
+    minimap2,
+    ncovtools,
+    pycoqc,
+    quast,
+    sambamba,
+    samtools,
+    snpeff,
+    wub
+    )
+
 from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
 from ...core.readset import parse_nanopore_readset_file
@@ -888,10 +891,7 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = NanoporeCoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                              clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                              design_file=design_file, no_json=no_json, container=container,
-                              protocol=protocol)
+    pipeline = NanoporeCoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
 
     pipeline.submit_jobs()
 

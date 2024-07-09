@@ -475,9 +475,7 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     design_file = parsed_args.design_file
 
-    pipeline = RnaSeqLight(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                           clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                           design_file=design_file, no_json=no_json, container=container)
+    pipeline = RnaSeqLight(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container)
 
     pipeline.submit_jobs()
 

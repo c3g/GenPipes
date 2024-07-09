@@ -25,7 +25,6 @@ import logging
 import math
 import os
 import re
-import sys
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
@@ -40,41 +39,35 @@ from ...bfx import (
     ballgown,
     bash_cmd as bash,
     bcftools,
-    bedtools,
     bvatools,
     bwa,
     cpsr,
     deeptools,
     deliverables,
     differential_expression,
-    fastqc,
     gatk4,
     gemini,
+    gtex_pipeline,
     htseq,
     htslib,
     job2json_project_tracking,
     metrics,
+    multiqc,
     pcgr,
     picard2 as picard,
     rseqc,
     rnaseqc2,
     sambamba,
-    samtools,
     skewer,
     snpeff,
     star,
     star_fusion,
     stringtie,
     tools,
-    ucsc,
     vcfanno,
     vt,
     sortmerna
     )
-
-#Metrics tools
-from ...bfx import multiqc
-from ...bfx import gtex_pipeline
 
 log = logging.getLogger(__name__)
 
@@ -2813,10 +2806,7 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = RnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                              clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                              design_file=design_file, no_json=no_json, container=container,
-                              protocol=protocol)
+    pipeline = RnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
 
     pipeline.submit_jobs()
 

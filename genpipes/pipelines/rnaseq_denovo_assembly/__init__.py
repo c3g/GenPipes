@@ -25,16 +25,19 @@ import argparse
 import re
 
 # GenPipes Modules
-from ...bfx import bash_cmd as bash
-from ...bfx import blast
-from ...bfx import differential_expression
-from ...bfx import exonerate
-from ...bfx import multiqc
-from ...bfx import gq_seq_utils
-from ...bfx import seq2fun
-from ...bfx import tools
-from ...bfx import trinity
-from ...bfx import trinotate
+from ...bfx import (
+    bash_cmd as bash,
+    blast,
+    differential_expression,
+    exonerate,
+    multiqc,
+    gq_seq_utils,
+    seq2fun,
+    tools,
+    trinity,
+    trinotate
+    )
+
 from ...core.config import global_conf, _raise, SanitycheckError
 from ...core.job import Job, concat_jobs
 from .. import rnaseq
@@ -407,7 +410,6 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
         num_fasta_chunks = global_conf.global_get('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         program = "blastx"
         swissprot_db = global_conf.global_get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
-        # uniref_db = global_conf.global_get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
         cpu = global_conf.global_get('blastx_trinity_uniprot', 'cpu')
 
         # (Removed blast on uniref_db since it's too long)
@@ -449,7 +451,6 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
         program = "blastx"
         blast_prefix = os.path.join(blast_directory, program + "_Trinity_")
         swissprot_db = global_conf.global_get("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
-        # uniref_db = global_conf.global_get("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
@@ -479,32 +480,6 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
                     samples=self.samples
                 )
             )
-
-#        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.blastx_trinity_uniprot_merge.md")
-#        jobs.append(
-#            Job(
-#                [blast_prefix + os.path.basename(swissprot_db) + ".tsv.zip"],
-#                [report_file],
-#                [['blastx_trinity_uniprot_merge', 'module_pandoc']],
-#                command="""\
-#mkdir -p {report_dir} && \\
-#cp {blast_prefix}{blast_db}.tsv.zip  {report_dir}/ && \\
-#pandoc --to=markdown \\
-#  --template {report_template_dir}/{basename_report_file} \\
-#  --variable blast_db="{blast_db}" \\
-#  {report_template_dir}/{basename_report_file} \\
-#  > {report_file}""".format(
-#                    blast_prefix=blast_prefix,
-#                    blast_db=os.path.basename(swissprot_db),
-#                    report_template_dir=self.report_template_dir,
-#                    basename_report_file=os.path.basename(report_file),
-#                    report_dir=self.output_dirs['report_directory'],
-#                    report_file=report_file
-#                ),
-#                report_files=[report_file],
-#                name="blastx_trinity_uniprot_merge_report",
-#                samples=self.samples)
-#        )
 
         return jobs
 
@@ -995,7 +970,6 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
                 samples=self.samples
             )
         )
-  #      report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.filtered.trinity.md")
         report_filtered_assembly = os.path.join(self.output_dirs['report_directory'], os.path.basename(output_directory) + ".zip")
         report_dir_prefix = os.path.join(self.output_dirs['report_directory'], "trinity_filtered.stats")
 
@@ -1325,11 +1299,6 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
                     samples=self.samples
                 )
             )
-
-        # Dependencies for report
-       # output_files = []
-       # for job in jobs:
-       #     output_files.extend([output_file for output_file in job.output_files if output_file not in output_files])
 
         return jobs
     
@@ -2035,10 +2004,7 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = RnaSeqDeNovoAssembly(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                                    clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                                    design_file=design_file, no_json=no_json, container=container,
-                                    protocol=protocol)
+    pipeline = RnaSeqDeNovoAssembly(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
 
     pipeline.submit_jobs()
 

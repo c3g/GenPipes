@@ -8225,10 +8225,7 @@ def main(parsed_args):
     profyle = parsed_args.profyle
     pairs_file = parsed_args.pairs
 
-    pipeline = DnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
-                      clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
-                      protocol=protocol, design_file=design_file, no_json=no_json, container=container, 
-                      profyle=profyle, pairs_file=pairs_file)
+    pipeline = DnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, no_json=no_json, container=container, profyle=profyle, pairs_file=pairs_file)
 
     pipeline.submit_jobs()
 
