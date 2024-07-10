@@ -44,14 +44,16 @@ def report(
     else:
         call = 'cpsr.py'
         module = 'module_cpsr'
-
-    return Job(
-        [input],
-        output,
-        [
-            [ini_section, module],
-        ],
-        command="""\
+    if global_conf.global_get(ini_section, 'module_pcgr').split("/")[2] >= "2":
+        return report2(input, output_dir, tumor_id, ini_section)
+    else:
+        return Job(
+            [input],
+            output,
+            [
+                [ini_section, module],
+            ],
+            command="""\
 {call} {options} \\
     --input_vcf {input} \\
     --pcgr_dir $PCGR_DATA \\
@@ -60,6 +62,39 @@ def report(
     --sample_id {tumor_id}""".format(
             call=call,
             options=global_conf.global_get(ini_section, 'options'),
+            input=input,
+            output_dir=output_dir,
+            assembly=global_conf.global_get(ini_section, 'assembly'),
+            tumor_id=tumor_id
+        )
+    )
+
+def report2(
+        input, 
+        output_dir, 
+        tumor_id, 
+        ini_section
+        ):
+    assembly = global_conf.global_get(ini_section, 'assembly')
+    output = [
+        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
+        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html")
+    ]
+    return Job(
+        [input],
+        output,
+        [
+            [ini_section, 'module_pcgr'],
+        ],
+        command="""\
+cpsr {options} \\
+    --input_vcf {input} \\
+    --refdata_dir $PCGR_DATA \\
+    --vep_dir $PCGR_VEP_CACHE \\
+    --output_dir {output_dir} \\
+    --genome_assembly {assembly} \\
+    --sample_id {tumor_id}""".format(
+            options=global_conf.global_get(ini_section, 'options_v2'),
             input=input,
             output_dir=output_dir,
             assembly=global_conf.global_get(ini_section, 'assembly'),

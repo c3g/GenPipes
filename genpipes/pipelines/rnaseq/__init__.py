@@ -1826,9 +1826,9 @@ pandoc \\
                 sample.name,
                 "pcgr"
             )
-            # PCGR does not accept sample IDs longer than 35 characters and uses the sample ID to name output files.
+            # PCGR (before v2) does not accept sample IDs longer than 35 characters and uses the sample ID to name output files.
             # For samples that have longer sample IDs the output files will have non-matching names, so create symlinks with full-length names.
-            if sample.name != sample.name[:35]:
+            if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] < "2" and sample.name != sample.name[:35]:
                 output = [
                         os.path.join(pcgr_directory, sample.name[:35] + ".pcgr_acmg." + assembly + ".flexdb.html"),
                         os.path.join(pcgr_directory, sample.name[:35] + ".pcgr_acmg." + assembly + ".maf"),
