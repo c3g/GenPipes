@@ -34,7 +34,7 @@ from ...bfx.sequence_dictionary import parse_sequence_dictionary_file
 from ...bfx import(
     bash_cmd as bash,
     bedtools,
-    bwa,
+    bwa2,
     differential_binding,
     gatk4,
     homer,
@@ -354,7 +354,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/""".format(
     def mapping_bwa_mem_sambamba(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem2.
         BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
         This step takes as input files:
@@ -398,7 +398,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/""".format(
                 concat_jobs([
                     bash.mkdir(os.path.dirname(readset_bam)),
                     pipe_jobs([
-                        bwa.mem(
+                        bwa2.mem(
                             fastq1,
                             fastq2,
                             read_group="'@RG" + \
