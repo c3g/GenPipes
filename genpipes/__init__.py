@@ -1,5 +1,5 @@
 """
-The top-level Genpies command for bash interface
+The top-level Genpipes command for bash interface
 """
 
 import argparse
