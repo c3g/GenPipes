@@ -3,14 +3,12 @@
 
 
 complete genpipes \
-        'c/--/(report readsets design type version sanity-check pairs enzyme clean steps config force help container log no-json job-scheduler genpipes_file output-dir wrap profyle)/' \
-        'c/-/(g p r t e o j h l v s c d f -)/' \
+        'c/--/(batch clean config container design force force_mem_per_cpu genpipes_file help job-scheduler json-pt log no-json output-dir pairs profyle readsets sanity-check steps type version wrap)/' \
+        'c/-/(- b c d f g h j l o p r s t v)/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
-        'n/-t/(qiime dada2)/' \
-        'n/--type/(qiime dada2)/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
@@ -25,28 +23,14 @@ complete genpipes \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
-        'n/-t/(mugqic mpileup light sv)/' \
-        'n/--type/(mugqic mpileup light sv)/' \
+        'n/-t/(germline_snv germline_sv germline_high_cov somatic_tumor_only somatic_fastpass somatic_ensemble somatic_sv)/' \
+        'n/--type/(germline_snv germline_sv germline_high_cov somatic_tumor_only somatic_fastpass somatic_ensemble somatic_sv)/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
-        'n/-j/(pbs batch daemon slurm)/' \
-        'n/--job-scheduler/(pbs batch daemon slurm)/' \
-        'n/-l/(debug info warning error critical)/' \
-        'n/--log/(debug info warning error critical)/' \
-        'n/-j/(pbs batch daemon slurm)/' \
-        'n/--job-scheduler/(pbs batch daemon slurm)/' \
-        'n/-l/(debug info warning error critical)/' \
-        'n/--log/(debug info warning error critical)/' \
-        'n/-e/(DpnII HindIII NcoI MboI Arima)/' \
-        'n/--enzyme/(DpnII HindIII NcoI MboI Arima)/' \
-        'n/-t/(hic capture)/' \
-        'n/--type/(hic capture)/' \
-        'n/-j/(pbs batch daemon slurm)/' \
-        'n/--job-scheduler/(pbs batch daemon slurm)/' \
-        'n/-l/(debug info warning error critical)/' \
-        'n/--log/(debug info warning error critical)/' \
+        'n/-t/(bismark hybrid dragen)/' \
+        'n/--type/(bismark hybrid dragen)/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
@@ -61,8 +45,8 @@ complete genpipes \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
-        'n/-t/(stringtie cufflinks)/' \
-        'n/--type/(stringtie cufflinks)/' \
+        'n/-t/(stringtie variants cancer)/' \
+        'n/--type/(stringtie variants cancer)/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
@@ -73,11 +57,5 @@ complete genpipes \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
-        'n/-j/(pbs batch daemon slurm)/' \
-        'n/--job-scheduler/(pbs batch daemon slurm)/' \
-        'n/-l/(debug info warning error critical)/' \
-        'n/--log/(debug info warning error critical)/' \
-        'n/-t/(fastpass ensemble sv)/' \
-        'n/--type/(fastpass ensemble sv)/' \
-        'p/1/(ampliconseq chipseq covseq dnaseq dnaseq_high_coverage epiqc hicseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light tumor_pair)/' \
+        'p/1/(ampliconseq chipseq covseq dnaseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light)/' \
         'p/*/()/'
