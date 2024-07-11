@@ -52,6 +52,7 @@ use POSIX qw(strftime);
 use File::Basename;
 use File::Spec;
 use Getopt::Long;
+use Cwd 'abs_path';
 
 my $scriptName = basename($0);
 
@@ -119,7 +120,7 @@ sub readJobLogListFile {
       $jobLog{'memtime'} = ();
 
       # In old job log list version, cluster job log path was absolute. Now it is relative to job log list directory (useful if project directory has been moved or renamed).
-      my $clusterJobLogFullPath = File::Spec->rel2abs(dirname($jobLogListPath)) . "/" . $clusterJobLogPath;
+      my $clusterJobLogFullPath = File::Spec->rel2abs(dirname(abs_path($jobLogListPath))) . "/" . $clusterJobLogPath;
       unless (-e $clusterJobLogFullPath) {
         # Assume cluster job log path is absolute (old version)
         $clusterJobLogFullPath = $clusterJobLogPath;
