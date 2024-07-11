@@ -14,7 +14,7 @@ On this page:
 
 Software requirement
 --------------------
-GenPipes have been tested with Python 3.6+
+GenPipes have been tested with Python 3.6+ # TBD What will new minimum python requirement be?
 
 
 Quick setup for Abacus, Beluga, Narval, Graham and Cedar users
@@ -80,7 +80,7 @@ MUGQIC pipelines and compatible Python version are already installed as modules 
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/3.9.1
+module load mugqic/python/3.9.1 #TBD UPDATE
 module load mugqic/genpipes/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
@@ -141,7 +141,7 @@ Set `MUGQIC_PIPELINES_HOME` to your local copy path, in your *$HOME/.bash_profil
 export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
 ```
 
-GenPipes (formerly called MUGQIC Pipelines) require genomes and modules resources to run properly.
+GenPipes (formerly called MUGQIC Pipelines) requires genomes and modules resources to run properly.
 First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install those resources, in your *$HOME/.bash_profile*:
 ```
 #!bash
@@ -302,9 +302,9 @@ For each pipeline, get help about usage, arguments and steps with:
 * if you use a `mugqic/genpipes/<version>` module on our clusters (or `mugqic/mugqic_pipelines/<version>`), simply:
 ```
 #!bash
-<pipeline_name>.py --help
+genpipes <pipeline_name> --help
 ```
-* if you use your own local install:
+* if you use your own local install: # TBD CHANGE FOR PIP INSTALL
 ```
 #!bash
 $MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.py --help
@@ -336,7 +336,7 @@ Readset File
 The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
 
 
-### DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Tumor Pair, Methyl-Seq, CoV-Seq
+### DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Methyl-Seq, CoV-Seq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
@@ -386,7 +386,7 @@ Example:
     sampleB readset3 Input    I        lib0002 PAIRED_END  run200  5   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset3.paired1.fastq.gz   path/to/readset3.paired2.fastq.gz   path/to/readset3.bam
     sampleB readset4 Input    I        lib0002 PAIRED_END  run200  6   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset4.paired1.fastq.gz   path/to/readset4.paired2.fastq.gz   path/to/readset4.bam
 
-### PacBio Assembly
+### PacBio Assembly # TBD REMOVE?
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
@@ -541,7 +541,7 @@ Example:
     sampleD 3
 
 
-HTML Analysis Report
+HTML Analysis Report # DEPRECATED, REPLACE WITH MULTIQC
 --------------------
 While pipelines are run, some jobs create a partial analysis report in [Markdown](http://daringfireball.net/projects/markdown/) format in
 `<output_dir>/report/<pipeline_name>.<step_name>.md` e.g. `<output_dir>/report/DnaSeq.bwa_mem_picard_sort_sam.md`.
@@ -559,7 +559,7 @@ For developers: if you want to modify the Markdown report templates, they are al
 
 PBS/Slurm Job Logs
 ------------
-When pipelines are run in PBS (Portable Batch System)  or SLURM job scheduler mode (default), a job list file is created in `<output_dir>/job_output/<PipelineName>_job_list_<timestamp>` and subsequent job log files are placed in `<output_dir>/job_output/<step_name>/<job_name>_<timestamp>.o` e.g.:
+When pipelines are run in PBS (Portable Batch System) or SLURM job scheduler mode (default), a job list file is created in `<output_dir>/job_output/<PipelineName>_job_list_<timestamp>` and subsequent job log files are placed in `<output_dir>/job_output/<step_name>/<job_name>_<timestamp>.o` e.g.:
 ```
 #!text
 my_output_dir/job_output/
@@ -573,10 +573,16 @@ my_output_dir/job_output/
     └── trinotate_2014-10-22T14.05.58.o
 ```
 
-To view a TAB-separated values log report, use `$MUGQIC_PIPELINES_HOME/utils/log_report.pl` script by typing:
+To view a TAB-separated values log report, use the `$MUGQIC_PIPELINES_HOME/utils/log_report.pl` (PBS) or `$MUGQIC_PIPELINES_HOME/utils/log_report.py` (SLURM) script by typing:
 ```
 #!bash
 $MUGQIC_PIPELINES_HOME/utils/log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+```
+or 
+
+```
+#!bash
+$MUGQIC_PIPELINES_HOME/utils/log_report.py <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 ```
 
 which will output e.g.:
@@ -605,9 +611,9 @@ which will output e.g.:
 ...
 ```
 
-A Note about Cedar and Graham
+A Note about non-Alliance Clusters
 ------------
-The default scheduler in GenPipes is the PBS scheduler. Cedar and Graham use the SLURM scheduler. To use GenPipes on Cedar or Graham, don't forget to add the "-j slurm" option.
+The default scheduler in GenPipes is the SLURM scheduler. Beluga, Narval, Cedar and Graham use the SLURM scheduler. To use GenPipes on abacus, don't forget to add the "-j pbs" option.
 
 Call home
 ---------
