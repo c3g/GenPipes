@@ -472,8 +472,9 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
 
     def asva(self):
         """
-        Checks for design files required for PCA plots, sets up directories, links readset fastq files, and initiates DADA2 
+        Checks for design files required for PCA plots, sets up directories, links readset fastq files, and initiates 
         [DADA2](https://benjjneb.github.io/dada2/). 
+
         DADA2 is used to infer sequence variants of microbial communities.
         """
 
