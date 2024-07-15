@@ -307,17 +307,25 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
         return jobs
 
     def flash_pass1(self):
+        """
+        Merges paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/). Overlapping regions between paired-end reads are found and 
+        then merged into a continuous strand.
+        """
         jobs = self.flash()
         return jobs
 
     def flash_pass2(self):
+        """
+        Merges paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/). The second pass uses statistics obtained from the first pass
+        to adjust merging.
+        """
         flash_stats_file = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
         jobs = self.flash(flash_stats_file)
         return jobs
 
     def merge_flash_stats(self):
         """
-        The paired end merge statistics per readset are merged at this step.
+        Merges statistics from both flash passes.
         """
 
         readset_merge_flash_stats = os.path.join(self.output_dirs["metrics_directory"], "mergeReadsetTable.tsv")
@@ -405,7 +413,8 @@ cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/""".format(
 
     def ampliconLengthParser(self):
         """
-        look at FLASH output to set amplicon lengths input for dada2. As minimum elligible length, a given length needs to have at least 1% of the total number of amplicons
+        Looks at FLASH output statistics to set input amplicon lengths for dada2. Minimum lengths are set by ensuring that they represent 
+        at least 1% of the total number of amplicons.
         """
         jobs = []
         readset_merge_flash_stats = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
@@ -463,7 +472,9 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
 
     def asva(self):
         """
-        check for design file (required for PCA plots)
+        Checks for design files required for PCA plots, sets up directories, links readset fastq files, and initiates DADA2 
+        [DADA2](https://benjjneb.github.io/dada2/). 
+        DADA2 is used to infer sequence variants of microbial communities.
         """
 
         designFile = os.path.relpath(self.design_file.name, self.output_dir)
