@@ -1,7 +1,7 @@
 usage: genpipes ampliconseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                             [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                             [--force_mem_per_cpu FORCE_MEM_PER_CPU]
-                            [--no-json] [--json-pt] [--report] [--clean]
+                            [--no-json] [--json-pt] [--clean]
                             [--container {wrapper, singularity} <IMAGE PATH>]
                             [--genpipes_file GENPIPES_FILE]
                             [-l {debug,info,warning,error,critical}]
@@ -35,11 +35,6 @@ options:
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  --report              create 'pandoc' command to merge all job markdown
-                        report files in the given step range into HTML, if
-                        they exist; if --report is set, --job-scheduler,
-                        --force, --clean options and job up-to-date status are
-                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
@@ -79,7 +74,7 @@ Protocol default
 --------------
  
 MiSeq raw reads adapter & primers trimming and basic QC is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-If an adapter FASTA file is specified in the config file (section 'trimmomatic', get 'adapter_fasta'),
+If an adapter FASTA file is specified in the config file (section 'trimmomatic', parameter 'adapter_fasta'),
 it is used first. Else, Adapter1, Adapter2, Primer1 and Primer2 columns from the readset file are used to create
 an adapter FASTA file, given then to Trimmomatic. Sequences are reversed-complemented and swapped.
 
@@ -94,23 +89,32 @@ The trim statistics per readset are merged at this step.
 flash_pass1 
 -----------
  
+Merges paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/). Overlapping regions between paired-end reads are found and 
+then merged into a continuous strand.
+
 ampliconLengthParser 
 --------------------
  
-look at FLASH output to set amplicon lengths input for dada2. As minimum elligible length, a given length needs to have at least 1% of the total number of amplicons
+Looks at FLASH output statistics to set input amplicon lengths for dada2. Minimum lengths are set by ensuring that they represent 
+at least 1% of the total number of amplicons.
 
 flash_pass2 
 -----------
  
+Merges paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/). The second pass uses statistics obtained from the first pass
+to adjust merging.
+
 merge_flash_stats 
 -----------------
  
-The paired end merge statistics per readset are merged at this step.
+Merges statistics from both flash passes.
 
 asva 
 ----
  
-check for design file (required for PCA plots)
+Checks for design files required for PCA plots, sets up directories, links readset fastq files, and initiates DADA2 
+[DADA2](https://benjjneb.github.io/dada2/). 
+DADA2 is used to infer sequence variants of microbial communities.
 
 multiqc 
 -------
