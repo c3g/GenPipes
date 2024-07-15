@@ -90,7 +90,7 @@ def report2(
 cpsr {options} \\
     --input_vcf {input} \\
     --refdata_dir $PCGR_DATA \\
-    --vep_dir $PCGR_VEP_CACHE \\
+    --vep_dir $PCGR_VEP_CACHE/{vep_cache} \\
     --output_dir {output_dir} \\
     --genome_assembly {assembly} \\
     --sample_id {tumor_id}""".format(
@@ -98,6 +98,7 @@ cpsr {options} \\
             input=input,
             output_dir=output_dir,
             assembly=global_conf.global_get(ini_section, 'assembly'),
+            vep_cache=global_conf.global_get(ini_section, 'vep_cache'),
             tumor_id=tumor_id
         )
     )

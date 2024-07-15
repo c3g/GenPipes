@@ -119,7 +119,7 @@ pcgr {options} \\
     --input_vcf {input_vcf} \\
     $input_cna \\
     --refdata_dir $PCGR_DATA \\
-    --vep_dir $PCGR_VEP_CACHE \\
+    --vep_dir $PCGR_VEP_CACHE/{vep_cache} \\
     --output_dir {output_dir} \\
     --genome_assembly {assembly} \\
     --sample_id {tumor_id}""".format(
@@ -133,6 +133,7 @@ pcgr {options} \\
             msi_options=global_conf.global_get(ini_section, 'msi_options'),
             input_vcf=input_vcf,
             input_cna=input_cna,
+            vep_cache=global_conf.global_get(ini_section, 'vep_cache'),
             output_dir=output_dir,
             assembly=global_conf.global_get(ini_section, 'assembly'),
             tumor_id=tumor_id
