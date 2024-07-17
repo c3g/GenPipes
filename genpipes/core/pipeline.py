@@ -182,6 +182,29 @@ class Pipeline(object):
         epilog = "\n".join(step_lst)
         if '--help' in argv:
             epilog = epilog + "\n".join(steps_doc)
+
+        if '--readme' in argv:
+            readme_format = textwrap.dedent("""\
+                    [TOC]
+
+                    {pipeline_doc}
+
+                    Usage
+                    -----
+                    ```
+                    #!text
+
+                    {help}
+                    ```
+
+                    {step_doc}
+                """).format(
+                pipeline_doc=textwrap.dedent(cls.__doc__ or ""),
+                help=epilog,
+                step_doc="\n".join(steps_doc)
+            )
+            return readme_format
+                        
         return epilog
 
     @classmethod
