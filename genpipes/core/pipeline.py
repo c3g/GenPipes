@@ -181,7 +181,7 @@ class Pipeline(object):
                                                        textwrap.dedent(step.__doc__) if step.__doc__ else ""))
         epilog = "\n".join(step_lst)
         if '--help' in argv:
-            epilog = epilog + "This is indeed the help section" + "\n".join(steps_doc)
+            epilog = epilog + "\n".join(steps_doc)
         return epilog
 
     @classmethod
@@ -245,6 +245,7 @@ class Pipeline(object):
                                         "Default is genpipes/ressources/container/bin/container_wrapper.sh. This is "
                                         "a convenience options for using genpipes in a container",
                                         nargs='?')
+            cls._argparser.add_argument("--readme", help="Generates README.md for pipeline", action="store_true")
 
             return cls._argparser
 
