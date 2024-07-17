@@ -181,7 +181,7 @@ class Pipeline(object):
                                                        textwrap.dedent(step.__doc__) if step.__doc__ else ""))
         epilog = "\n".join(step_lst)
         if '--help' in argv:
-            epilog = epilog + "\n".join(steps_doc)
+            epilog = epilog + "This is indeed the help section" + "\n".join(steps_doc)
         return epilog
 
     @classmethod
