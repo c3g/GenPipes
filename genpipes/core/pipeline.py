@@ -180,31 +180,7 @@ class Pipeline(object):
                 steps_doc.append('{} \n{}\n {}'.format(step.__name__, "-" * len(step.__name__),
                                                        textwrap.dedent(step.__doc__) if step.__doc__ else ""))
         epilog = "\n".join(step_lst)
-        if '--help' in argv:
-            epilog = epilog + "\n".join(steps_doc)
-
-        if '--readme' in argv:
-            readme_format = textwrap.dedent("""\
-                    [TOC]
-
-                    {pipeline_doc}
-
-                    Usage
-                    -----
-                    ```
-                    #!text
-
-                    {help}
-                    ```
-
-                    {step_doc}
-                """).format(
-                pipeline_doc=textwrap.dedent(cls.__doc__ or ""),
-                help=epilog,
-                step_doc="\n".join(steps_doc)
-            )
-            return readme_format
-                        
+               
         return epilog
 
     @classmethod
@@ -268,7 +244,6 @@ class Pipeline(object):
                                         "Default is genpipes/ressources/container/bin/container_wrapper.sh. This is "
                                         "a convenience options for using genpipes in a container",
                                         nargs='?')
-            cls._argparser.add_argument("--readme", help="Generates README.md for pipeline", action="store_true")
 
             return cls._argparser
 
