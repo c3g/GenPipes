@@ -180,7 +180,8 @@ class Pipeline(object):
                 steps_doc.append('{} \n{}\n {}'.format(step.__name__, "-" * len(step.__name__),
                                                        textwrap.dedent(step.__doc__) if step.__doc__ else ""))
         epilog = "\n".join(step_lst)
-               
+        if '--help' in argv:
+            epilog = epilog + "\n".join(steps_doc)
         return epilog
 
     @classmethod
