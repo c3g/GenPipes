@@ -1054,8 +1054,7 @@ END
     
     def metrics_dna_sample_mosdepth(self):
         """
-        Calculate depth stats for captured regions with mosdepth.
-        [Mosdepth](https://github.com/brentp/mosdepth)
+        Calculate depth stats for captured regions with [Mosdepth](https://github.com/brentp/mosdepth)
         """
         
         jobs = []
@@ -1277,8 +1276,7 @@ END
 
     def metrics_picard_calculate_hs(self):
         """
-        Compute on target percent of hybridisation based capture.
-        [Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
+        Compute on target percent of hybridisation based capture with [Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
         """
 
         jobs = []
@@ -1426,10 +1424,10 @@ END
 
     def metrics_vcftools_missing_indiv(self):
         """
-		vcftools: --missing_indv: Generates a file reporting the missingness on a per-individual basis. The file has the suffix ".imiss".
+        vcftools: --missing_indv: Generates a file reporting the missingness on a per-individual basis. The file has the suffix ".imiss".
         input: bgzipped vcf file
         ouput: missingness flat file
-		"""
+        """
 
         jobs = []
 
@@ -1446,7 +1444,7 @@ END
 
     def metrics_vcftools_depth_indiv(self):
         """
-    	vcftools: --depth: Generates a file containing the mean depth per individual. This file has the suffix ".idepth".
+        vcftools: --depth: Generates a file containing the mean depth per individual. This file has the suffix ".idepth".
         input: bgzipped vcf file
         ouput: idepth flat file
     	"""
@@ -1466,7 +1464,7 @@ END
 
     def metrics_gatk_sample_fingerprint(self):
         """
-		CheckFingerprint (Picard)
+        CheckFingerprint (Picard)
         Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) 
         against a set of known genotypes in the supplied genotype file (in VCF format).
         input: sample SAM/BAM or VCF
@@ -1513,8 +1511,8 @@ END
 
     def metrics_gatk_cluster_fingerprint(self):
         """
-        CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        CheckFingerprint (Picard). Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) 
+        against a set of known genotypes in the supplied genotype file (in VCF format).
         input: sample SAM/BAM or VCF
         output: fingerprint file
         """
@@ -1648,8 +1646,7 @@ END
 
     def gatk_haplotype_caller(self):
         """
-        GATK haplotype caller for snps and small indels.
-        [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller)
+        [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller) haplotype caller for snps and small indels.
         """
 
         jobs = []
@@ -2344,7 +2341,7 @@ END
     def haplotype_caller_snp_effect(self):
         """
         Variant effect annotation applied to haplotype caller vcf.
-        The .vcf files are annotated for variant effects using the SnpEff software.
+        The .vcf files are annotated for variant effects using the [SnpEff](http://snpeff.sourceforge.net/) software.
         SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
         """
 
@@ -2993,9 +2990,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def delly_sv_annotation(self):
         """
-        Preprocess and annotate VCF with SnpEff.
+        Preprocess and annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
         SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-        https://pcingola.github.io/SnpEff/se_introduction/
         """
         jobs = []
 
@@ -3161,9 +3157,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def manta_sv_annotation(self):
         """
-        Annotate VCF with SnpEff.
+        Annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
         SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-        https://pcingola.github.io/SnpEff/se_introduction/
         """
         jobs = []
 
@@ -3334,9 +3329,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def lumpy_sv_annotation(self):
         """
-        Annotate VCF with SnpEff.
+        Annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
         SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-        https://pcingola.github.io/SnpEff/se_introduction/
         """
     
         jobs = []
@@ -3455,9 +3449,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def wham_sv_annotation(self):
         """
-        Annotate VCF with SnpEff.
+        Annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
         SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-        https://pcingola.github.io/SnpEff/se_introduction/
         """
 
         jobs = []
@@ -3478,8 +3471,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def cnvkit_batch(self):
         """
-        CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
-        https://cnvkit.readthedocs.io/en/stable/index.html
+        [CNVkit](https://cnvkit.readthedocs.io/en/stable/index.html) is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
         """
         jobs = []
 
@@ -4095,9 +4087,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def ensemble_metasv(self):
         """
-        MetaSV is an integrated SV caller which leverages multiple orthogonal SV signals for high accuracy and resolution.
+        [MetaSV](http://bioinform.github.io/metasv/) is an integrated SV caller which leverages multiple orthogonal SV signals for high accuracy and resolution.
         MetaSV proceeds by merging SVs from multiple tools for all types of SVs.
-        http://bioinform.github.io/metasv/
         """
         jobs = []
 
@@ -4190,9 +4181,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def metasv_sv_annotation(self):
         """
-        Annotate VCF with SnpEff.
+        Annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
         SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-        https://pcingola.github.io/SnpEff/se_introduction/
         """
 
         jobs = []

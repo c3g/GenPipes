@@ -447,7 +447,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/""".format(
 
     def sambamba_merge_bam_files(self):
         """
-        BAM readset files are merged into one file per sample. Merge is done using [Sambamba]().
+        BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
         This step takes as input files:
 
@@ -515,7 +515,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/""".format(
         """
         Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
         (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-        will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba]().
+        will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
         """
 
         jobs = []
@@ -546,7 +546,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/""".format(
 
     def sambamba_view_filter(self):
         """
-        Filter out unmapped reads and low quality reads [Sambamba](http://www.htslib.org/).
+        Filter out unmapped reads and low quality reads [Sambamba](http://lomereiter.github.io/sambamba/index.html).
         """
 
         jobs = []
@@ -797,7 +797,7 @@ done""".format(
 
     def homer_make_ucsc_file(self):
         """
-        Wiggle Track Format files are generated from the aligned reads using Homer.
+        Wiggle Track Format files are generated from the aligned reads using [Homer](http://homer.ucsd.edu/homer/index.html).
         The resulting files can be loaded in browsers like IGV or UCSC.
         """
 
@@ -1213,7 +1213,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
 
     def homer_annotate_peaks(self):
             """
-            The peaks called previously are annotated with HOMER using RefSeq annotations for the reference genome.
+            The peaks called previously are annotated with HOMER(http://homer.ucsd.edu/homer/index.html) using RefSeq annotations for the reference genome.
             Gene ontology and genome ontology analysis are also performed at this stage.
             """
 

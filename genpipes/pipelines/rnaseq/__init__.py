@@ -1102,7 +1102,7 @@ pandoc \\
 
     def sambamba_merge_splitNtrim_files(self):
         """
-        BAM readset files are merged into one file per sample. Merge is done using [Sambamba] (http://lomereiter.github.io/sambamba/docs/sambamba-merge.html).
+        BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/docs/sambamba-merge.html).
         """
 
         jobs = []
@@ -1534,8 +1534,7 @@ pandoc \\
 
     def run_vcfanno(self):
         """
-        vcfanno is used to annotate VCF files with preferred INFO fields from anu number of VCF or BED files. For more
-        information [visit](https://github.com/brentp/vcfanno)
+        [vcfanno](https://github.com/brentp/vcfanno) is used to annotate VCF files with preferred INFO fields from anu number of VCF or BED files.
         """
 
         jobs = []
@@ -1665,7 +1664,7 @@ pandoc \\
         """
         [gemini](https://github.com/arq5x/gemini) (GEnome MINIng) is used to integrative exploration of genetic
         variation and genome annotations. For more information
-        [visit](https://gemini.readthedocs.io/en/latest/).
+        visit the [Gemini documentation] (https://gemini.readthedocs.io/en/latest/).
         """
 
         jobs = []
@@ -1888,9 +1887,8 @@ pandoc \\
 
     def run_star_fusion(self):
         """
-        STAR-Fusion is a component of the Trinity Cancer Transcriptome Analysis Toolkit (CTAT). Based on the STAR
+        [STAR-Fusion](https://github.com/STAR-Fusion/STAR-Fusion/wiki) is a component of the Trinity Cancer Transcriptome Analysis Toolkit (CTAT). Based on the STAR
         aligner it identifies candidate fusion transcripts supported by Illumina reads.
-        https://github.com/STAR-Fusion/STAR-Fusion/wiki
         """
 
         jobs = []
@@ -2255,7 +2253,7 @@ pandoc \\
 
     def raw_counts(self):
         """
-        Count reads in features using [htseq-count](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html).
+        Count reads in features using [htseq-count](https://htseq.readthedocs.io/en/master/htseqcount.html).
         """
 
         jobs = []
