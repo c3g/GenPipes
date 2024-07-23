@@ -586,6 +586,7 @@ class NanoporeCoVSeq(common.Nanopore):
 
     def covseq_metrics(self):
         """
+        Collect metrics.
         """
 
         jobs = []
