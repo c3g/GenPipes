@@ -281,7 +281,7 @@ class RnaSeqRaw(common.Illumina):
     def sortmerna(self):
         """
         Calculation of ribosomal RNA per read based on known ribosomal sequences from archea, bacteria and eukaryotes.
-        Using [sortmeRNA] (https://github.com/sortmerna/sortmerna)
+        Using [sortmeRNA](https://github.com/sortmerna/sortmerna)
 
         Taking trimmed fastqs and reporting on each read, either paired-end or single end.
         """
@@ -748,8 +748,8 @@ class RnaSeqRaw(common.Illumina):
 
     def rseqc(self):
         """
-        Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
-        metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
+        Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions.
+        Metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
         """
 
         jobs = []
@@ -931,7 +931,7 @@ pandoc \\
 
     def rnaseqc2(self):
         """
-        Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
+        Computes a series of quality control metrics using [RNA-SeQC](https://github.com/getzlab/rnaseqc).
         """
         jobs = []
 
@@ -2530,7 +2530,7 @@ END
 
     def differential_expression(self):
         """
-        Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+        Performs differential gene expression analysis using [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html) and [edgeR](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
         Merge the results of the analysis in a single csv file.
         """
 
