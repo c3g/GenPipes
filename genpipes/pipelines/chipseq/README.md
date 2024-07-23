@@ -1,7 +1,7 @@
 usage: genpipes chipseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                         [-j {pbs,batch,daemon,slurm}] [-f]
                         [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
-                        [--json-pt] [--report] [--clean]
+                        [--json-pt] [--clean]
                         [--container {wrapper, singularity} <IMAGE PATH>]
                         [--genpipes_file GENPIPES_FILE]
                         [-l {debug,info,warning,error,critical}]
@@ -35,11 +35,6 @@ options:
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  --report              create 'pandoc' command to merge all job markdown
-                        report files in the given step range into HTML, if
-                        they exist; if --report is set, --job-scheduler,
-                        --force, --clean options and job up-to-date status are
-                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
@@ -146,7 +141,7 @@ mapping_bwa_mem_sambamba
 ------------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem2.
 BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
@@ -255,7 +250,7 @@ multiqc_report
 --------------
  
 A quality control report for all samples is generated.
-For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
 
 cram_output 
 -----------
@@ -303,7 +298,7 @@ mapping_bwa_mem_sambamba
 ------------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem2.
 BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
@@ -412,7 +407,7 @@ multiqc_report
 --------------
  
 A quality control report for all samples is generated.
-For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
 
 cram_output 
 -----------

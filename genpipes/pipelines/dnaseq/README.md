@@ -1,7 +1,7 @@
 usage: genpipes dnaseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                        [-j {pbs,batch,daemon,slurm}] [-f]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
-                       [--json-pt] [--report] [--clean]
+                       [--json-pt] [--clean]
                        [--container {wrapper, singularity} <IMAGE PATH>]
                        [--genpipes_file GENPIPES_FILE]
                        [-l {debug,info,warning,error,critical}]
@@ -36,11 +36,6 @@ options:
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  --report              create 'pandoc' command to merge all job markdown
-                        report files in the given step range into HTML, if
-                        they exist; if --report is set, --job-scheduler,
-                        --force, --clean options and job up-to-date status are
-                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
@@ -247,8 +242,9 @@ Protocol somatic_sv
 13 cram_outputgatk_sam_to_fastq 
 -----------------
  
-Converts SAM/BAM files from the input readset file into FASTQ format.
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+Converts SAM/BAM files from the input readset file into FASTQ format,
+if FASTQ files are not already specified in the readset file. 
+Do nothing otherwise.
 
 trim_fastp 
 ----------
@@ -260,8 +256,8 @@ bwa_mem2_samtools_sort
 ----------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+The alignment software used is [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) with algorithm: bwa mem2.
+BWA output BAM files are then sorted by coordinate using [Samtools](https://www.htslib.org/doc/samtools.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
@@ -278,10 +274,16 @@ will be marked as a duplicate in the BAM file. Marking duplicates is done using 
 set_interval_list 
 -----------------
  
+Create an interval list with ScatterIntervalsByNs from GATK: [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360041416072-ScatterIntervalsByNs-Picard).
+Used for creating a broken-up interval list that can be used for scattering a variant-calling pipeline in a way that will not cause problems at the edges of the intervals. 
+By using large enough N blocks (so that the tools will not be able to anchor on both sides) we can be assured that the results of scattering and gathering 
+the variants with the resulting interval list will be the same as calling with one large region.
+
 gatk_haplotype_caller 
 ---------------------
  
 GATK haplotype caller for snps and small indels.
+[GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller)
 
 merge_and_call_individual_gvcf 
 ------------------------------
@@ -291,7 +293,7 @@ Merges the gvcfs of haplotype caller and also generates a per sample vcf contain
 combine_gvcf 
 ------------
  
-Combine the per sample gvcfs of haplotype caller into one main file for all sample.
+Combine the per sample gvcfs of haplotype caller into one main file for all samples.
 
 merge_and_call_combined_gvcf 
 ----------------------------
@@ -320,6 +322,11 @@ slightly lower quality level.
 haplotype_caller_decompose_and_normalize 
 ----------------------------------------
  
+Variants with multiple alternate alleles will not be handled correctly by gemini (or by the tools used to annotate the variants).
+To reduce the number of false negatives, the authors of gemini strongly recommend that gemini users split, left-align, and trim their variants.
+For more info on preprocessing, see the gemini docs: https://gemini.readthedocs.io/en/latest/content/preprocessing.html
+The tool used for decomposing and normalizing VCFs is vt: https://github.com/atks/vt
+
 haplotype_caller_flag_mappability 
 ---------------------------------
  
@@ -354,29 +361,37 @@ and other function annotations).
 haplotype_caller_gemini_annotations 
 -----------------------------------
  
+Load functionally annotated vcf file into a mysql lite annotation database :
+http://gemini.readthedocs.org/en/latest/index.html
+
 metrics_dna_picard_metrics 
 --------------------------
  
 Generates metrics with picard, including:
-CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
-CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
-CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+[CollectMultipleMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-)
+[CollectOxoGMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-)
+[CollectGcBiasMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-)
 
 metrics_dna_sample_mosdepth 
 ---------------------------
  
 Calculate depth stats for captured regions with mosdepth.
+[Mosdepth](https://github.com/brentp/mosdepth)
 
 metrics_picard_calculate_hs 
 ---------------------------
  
 Compute on target percent of hybridisation based capture.
+[Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
 
 metrics_verify_bam_id 
 ---------------------
  
-:param self:
-:return:
+[VerifyBamID](https://github.com/Griffan/VerifyBamID) is a software that verifies whether the reads in particular file match previously known
+genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+as a mixture of two samples. VerifyBamID can detect sample contamination and swaps when external
+genotypes are available. When external genotypes are not available, verifyBamID still robustly
+detects sample swaps.
 
 run_multiqc 
 -----------
@@ -389,7 +404,7 @@ https://multiqc.info/
 sym_link_fastq 
 --------------
  
-:return:
+Create sym link of raw reads fastq files.
 
 sym_link_final_bam 
 ------------------
@@ -399,22 +414,23 @@ Create sym link of final bam for delivery of data to clients.
 metrics_vcftools_missing_indiv 
 ------------------------------
  
-vcftools: --missing_indv: Generates a file reporting the missingness on a per-individual basis. The file has the suffix ".imiss".
-input: bgzipped vcf file
-ouput: missingness flat file
+		vcftools: --missing_indv: Generates a file reporting the missingness on a per-individual basis. The file has the suffix ".imiss".
+        input: bgzipped vcf file
+        ouput: missingness flat file
 
 metrics_vcftools_depth_indiv 
 ----------------------------
  
-vcftools: --depth: Generates a file containing the mean depth per individual. This file has the suffix ".idepth".
-input: bgzipped vcf file
-ouput: idepth flat file
+	vcftools: --depth: Generates a file containing the mean depth per individual. This file has the suffix ".idepth".
+    input: bgzipped vcf file
+    ouput: idepth flat file
 
 metrics_gatk_sample_fingerprint 
 -------------------------------
  
 		CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) 
+        against a set of known genotypes in the supplied genotype file (in VCF format).
         input: sample SAM/BAM or VCF
         output: fingerprint file
 
@@ -429,8 +445,9 @@ output: fingerprint file
 gatk_sam_to_fastq 
 -----------------
  
-Converts SAM/BAM files from the input readset file into FASTQ format.
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+Converts SAM/BAM files from the input readset file into FASTQ format,
+if FASTQ files are not already specified in the readset file. 
+Do nothing otherwise.
 
 trim_fastp 
 ----------
@@ -442,8 +459,8 @@ bwa_mem2_samtools_sort
 ----------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+The alignment software used is [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) with algorithm: bwa mem2.
+BWA output BAM files are then sorted by coordinate using [Samtools](https://www.htslib.org/doc/samtools.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
@@ -465,10 +482,16 @@ Create sym link of final bam for delivery of data to clients.
 set_interval_list 
 -----------------
  
+Create an interval list with ScatterIntervalsByNs from GATK: [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360041416072-ScatterIntervalsByNs-Picard).
+Used for creating a broken-up interval list that can be used for scattering a variant-calling pipeline in a way that will not cause problems at the edges of the intervals. 
+By using large enough N blocks (so that the tools will not be able to anchor on both sides) we can be assured that the results of scattering and gathering 
+the variants with the resulting interval list will be the same as calling with one large region.
+
 gatk_haplotype_caller 
 ---------------------
  
 GATK haplotype caller for snps and small indels.
+[GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller)
 
 merge_and_call_individual_gvcf 
 ------------------------------
@@ -479,19 +502,21 @@ metrics_dna_picard_metrics
 --------------------------
  
 Generates metrics with picard, including:
-CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
-CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
-CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+[CollectMultipleMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-)
+[CollectOxoGMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-)
+[CollectGcBiasMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-)
 
 metrics_dna_sample_mosdepth 
 ---------------------------
  
 Calculate depth stats for captured regions with mosdepth.
+[Mosdepth](https://github.com/brentp/mosdepth)
 
 metrics_picard_calculate_hs 
 ---------------------------
  
 Compute on target percent of hybridisation based capture.
+[Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
 
 run_multiqc 
 -----------
@@ -580,7 +605,7 @@ https://pcingola.github.io/SnpEff/se_introduction/
 run_breakseq2 
 -------------
  
-BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants.
+[BreakSeq2](https://bioinform.github.io/breakseq2/): Ultrafast and accurate nucleotide-resolution analysis of structural variants.
 
 ensemble_metasv 
 ---------------
@@ -599,8 +624,9 @@ https://pcingola.github.io/SnpEff/se_introduction/
 gatk_sam_to_fastq 
 -----------------
  
-Converts SAM/BAM files from the input readset file into FASTQ format.
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+Converts SAM/BAM files from the input readset file into FASTQ format,
+if FASTQ files are not already specified in the readset file. 
+Do nothing otherwise.
 
 trim_fastp 
 ----------
@@ -612,8 +638,8 @@ bwa_mem2_samtools_sort
 ----------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+The alignment software used is [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) with algorithm: bwa mem2.
+BWA output BAM files are then sorted by coordinate using [Samtools](https://www.htslib.org/doc/samtools.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
@@ -641,30 +667,35 @@ metrics_dna_picard_metrics
 --------------------------
  
 Generates metrics with picard, including:
-CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
-CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
-CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+[CollectMultipleMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-)
+[CollectOxoGMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-)
+[CollectGcBiasMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-)
 
 metrics_dna_sample_mosdepth 
 ---------------------------
  
 Calculate depth stats for captured regions with mosdepth.
+[Mosdepth](https://github.com/brentp/mosdepth)
 
 metrics_picard_calculate_hs 
 ---------------------------
  
 Compute on target percent of hybridisation based capture.
+[Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
 
 metrics_verify_bam_id 
 ---------------------
  
-:param self:
-:return:
+[VerifyBamID](https://github.com/Griffan/VerifyBamID) is a software that verifies whether the reads in particular file match previously known
+genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+as a mixture of two samples. VerifyBamID can detect sample contamination and swaps when external
+genotypes are available. When external genotypes are not available, verifyBamID still robustly
+detects sample swaps.
 
 germline_varscan2 
 -----------------
  
-VarScan caller for insertions and deletions.
+[VarScan](https://dkoboldt.github.io/varscan/) caller for insertions and deletions.
 
 preprocess_vcf 
 --------------
@@ -696,14 +727,15 @@ https://multiqc.info/
 cram_output 
 -----------
  
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will add the orginal final bam file to the removable file list.
 
 gatk_sam_to_fastq 
 -----------------
  
-Converts SAM/BAM files from the input readset file into FASTQ format.
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+Converts SAM/BAM files from the input readset file into FASTQ format,
+if FASTQ files are not already specified in the readset file. 
+Do nothing otherwise.
 
 trim_fastp 
 ----------
@@ -715,8 +747,8 @@ bwa_mem2_samtools_sort
 ----------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+The alignment software used is [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) with algorithm: bwa mem2.
+BWA output BAM files are then sorted by coordinate using [Samtools](https://www.htslib.org/doc/samtools.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
@@ -739,25 +771,30 @@ metrics_dna_picard_metrics
 --------------------------
  
 Generates metrics with picard, including:
-CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
-CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
-CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+[CollectMultipleMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-)
+[CollectOxoGMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-)
+[CollectGcBiasMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-)
 
 metrics_dna_sample_mosdepth 
 ---------------------------
  
 Calculate depth stats for captured regions with mosdepth.
+[Mosdepth](https://github.com/brentp/mosdepth)
 
 metrics_picard_calculate_hs 
 ---------------------------
  
 Compute on target percent of hybridisation based capture.
+[Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
 
 metrics_verify_bam_id 
 ---------------------
  
-:param self:
-:return:
+[VerifyBamID](https://github.com/Griffan/VerifyBamID) is a software that verifies whether the reads in particular file match previously known
+genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+as a mixture of two samples. VerifyBamID can detect sample contamination and swaps when external
+genotypes are available. When external genotypes are not available, verifyBamID still robustly
+detects sample swaps.
 
 run_multiqc 
 -----------
@@ -770,10 +807,16 @@ https://multiqc.info/
 set_interval_list 
 -----------------
  
+Create an interval list with ScatterIntervalsByNs from GATK: [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360041416072-ScatterIntervalsByNs-Picard).
+Used for creating a broken-up interval list that can be used for scattering a variant-calling pipeline in a way that will not cause problems at the edges of the intervals. 
+By using large enough N blocks (so that the tools will not be able to anchor on both sides) we can be assured that the results of scattering and gathering 
+the variants with the resulting interval list will be the same as calling with one large region.
+
 gatk_haplotype_caller 
 ---------------------
  
 GATK haplotype caller for snps and small indels.
+[GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller)
 
 merge_and_call_individual_gvcf 
 ------------------------------
@@ -783,7 +826,7 @@ Merges the gvcfs of haplotype caller and also generates a per sample vcf contain
 combine_gvcf 
 ------------
  
-Combine the per sample gvcfs of haplotype caller into one main file for all sample.
+Combine the per sample gvcfs of haplotype caller into one main file for all samples.
 
 merge_and_call_combined_gvcf 
 ----------------------------
@@ -812,6 +855,11 @@ slightly lower quality level.
 haplotype_caller_decompose_and_normalize 
 ----------------------------------------
  
+Variants with multiple alternate alleles will not be handled correctly by gemini (or by the tools used to annotate the variants).
+To reduce the number of false negatives, the authors of gemini strongly recommend that gemini users split, left-align, and trim their variants.
+For more info on preprocessing, see the gemini docs: https://gemini.readthedocs.io/en/latest/content/preprocessing.html
+The tool used for decomposing and normalizing VCFs is vt: https://github.com/atks/vt
+
 cnvkit_batch 
 ------------
  
@@ -821,6 +869,9 @@ https://cnvkit.readthedocs.io/en/stable/index.html
 split_tumor_only 
 ----------------
  
+Splits the merged VCF produced in previous steps to generate a report on a per-patient basis.
+The merged VCF is split using the bcftools +split function with the removal of homozygous reference calls.
+Creates one VCF per patient to be used for downstream reporting.
 
 filter_tumor_only 
 -----------------
@@ -845,8 +896,9 @@ output: html report and addtional flat files
 gatk_sam_to_fastq 
 -----------------
  
-Converts SAM/BAM files from the input readset file into FASTQ format.
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+Converts SAM/BAM files from the input readset file into FASTQ format,
+if FASTQ files are not already specified in the readset file. 
+Do nothing otherwise.
 
 trim_fastp 
 ----------
@@ -858,8 +910,8 @@ bwa_mem2_samtools_sort
 ----------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+The alignment software used is [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) with algorithm: bwa mem2.
+BWA output BAM files are then sorted by coordinate using [Samtools](https://www.htslib.org/doc/samtools.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
@@ -876,6 +928,11 @@ will be marked as a duplicate in the BAM file. Marking duplicates is done using 
 set_interval_list 
 -----------------
  
+Create an interval list with ScatterIntervalsByNs from GATK: [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360041416072-ScatterIntervalsByNs-Picard).
+Used for creating a broken-up interval list that can be used for scattering a variant-calling pipeline in a way that will not cause problems at the edges of the intervals. 
+By using large enough N blocks (so that the tools will not be able to anchor on both sides) we can be assured that the results of scattering and gathering 
+the variants with the resulting interval list will be the same as calling with one large region.
+
 sequenza 
 --------
  
@@ -953,14 +1010,15 @@ metrics_dna_picard_metrics
 --------------------------
  
 Generates metrics with picard, including:
-CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
-CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
-CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+[CollectMultipleMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-)
+[CollectOxoGMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-)
+[CollectGcBiasMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-)
 
 metrics_dna_sample_mosdepth 
 ---------------------------
  
 Calculate depth stats for captured regions with mosdepth.
+[Mosdepth](https://github.com/brentp/mosdepth)
 
 run_multiqc 
 -----------
@@ -973,9 +1031,13 @@ https://multiqc.info/
 sym_link_report 
 ---------------
  
+Create a sym link of the MultiQC report for delivery to clients.
+
 sym_link_fastq_pair 
 -------------------
  
+Create sym links and md5 sums for tumor and normal fastq files.
+
 sym_link_panel 
 --------------
  
@@ -984,14 +1046,15 @@ Create sym links of panel variants for deliverables to the clients.
 cram_output 
 -----------
  
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will add the orginal final bam file to the removable file list.
 
 gatk_sam_to_fastq 
 -----------------
  
-Converts SAM/BAM files from the input readset file into FASTQ format.
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+Converts SAM/BAM files from the input readset file into FASTQ format,
+if FASTQ files are not already specified in the readset file. 
+Do nothing otherwise.
 
 trim_fastp 
 ----------
@@ -1003,8 +1066,8 @@ bwa_mem2_samtools_sort
 ----------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+The alignment software used is [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) with algorithm: bwa mem2.
+BWA output BAM files are then sorted by coordinate using [Samtools](https://www.htslib.org/doc/samtools.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
@@ -1021,6 +1084,11 @@ will be marked as a duplicate in the BAM file. Marking duplicates is done using 
 set_interval_list 
 -----------------
  
+Create an interval list with ScatterIntervalsByNs from GATK: [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360041416072-ScatterIntervalsByNs-Picard).
+Used for creating a broken-up interval list that can be used for scattering a variant-calling pipeline in a way that will not cause problems at the edges of the intervals. 
+By using large enough N blocks (so that the tools will not be able to anchor on both sides) we can be assured that the results of scattering and gathering 
+the variants with the resulting interval list will be the same as calling with one large region.
+
 conpair_concordance_contamination 
 ---------------------------------
  
@@ -1033,14 +1101,15 @@ metrics_dna_picard_metrics
 --------------------------
  
 Generates metrics with picard, including:
-CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
-CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
-CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+[CollectMultipleMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-)
+[CollectOxoGMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-)
+[CollectGcBiasMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-)
 
 metrics_dna_sample_mosdepth 
 ---------------------------
  
 Calculate depth stats for captured regions with mosdepth.
+[Mosdepth](https://github.com/brentp/mosdepth)
 
 sequenza 
 --------
@@ -1208,6 +1277,8 @@ https://multiqc.info/
 sym_link_fastq_pair 
 -------------------
  
+Create sym links and md5 sums for tumor and normal fastq files.
+
 sym_link_final_bam 
 ------------------
  
@@ -1216,6 +1287,8 @@ Create sym link of final bam for delivery of data to clients.
 sym_link_report 
 ---------------
  
+Create a sym link of the MultiQC report for delivery to clients.
+
 sym_link_ensemble 
 -----------------
  
@@ -1224,14 +1297,15 @@ Create sym link of ensemble output for delivery of data to clients.
 cram_output 
 -----------
  
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will add the orginal final bam file to the removable file list.
 
 gatk_sam_to_fastq 
 -----------------
  
-Converts SAM/BAM files from the input readset file into FASTQ format.
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+Converts SAM/BAM files from the input readset file into FASTQ format,
+if FASTQ files are not already specified in the readset file. 
+Do nothing otherwise.
 
 trim_fastp 
 ----------
@@ -1243,8 +1317,8 @@ bwa_mem2_samtools_sort
 ----------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+The alignment software used is [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) with algorithm: bwa mem2.
+BWA output BAM files are then sorted by coordinate using [Samtools](https://www.htslib.org/doc/samtools.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
@@ -1261,6 +1335,11 @@ will be marked as a duplicate in the BAM file. Marking duplicates is done using 
 set_interval_list 
 -----------------
  
+Create an interval list with ScatterIntervalsByNs from GATK: [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360041416072-ScatterIntervalsByNs-Picard).
+Used for creating a broken-up interval list that can be used for scattering a variant-calling pipeline in a way that will not cause problems at the edges of the intervals. 
+By using large enough N blocks (so that the tools will not be able to anchor on both sides) we can be assured that the results of scattering and gathering 
+the variants with the resulting interval list will be the same as calling with one large region.
+
 manta_sv_calls 
 --------------
  
@@ -1281,18 +1360,34 @@ This implementation is optimized for somatic calling.
 gridss_paired_somatic 
 ---------------------
  
+Performs joint variant calling on tumor/normal samples using [GRIDSS](https://github.com/PapenfussLab/gridss),
+followed by filtering with [GRIPSS](https://github.com/hartwigmedical/hmftools/tree/master/gripss).
+GRIPSS applies a set of filtering and post processing steps on GRIDSS paired tumor-normal output to produce 
+a high confidence set of somatic SV for a tumor sample. GRIPSS processes the GRIDSS output and produces a somatic vcf.
 
 purple_sv 
 ---------
  
+Runs PURPLE with the optional structural variant input VCFs.
+PURPLE is a purity ploidy estimator for whole genome sequenced (WGS) data.
+
+It combines B-allele frequency (BAF) from AMBER, read depth ratios from COBALT,
+somatic variants and structural variants to estimate the purity and copy number profile of a tumor sample.
 
 linx_annotations_somatic 
 ------------------------
  
+[Linx](https://github.com/hartwigmedical/hmftools/blob/master/linx/README.md) is an annotation, interpretation and visualisation tool for structural variants.
+The primary function of Linx is grouping together individual SV calls into distinct events 
+and properly classify and annotating the event to understand both its mechanism and genomic impact.
 
 linx_annotations_germline 
 -------------------------
  
+Runs [Linx](https://github.com/hartwigmedical/hmftools/blob/master/linx/README.md) in germline mode.
+Linx is an annotation, interpretation and visualisation tool for structural variants.
+The primary function of Linx is grouping together individual SV calls into distinct events 
+and properly classify and annotating the event to understand both its mechanism and genomic impact.
 
 linx_plot 
 ---------
@@ -1310,5 +1405,5 @@ https://multiqc.info/
 cram_output 
 -----------
  
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will add the orginal final bam file to the removable file list.

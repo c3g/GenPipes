@@ -1,7 +1,7 @@
 usage: genpipes methylseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                           [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                           [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
-                          [--json-pt] [--report] [--clean]
+                          [--json-pt] [--clean]
                           [--container {wrapper, singularity} <IMAGE PATH>]
                           [--genpipes_file GENPIPES_FILE]
                           [-l {debug,info,warning,error,critical}]
@@ -35,11 +35,6 @@ options:
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  --report              create 'pandoc' command to merge all job markdown
-                        report files in the given step range into HTML, if
-                        they exist; if --report is set, --job-scheduler,
-                        --force, --clean options and job up-to-date status are
-                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
@@ -136,18 +131,16 @@ if FASTQ files are not already specified in the readset file. Do nothing otherwi
 trimmomatic 
 -----------
  
-        Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-        If an adapter FASTA file is specified in the config file (section 'trimmomatic', get 'adapter_fasta'),
-        it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
-        an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
-        reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
-        only Adapter1 is used and left unchanged.
+Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+If an adapter FASTA file is specified in the config file (section 'trimmomatic', parameter 'adapter_fasta'),
+it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
+an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
+reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
+only Adapter1 is used and left unchanged.
 
-        This step takes as input files:
-
-utput_dir
-        1. FASTQ files from the readset file if available
-        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+This step takes as input files:
+1. FASTQ files from the readset file if available
+2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
 merge_trimmomatic_stats 
 -----------------------
@@ -250,8 +243,8 @@ perfect for summarising the output from numerous bioinformatics tools [MultiQC](
 cram_output 
 -----------
  
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will add the orginal final bam file to the removable file list.
 
 picard_sam_to_fastq 
 -------------------
@@ -262,18 +255,16 @@ if FASTQ files are not already specified in the readset file. Do nothing otherwi
 trimmomatic 
 -----------
  
-        Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-        If an adapter FASTA file is specified in the config file (section 'trimmomatic', get 'adapter_fasta'),
-        it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
-        an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
-        reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
-        only Adapter1 is used and left unchanged.
+Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+If an adapter FASTA file is specified in the config file (section 'trimmomatic', parameter 'adapter_fasta'),
+it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
+an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
+reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
+only Adapter1 is used and left unchanged.
 
-        This step takes as input files:
-
-utput_dir
-        1. FASTQ files from the readset file if available
-        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+This step takes as input files:
+1. FASTQ files from the readset file if available
+2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
 merge_trimmomatic_stats 
 -----------------------
@@ -377,8 +368,8 @@ perfect for summarising the output from numerous bioinformatics tools [MultiQC](
 cram_output 
 -----------
  
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will add the orginal final bam file to the removable file list.
 
 picard_sam_to_fastq 
 -------------------
@@ -389,18 +380,16 @@ if FASTQ files are not already specified in the readset file. Do nothing otherwi
 trimmomatic 
 -----------
  
-        Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-        If an adapter FASTA file is specified in the config file (section 'trimmomatic', get 'adapter_fasta'),
-        it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
-        an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
-        reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
-        only Adapter1 is used and left unchanged.
+Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+If an adapter FASTA file is specified in the config file (section 'trimmomatic', parameter 'adapter_fasta'),
+it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
+an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
+reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
+only Adapter1 is used and left unchanged.
 
-        This step takes as input files:
-
-utput_dir
-        1. FASTQ files from the readset file if available
-        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+This step takes as input files:
+1. FASTQ files from the readset file if available
+2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
 merge_trimmomatic_stats 
 -----------------------
@@ -452,7 +441,7 @@ Call methylation with Dragen using the 2nd run of Dragen alignment.
 split_dragen_methylation_report 
 -------------------------------
  
-        Dragen methylation report contains all three methylation context.
+Dragen methylation report contains all three methylation context.
 To create combined CSV CpGs should be extracted from the dragen methylation report.
 
 methylation_profile 
@@ -509,5 +498,5 @@ perfect for summarising the output from numerous bioinformatics tools [MultiQC](
 cram_output 
 -----------
  
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will add the orginal final bam file to the removable file list.

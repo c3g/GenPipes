@@ -2,8 +2,7 @@ usage: genpipes rnaseq_denovo_assembly [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                                        [-o OUTPUT_DIR]
                                        [-j {pbs,batch,daemon,slurm}] [-f]
                                        [--force_mem_per_cpu FORCE_MEM_PER_CPU]
-                                       [--no-json] [--json-pt] [--report]
-                                       [--clean]
+                                       [--no-json] [--json-pt] [--clean]
                                        [--container {wrapper, singularity} <IMAGE PATH>]
                                        [--genpipes_file GENPIPES_FILE]
                                        [-l {debug,info,warning,error,critical}]
@@ -38,11 +37,6 @@ options:
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  --report              create 'pandoc' command to merge all job markdown
-                        report files in the given step range into HTML, if
-                        they exist; if --report is set, --job-scheduler,
-                        --force, --clean options and job up-to-date status are
-                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
@@ -113,18 +107,16 @@ if FASTQ files are not already specified in the readset file. Do nothing otherwi
 trimmomatic 
 -----------
  
-        Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-        If an adapter FASTA file is specified in the config file (section 'trimmomatic', get 'adapter_fasta'),
-        it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
-        an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
-        reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
-        only Adapter1 is used and left unchanged.
+Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+If an adapter FASTA file is specified in the config file (section 'trimmomatic', parameter 'adapter_fasta'),
+it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
+an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
+reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
+only Adapter1 is used and left unchanged.
 
-        This step takes as input files:
-
-utput_dir
-        1. FASTQ files from the readset file if available
-        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+This step takes as input files:
+1. FASTQ files from the readset file if available
+2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
 merge_trimmomatic_stats 
 -----------------------
@@ -144,7 +136,7 @@ Merge all normalized readsets together and normalize the result, using the Trini
 trinity 
 -------
  
-Create a de novo assembly from normalized readsets using [Trinity](http://trinityrnaseq.sourceforge.net/).
+Create a de novo assembly from normalized readsets using [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki).
 
 exonerate_fastasplit 
 --------------------
@@ -154,12 +146,12 @@ Split the Trinity assembly FASTA into chunks for further parallel BLAST annotati
 blastx_trinity_uniprot 
 ----------------------
  
-Annotate Trinity FASTA chunks with Swiss-Prot and UniRef databases using [blastx](http://blast.ncbi.nlm.nih.gov/).
+Annotate Trinity FASTA chunks with Swiss-Prot (default), UniRef or a custom database using [blastx](http://blast.ncbi.nlm.nih.gov/).
 
 blastx_trinity_uniprot_merge 
 ----------------------------
  
-Merge blastx Swiss-Prot and UniRef chunks results.
+Merge blastx Swiss-Prot chunks results.
 
 transdecoder 
 ------------
@@ -185,29 +177,29 @@ Search Transdecoder-predicted coding regions for sequence homologies on UniProt 
 signalp 
 -------
  
-Predict signal peptides using [SignalP](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp).
+Predict signal peptides using [SignalP](https://services.healthtech.dtu.dk/services/SignalP-6.0/).
 
 tmhmm 
 -----
  
-Predict transmembrane regions using [TMHMM](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?tmhmm).
+Predict transmembrane regions using [TMHMM](https://services.healthtech.dtu.dk/services/TMHMM-2.0/).
 
 trinotate 
 ---------
  
-Perform transcriptome functional annotation and analysis using [Trinotate](http://trinotate.sourceforge.net/).
+Perform transcriptome functional annotation and analysis using [Trinotate](https://github.com/Trinotate/Trinotate/wiki).
 All functional annotation data is integrated into a SQLite database and a whole annotation report is created.
 
 align_and_estimate_abundance_prep_reference 
 -------------------------------------------
  
-Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
+Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification).
 
 align_and_estimate_abundance 
 ----------------------------
  
-Estimate transcript abundance using [RSEM](http://deweylab.biostat.wisc.edu/rsem/) via
-[Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
+Estimate transcript abundance using [RSEM](http://deweylab.github.io/RSEM/) via
+[Trinity align_and_estimate_abundance.pl utility](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification).
 
 gq_seq_utils_exploratory_analysis_rnaseq_denovo 
 -----------------------------------------------
