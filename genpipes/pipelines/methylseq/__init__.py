@@ -1400,7 +1400,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
 
         """
         Dragen methylation report contains all three methylation context.
-To create combined CSV CpGs should be extracted from the dragen methylation report.
+        To create combined CSV CpGs should be extracted from the dragen methylation report.
         """
 
         jobs = []

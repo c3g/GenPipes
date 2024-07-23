@@ -378,8 +378,6 @@ class Illumina(GenPipesPipeline):
         only Adapter1 is used and left unchanged.
 
         This step takes as input files:
-
-utput_dir
         1. FASTQ files from the readset file if available
         2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """
