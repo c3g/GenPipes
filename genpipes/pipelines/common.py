@@ -311,8 +311,9 @@ class Illumina(GenPipesPipeline):
 
     def gatk_sam_to_fastq(self):
         """
-        Converts SAM/BAM files from the input readset file into FASTQ format.
-        if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+        Converts SAM/BAM files from the input readset file into FASTQ format,
+        if FASTQ files are not already specified in the readset file. 
+        Do nothing otherwise.
         """
         jobs = []
         analyses_dir = os.path.join("analyses")
@@ -835,8 +836,8 @@ END
     def bwa_mem2_samtools_sort(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-        The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-        BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+        The alignment software used is [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) with algorithm: bwa mem2.
+        BWA output BAM files are then sorted by coordinate using [Samtools](https://www.htslib.org/doc/samtools.html)
         This step takes as input files:
 
         1. Trimmed FASTQ files if available
@@ -1249,8 +1250,8 @@ END
 
     def cram_output(self):
         """
-        Generate long term storage version of the final alignment files in CRAM format
-        Using this function will include the orginal final bam file into the  removable file list
+        Generate long term storage version of the final alignment files in CRAM format.
+        Using this function will add the orginal final bam file to the removable file list.
         """
 
         jobs = []

@@ -213,7 +213,7 @@ class DnaSeqRaw(common.Illumina):
         
     def sym_link_fastq(self):
         """
-        :return:
+        Create sym link of raw reads fastq files.
         """
         jobs = []
         sym_link_job = ""
@@ -276,6 +276,9 @@ class DnaSeqRaw(common.Illumina):
         return jobs
 
     def sym_link_fastq_pair(self):
+        """
+        Create sym links and md5 sums for tumor and normal fastq files.
+        """
         jobs = []
 
         inputs = {}
@@ -857,9 +860,9 @@ END
     def metrics_dna_picard_metrics(self):
         """
         Generates metrics with picard, including:
-        CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
-        CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
-        CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+        [CollectMultipleMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-)
+        [CollectOxoGMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-)
+        [CollectGcBiasMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-)
         """
 
         ##check the library status
@@ -1052,6 +1055,7 @@ END
     def metrics_dna_sample_mosdepth(self):
         """
         Calculate depth stats for captured regions with mosdepth.
+        [Mosdepth](https://github.com/brentp/mosdepth)
         """
         
         jobs = []
@@ -1241,6 +1245,9 @@ END
         return jobs
     
     def sym_link_report(self):
+        """
+        Create a sym link of the MultiQC report for delivery to clients.
+        """
         jobs = []
         
         inputs = {}
@@ -1271,6 +1278,7 @@ END
     def metrics_picard_calculate_hs(self):
         """
         Compute on target percent of hybridisation based capture.
+        [Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
         """
 
         jobs = []
@@ -1419,8 +1427,8 @@ END
     def metrics_vcftools_missing_indiv(self):
         """
 		vcftools: --missing_indv: Generates a file reporting the missingness on a per-individual basis. The file has the suffix ".imiss".
-		input: bgzipped vcf file
-		ouput: missingness flat file
+        input: bgzipped vcf file
+        ouput: missingness flat file
 		"""
 
         jobs = []
@@ -1439,8 +1447,8 @@ END
     def metrics_vcftools_depth_indiv(self):
         """
     	vcftools: --depth: Generates a file containing the mean depth per individual. This file has the suffix ".idepth".
-    	input: bgzipped vcf file
-    	ouput: idepth flat file
+        input: bgzipped vcf file
+        ouput: idepth flat file
     	"""
 
         jobs = []
@@ -1459,7 +1467,8 @@ END
     def metrics_gatk_sample_fingerprint(self):
         """
 		CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) 
+        against a set of known genotypes in the supplied genotype file (in VCF format).
         input: sample SAM/BAM or VCF
         output: fingerprint file
 		"""
@@ -1538,8 +1547,11 @@ END
 
     def metrics_verify_bam_id(self):
         """
-        :param self:
-        :return:
+        [VerifyBamID](https://github.com/Griffan/VerifyBamID) is a software that verifies whether the reads in particular file match previously known
+        genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+        as a mixture of two samples. VerifyBamID can detect sample contamination and swaps when external
+        genotypes are available. When external genotypes are not available, verifyBamID still robustly
+        detects sample swaps.
         """
 
         jobs = []
@@ -1637,6 +1649,7 @@ END
     def gatk_haplotype_caller(self):
         """
         GATK haplotype caller for snps and small indels.
+        [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller)
         """
 
         jobs = []
@@ -1806,7 +1819,7 @@ END
 
     def combine_gvcf(self):
         """
-        Combine the per sample gvcfs of haplotype caller into one main file for all sample.
+        Combine the per sample gvcfs of haplotype caller into one main file for all samples.
         """
 
         jobs = []
@@ -2156,6 +2169,12 @@ END
         return jobs
 
     def haplotype_caller_decompose_and_normalize(self):
+        """
+        Variants with multiple alternate alleles will not be handled correctly by gemini (or by the tools used to annotate the variants).
+        To reduce the number of false negatives, the authors of gemini strongly recommend that gemini users split, left-align, and trim their variants.
+        For more info on preprocessing, see the gemini docs: https://gemini.readthedocs.io/en/latest/content/preprocessing.html
+        The tool used for decomposing and normalizing VCFs is vt: https://github.com/atks/vt
+        """
     
         #input_vcf = self.select_input_files([[f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vcf.gz"], [f"{self.output_dirs['variants_directory']}/allSamples.hc.vcf.gz"]])
         input_vcf = self.select_input_files([[f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vcf.gz"]])
@@ -2416,6 +2435,10 @@ END
         return [job]
 
     def haplotype_caller_gemini_annotations(self):
+        """
+        Load functionally annotated vcf file into a mysql lite annotation database :
+        http://gemini.readthedocs.org/en/latest/index.html
+        """
         
         job = self.gemini_annotations(
             f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
@@ -2426,7 +2449,9 @@ END
     
     def split_tumor_only(self):
         """
-
+        Splits the merged VCF produced in previous steps to generate a report on a per-patient basis.
+        The merged VCF is split using the bcftools +split function with the removal of homozygous reference calls.
+        Creates one VCF per patient to be used for downstream reporting.
         """
 
         jobs = []
@@ -2456,9 +2481,9 @@ END
     
     def filter_tumor_only(self):
         """
-                Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
-                the filter on those generated fields.
-                """
+        Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
+        the filter on those generated fields.
+        """
         jobs = []
         
         output_directory = f"{self.output_dirs['variants_directory']}/split"
@@ -4020,7 +4045,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def run_breakseq2(self):
         """
-        BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants.
+        [BreakSeq2](https://bioinform.github.io/breakseq2/): Ultrafast and accurate nucleotide-resolution analysis of structural variants.
         """
 
         jobs = []
@@ -4191,6 +4216,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
     
     def set_interval_list(self):
+        """
+        Create an interval list with ScatterIntervalsByNs from GATK: [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360041416072-ScatterIntervalsByNs-Picard).
+        Used for creating a broken-up interval list that can be used for scattering a variant-calling pipeline in a way that will not cause problems at the edges of the intervals. 
+        By using large enough N blocks (so that the tools will not be able to anchor on both sides) we can be assured that the results of scattering and gathering 
+        the variants with the resulting interval list will be the same as calling with one large region.
+        """
         jobs = []
         
         reference = global_conf.global_get('gatk_scatterIntervalsByNs', 'genome_fasta', param_type='filepath')
@@ -5626,7 +5657,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         return jobs
     def germline_varscan2(self):
         """
-        VarScan caller for insertions and deletions.
+        [VarScan](https://dkoboldt.github.io/varscan/) caller for insertions and deletions.
         """
         
         jobs = []
@@ -7808,6 +7839,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
     
     def gridss_paired_somatic(self):
         """
+        Performs joint variant calling on tumor/normal samples using [GRIDSS](https://github.com/PapenfussLab/gridss),
+        followed by filtering with [GRIPSS](https://github.com/hartwigmedical/hmftools/tree/master/gripss).
+        GRIPSS applies a set of filtering and post processing steps on GRIDSS paired tumor-normal output to produce 
+        a high confidence set of somatic SV for a tumor sample. GRIPSS processes the GRIDSS output and produces a somatic vcf.
         """
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
@@ -7909,12 +7944,20 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
     
     def purple_sv(self):
         """
+        Runs PURPLE with the optional structural variant input VCFs.
+        PURPLE is a purity ploidy estimator for whole genome sequenced (WGS) data.
+
+        It combines B-allele frequency (BAF) from AMBER, read depth ratios from COBALT,
+        somatic variants and structural variants to estimate the purity and copy number profile of a tumor sample.
         """
         jobs = self.purple(sv=True)
         return jobs
     
     def linx_annotations_somatic(self):
         """
+        [Linx](https://github.com/hartwigmedical/hmftools/blob/master/linx/README.md) is an annotation, interpretation and visualisation tool for structural variants.
+        The primary function of Linx is grouping together individual SV calls into distinct events 
+        and properly classify and annotating the event to understand both its mechanism and genomic impact.
         """
         jobs = []
         
@@ -7944,6 +7987,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
     
     def linx_annotations_germline(self):
         """
+        Runs [Linx](https://github.com/hartwigmedical/hmftools/blob/master/linx/README.md) in germline mode.
+        Linx is an annotation, interpretation and visualisation tool for structural variants.
+        The primary function of Linx is grouping together individual SV calls into distinct events 
+        and properly classify and annotating the event to understand both its mechanism and genomic impact.
         """
         jobs = []
         
