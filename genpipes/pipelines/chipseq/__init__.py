@@ -1764,7 +1764,7 @@ cat {metrics_merged_out} >> {ihec_multiqc_file}""".format(
     def multiqc_report(self):
             """
             A quality control report for all samples is generated.
-            For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+            For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
             """
             ## set multiQc config file so we can customize one for every pipeline:
             jobs = []

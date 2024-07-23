@@ -564,7 +564,7 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
     def multiqc(self):
         """
         A quality control report for all samples is generated.
-        For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+        For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
         """
         jobs = []
         

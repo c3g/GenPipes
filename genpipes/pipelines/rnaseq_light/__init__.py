@@ -64,7 +64,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
 
     def kallisto(self):
         """
-        Run Kallisto on fastq files for a fast esimate of abundance.
+        Run [Kallisto](https://pachterlab.github.io/kallisto/about.html) on fastq files for a fast esimate of abundance.
         """
 
         transcriptome_file = global_conf.global_get('kallisto', 'transcriptome_idx', param_type="filepath")
@@ -421,7 +421,7 @@ cat {kallisto_report_file} >> {kallisto_multiqc_file}""".format(
     def multiqc(self):
         """
         A quality control report for all samples is generated.
-        For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+        For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
         """
         jobs = []
         
