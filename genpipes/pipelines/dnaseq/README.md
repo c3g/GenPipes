@@ -282,8 +282,7 @@ the variants with the resulting interval list will be the same as calling with o
 gatk_haplotype_caller 
 ---------------------
  
-GATK haplotype caller for snps and small indels.
-[GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller)
+[GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller) haplotype caller for snps and small indels.
 
 merge_and_call_individual_gvcf 
 ------------------------------
@@ -344,7 +343,7 @@ haplotype_caller_snp_effect
 ---------------------------
  
 Variant effect annotation applied to haplotype caller vcf.
-The .vcf files are annotated for variant effects using the SnpEff software.
+The .vcf files are annotated for variant effects using the [SnpEff](http://snpeff.sourceforge.net/) software.
 SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
 
 haplotype_caller_dbnsfp_annotation 
@@ -375,14 +374,12 @@ Generates metrics with picard, including:
 metrics_dna_sample_mosdepth 
 ---------------------------
  
-Calculate depth stats for captured regions with mosdepth.
-[Mosdepth](https://github.com/brentp/mosdepth)
+Calculate depth stats for captured regions with [Mosdepth](https://github.com/brentp/mosdepth)
 
 metrics_picard_calculate_hs 
 ---------------------------
  
-Compute on target percent of hybridisation based capture.
-[Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
+Compute on target percent of hybridisation based capture with [Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
 
 metrics_verify_bam_id 
 ---------------------
@@ -414,31 +411,31 @@ Create sym link of final bam for delivery of data to clients.
 metrics_vcftools_missing_indiv 
 ------------------------------
  
-		vcftools: --missing_indv: Generates a file reporting the missingness on a per-individual basis. The file has the suffix ".imiss".
-        input: bgzipped vcf file
-        ouput: missingness flat file
+vcftools: --missing_indv: Generates a file reporting the missingness on a per-individual basis. The file has the suffix ".imiss".
+input: bgzipped vcf file
+ouput: missingness flat file
 
 metrics_vcftools_depth_indiv 
 ----------------------------
  
-	vcftools: --depth: Generates a file containing the mean depth per individual. This file has the suffix ".idepth".
-    input: bgzipped vcf file
-    ouput: idepth flat file
+vcftools: --depth: Generates a file containing the mean depth per individual. This file has the suffix ".idepth".
+input: bgzipped vcf file
+ouput: idepth flat file
 
 metrics_gatk_sample_fingerprint 
 -------------------------------
  
-		CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) 
-        against a set of known genotypes in the supplied genotype file (in VCF format).
-        input: sample SAM/BAM or VCF
-        output: fingerprint file
+CheckFingerprint (Picard)
+Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) 
+against a set of known genotypes in the supplied genotype file (in VCF format).
+input: sample SAM/BAM or VCF
+output: fingerprint file
 
 metrics_gatk_cluster_fingerprint 
 --------------------------------
  
-CheckFingerprint (Picard)
-Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+CheckFingerprint (Picard). Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) 
+against a set of known genotypes in the supplied genotype file (in VCF format).
 input: sample SAM/BAM or VCF
 output: fingerprint file
 
@@ -490,8 +487,7 @@ the variants with the resulting interval list will be the same as calling with o
 gatk_haplotype_caller 
 ---------------------
  
-GATK haplotype caller for snps and small indels.
-[GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller)
+[GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller) haplotype caller for snps and small indels.
 
 merge_and_call_individual_gvcf 
 ------------------------------
@@ -509,14 +505,12 @@ Generates metrics with picard, including:
 metrics_dna_sample_mosdepth 
 ---------------------------
  
-Calculate depth stats for captured regions with mosdepth.
-[Mosdepth](https://github.com/brentp/mosdepth)
+Calculate depth stats for captured regions with [Mosdepth](https://github.com/brentp/mosdepth)
 
 metrics_picard_calculate_hs 
 ---------------------------
  
-Compute on target percent of hybridisation based capture.
-[Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
+Compute on target percent of hybridisation based capture with [Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
 
 run_multiqc 
 -----------
@@ -540,9 +534,8 @@ Returns: bcf file
 delly_sv_annotation 
 -------------------
  
-Preprocess and annotate VCF with SnpEff.
+Preprocess and annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
 SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-https://pcingola.github.io/SnpEff/se_introduction/
 
 germline_manta 
 --------------
@@ -556,9 +549,8 @@ Returns:Manta accepts input read mappings from BAM or CRAM files and reports all
 manta_sv_annotation 
 -------------------
  
-Annotate VCF with SnpEff.
+Annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
 SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-https://pcingola.github.io/SnpEff/se_introduction/
 
 lumpy_paired_sv 
 ---------------
@@ -570,9 +562,8 @@ Returns: bams.
 lumpy_sv_annotation 
 -------------------
  
-Annotate VCF with SnpEff.
+Annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
 SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-https://pcingola.github.io/SnpEff/se_introduction/
 
 wham_call_sv 
 ------------
@@ -585,15 +576,13 @@ Returns: vcf.
 wham_sv_annotation 
 ------------------
  
-Annotate VCF with SnpEff.
+Annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
 SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-https://pcingola.github.io/SnpEff/se_introduction/
 
 cnvkit_batch 
 ------------
  
-CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
-https://cnvkit.readthedocs.io/en/stable/index.html
+[CNVkit](https://cnvkit.readthedocs.io/en/stable/index.html) is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
 
 cnvkit_sv_annotation 
 --------------------
@@ -610,16 +599,14 @@ run_breakseq2
 ensemble_metasv 
 ---------------
  
-MetaSV is an integrated SV caller which leverages multiple orthogonal SV signals for high accuracy and resolution.
+[MetaSV](http://bioinform.github.io/metasv/) is an integrated SV caller which leverages multiple orthogonal SV signals for high accuracy and resolution.
 MetaSV proceeds by merging SVs from multiple tools for all types of SVs.
-http://bioinform.github.io/metasv/
 
 metasv_sv_annotation 
 --------------------
  
-Annotate VCF with SnpEff.
+Annotate VCF with [SnpEff](https://pcingola.github.io/SnpEff/snpeff/introduction/).
 SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
-https://pcingola.github.io/SnpEff/se_introduction/
 
 gatk_sam_to_fastq 
 -----------------
@@ -674,14 +661,12 @@ Generates metrics with picard, including:
 metrics_dna_sample_mosdepth 
 ---------------------------
  
-Calculate depth stats for captured regions with mosdepth.
-[Mosdepth](https://github.com/brentp/mosdepth)
+Calculate depth stats for captured regions with [Mosdepth](https://github.com/brentp/mosdepth)
 
 metrics_picard_calculate_hs 
 ---------------------------
  
-Compute on target percent of hybridisation based capture.
-[Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
+Compute on target percent of hybridisation based capture with [Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
 
 metrics_verify_bam_id 
 ---------------------
@@ -778,14 +763,12 @@ Generates metrics with picard, including:
 metrics_dna_sample_mosdepth 
 ---------------------------
  
-Calculate depth stats for captured regions with mosdepth.
-[Mosdepth](https://github.com/brentp/mosdepth)
+Calculate depth stats for captured regions with [Mosdepth](https://github.com/brentp/mosdepth)
 
 metrics_picard_calculate_hs 
 ---------------------------
  
-Compute on target percent of hybridisation based capture.
-[Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
+Compute on target percent of hybridisation based capture with [Picard CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard)
 
 metrics_verify_bam_id 
 ---------------------
@@ -815,8 +798,7 @@ the variants with the resulting interval list will be the same as calling with o
 gatk_haplotype_caller 
 ---------------------
  
-GATK haplotype caller for snps and small indels.
-[GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller)
+[GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360037225632-HaplotypeCaller) haplotype caller for snps and small indels.
 
 merge_and_call_individual_gvcf 
 ------------------------------
@@ -863,8 +845,7 @@ The tool used for decomposing and normalizing VCFs is vt: https://github.com/atk
 cnvkit_batch 
 ------------
  
-CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
-https://cnvkit.readthedocs.io/en/stable/index.html
+[CNVkit](https://cnvkit.readthedocs.io/en/stable/index.html) is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
 
 split_tumor_only 
 ----------------
@@ -969,8 +950,7 @@ vcf FORMAT modification for correct loading into Gemini.
 cnvkit_batch 
 ------------
  
-CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
-https://cnvkit.readthedocs.io/en/stable/index.html
+[CNVkit](https://cnvkit.readthedocs.io/en/stable/index.html) is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
 
 filter_germline 
 ---------------
@@ -1017,8 +997,7 @@ Generates metrics with picard, including:
 metrics_dna_sample_mosdepth 
 ---------------------------
  
-Calculate depth stats for captured regions with mosdepth.
-[Mosdepth](https://github.com/brentp/mosdepth)
+Calculate depth stats for captured regions with [Mosdepth](https://github.com/brentp/mosdepth)
 
 run_multiqc 
 -----------
@@ -1108,8 +1087,7 @@ Generates metrics with picard, including:
 metrics_dna_sample_mosdepth 
 ---------------------------
  
-Calculate depth stats for captured regions with mosdepth.
-[Mosdepth](https://github.com/brentp/mosdepth)
+Calculate depth stats for captured regions with [Mosdepth](https://github.com/brentp/mosdepth)
 
 sequenza 
 --------
@@ -1237,8 +1215,7 @@ Merge annotated germline and LOH vcfs.
 cnvkit_batch 
 ------------
  
-CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
-https://cnvkit.readthedocs.io/en/stable/index.html
+[CNVkit](https://cnvkit.readthedocs.io/en/stable/index.html) is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
 
 filter_germline 
 ---------------

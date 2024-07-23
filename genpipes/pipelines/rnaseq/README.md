@@ -235,7 +235,7 @@ Generate wiggle tracks suitable for multiple browsers.
 raw_counts 
 ----------
  
-Count reads in features using [htseq-count](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html).
+Count reads in features using [htseq-count](https://htseq.readthedocs.io/en/master/htseqcount.html).
 
 raw_counts_metrics 
 ------------------
@@ -334,7 +334,7 @@ SplitNtrim. A [GATK](https://software.broadinstitute.org/gatk/) tool called Spli
 sambamba_merge_splitNtrim_files 
 -------------------------------
  
-BAM readset files are merged into one file per sample. Merge is done using [Sambamba] (http://lomereiter.github.io/sambamba/docs/sambamba-merge.html).
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/docs/sambamba-merge.html).
 
 gatk_indel_realigner 
 --------------------
@@ -373,8 +373,7 @@ Merges vcfs from haplotype caller to generate a sample level vcf
 run_vcfanno 
 -----------
  
-vcfanno is used to annotate VCF files with preferred INFO fields from anu number of VCF or BED files. For more
-information [visit](https://github.com/brentp/vcfanno)
+[vcfanno](https://github.com/brentp/vcfanno) is used to annotate VCF files with preferred INFO fields from anu number of VCF or BED files.
 
 variant_filtration 
 ------------------
@@ -403,7 +402,7 @@ gemini_annotations
  
 [gemini](https://github.com/arq5x/gemini) (GEnome MINIng) is used to integrative exploration of genetic
 variation and genome annotations. For more information
-[visit](https://gemini.readthedocs.io/en/latest/).
+visit the [Gemini documentation] (https://gemini.readthedocs.io/en/latest/).
 
 picard_rna_metrics 
 ------------------
@@ -502,7 +501,7 @@ SplitNtrim. A [GATK](https://software.broadinstitute.org/gatk/) tool called Spli
 sambamba_merge_splitNtrim_files 
 -------------------------------
  
-BAM readset files are merged into one file per sample. Merge is done using [Sambamba] (http://lomereiter.github.io/sambamba/docs/sambamba-merge.html).
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/docs/sambamba-merge.html).
 
 gatk_indel_realigner 
 --------------------
@@ -541,8 +540,7 @@ Merges vcfs from haplotype caller to generate a sample level vcf
 run_vcfanno 
 -----------
  
-vcfanno is used to annotate VCF files with preferred INFO fields from anu number of VCF or BED files. For more
-information [visit](https://github.com/brentp/vcfanno)
+[vcfanno](https://github.com/brentp/vcfanno) is used to annotate VCF files with preferred INFO fields from anu number of VCF or BED files.
 
 decompose_and_normalize 
 -----------------------
@@ -575,9 +573,8 @@ output: html report and addtionalflat files
 run_star_fusion 
 ---------------
  
-STAR-Fusion is a component of the Trinity Cancer Transcriptome Analysis Toolkit (CTAT). Based on the STAR
+[STAR-Fusion](https://github.com/STAR-Fusion/STAR-Fusion/wiki) is a component of the Trinity Cancer Transcriptome Analysis Toolkit (CTAT). Based on the STAR
 aligner it identifies candidate fusion transcripts supported by Illumina reads.
-https://github.com/STAR-Fusion/STAR-Fusion/wiki
 
 run_arriba 
 ----------

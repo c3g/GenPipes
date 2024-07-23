@@ -153,7 +153,7 @@ This step takes as input files:
 sambamba_merge_bam_files 
 ------------------------
  
-BAM readset files are merged into one file per sample. Merge is done using [Sambamba]().
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 
@@ -165,12 +165,12 @@ sambamba_mark_duplicates
  
 Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba]().
+will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 sambamba_view_filter 
 --------------------
  
-Filter out unmapped reads and low quality reads [Sambamba](http://www.htslib.org/).
+Filter out unmapped reads and low quality reads [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 bedtools_blacklist_filter 
 -------------------------
@@ -195,7 +195,7 @@ Sequencing quality metrics as tag count, tag autocorrelation, sequence bias and 
 homer_make_ucsc_file 
 --------------------
  
-Wiggle Track Format files are generated from the aligned reads using Homer.
+Wiggle Track Format files are generated from the aligned reads using [Homer](http://homer.ucsd.edu/homer/index.html).
 The resulting files can be loaded in browsers like IGV or UCSC.
 
 macs2_callpeak 
@@ -209,7 +209,7 @@ The default mfold parameter of MACS2 is [10,30].
 homer_annotate_peaks 
 --------------------
  
-The peaks called previously are annotated with HOMER using RefSeq annotations for the reference genome.
+The peaks called previously are annotated with HOMER(http://homer.ucsd.edu/homer/index.html) using RefSeq annotations for the reference genome.
 Gene ontology and genome ontology analysis are also performed at this stage.
 
 homer_find_motifs_genome 
@@ -310,7 +310,7 @@ This step takes as input files:
 sambamba_merge_bam_files 
 ------------------------
  
-BAM readset files are merged into one file per sample. Merge is done using [Sambamba]().
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 
@@ -322,12 +322,12 @@ sambamba_mark_duplicates
  
 Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba]().
+will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 sambamba_view_filter 
 --------------------
  
-Filter out unmapped reads and low quality reads [Sambamba](http://www.htslib.org/).
+Filter out unmapped reads and low quality reads [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 bedtools_blacklist_filter 
 -------------------------
@@ -352,7 +352,7 @@ Sequencing quality metrics as tag count, tag autocorrelation, sequence bias and 
 homer_make_ucsc_file 
 --------------------
  
-Wiggle Track Format files are generated from the aligned reads using Homer.
+Wiggle Track Format files are generated from the aligned reads using [Homer](http://homer.ucsd.edu/homer/index.html).
 The resulting files can be loaded in browsers like IGV or UCSC.
 
 macs2_atacseq_callpeak 
@@ -366,7 +366,7 @@ The default mfold parameter of MACS2 is [10,30].
 homer_annotate_peaks 
 --------------------
  
-The peaks called previously are annotated with HOMER using RefSeq annotations for the reference genome.
+The peaks called previously are annotated with HOMER(http://homer.ucsd.edu/homer/index.html) using RefSeq annotations for the reference genome.
 Gene ontology and genome ontology analysis are also performed at this stage.
 
 homer_find_motifs_genome 
