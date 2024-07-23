@@ -50,7 +50,7 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
     =================================
 
     The standard Genpipes RNA-Seq De Novo Assembly pipeline now has two protocols
-    to use either [Trinity](http://trinityrnaseq.sourceforge.net/)
+    to use either [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki)
     software suite to reconstruct transcriptomes from RNA-Seq data or Seq2Fun software suite to generate several
     informative outputs including gene abundance tables, pathway and species hit tables which
     are required for the [Networkanalyst] (https://www.networkanalyst.ca/home.xhtml). Only RNA-Seq data is used for
@@ -65,9 +65,9 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
     a Trinity.fasta file with a list of contigs representing the transcriptome isoforms. Those transcripts
     are grouped in components mostly representing genes.
 
-    Components and transcripts are functionally annotated using the [Trinotate](http://trinotate.sourceforge.net/) suite.
+    Components and transcripts are functionally annotated using the [Trinotate](https://github.com/Trinotate/Trinotate/wiki) suite.
 
-    Gene abundance estimation for each sample has been performed using [RSEM](http://deweylab.biostat.wisc.edu/rsem/)
+    Gene abundance estimation for each sample has been performed using [RSEM](https://deweylab.github.io/RSEM/)
     (RNA-Seq by Expectation-Maximization). Differential gene expression analysis is performed using
     [DESeq](http://genomebiology.com/2010/11/10/R106) and [edgeR](http://bioinformatics.oxfordjournals.org/content/26/1/139/) R Bioconductor packages.
 
@@ -265,7 +265,7 @@ echo -e "{readset}\\t`cut -f2 {normalization_stats_file}`" \\
 
     def trinity(self):
         """
-        Create a de novo assembly from normalized readsets using [Trinity](http://trinityrnaseq.sourceforge.net/).
+        Create a de novo assembly from normalized readsets using [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki).
         """
 
         jobs = []
@@ -401,7 +401,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
 
     def blastx_trinity_uniprot(self):
         """
-        Annotate Trinity FASTA chunks with Swiss-Prot and UniRef databases using [blastx](http://blast.ncbi.nlm.nih.gov/).
+        Annotate Trinity FASTA chunks with Swiss-Prot (default), UniRef or a custom database using [blastx](http://blast.ncbi.nlm.nih.gov/).
         """
 
         jobs = []
@@ -442,7 +442,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
 
     def blastx_trinity_uniprot_merge(self):
         """
-        Merge blastx Swiss-Prot and UniRef chunks results.
+        Merge blastx Swiss-Prot chunks results.
         """
 
         jobs = []
@@ -680,7 +680,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
 
     def signalp(self):
         """
-        Predict signal peptides using [SignalP](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp).
+        Predict signal peptides using [SignalP](https://services.healthtech.dtu.dk/services/SignalP-6.0/).
         """
         jobs=[]
 
@@ -706,7 +706,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
 
     def tmhmm(self):
         """
-        Predict transmembrane regions using [TMHMM](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?tmhmm).
+        Predict transmembrane regions using [TMHMM](https://services.healthtech.dtu.dk/services/TMHMM-2.0/).
         """
 
         transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
@@ -723,7 +723,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
 
     def trinotate(self):
         """
-        Perform transcriptome functional annotation and analysis using [Trinotate](http://trinotate.sourceforge.net/).
+        Perform transcriptome functional annotation and analysis using [Trinotate](https://github.com/Trinotate/Trinotate/wiki).
         All functional annotation data is integrated into a SQLite database and a whole annotation report is created.
         """
         jobs = []
@@ -781,7 +781,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
 
     def align_and_estimate_abundance_prep_reference(self):
         """
-        Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
+        Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification).
         """
 
         trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
@@ -796,8 +796,8 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
 
     def align_and_estimate_abundance(self):
         """
-        Estimate transcript abundance using [RSEM](http://deweylab.biostat.wisc.edu/rsem/) via
-        [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
+        Estimate transcript abundance using [RSEM](http://deweylab.github.io/RSEM/) via
+        [Trinity align_and_estimate_abundance.pl utility](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification).
         """
 
         jobs = []
@@ -1075,7 +1075,7 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
 
     def differential_expression_and_goseq_rsem(self, output_directory, item, trinotate_annotation_report):
         """
-        This function returns jobs related to differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+        This function returns jobs related to differential gene expression analysis using [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html) and [edgeR](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
         Merge the results of the analysis in a single csv file. Also, performs Gene Ontology analysis for RNA-Seq denovo Assembly using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
         Generates GO annotations for differential genes and isoforms expression analysis, based on associated GOTERMS generated by trinotate.
         """
