@@ -182,9 +182,9 @@ class Pipeline(object):
         epilog = "\n".join(step_lst)
         detailed_steps = ""
         if '--help' in argv:
-            epilog = epilog #+ "\n".join(steps_doc)
-            detailed_steps = "\n".join(steps_doc)
-        return epilog, detailed_steps
+            epilog = "THIS IS THE EPILOG" + epilog + "THIS IS AFTER THE EPILOG" + "\n".join(steps_doc)
+            #detailed_steps = "\n".join(steps_doc)
+        return epilog #, detailed_steps
 
     @classmethod
     def argparser(cls, argparser):

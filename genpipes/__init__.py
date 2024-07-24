@@ -68,7 +68,7 @@ def make_parser(argv=None):
         p_module = importlib.import_module('.pipelines.' + module, package='genpipes')
         p_class = getattr(p_module, classname)
 
-        epilog, detailed_steps = p_class.process_help(argv)
+        epilog = p_class.process_help(argv)
 
         subparser = subparsers.add_parser(module,
             formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -79,41 +79,7 @@ def make_parser(argv=None):
         # Let the class feed its subparser.
         subparser = p_class.argparser(subparser)
 
-        if "--help" in argv:
-            readme = readme_format(classname, epilog, detailed_steps)
-            print(readme)
-            parser.exit()
-
     return parser
-
-def readme_format(pipeline_name, epilog, detailed_steps):
-    """
-    Formats --help output for readme.md
-    """
-    pipeline_doc = pipeline_name or "",
-    help_text = epilog
-    step_doc = detailed_steps
-
-    readme = textwrap.dedent("""\
-            [TOC]
-
-            {pipeline_doc}
-
-            Usage
-            -----
-            ```
-            #!text
-
-            {help_text}
-            ```
-
-            {step_doc}
-        """).format(
-                pipeline_doc = pipeline_doc,
-                help_text = help_text,
-                step_doc = step_doc)
-    return readme
-
 
 def main(argv):
     parser = make_parser(argv)
