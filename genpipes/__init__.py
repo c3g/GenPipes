@@ -94,7 +94,7 @@ def readme_format(pipeline_name, epilog, detailed_steps):
     help_text = epilog
     step_doc = detailed_steps
 
-    readme = textwrap.dedent(f"""\
+    readme = textwrap.dedent("""\
             [TOC]
 
             {pipeline_doc}
@@ -107,7 +107,11 @@ def readme_format(pipeline_name, epilog, detailed_steps):
             {help_text}
             ```
 
-            {step_doc}""")
+            {step_doc}
+        """).format(
+                pipeline_doc = pipeline_doc,
+                help_text = help_text,
+                step_doc = step_doc)
     return readme
 
 
