@@ -103,6 +103,7 @@ Protocol stringtie
 18 differential_expression
 19 multiqc
 20 cram_output
+
 Protocol variants
 0 picard_sam_to_fastq
 1 skewer_trimming
@@ -129,6 +130,7 @@ Protocol variants
 22 wiggle
 23 multiqc
 24 cram_output
+
 Protocol cancer
 0 picard_sam_to_fastq
 1 skewer_trimming
@@ -298,50 +300,12 @@ cram_output
 Generate long term storage version of the final alignment files in CRAM format.
 Using this function will add the orginal final bam file to the removable file list.
 
-picard_sam_to_fastq 
--------------------
- 
-Convert SAM/BAM files from the input readset file into FASTQ format
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
-
 skewer_trimming 
 ---------------
  
 [Skewer](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-15-182) is used mainly for
 detection and trimming adapter sequences from raw fastq files. Other features of Skewer is listed
 [here](https://github.com/relipmoc/skewer).
-
-sortmerna 
----------
- 
-Calculation of ribosomal RNA per read based on known ribosomal sequences from archea, bacteria and eukaryotes.
-Using [sortmeRNA](https://github.com/sortmerna/sortmerna)
-
-Taking trimmed fastqs and reporting on each read, either paired-end or single end.
-
-star 
-----
- 
-The filtered reads are aligned to a reference genome. The alignment is done per readset of sequencing
-using the [STAR](https://code.google.com/p/rna-star/) software. It generates a Binary Alignment Map file (.bam).
-
-This step takes as input files:
-
-1. Trimmed FASTQ files if available
-2. Else, FASTQ files from the readset file if available
-3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-
-picard_merge_sam_files 
-----------------------
- 
-BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
-
-mark_duplicates 
----------------
- 
-Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
-(for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
 
 split_N_trim 
 ------------
@@ -421,151 +385,10 @@ gemini_annotations
 variation and genome annotations. For more information
 visit the [Gemini documentation] (https://gemini.readthedocs.io/en/latest/).
 
-picard_rna_metrics 
-------------------
- 
-Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
-metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
-
-estimate_ribosomal_rna 
-----------------------
- 
-Use bwa mem to align reads on the rRNA reference fasta and count the number of read mapped
-The filtered reads are aligned to a reference fasta file of ribosomal sequence. The alignment is done per sequencing readset.
-The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
-
-This step takes as input files: readset Bam files.
-
-rnaseqc2 
---------
- 
-Computes a series of quality control metrics using [RNA-SeQC](https://github.com/getzlab/rnaseqc).
-
 gatk_callable_loci 
 ------------------
  
 Computes the callable region or the genome as a bed track.
-
-wiggle 
-------
- 
-Generate wiggle tracks suitable for multiple browsers.
-
-multiqc 
--------
- 
-Aggregate results from bioinformatics analyses across many samples into a single report.
-MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
-perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
-
-cram_output 
------------
- 
-Generate long term storage version of the final alignment files in CRAM format.
-Using this function will add the orginal final bam file to the removable file list.
-
-picard_sam_to_fastq 
--------------------
- 
-Convert SAM/BAM files from the input readset file into FASTQ format
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
-
-skewer_trimming 
----------------
- 
-[Skewer](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-15-182) is used mainly for
-detection and trimming adapter sequences from raw fastq files. Other features of Skewer is listed
-[here](https://github.com/relipmoc/skewer).
-
-sortmerna 
----------
- 
-Calculation of ribosomal RNA per read based on known ribosomal sequences from archea, bacteria and eukaryotes.
-Using [sortmeRNA](https://github.com/sortmerna/sortmerna)
-
-Taking trimmed fastqs and reporting on each read, either paired-end or single end.
-
-star 
-----
- 
-The filtered reads are aligned to a reference genome. The alignment is done per readset of sequencing
-using the [STAR](https://code.google.com/p/rna-star/) software. It generates a Binary Alignment Map file (.bam).
-
-This step takes as input files:
-
-1. Trimmed FASTQ files if available
-2. Else, FASTQ files from the readset file if available
-3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-
-picard_merge_sam_files 
-----------------------
- 
-BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
-
-mark_duplicates 
----------------
- 
-Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
-(for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
-
-split_N_trim 
-------------
- 
-SplitNtrim. A [GATK](https://software.broadinstitute.org/gatk/) tool called SplitNCigarReads developed specially for RNAseq, which splits reads into exon segments (getting rid of Ns but maintaining grouping information) and hard-clip any sequences overhanging into the intronic regions.
-
-sambamba_merge_splitNtrim_files 
--------------------------------
- 
-BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/docs/sambamba-merge.html).
-
-gatk_indel_realigner 
---------------------
- 
-Insertion and deletion realignment is performed on regions where multiple base mismatches
-are preferred over indels by the aligner since it can appear to be less costly by the algorithm.
-Such regions will introduce false positive variant calls which may be filtered out by realigning
-those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
-The reference genome is divided by a number regions given by the `nb_jobs` parameter.
-
-sambamba_merge_realigned 
-------------------------
- 
-BAM files of regions of realigned reads are merged per sample using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
-
-recalibration 
--------------
- 
-Recalibrate base quality scores of sequencing-by-synthesis reads in an aligned BAM file. After recalibration,
-the quality scores in the QUAL field in each read in the output BAM are more accurate in that
-the reported quality score is closer to its actual probability of mismatching the reference genome.
-Moreover, the recalibration tool attempts to correct for variation in quality with machine cycle
-and sequence context, and by doing so, provides not only more accurate quality scores but also
-more widely dispersed ones.
-
-gatk_haplotype_caller 
----------------------
- 
-GATK haplotype caller for snps and small indels.
-
-merge_hc_vcf 
-------------
- 
-Merges vcfs from haplotype caller to generate a sample level vcf
-
-run_vcfanno 
------------
- 
-[vcfanno](https://github.com/brentp/vcfanno) is used to annotate VCF files with preferred INFO fields from anu number of VCF or BED files.
-
-decompose_and_normalize 
------------------------
- 
-[vt](https://genome.sph.umich.edu/wiki/Vt#Normalization) is used to normalized and decompose VCF files. For more
-information about normalizing and decomposing visit
-[here](https://research-help.genomicsengland.co.uk/display/GERE/Variant+Normalisation). An indexed file is also
-generated from the output file using [htslib](http://www.htslib.org/download/).
 
 filter_gatk 
 -----------
@@ -608,53 +431,9 @@ run_annofuse
 is a R package and it is used to annotate, prioritize, and interactively explore putative oncogenic
 RNA fusions.
 
-picard_rna_metrics 
-------------------
- 
-Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
-metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
-
-estimate_ribosomal_rna 
-----------------------
- 
-Use bwa mem to align reads on the rRNA reference fasta and count the number of read mapped
-The filtered reads are aligned to a reference fasta file of ribosomal sequence. The alignment is done per sequencing readset.
-The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
-
-This step takes as input files: readset Bam files.
-
-rnaseqc2 
---------
- 
-Computes a series of quality control metrics using [RNA-SeQC](https://github.com/getzlab/rnaseqc).
-
 rseqc 
 -----
  
 Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions.
 Metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
-
-gatk_callable_loci 
-------------------
- 
-Computes the callable region or the genome as a bed track.
-
-wiggle 
-------
- 
-Generate wiggle tracks suitable for multiple browsers.
-
-multiqc 
--------
- 
-Aggregate results from bioinformatics analyses across many samples into a single report.
-MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
-perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
-
-cram_output 
------------
- 
-Generate long term storage version of the final alignment files in CRAM format.
-Using this function will add the orginal final bam file to the removable file list.
 

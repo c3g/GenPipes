@@ -107,6 +107,7 @@ Protocol trinity
 21 gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered
 22 differential_expression_filtered
 23 multiqc
+
 Protocol seq2fun
 0 picard_sam_to_fastq
 1 merge_fastq
@@ -251,12 +252,6 @@ multiqc
 Aggregate results from bioinformatics analyses across many samples into a single report.
 MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
 perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
-
-picard_sam_to_fastq 
--------------------
- 
-Convert SAM/BAM files from the input readset file into FASTQ format
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
 merge_fastq 
 -----------

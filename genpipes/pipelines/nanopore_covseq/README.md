@@ -90,6 +90,7 @@ Protocol default
 6 quast_consensus_metrics
 7 rename_consensus_header
 8 prepare_report
+
 Protocol basecalling
 0 guppy_basecall
 1 guppy_demultiplex
@@ -170,44 +171,4 @@ host_reads_removal_dependency
 -----------------------------
  
 Runs [minimap2](https://github.com/lh3/minimap2) on a hybrid genome to remove potential host reads.
-
-kraken_analysis 
----------------
- 
-Taxonomic sequence classification system using [kraken](https://github.com/DerrickWood/kraken2).
-
-artic_nanopolish 
-----------------
- 
-Runs artic nanopolish pipeline on all samples.
-
-wub_metrics 
------------
- 
-Generate WUB metrics on bam file.
-
-covseq_metrics 
---------------
- 
-Collect metrics.
-
-snpeff_annotate 
----------------
- 
-Consensus annotation with [SnpEff](https://pcingola.github.io/SnpEff/).
-
-quast_consensus_metrics 
------------------------
- 
-Generate [QUAST](http://quast.sourceforge.net/) metrics on consensus.
-
-rename_consensus_header 
------------------------
- 
-Rename reads headers.
-
-prepare_report 
---------------
- 
-Prepare analysis report.
 
