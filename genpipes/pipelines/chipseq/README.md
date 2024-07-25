@@ -1,3 +1,12 @@
+[TOC]
+
+chipseq Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes chipseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                         [-j {pbs,batch,daemon,slurm}] [-f]
                         [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -64,6 +73,8 @@ options:
   -t {chipseq,atacseq}, --type {chipseq,atacseq}
                         Type of pipeline (default chipseq)
 
+Steps:
+
 Protocol chipseq
 0 picard_sam_to_fastq
 1 trimmomatic
@@ -111,7 +122,9 @@ Protocol atacseq
 19 multiqc_report
 20 cram_output
 21 gatk_haplotype_caller
-22 merge_and_call_individual_gvcfpicard_sam_to_fastq 
+22 merge_and_call_individual_gvcf
+```
+picard_sam_to_fastq 
 -------------------
  
 Convert SAM/BAM files from the input readset file into FASTQ format
@@ -424,3 +437,4 @@ merge_and_call_individual_gvcf
 ------------------------------
  
 Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+

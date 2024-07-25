@@ -1,3 +1,12 @@
+[TOC]
+
+dnaseq Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes dnaseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                        [-j {pbs,batch,daemon,slurm}] [-f]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -68,6 +77,8 @@ options:
                         (Default: False)
   -t {germline_snv,germline_sv,germline_high_cov,somatic_tumor_only,somatic_fastpass,somatic_ensemble,somatic_sv}, --type {germline_snv,germline_sv,germline_high_cov,somatic_tumor_only,somatic_fastpass,somatic_ensemble,somatic_sv}
                         DNAseq analysis type
+
+Steps:
 
 Protocol germline_snv
 0 gatk_sam_to_fastq
@@ -239,7 +250,9 @@ Protocol somatic_sv
 10 linx_annotations_germline
 11 linx_plot
 12 run_multiqc
-13 cram_outputgatk_sam_to_fastq 
+13 cram_output
+```
+gatk_sam_to_fastq 
 -----------------
  
 Converts SAM/BAM files from the input readset file into FASTQ format,
@@ -1384,3 +1397,4 @@ cram_output
  
 Generate long term storage version of the final alignment files in CRAM format.
 Using this function will add the orginal final bam file to the removable file list.
+

@@ -1,3 +1,12 @@
+[TOC]
+
+rnaseq Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes rnaseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                        [-j {pbs,batch,daemon,slurm}] [-f]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -66,6 +75,8 @@ options:
                         RNAseq analysis type
   -b BATCH, --batch BATCH
                         batch file (to peform batch effect correction
+
+Steps:
 
 Protocol stringtie
 0 picard_sam_to_fastq
@@ -144,7 +155,9 @@ Protocol cancer
 25 gatk_callable_loci
 26 wiggle
 27 multiqc
-28 cram_outputpicard_sam_to_fastq 
+28 cram_output
+```
+picard_sam_to_fastq 
 -------------------
  
 Convert SAM/BAM files from the input readset file into FASTQ format
@@ -640,3 +653,4 @@ cram_output
  
 Generate long term storage version of the final alignment files in CRAM format.
 Using this function will add the orginal final bam file to the removable file list.
+

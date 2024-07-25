@@ -1,3 +1,12 @@
+[TOC]
+
+methylseq Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes methylseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                           [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                           [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -64,6 +73,8 @@ options:
   -t {bismark,hybrid,dragen}, --type {bismark,hybrid,dragen}
                         Type of pipeline (default chipseq)
 
+Steps:
+
 Protocol bismark
 0 picard_sam_to_fastq
 1 trimmomatic
@@ -122,7 +133,9 @@ Protocol dragen
 16 prepare_methylkit
 17 methylkit_differential_analysis
 18 multiqc
-19 cram_outputpicard_sam_to_fastq 
+19 cram_output
+```
+picard_sam_to_fastq 
 -------------------
  
 Convert SAM/BAM files from the input readset file into FASTQ format
@@ -500,3 +513,4 @@ cram_output
  
 Generate long term storage version of the final alignment files in CRAM format.
 Using this function will add the orginal final bam file to the removable file list.
+

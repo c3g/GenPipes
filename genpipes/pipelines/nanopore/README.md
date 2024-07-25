@@ -1,3 +1,12 @@
+[TOC]
+
+nanopore Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes nanopore [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                          [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                          [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -62,12 +71,16 @@ options:
                         design file
   -v, --version         show the version information and exit
 
+Steps:
+
 Protocol default
 0 blastqc
 1 minimap2_align
 2 pycoqc
 3 picard_merge_sam_files
-4 svimblastqc 
+4 svim
+```
+blastqc 
 -------
  
 Uses BLAST to perform a basic QC test by aligning 1000bp of randomly selected
@@ -98,3 +111,4 @@ svim
 ----
  
 Use SVIM to perform SV calling on each sample.
+

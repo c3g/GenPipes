@@ -1,3 +1,12 @@
+[TOC]
+
+ampliconseq Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes ampliconseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                             [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                             [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -62,14 +71,8 @@ options:
                         design file
   -v, --version         show the version information and exit
 
-[TOC]
+Steps:
 
-Protocol default
-
-Usage
------
-```
-#!text
 Protocol default
 0 trimmomatic16S
 1 merge_trimmomatic_stats16S
@@ -80,7 +83,6 @@ Protocol default
 6 asva
 7 multiqc
 ```
-
 trimmomatic16S 
 --------------
  
@@ -133,3 +135,4 @@ multiqc
  
 A quality control report for all samples is generated.
 For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
+

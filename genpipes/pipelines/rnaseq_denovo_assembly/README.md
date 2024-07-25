@@ -1,3 +1,12 @@
+[TOC]
+
+rnaseq_denovo_assembly Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes rnaseq_denovo_assembly [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                                        [-o OUTPUT_DIR]
                                        [-j {pbs,batch,daemon,slurm}] [-f]
@@ -68,6 +77,8 @@ options:
   -b BATCH, --batch BATCH
                         batch file (to peform batch effect correction
 
+Steps:
+
 Protocol trinity
 0 picard_sam_to_fastq
 1 trimmomatic
@@ -98,7 +109,9 @@ Protocol seq2fun
 1 merge_fastq
 2 seq2fun
 3 differential_expression_seq2fun
-4 pathway_enrichment_seq2funpicard_sam_to_fastq 
+4 pathway_enrichment_seq2fun
+```
+picard_sam_to_fastq 
 -------------------
  
 Convert SAM/BAM files from the input readset file into FASTQ format
@@ -281,3 +294,4 @@ pathway_enrichment_seq2fun
 seq2fun pathway analysis using fgsea (https://bioconductor.org/packages/release/bioc/html/fgsea.html)
  and user provide universal pathway list as KEGG map ID. The differential KO expression results obtained
  from edgeR will be using as the input for the pathway enrichment analysis
+

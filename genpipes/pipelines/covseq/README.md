@@ -1,3 +1,12 @@
+[TOC]
+
+covseq Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes covseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                        [-j {pbs,batch,daemon,slurm}] [-f]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -62,6 +71,8 @@ options:
                         design file
   -v, --version         show the version information and exit
 
+Steps:
+
 Protocol default
 0 host_reads_removal
 1 kraken_analysis
@@ -83,7 +94,9 @@ Protocol default
 17 prepare_table
 18 prepare_report_ivar
 19 prepare_report_freebayes
-20 run_multiqchost_reads_removal 
+20 run_multiqc
+```
+host_reads_removal 
 ------------------
  
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
@@ -219,3 +232,4 @@ Prepare [FreeBayes](https://github.com/freebayes/freebayes) analysis report.
 run_multiqc 
 -----------
  
+

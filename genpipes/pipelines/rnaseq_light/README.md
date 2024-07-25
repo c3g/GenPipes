@@ -1,3 +1,12 @@
+[TOC]
+
+rnaseq_light Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes rnaseq_light [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                              [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}]
                              [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -62,6 +71,8 @@ options:
                         design file
   -v, --version         show the version information and exit
 
+Steps:
+
 Protocol default
 0 picard_sam_to_fastq
 1 trimmomatic
@@ -70,7 +81,9 @@ Protocol default
 4 kallisto_count_matrix
 5 gq_seq_utils_exploratory_analysis_rnaseq_light
 6 sleuth_differential_expression
-7 multiqcpicard_sam_to_fastq 
+7 multiqc
+```
+picard_sam_to_fastq 
 -------------------
  
 Convert SAM/BAM files from the input readset file into FASTQ format
@@ -122,3 +135,4 @@ multiqc
  
 A quality control report for all samples is generated.
 For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
+

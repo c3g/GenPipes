@@ -1,3 +1,12 @@
+[TOC]
+
+nanopore_covseq Pipeline
+
+Usage
+-----
+
+
+```
 usage: genpipes nanopore_covseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}]
                                 [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -66,6 +75,8 @@ options:
                         Type of CoVSeQ analysis,basecalling on/off (default
                         without basecalling)
 
+Steps:
+
 Protocol default
 0 host_reads_removal
 1 kraken_analysis
@@ -88,7 +99,9 @@ Protocol basecalling
 8 snpeff_annotate
 9 quast_consensus_metrics
 10 rename_consensus_header
-11 prepare_reporthost_reads_removal 
+11 prepare_report
+```
+host_reads_removal 
 ------------------
  
 Runs [minimap2](https://github.com/lh3/minimap2) on a hybrid genome to remove potential host reads.
@@ -193,3 +206,4 @@ prepare_report
 --------------
  
 Prepare analysis report.
+
