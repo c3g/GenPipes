@@ -182,7 +182,7 @@ class Pipeline(object):
         epilog = "\n".join(step_lst)
         detailed_steps = ""
         if '--help' in argv:
-            epilog = epilog + "\n" + "\n".join(steps_doc)
+            epilog = "Steps:\n\n" + epilog + "\n```\n" + "\n".join(steps_doc)
             #detailed_steps = "\n".join(steps_doc)
         return epilog #, detailed_steps
 
