@@ -1,12 +1,15 @@
 [TOC]
 
-nanopore_covseq Pipeline
+Nanopore_covseq Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes nanopore_covseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}]
                                 [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -101,6 +104,7 @@ Protocol basecalling
 10 rename_consensus_header
 11 prepare_report
 ```
+
 host_reads_removal 
 ------------------
  

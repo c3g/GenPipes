@@ -1,12 +1,15 @@
 [TOC]
 
-rnaseq_light Pipeline
+Rnaseq_light Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes rnaseq_light [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                              [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}]
                              [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -83,6 +86,7 @@ Protocol default
 6 sleuth_differential_expression
 7 multiqc
 ```
+
 picard_sam_to_fastq 
 -------------------
  

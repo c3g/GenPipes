@@ -1,12 +1,15 @@
 [TOC]
 
-covseq Pipeline
+Covseq Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes covseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                        [-j {pbs,batch,daemon,slurm}] [-f]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -96,6 +99,7 @@ Protocol default
 19 prepare_report_freebayes
 20 run_multiqc
 ```
+
 host_reads_removal 
 ------------------
  

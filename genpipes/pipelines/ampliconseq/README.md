@@ -1,12 +1,15 @@
 [TOC]
 
-ampliconseq Pipeline
+Ampliconseq Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes ampliconseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                             [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                             [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -83,6 +86,7 @@ Protocol default
 6 asva
 7 multiqc
 ```
+
 trimmomatic16S 
 --------------
  

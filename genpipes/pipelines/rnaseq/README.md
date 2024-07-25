@@ -1,12 +1,15 @@
 [TOC]
 
-rnaseq Pipeline
+Rnaseq Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes rnaseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                        [-j {pbs,batch,daemon,slurm}] [-f]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -157,6 +160,7 @@ Protocol cancer
 27 multiqc
 28 cram_output
 ```
+
 picard_sam_to_fastq 
 -------------------
  

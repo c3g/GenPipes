@@ -1,12 +1,15 @@
 [TOC]
 
-chipseq Pipeline
+Chipseq Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes chipseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                         [-j {pbs,batch,daemon,slurm}] [-f]
                         [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -124,6 +127,7 @@ Protocol atacseq
 21 gatk_haplotype_caller
 22 merge_and_call_individual_gvcf
 ```
+
 picard_sam_to_fastq 
 -------------------
  

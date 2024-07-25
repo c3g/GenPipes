@@ -1,12 +1,15 @@
 [TOC]
 
-rnaseq_denovo_assembly Pipeline
+Rnaseq_denovo_assembly Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes rnaseq_denovo_assembly [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                                        [-o OUTPUT_DIR]
                                        [-j {pbs,batch,daemon,slurm}] [-f]
@@ -111,6 +114,7 @@ Protocol seq2fun
 3 differential_expression_seq2fun
 4 pathway_enrichment_seq2fun
 ```
+
 picard_sam_to_fastq 
 -------------------
  

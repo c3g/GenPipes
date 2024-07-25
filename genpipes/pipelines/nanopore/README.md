@@ -1,12 +1,15 @@
 [TOC]
 
-nanopore Pipeline
+Nanopore Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes nanopore [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                          [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                          [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -80,6 +83,7 @@ Protocol default
 3 picard_merge_sam_files
 4 svim
 ```
+
 blastqc 
 -------
  

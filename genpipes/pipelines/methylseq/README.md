@@ -1,12 +1,15 @@
 [TOC]
 
-methylseq Pipeline
+Methylseq Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes methylseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
                           [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                           [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -135,6 +138,7 @@ Protocol dragen
 18 multiqc
 19 cram_output
 ```
+
 picard_sam_to_fastq 
 -------------------
  

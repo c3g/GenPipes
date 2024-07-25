@@ -1,12 +1,15 @@
 [TOC]
 
-dnaseq Pipeline
+Dnaseq Pipeline
+
 
 Usage
 -----
 
 
 ```
+#!text
+
 usage: genpipes dnaseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
                        [-j {pbs,batch,daemon,slurm}] [-f]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
@@ -252,6 +255,7 @@ Protocol somatic_sv
 12 run_multiqc
 13 cram_output
 ```
+
 gatk_sam_to_fastq 
 -----------------
  
