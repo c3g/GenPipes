@@ -1,7 +1,7 @@
 [TOC]
 
 Nanopore Pipeline
-
+================
 
 Usage
 -----

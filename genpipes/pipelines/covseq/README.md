@@ -1,7 +1,7 @@
 [TOC]
 
 Covseq Pipeline
-
+================
 
 Usage
 -----
