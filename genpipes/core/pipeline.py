@@ -174,7 +174,7 @@ class Pipeline(object):
         step_lst = []
         steps_doc = []
         for protocol, steps in cls.protocols(cls).items():
-            step_lst.append('Protocol {}'.format(protocol))
+            step_lst.append('\nProtocol {}'.format(protocol))
             for i, step in enumerate(steps):
                 step_lst.append('{} {}'.format(i, step.__name__))
                 steps_doc.append('{} \n{}\n {}'.format(step.__name__, "-" * len(step.__name__),
@@ -182,7 +182,7 @@ class Pipeline(object):
         epilog = "\n".join(step_lst)
         detailed_steps = ""
         if '--help' in argv:
-            epilog = "Steps:\n\n" + epilog + "\n```\n\n" + "\n".join(list(dict.fromkeys(steps_doc)))
+            epilog = "Steps:\n" + epilog + "\n```\n\n" + "\n".join(list(dict.fromkeys(steps_doc)))
             #detailed_steps = "\n".join(steps_doc)
         return epilog #, detailed_steps
 
