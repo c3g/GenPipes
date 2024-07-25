@@ -318,7 +318,6 @@ For documentation on how to use each of the pipelines, visit:
 For more information about and source code for a specific pipeline, visit:
 
 ### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq/)
-### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq_high_coverage/)
 ### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
 ### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_denovo_assembly/)
 ### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_light/)
@@ -326,7 +325,6 @@ For more information about and source code for a specific pipeline, visit:
 ### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
 ### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
 ### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
-### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)
 ### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore_covseq/)
 
@@ -543,18 +541,9 @@ Example:
 
 HTML Analysis Report # DEPRECATED, REPLACE WITH MULTIQC
 --------------------
-While pipelines are run, some jobs create a partial analysis report in [Markdown](http://daringfireball.net/projects/markdown/) format in
-`<output_dir>/report/<pipeline_name>.<step_name>.md` e.g. `<output_dir>/report/DnaSeq.bwa_mem_picard_sort_sam.md`.
+For most pipelines, metrics and logs are automatically collected to be displayed in a MultiQC report in HTML format.
 
-At any time during the pipeline processing, you can run the same pipeline command and add the option `--report`.
-This will create a bash script calling the [Pandoc](http://pandoc.org/) converter to aggregate all partial Markdown reports already created into one single HTML document, which you can view in `<output_dir>/report/index.html`.
-
-Thus, if the last pipeline steps fail, you will still get an HTML report containing sections for the first steps only.
-
-The report title value can be overwritten in your copy of `$MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.base.ini` in section `[report]`.
-You can also edit the partial Markdown reports before running the pandoc script, to add custom comments in your HTML report.
-
-For developers: if you want to modify the Markdown report templates, they are all located in `$MUGQIC_PIPELINES_HOME/bfx/report/`.
+This report will be saved under the `report` folder of the GenPipes output directory. 
 
 
 PBS/Slurm Job Logs
