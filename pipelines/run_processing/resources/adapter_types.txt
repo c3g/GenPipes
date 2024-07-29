@@ -21020,3 +21020,416 @@ HIVE_V1_i7_H,TruSeqHT,DUALINDEX,ILLUMINA,i7,01_HIVE_V1_i5|02_HIVE_V1_i5|03_HIVE_
 11_HIVE_V1_i5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v1 Kit (Uses custom sequencing primer),1
 12_HIVE_V1_i5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v1 Kit (Uses custom sequencing primer),1
 
+HIVE_V2_i7_A01,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A01,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B01,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B01,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C01,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C01,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D01,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D01,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E01,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E01,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F01,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F01,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G01,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G01,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H01,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H01,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A02,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A02,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B02,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B02,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C02,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C02,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D02,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D02,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E02,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E02,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F02,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F02,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G02,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G02,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H02,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H02,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A03,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A03,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B03,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B03,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C03,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C03,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D03,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D03,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E03,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E03,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F03,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F03,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G03,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G03,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H03,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H03,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A04,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A04,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B04,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B04,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C04,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C04,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D04,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D04,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E04,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E04,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F04,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F04,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G04,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G04,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H04,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H04,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A05,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A05,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B05,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B05,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C05,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C05,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D05,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D05,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E05,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E05,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F05,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F05,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G05,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G05,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H05,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H05,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A06,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A06,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B06,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B06,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C06,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C06,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D06,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D06,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E06,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E06,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F06,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F06,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G06,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G06,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H06,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H06,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A07,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A07,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B07,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B07,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C07,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C07,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D07,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D07,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E07,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E07,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F07,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F07,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G07,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G07,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H07,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H07,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A08,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A08,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B08,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B08,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C08,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C08,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D08,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D08,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E08,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E08,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F08,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F08,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G08,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G08,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H08,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H08,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A09,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A09,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B09,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B09,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C09,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C09,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D09,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D09,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E09,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E09,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F09,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F09,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G09,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G09,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H09,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H09,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A10,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A10,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B10,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B10,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C10,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C10,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D10,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D10,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E10,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E10,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F10,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F10,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G10,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G10,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H10,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H10,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A11,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A11,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B11,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B11,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C11,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C11,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D11,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D11,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E11,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E11,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F11,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F11,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G11,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G11,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H11,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H11,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_A12,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_A12,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_B12,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_B12,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_C12,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_C12,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_D12,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_D12,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_E12,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_E12,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_F12,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_F12,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_G12,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_G12,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i7_H12,TruSeqHT,DUALINDEX,ILLUMINA,i7,HIVE_V2_i5_H12,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+
+HIVE_V2_i5_A01,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B01,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C01,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D01,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E01,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F01,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G01,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H01,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A02,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B02,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C02,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D02,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E02,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F02,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G02,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H02,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A03,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B03,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C03,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D03,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E03,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F03,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G03,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H03,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A04,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B04,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C04,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D04,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E04,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F04,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G04,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H04,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A05,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B05,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C05,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D05,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E05,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F05,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G05,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H05,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A06,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B06,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C06,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D06,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E06,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F06,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G06,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H06,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A07,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B07,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C07,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D07,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E07,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F07,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G07,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H07,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A08,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B08,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C08,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D08,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E08,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F08,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G08,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H08,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A09,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B09,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C09,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D09,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E09,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F09,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G09,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H09,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_A12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_B12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_C12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_D12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_E12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_F12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_G12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+HIVE_V2_i5_H12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Honeycomb - HIVE scRNAseq v2 Kit (UDI layout - PN10922 clear plate - Uses custom sequencing primer),1
+
+
+
+NEBEM7_A1,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A1,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B1,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B1,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C1,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C1,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D1,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D1,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E1,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E1,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F1,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F1,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G1,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G1,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H1,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H1,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A2,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A2,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B2,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B2,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C2,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C2,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D2,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D2,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E2,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E2,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F2,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F2,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G2,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G2,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H2,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H2,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A3,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A3,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B3,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B3,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C3,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C3,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D3,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D3,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E3,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E3,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F3,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F3,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G3,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G3,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H3,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H3,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A4,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A4,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B4,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B4,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C4,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C4,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D4,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D4,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E4,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E4,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F4,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F4,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G4,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G4,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H4,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H4,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A5,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A5,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B5,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B5,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C5,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C5,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D5,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D5,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E5,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E5,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F5,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F5,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G5,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G5,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H5,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H5,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A6,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A6,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B6,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B6,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C6,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C6,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D6,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D6,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E6,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E6,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F6,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F6,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G6,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G6,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H6,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H6,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A7,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A7,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B7,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B7,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C7,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C7,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D7,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D7,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E7,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E7,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F7,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F7,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G7,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G7,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H7,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H7,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A8,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A8,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B8,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B8,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C8,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C8,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D8,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D8,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E8,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E8,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F8,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F8,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G8,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G8,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H8,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H8,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A9,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A9,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B9,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B9,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C9,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C9,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D9,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D9,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E9,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E9,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F9,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F9,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G9,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G9,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H9,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H9,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A10,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A10,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B10,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B10,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C10,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C10,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D10,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D10,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E10,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E10,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F10,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F10,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G10,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G10,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H10,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H10,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A11,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A11,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B11,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B11,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C11,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C11,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D11,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D11,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E11,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E11,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F11,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F11,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G11,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G11,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H11,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H11,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_A12,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_A12,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_B12,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_B12,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_C12,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_C12,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_D12,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_D12,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_E12,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_E12,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_F12,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_F12,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_G12,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_G12,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM7_H12,TruSeqHT,DUALINDEX,ILLUMINA,i7,NEBEM5_H12,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A1,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B1,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C1,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D1,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E1,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F1,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G1,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H1,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A2,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B2,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C2,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D2,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E2,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F2,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G2,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H2,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A3,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B3,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C3,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D3,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E3,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F3,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G3,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H3,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A4,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B4,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C4,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D4,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E4,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F4,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G4,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H4,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H5,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A6,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B6,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C6,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D6,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E6,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F6,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G6,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H6,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A7,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B7,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C7,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D7,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E7,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F7,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G7,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H7,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A8,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B8,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C8,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D8,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E8,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F8,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G8,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H8,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A9,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B9,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C9,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D9,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E9,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F9,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G9,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H9,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H10,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H11,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_A12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_B12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_C12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_D12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_E12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_F12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_G12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+NEBEM5_H12,TruSeqHT,DUALINDEX,ILLUMINA,i5,,New England Biolabs (NEB) - NEBNext Enzymatic Methyl-seq 96 Reactions (NEB #E7140L),1
+
+Bailey1R,TruSeqHT,DUALINDEX,ILLUMINA,i7,Bailey1F|Bailey2F|Bailey3F,Custom index - Bailey Lab IDT Ultramer Index,1
+Bailey2R,TruSeqHT,DUALINDEX,ILLUMINA,i7,Bailey1F|Bailey2F|Bailey3F,Custom index - Bailey Lab IDT Ultramer Index,1
+Bailey3R,TruSeqHT,DUALINDEX,ILLUMINA,i7,Bailey1F|Bailey2F|Bailey3F,Custom index - Bailey Lab IDT Ultramer Index,1
+Bailey4R,TruSeqHT,DUALINDEX,ILLUMINA,i7,Bailey1F|Bailey2F|Bailey3F,Custom index - Bailey Lab IDT Ultramer Index,1
+Bailey1F,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Custom index - Bailey Lab IDT Ultramer Index,1
+Bailey2F,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Custom index - Bailey Lab IDT Ultramer Index,1
+Bailey3F,TruSeqHT,DUALINDEX,ILLUMINA,i5,,Custom index - Bailey Lab IDT Ultramer Index,1
+
+PIP_701,PIPseq,DUALINDEX,ILLUMINA,i7,PIP_501,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_702,PIPseq,DUALINDEX,ILLUMINA,i7,PIP_502,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_709,PIPseq,DUALINDEX,ILLUMINA,i7,PIP_503,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_704,PIPseq,DUALINDEX,ILLUMINA,i7,PIP_504,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_705,PIPseq,DUALINDEX,ILLUMINA,i7,PIP_505,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_706,PIPseq,DUALINDEX,ILLUMINA,i7,PIP_506,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_707,PIPseq,DUALINDEX,ILLUMINA,i7,PIP_507,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_708,PIPseq,DUALINDEX,ILLUMINA,i7,PIP_508,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_501,PIPseq,DUALINDEX,ILLUMINA,i5,,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_502,PIPseq,DUALINDEX,ILLUMINA,i5,,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_503,PIPseq,DUALINDEX,ILLUMINA,i5,,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_504,PIPseq,DUALINDEX,ILLUMINA,i5,,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_505,PIPseq,DUALINDEX,ILLUMINA,i5,,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_506,PIPseq,DUALINDEX,ILLUMINA,i5,,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_507,PIPseq,DUALINDEX,ILLUMINA,i5,,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
+PIP_508,PIPseq,DUALINDEX,ILLUMINA,i5,,Fluent BioSciences - PIPseq T20 3 Prime Single Cell RNA Kit v4.0 PLUS,1
