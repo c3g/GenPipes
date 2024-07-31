@@ -74,6 +74,13 @@ options:
                         design file
   -v, --version         show the version information and exit
 
+Summary:
+
+    CoVSeq Pipeline
+    ================
+
+    pwet
+    
 Steps:
 
 Protocol default

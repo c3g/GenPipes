@@ -180,11 +180,10 @@ class Pipeline(object):
                 steps_doc.append('{} \n{}\n {}'.format(step.__name__, "-" * len(step.__name__),
                                                        textwrap.dedent(step.__doc__) if step.__doc__ else ""))
         epilog = "\n".join(step_lst)
-        detailed_steps = ""
+        summary = cls.__doc__
         if '--help' in argv:
-            epilog = "Steps:\n" + epilog + "\n```\n\n" + "\n".join(list(dict.fromkeys(steps_doc)))
-            #detailed_steps = "\n".join(steps_doc)
-        return epilog #, detailed_steps
+            epilog = "Summary:\n" + summary + "\nSteps:\n" + epilog + "\n```\n\n" + "\n".join(list(dict.fromkeys(steps_doc)))
+        return epilog
 
     @classmethod
     def argparser(cls, argparser):

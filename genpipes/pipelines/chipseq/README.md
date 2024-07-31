@@ -76,6 +76,25 @@ options:
   -t {chipseq,atacseq}, --type {chipseq,atacseq}
                         Type of pipeline (default chipseq)
 
+Summary:
+
+    ChIP-Seq Pipeline
+    =================
+
+    ChIP-Seq experiments allows the Isolation and sequencing of genomic DNA bound by a specific transcription factor,
+    covalently modified histone, or other nuclear protein. The pipeline starts by trimming adaptors and
+    low quality bases and mapping the reads (single end or paired end ) to a reference genome using bwa.
+    Reads are filtered by mapping quality and duplicate reads are marked. Then, Homer quality control routines
+    are used to provide information and feedback about the quality of the experiment. Peak calls is executed by MACS
+    and annotation and motif discovery for narrow peaks are executed using Homer. Statistics of annotated peaks
+    are produced for narrow peaks and a standard report is generated.
+
+    An example of the ChIP-Seq report for an analysis on public ENCODE data is available for illustration purpose only:
+    [ChIP-Seq report](http://gqinnovationcenter.com/services/bioinformatics/tools/chipReport/index.html).
+
+    [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_ChIP-Seq.pptx)
+    is more information about ChIP-Seq pipeline that you may find interesting.
+    
 Steps:
 
 Protocol chipseq

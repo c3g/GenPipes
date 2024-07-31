@@ -78,6 +78,14 @@ options:
                         Type of CoVSeQ analysis,basecalling on/off (default
                         without basecalling)
 
+Summary:
+
+    Nanopore CoVSeq Pipeline
+    ==============
+
+    For information on the structure and contents of the Nanopore readset file, please consult [here](
+    https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
+    
 Steps:
 
 Protocol default

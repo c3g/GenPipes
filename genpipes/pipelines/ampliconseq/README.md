@@ -74,6 +74,12 @@ options:
                         design file
   -v, --version         show the version information and exit
 
+Summary:
+
+    Amplicon-Seq Pipeline
+    ================
+
+    
 Steps:
 
 Protocol default
