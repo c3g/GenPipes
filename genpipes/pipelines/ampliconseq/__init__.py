@@ -57,8 +57,6 @@ class AmpliconSeq(common.Illumina):
         protocols: Returns the protocol for the pipeline.
     Parameters:
         protocol (str): Protocol to use for the pipeline
-    Returns:
-        None
     """
 
     def __init__(self, *args, protocol=None, **kwargs):
@@ -145,8 +143,8 @@ class AmpliconSeq(common.Illumina):
                 if readset.bam:
                     candidate_input_files.append(
                         [
-                            re.sub(r".bam$", ".pair1.fastq.gz", readset.bam),
-                            re.sub(r".bam$", ".pair2.fastq.gz", readset.bam)
+                            re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam),
+                            re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)
                         ]
                     )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
@@ -165,7 +163,7 @@ class AmpliconSeq(common.Illumina):
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub(r".bam$", ".single.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic16S(
                     fastq1,
@@ -618,6 +616,11 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
 
     @property
     def step_list(self):
+        """
+        List of steps for the pipeline
+        Returns:
+            list: List of steps
+        """
         return self.protocols()[self._protocol]
 
     def protocols(self):
