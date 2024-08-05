@@ -39,9 +39,26 @@ log = logging.getLogger(__name__)
 
 class AmpliconSeq(common.Illumina):
     """
-    Amplicon-Seq Pipeline
-    ================
-
+    A pipeline to process amplicon sequencing data. The pipeline is designed to handle both paired-end and single-end reads and can be used to process data from any Illumina sequencer. The pipeline uses Trimmomatic to trim adapters and primers, FLASh to merge paired-end reads, and DADA2 to infer sequence variants of microbial communities.
+    Attributes:
+        output_dirs (dict): Output directory paths
+        multiqc_inputs (list): List of input files for MultiQC
+    Methods:
+        trimmomatic16S: MiSeq raw reads adapter & primers trimming and basic QC is performed using Trimmomatic.
+        merge_trimmomatic_stats16S: The trim statistics per readset are merged at this step.
+        flash: Merge paired end reads using FLASh.
+        flash_pass1: Merges paired end reads using FLASh. Overlapping regions between paired-end reads are found and then merged into a continuous strand.
+        flash_pass2: Merges paired end reads using FLASh. The second pass uses statistics obtained from the first pass to adjust merging.
+        merge_flash_stats: Merges statistics from both flash passes.
+        amplicon_length_parser: Looks at FLASH output statistics to set input amplicon lengths for dada2. Minimum lengths are set by ensuring that they represent at least 1% of the total number of amplicons.
+        asva: Checks for design files required for PCA plots, sets up directories, links readset fastq files, and initiates DADA2.
+        multiqc: A quality control report for all samples is generated.
+        step_list: Returns the list of steps in the pipeline.
+        protocols: Returns the protocol for the pipeline.
+    Parameters:
+        protocol (str): Protocol to use for the pipeline
+    Returns:
+        None
     """
 
     def __init__(self, *args, protocol=None, **kwargs):
@@ -52,6 +69,11 @@ class AmpliconSeq(common.Illumina):
 
     @property
     def output_dirs(self):
+        """
+        Output directory paths.
+        Returns:
+            dict: Output directory paths.
+        """
         dirs = {
             'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
             'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
@@ -61,9 +83,14 @@ class AmpliconSeq(common.Illumina):
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
-    
+
     @property
     def multiqc_inputs(self):
+        """
+        List of input files for MultiQC.
+        Returns:
+            list: List of input files for MultiQC.
+        """
         if not hasattr(self, "_multiqc_inputs"):
             self._multiqc_inputs = []
         return self._multiqc_inputs
@@ -78,9 +105,11 @@ class AmpliconSeq(common.Illumina):
         If an adapter FASTA file is specified in the config file (section 'trimmomatic', parameter 'adapter_fasta'),
         it is used first. Else, Adapter1, Adapter2, Primer1 and Primer2 columns from the readset file are used to create
         an adapter FASTA file, given then to Trimmomatic. Sequences are reversed-complemented and swapped.
+        
+        This step takes as input files MiSeq paired-End FASTQ files from the readset file.
 
-        This step takes as input files:
-        1. MiSeq paired-End FASTQ files from the readset file
+        Returns:
+            list: A list of jobs to run Trimmomatic.
         """
 
         jobs = []
@@ -88,7 +117,7 @@ class AmpliconSeq(common.Illumina):
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
         #We'll trim the first 5 nucleotides anyway (to account for quality bias)
-        headcropValue=5
+        headcrop_value=5
         for readset in self.readsets:
             trim_directory = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
@@ -100,25 +129,24 @@ class AmpliconSeq(common.Illumina):
                 adapter_fasta = trim_file_prefix + "adapters.fa"
                 if readset.primer1 and readset.primer2:
                     #concatenate all adpaters and primers
-                    primAdapList = readset.primer1 + ";" + readset.primer2
+                    prim_adap_list = readset.primer1 + ";" + readset.primer2
                     #convert into a list
-                    primAdapList = primAdapList.split(";")
+                    prim_adap_list = prim_adap_list.split(";")
 
-                    ambiChar=('N','R','Y','K','M','S','W','B','D','H','V')
+                    ambi_char=('N','R','Y','K','M','S','W','B','D','H','V')
                     #check the highest position of any ambiguous nucleotide
-                    for item in primAdapList:
-                        for char in ambiChar:
-                            checkAmbiPos = item.rfind('%s'%char)
-                            if (checkAmbiPos + 1) > headcropValue:
-                                headcropValue = checkAmbiPos + 1
+                    for item in prim_adap_list:
+                        for char in ambi_char:
+                            check_ambi_pos = item.rfind(f'char')
+                            headcrop_value = max(headcrop_value, check_ambi_pos + 1)
 
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
                     candidate_input_files.append(
                         [
-                            re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), 
-                            re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                            re.sub(r".bam$", ".pair1.fastq.gz", readset.bam),
+                            re.sub(r".bam$", ".pair2.fastq.gz", readset.bam)
                         ]
                     )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
@@ -132,12 +160,12 @@ class AmpliconSeq(common.Illumina):
                     None,
                     readset.quality_offset,
                     trim_log,
-                    headcropValue
+                    headcrop_value
                 )
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub(r".bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic16S(
                     fastq1,
@@ -149,11 +177,10 @@ class AmpliconSeq(common.Illumina):
                     trim_file_prefix + "single.fastq.gz",
                     readset.quality_offset,
                     trim_log,
-                    headcropValue
+                    headcrop_value
                 )
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
                 concat_jobs(
@@ -166,7 +193,7 @@ class AmpliconSeq(common.Illumina):
                             os.path.join(link_directory, readset.name + ".trim.log"),
                             input = trim_log
                         )
-                    ], 
+                    ],
                     name="trimmomatic16S." + readset.name
                     )
                 )
@@ -177,6 +204,8 @@ class AmpliconSeq(common.Illumina):
     def merge_trimmomatic_stats16S(self):
         """
         The trim statistics per readset are merged at this step.
+        Returns:
+            list: A list of jobs to merge trimmomatic statistics.
         """
 
         read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
@@ -194,6 +223,8 @@ class AmpliconSeq(common.Illumina):
                 perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
             elif readset.run_type == "SINGLE_END":
                 perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             job = concat_jobs(
                 [
@@ -202,15 +233,11 @@ class AmpliconSeq(common.Illumina):
                         [trim_log],
                         [readset_merge_trim_stats],
                         # Create readset trimming stats TSV file with paired or single read count using ugly awk
-                        command="""\
+                        command=f"""\
 grep ^Input {trim_log} | \\
 {perl_command} | \\
 awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
-  >> {readset_merge_trim_stats}""".format(
-                        trim_log=trim_log,
-                        perl_command=perl_command,
-                        readset_merge_trim_stats=readset_merge_trim_stats
-                    ),
+  >> {readset_merge_trim_stats}""",
                     samples=[readset.sample]
                 )
             ])
@@ -237,6 +264,8 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
     def flash(self, flash_stats_file=None):
         """
         Merge paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/).
+        Returns:
+            list: A list of jobs to merge paired end reads using FLASh.
         """
         jobs = []
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
@@ -299,17 +328,19 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
                         bash.mkdir(merge_directory),
                         job,
                         link_job
-                    ], 
+                    ],
                     name=job_name_prefix + readset.sample.name
                 )
             )
-            
+
         return jobs
 
     def flash_pass1(self):
         """
         Merges paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/). Overlapping regions between paired-end reads are found and 
         then merged into a continuous strand.
+        Returns:
+            list: A list of jobs to merge paired end reads using FLASh.
         """
         jobs = self.flash()
         return jobs
@@ -318,6 +349,8 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
         """
         Merges paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/). The second pass uses statistics obtained from the first pass
         to adjust merging.
+        Returns:
+            list: A list of jobs to merge paired end reads using FLASh.
         """
         flash_stats_file = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
         jobs = self.flash(flash_stats_file)
@@ -326,6 +359,8 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
     def merge_flash_stats(self):
         """
         Merges statistics from both flash passes.
+        Returns:
+            list: A list of jobs to merge statistics from both flash passes.
         """
 
         readset_merge_flash_stats = os.path.join(self.output_dirs["metrics_directory"], "mergeReadsetTable.tsv")
@@ -343,19 +378,15 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
                 [
                     job,
                     Job(
-                        command="""\
-printf '{sample}\\t{readset}\\t' \\
-  >> {stats}""".format(
-                        sample=readset.sample.name,
-                        readset=readset.name,
-                        stats=readset_merge_flash_stats,
-                        ),
+                        command=f"""\
+printf '{readset.sample.name}\\t{readset.name}\\t' \\
+  >> {readset_merge_flash_stats}""",
                     samples=[readset.sample]
                 )
             ])
 
             # Retrieve merge statistics using re search in python.
-            python_command = """\
+            python_command = f"""\
 python -c 'import re; \\
     import sys; \\
     log_file = open("{flash_log}","r"); \\
@@ -366,9 +397,7 @@ python -c 'import re; \\
     log_file.seek(0); \\
     merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
     log_file.close(); \\
-    print "\t".join(merge_stat)'""".format(
-                flash_log=flash_log
-            )
+    print "\t".join(merge_stat)'"""
 
             job = concat_jobs(
                 [
@@ -380,12 +409,9 @@ python -c 'import re; \\
                             ['merge_flash_stats', 'module_python']
                         ],
                         # Create readset merging stats TSV file with paired read count using python.
-                        command="""\
+                        command=f"""\
 {python_command} \\
-  >> {readset_merge_flash_stats}""".format(
-                        python_command=python_command,
-                        readset_merge_flash_stats=readset_merge_flash_stats
-                        )
+  >> {readset_merge_flash_stats}"""
                     )
                 ]
             )
@@ -411,10 +437,12 @@ cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/""".format(
             )
             ], name="merge_flash_stats", samples=self.samples)]
 
-    def ampliconLengthParser(self):
+    def amplicon_length_parser(self):
         """
         Looks at FLASH output statistics to set input amplicon lengths for dada2. Minimum lengths are set by ensuring that they represent 
         at least 1% of the total number of amplicons.
+        Returns:
+            list: A list of jobs to run amplicon_length_parser
         """
         jobs = []
         readset_merge_flash_stats = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
@@ -434,7 +462,7 @@ cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/""".format(
                 candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                [fastq1, _] = self.select_input_files(candidate_input_files)
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
@@ -463,7 +491,7 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                     )
                 ],
                 samples=[readset.sample],
-                name="ampliconLengthParser.run"
+                name="amplicon_length_parser.run"
             )
 
         jobs.append(job)
@@ -476,61 +504,63 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
         [DADA2](https://benjjneb.github.io/dada2/). 
 
         DADA2 is used to infer sequence variants of microbial communities.
+        Returns:
+            list: A list of jobs to run DADA2
         """
 
-        designFile = os.path.relpath(self.design_file.name, self.output_dir)
+        design_file = os.path.relpath(self.design_file.name, self.output_dir)
 
         jobs = []
 
         #Create folders in the output folder
         dada2_directory = self.output_dirs["dada2_analysis_directory"]
-        lnkRawReadsFolder = os.path.join(dada2_directory, "trim")
-        ampliconLengthFile = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
+        lnk_raw_reads_folder = os.path.join(dada2_directory, "trim")
+        amplicon_length_file = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
 
         #We'll link the readset fastq files into the raw_reads folder just created
         raw_reads_jobs = []
         dada2_inputs = []
         for readset in self.readsets:
-            readSetPrefix = os.path.join(lnkRawReadsFolder, readset.name)
+            read_set_prefix = os.path.join(lnk_raw_reads_folder, readset.name)
 
-            trimmedReadsR1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
-            trimmedReadsR2 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
+            trimmed_reads_r1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
+            trimmed_reads_r2 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
 
             if readset.run_type == "PAIRED_END":
-                left_or_single_reads = readSetPrefix + ".pair1.fastq.gz"
+                left_or_single_reads = read_set_prefix + ".pair1.fastq.gz"
                 dada2_inputs.append(left_or_single_reads)
 
-                right_reads = readSetPrefix + ".pair2.fastq.gz"
+                right_reads = read_set_prefix + ".pair2.fastq.gz"
                 dada2_inputs.append(right_reads)
 
                 raw_reads_jobs.append(
                     concat_jobs(
                         [
                             bash.ln(
-                                os.path.relpath(trimmedReadsR1, lnkRawReadsFolder),
+                                os.path.relpath(trimmed_reads_r1, lnk_raw_reads_folder),
                                 left_or_single_reads,
-                                input=trimmedReadsR1
+                                input=trimmed_reads_r1
                             ),
                             bash.ln(
-                                os.path.relpath(trimmedReadsR2, lnkRawReadsFolder),
+                                os.path.relpath(trimmed_reads_r2, lnk_raw_reads_folder),
                                 right_reads,
-                                input=trimmedReadsR2
+                                input=trimmed_reads_r2
                             )
                         ],
                         samples=[readset.sample]
                     )
                 )
 
-            #single reads will mainly be for PacBio CCS although I didn't test it yet
+            # Single End reads will mainly be for PacBio CCS although it hasn't been tested yet
             elif readset.run_type == "SINGLE_END":
-                left_or_single_reads = readSetPrefix + ".single.fastq.gz"
+                left_or_single_reads = read_set_prefix + ".single.fastq.gz"
                 raw_reads_jobs.append(
                     concat_jobs(
                         [
                             bash.ln(
-                                os.path.relpath(trimmedReadsR1, lnkRawReadsFolder),
+                                os.path.relpath(trimmed_reads_r1, lnk_raw_reads_folder),
                                 left_or_single_reads,
-                                input=trimmedReadsR1
+                                input=trimmed_reads_r1
                             )
                         ],
                         samples=[readset.sample]
@@ -545,13 +575,13 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
         jobs.append(
             concat_jobs(
                 [
-                    bash.mkdir(lnkRawReadsFolder)
+                    bash.mkdir(lnk_raw_reads_folder)
                 ] + raw_reads_jobs + [
                     dada2.dada2(
                         dada2_inputs,
-                        ampliconLengthFile,
-                        lnkRawReadsFolder,
-                        designFile,
+                        amplicon_length_file,
+                        lnk_raw_reads_folder,
+                        design_file,
                         dada2_directory
                     )
                 ],
@@ -560,28 +590,30 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
         )
 
         return jobs
-    
+
     def multiqc(self):
         """
         A quality control report for all samples is generated.
         For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
+        Returns:
+            list: A list of jobs to run MultiQC
         """
         jobs = []
-        
+
         input_links = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
-            
-        output = os.path.join(self.output_dirs['report_directory'], f"AmpliconSeq.multiqc")
+
+        output = os.path.join(self.output_dirs['report_directory'], "AmpliconSeq.multiqc")
 
         job = multiqc.run(
             input_links,
             output,
             ini_section='multiqc'
             )
-        
+
         job.name = "multiqc"
         jobs.append(job)
 
-        return jobs        
+        return jobs
 
 
     @property
@@ -589,11 +621,16 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
         return self.protocols()[self._protocol]
 
     def protocols(self):
+        """
+        Returns the protocol for the pipeline.
+        Returns:
+            dict: A dictionary of protocols for the pipeline.
+        """
         return {"default": [
                 self.trimmomatic16S,
                 self.merge_trimmomatic_stats16S,
                 self.flash_pass1,
-                self.ampliconLengthParser,
+                self.amplicon_length_parser,
                 self.flash_pass2,
                 self.merge_flash_stats,
                 self.asva,
@@ -605,6 +642,8 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
 def main(parsed_args):
     """
     The function that will call this pipeline!
+    Parameters:
+        parsed_args (argparse.Namespace): The parsed arguments from the command line.
     """
 
     # Pipeline config
