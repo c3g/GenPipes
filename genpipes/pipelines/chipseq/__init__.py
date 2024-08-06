@@ -420,6 +420,8 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
         """
 
         jobs = []
+        sequencing_center = global_conf.global_get('mapping_bwa_mem_sambamba', 'sequencing_center', required=False)
+        sequencing_technology = global_conf.global_get('mapping_bwa_mem_sambamba', 'sequencing_technology') if global_conf.global_get('mapping_bwa_mem_sambamba', 'sequencing_technology', required=False) else "Illumina"
         for readset in self.readsets:
             trim_directory = os.path.join("trim", readset.sample.name, readset.mark_name)
             trim_file_prefix = os.path.join(trim_directory, readset.name)
@@ -447,9 +449,6 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
 
             else:
                 _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
-
-            sequencing_center = global_conf.global_get('mapping_bwa_mem_sambamba', 'sequencing_center', required=False)
-            sequencing_technology = global_conf.global_get('mapping_bwa_mem_sambamba', 'sequencing_technology') if global_conf.global_get('mapping_bwa_mem_sambamba', 'sequencing_technology', required=False) else "Illumina"
 
             jobs.append(
                 concat_jobs([
