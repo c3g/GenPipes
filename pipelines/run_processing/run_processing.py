@@ -2781,8 +2781,11 @@ class RunProcessing(common.MUGQICPipeline):
                 os.path.join(self.output_dir,
                              "job_output",
                              "job_output.tar.gz"),
-                "".join(["-cpz --acls --exclude=\"",
-                         os.path.join("job_output", "job_output.*\"")]),
+                "".join(["-cpz --acls ",
+                         "--exclude=\"",
+                         os.path.join("job_output", "job_output.*\" "),
+                         "--exclude=\"",
+                         os.path.join("job_output", "copy", "copy.*.o\"")]),
                 file_list=True,
                 input_dependency=False)
         )
