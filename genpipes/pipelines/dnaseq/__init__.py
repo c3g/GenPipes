@@ -1063,7 +1063,7 @@ END
                         mkdir_job,
                         #bash.mkdir(link_directory),
                         gatk4.collect_oxog_metrics(
-                            input,
+                            input_file,
                             f"{output_prefix}.oxog_metrics.txt"
                         ),
                     ],
@@ -1082,7 +1082,7 @@ END
                     [
                         mkdir_job,
                         gatk4.collect_gcbias_metrics(
-                            input,
+                            input_file,
                             output_prefix
                         ),
                     ],
@@ -1751,7 +1751,7 @@ END
                 interval_list = os.path.join(interval_directory, os.path.basename(coverage_bed).replace('.bed', '.noALT.interval_list'))
 
             elif scatter_jobs == 1:
-                [interval_list] = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list'))
+                interval_list = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list'))
 
             if scatter_jobs == 1 or coverage_bed:
                 jobs.append(
@@ -2941,7 +2941,7 @@ END
 
     def metrics_vcf_stats(
         self,
-        variants_file_prefix=os.path.join(self.output_dirs['variants_directory'], "allSamples.hc.vqsr.vt.mil.snpId.snpeff"),
+        variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff",
         job_name="metrics_change_rate"
         ):
         """

@@ -1284,7 +1284,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                         bcftools.consensus(
                             input_ambiguous_norm,
                             output_ambiguous_fasta,
-                            f"-f {global_conf.global_get("DEFAULT", 'genome_fasta', param_type='filepath')} -I "
+                            f"-f {global_conf.global_get('DEFAULT', 'genome_fasta', param_type='filepath')} -I "
                         ),
                         pipe_jobs(
                             [
@@ -1674,6 +1674,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         covid_collect_metrics_inputs.extend(flagstat_outputs)
         covid_collect_metrics_inputs.extend(bedgraph_outputs)
         covid_collect_metrics_inputs.extend(picard_outputs)
+        modules_list = "\n".join(modules)
         jobs.append(
             concat_jobs(
                 [
@@ -1695,7 +1696,7 @@ cluster_server,{cluster_server}
 assembly_synonyms,{assembly_synonyms}
 sequencing_technology,{sequencing_technology}" > {run_metadata} && \\
 echo "Software Versions
-{"\n".join(modules)}" > {software_version}"""
+{modules_list}" > {software_version}"""
                     )
                 ],
                 name="prepare_table." + global_conf.global_get('prepare_report', 'run_name', required=True)
