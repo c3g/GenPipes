@@ -916,7 +916,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                         )
                     ]
                 )
-            collect_multiple_metrics_normal_job.name = "picard_collect_multiple_metrics.{sample.name}"
+            collect_multiple_metrics_normal_job.name = f"picard_collect_multiple_metrics.{sample.name}"
             collect_multiple_metrics_normal_job.samples = [sample]
             jobs.append(collect_multiple_metrics_normal_job)
 

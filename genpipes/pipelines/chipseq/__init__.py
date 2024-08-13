@@ -1160,13 +1160,13 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
 
                         for sample in self.samples:
                             input_file_list = [
-                                os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.bam_ext")
+                                os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.{bam_ext}")
                                 for mark_name, mark_type in sample.marks.items() if mark_type == "I" and sample.name == control_sample_name
                             ]
                             bam_list.append(input_file_list)
 
                             input_file_list = [
-                                os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.bam_ext")
+                                os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.{bam_ext}")
                                 for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == control_sample_name and mark_name == control_mark_name
                             ]
                             bam_list.append(input_file_list)
@@ -1181,13 +1181,13 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                         treatment_sample_name, treatment_mark_name = treatment.split("-.-")
                         for sample in self.samples:
                             input_file_list = [
-                                os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.bam_ext")
+                                os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.{bam_ext}")
                                 for mark_name, mark_type in sample.marks.items() if mark_type == "I" and sample.name == treatment_sample_name
                             ]
                             bam_list.append(input_file_list)
 
                             input_file_list = [
-                                os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.bam_ext")
+                                os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.{bam_ext}")
                                 for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == treatment_sample_name and mark_name == treatment_mark_name
                             ]
                             bam_list.append(input_file_list)
