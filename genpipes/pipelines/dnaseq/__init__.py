@@ -2810,11 +2810,19 @@ END
                     sample.name,
                     "pcgr"
                 )
-                output = os.path.join(
-                    pcgr_directory,
-                    f"{sample.name}.pcgr_acmg.{assembly}.flexdb.html"
-                )
-
+                
+                if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] < "2":
+                    output = os.path.join(
+                        pcgr_directory,
+                        f"{sample.name}.pcgr_acmg.{assembly}.flexdb.html"
+                    )
+                # output file name patterns have changed in pcgr versions >2.0.0
+                else:
+                    output = os.path.join(
+                        pcgr_directory, 
+                        f"{sample.name}.pcgr.{assembly}.html"
+                    )
+            
                 jobs.append(
                     concat_jobs(
                         [
@@ -2908,10 +2916,16 @@ END
                 else:
                     output_cna = None
 
-                output = os.path.join(
-                    pcgr_directory,
-                    f"{tumor_pair.name}.pcgr_acmg.{assembly}.flexdb.html"
-                )
+                if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] < "2":
+                    output = os.path.join(
+                        pcgr_directory,
+                        f"{tumor_pair.name}.pcgr_acmg.{assembly}.flexdb.html"
+                    )
+                else:
+                    output = os.path.join(
+                        pcgr_directory,
+                        f"{tumor_pair.name}.pcgr.{assembly}.html"
+                    )
 
                 jobs.append(
                     concat_jobs(

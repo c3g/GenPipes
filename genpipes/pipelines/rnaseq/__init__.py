@@ -1852,6 +1852,15 @@ pandoc \\
                                 )
                             ]
                         )
+            # output file name patterns have changed in pcgr versions >2.0.0
+            elif global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] > "2":
+                output = [
+                        os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".html"),
+                        os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".maf"),
+                        os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".snvs_indels_ann.tsv.gz")
+                    ]
+                final_command = bash.ls(output[0])
+            
             else:
                 output = [
                         os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
