@@ -331,7 +331,7 @@ echo -e "{readset}\\t`cut -f2 {normalization_stats_file}`" \\
         jobs.append(
             Job(
                 [trinity_zip, trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
-                [report_file],
+                [report_file, os.path.join(link_directory, "Trinity.stats_mqc.jpg")],
                 command="""\
 mkdir -p {report_dir} && \\
 mkdir -p {link_directory} && \\
