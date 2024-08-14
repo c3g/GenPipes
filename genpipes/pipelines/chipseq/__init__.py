@@ -1109,7 +1109,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                             Job([os.path.join(output_dir, peak_file)],
                                 [os.path.join(output_dir, peak_bed_file)],
                                 command=f"""\
-awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}"""
+awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {os.path.join(output_dir, peak_file)} > {os.path.join(output_dir, peak_bed_file)}"""
                                 ),
                             ucsc.bedToBigBed(
                                 os.path.join(output_dir, peak_bed_file),
