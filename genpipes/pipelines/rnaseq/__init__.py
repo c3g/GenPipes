@@ -1776,6 +1776,7 @@ pandoc \\
                 sample.name,
                 "cpsr"
             )
+            cpsr_tmp_directory = global_conf.global_get('cpsr', 'tmp_dir')
 
             jobs.append(
                 concat_jobs(
@@ -1783,9 +1784,10 @@ pandoc \\
                         bash.mkdir(cpsr_directory),
                         cpsr.report(
                             input,
-                            cpsr_directory,
+                            cpsr_tmp_directory,
                             sample.name
-                        )
+                        ),
+                        bash.cp(cpsr_tmp_directory, cpsr_directory, recursive=True)
                     ],
                     name="report_cpsr." + sample.name,
                     samples=[sample],

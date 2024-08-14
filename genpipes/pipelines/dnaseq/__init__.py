@@ -2738,6 +2738,7 @@ END
                         tumor_pair.name,
                         "cpsr"
                     )
+                    cpsr_tmp_directory = global_conf.global_get('cpsr', 'tmp_dir')
 
                 jobs.append(
                     concat_jobs(
@@ -2747,10 +2748,11 @@ END
                             ),
                             cpsr.report(
                                 input_file,
-                                cpsr_directory,
+                                cpsr_tmp_directory,
                                 tumor_pair.name,
                                 ini_section=ini_section
-                            )
+                            ),
+                            bash.cp(cpsr_tmp_directory, cpsr_directory, recursive=True)
                         ],
                         name=job_name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
