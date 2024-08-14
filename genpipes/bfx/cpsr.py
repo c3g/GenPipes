@@ -87,6 +87,7 @@ def report2(
             [ini_section, 'module_pcgr'],
         ],
         command="""\
+mkdir {tmp_dir}/cpsr && \\
 cpsr {options} \\
     --input_vcf {input} \\
     --refdata_dir $PCGR_DATA \\
@@ -94,7 +95,7 @@ cpsr {options} \\
     --output_dir {tmp_dir} \\
     --genome_assembly {assembly} \\
     --sample_id {tumor_id} && \\
-cp -r {tmp_dir} {output_dir}""".format(
+cp -r {tmp_dir}/cpsr {output_dir}""".format(
             options=global_conf.global_get(ini_section, 'options_v2'),
             input=input,
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
