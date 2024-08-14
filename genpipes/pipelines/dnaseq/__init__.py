@@ -4957,6 +4957,13 @@ zgrep -v 'ID=AD_O' {output_preprocess} | awk 'BEGIN {{OFS=\"\\t\"; FS=\"\\t\"}} 
 
             for key, input_files in inputs.items():
                 for idx, sample_prefix in enumerate(input_files):
+                    
+                    # pcgr output file pattern differs by version
+                    if global_conf.global_get('pcgr', 'module_pcgr').split("/")[2] < "2":
+                        pcgr_output = os.path.join(sample_prefix, "pcgr", f"{tumor_pair.name}.pcgr_acmg.{assembly}.flexdb.html")
+                    else:
+                        pcgr_output = os.path.join(sample_prefix, "pcgr", f"{tumor_pair.name}.pcgr.{assembly}.html")                    
+                    
                     jobs.append(
                         concat_jobs(
                             [
@@ -5015,7 +5022,7 @@ zgrep -v 'ID=AD_O' {output_preprocess} | awk 'BEGIN {{OFS=\"\\t\"; FS=\"\\t\"}} 
                                     profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    os.path.join(sample_prefix, "pcgr", f"{tumor_pair.name}.pcgr_acmg.{assembly}.flexdb.html"),
+                                    pcgr_output,
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",

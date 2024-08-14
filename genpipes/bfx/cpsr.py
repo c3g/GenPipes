@@ -80,6 +80,7 @@ def report2(
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html")
     ]
+    # use tmp dir for cpsr to avoid disk quota issues caused by bcftools tmp dir settings
     return Job(
         [input],
         output,
@@ -99,7 +100,7 @@ cp -r {tmp_dir}/cpsr {output_dir}""".format(
             options=global_conf.global_get(ini_section, 'options_v2'),
             input=input,
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
-            output_dir=output_dir,
+            output_dir=os.path.dirname(output_dir),
             assembly=global_conf.global_get(ini_section, 'assembly'),
             tumor_id=tumor_id
         )
