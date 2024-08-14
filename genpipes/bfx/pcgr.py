@@ -17,6 +17,8 @@
 # along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+import os
+
 # MUGQIC Modules
 from ..core.config import global_conf
 from ..core.job import Job
@@ -93,7 +95,8 @@ def report2(input_vcf,
            input_cna,
            ini_section='report_pcgr'
            ):
-      return Job(
+    # use tmp dir for pcgr to avoid disk quota issues caused by bcftools tmp dir settings
+    return Job(
         [
             input_vcf,
             input_cna
@@ -108,6 +111,7 @@ if [ -e {input_cna}.pass ]; then
  else
     export input_cna=""
 fi && \\
+mkdir {tmp_dir}/pcgr && \\
 pcgr {options} \\
     {tumor_type} \\
     {assay} \\
@@ -120,9 +124,10 @@ pcgr {options} \\
     $input_cna \\
     --refdata_dir $PCGR_DATA \\
     --vep_dir $PCGR_VEP_CACHE \\
-    --output_dir {output_dir} \\
+    --output_dir {tmp_dir}/pcgr \\
     --genome_assembly {assembly} \\
-    --sample_id {tumor_id}""".format(
+    --sample_id {tumor_id} && \\
+cp -r {tmp_dir}/pcgr {output_dir}""".format(
             options=global_conf.global_get(ini_section, 'options_v2'),
             tumor_type=global_conf.global_get(ini_section, 'tumor_type'),
             assay=global_conf.global_get(ini_section, 'assay'),
@@ -133,7 +138,8 @@ pcgr {options} \\
             msi_options=global_conf.global_get(ini_section, 'msi_options'),
             input_vcf=input_vcf,
             input_cna=input_cna,
-            output_dir=output_dir,
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+            output_dir=os.path.dirname(output_dir),
             assembly=global_conf.global_get(ini_section, 'assembly'),
             tumor_id=tumor_id
         )
