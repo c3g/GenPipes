@@ -1446,6 +1446,7 @@ pandoc \\
                             gatk4.haplotype_caller(
                                 input,
                                 os.path.join(haplotype_directory, sample.name + "." + str(idx) + ".hc.vcf.gz"),
+                                interval_list=None,
                                 intervals=sequences
                             )
                         ],
@@ -1464,6 +1465,7 @@ pandoc \\
                         gatk4.haplotype_caller(
                             input,
                             os.path.join(haplotype_directory, sample.name + ".others.hc.vcf.gz"),
+                            interval_list=None,
                             exclude_intervals=unique_sequences_per_job_others
                         )
                     ],
