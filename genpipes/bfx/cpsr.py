@@ -91,11 +91,13 @@ cpsr {options} \\
     --input_vcf {input} \\
     --refdata_dir $PCGR_DATA \\
     --vep_dir $PCGR_VEP_CACHE \\
-    --output_dir {output_dir} \\
+    --output_dir {tmp_dir} \\
     --genome_assembly {assembly} \\
-    --sample_id {tumor_id}""".format(
+    --sample_id {tumor_id} && \\
+cp -r {tmp_dir} {output_dir}""".format(
             options=global_conf.global_get(ini_section, 'options_v2'),
             input=input,
+            tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
             output_dir=output_dir,
             assembly=global_conf.global_get(ini_section, 'assembly'),
             tumor_id=tumor_id
