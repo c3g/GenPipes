@@ -92,7 +92,7 @@ cpsr {options} \\
     --input_vcf {input} \\
     --refdata_dir $PCGR_DATA \\
     --vep_dir $PCGR_VEP_CACHE \\
-    --output_dir {tmp_dir} \\
+    --output_dir {tmp_dir}/cpsr \\
     --genome_assembly {assembly} \\
     --sample_id {tumor_id} && \\
 cp -r {tmp_dir}/cpsr {output_dir}""".format(
