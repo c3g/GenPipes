@@ -420,6 +420,7 @@ class PBSScheduler(Scheduler):
 
         if 'per' in mem_str.lower() and 'cpu' in mem_str.lower():
             option = '-l pmem='
+            per_core = True
         else:
             option = '-l mem='
             per_core = False
