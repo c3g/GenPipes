@@ -1,32 +1,30 @@
 [TOC]
 
 
-    Methyl-Seq Pipeline
-    ================
+Methyl-Seq Pipeline
+================
 
-    The GenPIpes Methyl-Seq pipeline now has three protocols.
-    1. bismark
-    2. hybrid
-    3. dragen
+The GenPIpes Methyl-Seq pipeline now has three protocols.
+1. bismark
+2. hybrid
+3. dragen
 
-    The "bismark" protocol uses Bismark to align reads to the reference genome.
-    Picard is used to mark and remove duplicates and generate metric files. The
-    "hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html)
-    and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm)
-    software to align the reads to the reference genome. All the other steps are common
-    with bismark protocol. The "dragen" protocol uses Dragen to align reads to the
-    reference genome, call methylation, mark and remove duplicates.
+The "bismark" protocol uses Bismark to align reads to the reference genome.
+Picard is used to mark and remove duplicates and generate metric files. The
+"hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html)
+and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm)
+software to align the reads to the reference genome. All the other steps are common
+with bismark protocol. The "dragen" protocol uses Dragen to align reads to the
+reference genome, call methylation, mark and remove duplicates.
 
-    Although dragen provides higher rate of mapping percentage with in a very short time
-    duration (approximately three hours compared to 30 hours from bismark), it only
-    accessible through McGill Genome Center cluster Abacus and The jobs cannot be
-    submitted to any of the HPCs from the
-    [Digital Research Aliance](https://status.computecanada.ca/).
-    Importantly, the user needs to have permission to submit jobs to Abacus. Therefore,
-    other users may continue to use only bismark protocol since it works in all the clusters.
+Although dragen provides higher rate of mapping percentage with in a very short time
+duration (approximately three hours compared to 30 hours from bismark), it only
+accessible through McGill Genome Center cluster Abacus and The jobs cannot be
+submitted to any of the HPCs from the [Digital Research Aliance](https://status.computecanada.ca/).
+Importantly, the user needs to have permission to submit jobs to Abacus. Therefore,
+other users may continue to use only bismark protocol since it works in all the clusters.
 
-    However, if you would like to setup and use dragen in own cluster please refer to our
-    [GenPipes Documentation](https://genpipes.readthedocs.io/en/latest/user_guide/pipelines/gp_wgs_methylseq.html)
+However, if you would like to setup and use dragen in own cluster please refer to our [GenPipes Documentation](https://genpipes.readthedocs.io/en/latest/user_guide/pipelines/gp_wgs_methylseq.html)
 
     
 

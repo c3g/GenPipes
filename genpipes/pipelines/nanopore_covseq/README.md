@@ -1,11 +1,10 @@
 [TOC]
 
 
-    Nanopore CoVSeq Pipeline
-    ==============
+Nanopore CoVSeq Pipeline
+==============
 
-    For information on the structure and contents of the Nanopore readset file, please consult [here](
-    https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
+For information on the structure and contents of the Nanopore readset file, please consult [here](https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
     
 
 Usage
