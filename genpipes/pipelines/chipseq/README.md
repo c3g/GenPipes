@@ -1,6 +1,14 @@
 [TOC]
 
-Chipseq Pipeline
+
+    ChIP-Seq Pipeline
+    =================
+
+    A pipeline to process ChIP-seq data. The pipeline is designed to handle both paired-end and single-end reads and can be used to process data from any Illumina sequencer. The pipeline uses Trimmomatic to trim reads and remove Illumina adapters, BWA to align reads to the reference genome, Sambamba to sort and filter BAM files, and Picard to mark duplicates and collect quality metrics. The pipeline also uses MACS2 to call peaks, HOMER to annotate peaks, and DiffBind to perform differential binding analysis.
+
+    The pipeline takes as input a readset file and a design file. The readset file contains the list of samples and readsets, while the design file contains the list of contrasts to be analyzed. The pipeline outputs BAM files, peak calls, and differential binding results. The pipeline also generates quality metrics and reports for each sample.
+
+    The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
 ================
 
 Usage
@@ -76,25 +84,6 @@ options:
   -t {chipseq,atacseq}, --type {chipseq,atacseq}
                         Type of pipeline (default chipseq)
 
-Summary:
-
-    ChIP-Seq Pipeline
-    =================
-
-    ChIP-Seq experiments allows the Isolation and sequencing of genomic DNA bound by a specific transcription factor,
-    covalently modified histone, or other nuclear protein. The pipeline starts by trimming adaptors and
-    low quality bases and mapping the reads (single end or paired end ) to a reference genome using bwa.
-    Reads are filtered by mapping quality and duplicate reads are marked. Then, Homer quality control routines
-    are used to provide information and feedback about the quality of the experiment. Peak calls is executed by MACS
-    and annotation and motif discovery for narrow peaks are executed using Homer. Statistics of annotated peaks
-    are produced for narrow peaks and a standard report is generated.
-
-    An example of the ChIP-Seq report for an analysis on public ENCODE data is available for illustration purpose only:
-    [ChIP-Seq report](http://gqinnovationcenter.com/services/bioinformatics/tools/chipReport/index.html).
-
-    [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_ChIP-Seq.pptx)
-    is more information about ChIP-Seq pipeline that you may find interesting.
-    
 Steps:
 
 Protocol chipseq
@@ -165,9 +154,9 @@ reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For
 only Adapter1 is used and left unchanged.
 
 This step takes as input files:
-
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
 
 merge_trimmomatic_stats 
 -----------------------
@@ -182,10 +171,10 @@ The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algor
 BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
-
 1. Trimmed FASTQ files if available
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
 
 sambamba_merge_bam_files 
 ------------------------
@@ -193,26 +182,27 @@ sambamba_merge_bam_files
 BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
-
 1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
 2. Else, BAM files from the readset file
+
 
 sambamba_mark_duplicates 
 ------------------------
  
-Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
-(for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
+Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
 will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+
 
 sambamba_view_filter 
 --------------------
  
 Filter out unmapped reads and low quality reads [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
+
 bedtools_blacklist_filter 
 -------------------------
  
-Remove reads in blacklist regions from bam with bedtools intersect if blacklist file is supplied. Do nothing otherwise. 
+Remove reads in blacklist regions from bam with bedtools intersect if blacklist file is supplied. Do nothing otherwise.
 
 metrics 
 -------
@@ -258,13 +248,7 @@ annotation_graphs
 -----------------
  
 The peak location statistics. The following peak location statistics are generated per design:
-proportions of the genomic locations of the peaks. The locations are: Gene (exon or intron),
-Proximal ([0;2] kb upstream of a transcription start site), Distal ([2;10] kb upstream
-of a transcription start site), 5d ([10;100] kb upstream of a transcription start site),
-Gene desert (>= 100 kb upstream or downstream of a transcription start site), Other (anything
-not included in the above categories); The distribution of peaks found within exons and introns;
-The distribution of peak distance relative to the transcription start sites (TSS);
-the Location of peaks per design.
+proportions of the genomic locations of the peaks. The locations are: Gene (exon or intron), Proximal ([0;2] kb upstream of a transcription start site), Distal ([2;10] kb upstream of a transcription start site), 5d ([10;100] kb upstream of a transcription start site), Gene desert (>= 100 kb upstream or downstream of a transcription start site), Other (anything not included in the above categories); The distribution of peaks found within exons and introns; The distribution of peak distance relative to the transcription start sites (TSS); the Location of peaks per design.
 
 run_spp 
 -------

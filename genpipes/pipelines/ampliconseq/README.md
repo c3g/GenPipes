@@ -1,6 +1,12 @@
 [TOC]
 
-Ampliconseq Pipeline
+
+    Amplicon-Seq Pipeline
+    =================
+
+    A pipeline to process amplicon sequencing data. The pipeline is designed to handle both paired-end and single-end reads and can be used to process data from any Illumina sequencer. The pipeline uses Trimmomatic to trim adapters and primers, FLASh to merge paired-end reads, and DADA2 to infer sequence variants of microbial communities.
+
+    The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
 ================
 
 Usage
@@ -74,19 +80,13 @@ options:
                         design file
   -v, --version         show the version information and exit
 
-Summary:
-
-    Amplicon-Seq Pipeline
-    ================
-
-    
 Steps:
 
 Protocol default
 0 trimmomatic16S
 1 merge_trimmomatic_stats16S
 2 flash_pass1
-3 ampliconLengthParser
+3 amplicon_length_parser
 4 flash_pass2
 5 merge_flash_stats
 6 asva
@@ -101,8 +101,8 @@ If an adapter FASTA file is specified in the config file (section 'trimmomatic',
 it is used first. Else, Adapter1, Adapter2, Primer1 and Primer2 columns from the readset file are used to create
 an adapter FASTA file, given then to Trimmomatic. Sequences are reversed-complemented and swapped.
 
-This step takes as input files:
-1. MiSeq paired-End FASTQ files from the readset file
+This step takes as input files MiSeq paired-End FASTQ files from the readset file.
+
 
 merge_trimmomatic_stats16S 
 --------------------------
@@ -115,8 +115,8 @@ flash_pass1
 Merges paired end reads using [FLASh](http://ccb.jhu.edu/software/FLASH/). Overlapping regions between paired-end reads are found and 
 then merged into a continuous strand.
 
-ampliconLengthParser 
---------------------
+amplicon_length_parser 
+----------------------
  
 Looks at FLASH output statistics to set input amplicon lengths for dada2. Minimum lengths are set by ensuring that they represent 
 at least 1% of the total number of amplicons.

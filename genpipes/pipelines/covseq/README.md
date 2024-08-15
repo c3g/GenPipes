@@ -1,6 +1,11 @@
 [TOC]
 
-Covseq Pipeline
+
+    CoVSeq Pipeline
+    ================
+    A pipeline to process and analyze SARS-CoV-2 sequencing data from Illumina platforms. The pipeline uses Cutadapt for adapter trimming, Kraken for taxonomic classification, BWA for read alignment, Sambamba for sorting and indexing, and Freebayes for variant calling. The pipeline also includes a number of metrics to assess the quality.
+
+    The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
 ================
 
 Usage
@@ -74,13 +79,6 @@ options:
                         design file
   -v, --version         show the version information and exit
 
-Summary:
-
-    CoVSeq Pipeline
-    ================
-
-    pwet
-    
 Steps:
 
 Protocol default
@@ -115,10 +113,10 @@ The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algor
 BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
-
 1. Trimmed FASTQ files if available
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
 
 kraken_analysis 
 ---------------
@@ -134,9 +132,9 @@ For SINGLE_END readsets, only Adapter1 is used and left unchanged.
 To trim the front of the read use adapter_5p_fwd and adapter_5p_rev (for PE only) in cutadapt section of ini file.
 
 This step takes as input files:
-
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
 
 mapping_bwa_mem_sambamba 
 ------------------------
@@ -146,10 +144,10 @@ The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algor
 BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
-
 1. Trimmed FASTQ files if available
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
 
 sambamba_merge_sam_files 
 ------------------------
@@ -243,4 +241,5 @@ Prepare [FreeBayes](https://github.com/freebayes/freebayes) analysis report.
 run_multiqc 
 -----------
  
+Run [multiqc](https://multiqc.info/) on all samples.
 
