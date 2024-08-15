@@ -52,12 +52,10 @@ log = logging.getLogger(__name__)
 
 class NanoporeCoVSeq(common.Nanopore):
     """
-    Nanopore CoVSeq Pipeline
-    ==============
+Nanopore CoVSeq Pipeline
+==============
 
-
-    For information on the structure and contents of the Nanopore readset file, please consult [here](
-    https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
+For information on the structure and contents of the Nanopore readset file, please consult [here](https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
     """
 
     def __init__(self, *args, protocol=None, **kwargs):

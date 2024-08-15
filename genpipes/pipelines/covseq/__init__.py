@@ -57,29 +57,29 @@ log = logging.getLogger(__name__)
 
 class CoVSeq(dnaseq.DnaSeqRaw):
     """
-    CoVSeq Pipeline
-    ================
-    A pipeline to process and analyze SARS-CoV-2 sequencing data from Illumina platforms. The pipeline uses Cutadapt for adapter trimming, Kraken for taxonomic classification, BWA for read alignment, Sambamba for sorting and indexing, and Freebayes for variant calling. The pipeline also includes a number of metrics to assess the quality.
+CoVSeq Pipeline
+================
+A pipeline to process and analyze SARS-CoV-2 sequencing data from Illumina platforms. The pipeline uses Cutadapt for adapter trimming, Kraken for taxonomic classification, BWA for read alignment, Sambamba for sorting and indexing, and Freebayes for variant calling. The pipeline also includes a number of metrics to assess the quality.
 
-    The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
+The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
 
-    Attributes:
-        output_dirs (dict): Dictionary of output directories.
-        multiqc_inputs (list): List of multiqc input files.
-    Methods:
-        host_reads_removal: Remove host reads from raw reads.
-        kraken_analysis: Taxonomic sequence classification system using kraken.
-        cutadapt: Raw reads quality trimming and removing adapters.
-        mapping_bwa_mem_sambamba: Align filtered reads to a reference genome.
-        sambamba_filtering: Filter raw bams with sambamba and an awk cmd to filter by insert size.
-        fgbio_trim_primers: Remove primer sequences to individual bam files using fgbio.
-        ivar_trim_primers: Remove primer sequences to individual bam files using ivar.
-        metrics_sambamba_flagstat: Sambamba flagstsat.
-        metrics_bedtools_genomecov: bedtools genome coverage.
-        multiple_metrics_picard: Calculates bedtools genome coverage metrics from dnaseq pipeline but on raw AND on filtered bam file.
-        metrics_dna_sample_qualimap: Generates metrics with qualimap bamqc.
-    Parameters:
-        protocol (str): Protocol to use for the pipeline.
+Attributes:
+    output_dirs (dict): Dictionary of output directories.
+    multiqc_inputs (list): List of multiqc input files.
+Methods:
+    host_reads_removal: Remove host reads from raw reads.
+    kraken_analysis: Taxonomic sequence classification system using kraken.
+    cutadapt: Raw reads quality trimming and removing adapters.
+    mapping_bwa_mem_sambamba: Align filtered reads to a reference genome.
+    sambamba_filtering: Filter raw bams with sambamba and an awk cmd to filter by insert size.
+    fgbio_trim_primers: Remove primer sequences to individual bam files using fgbio.
+    ivar_trim_primers: Remove primer sequences to individual bam files using ivar.
+    metrics_sambamba_flagstat: Sambamba flagstsat.
+    metrics_bedtools_genomecov: bedtools genome coverage.
+    multiple_metrics_picard: Calculates bedtools genome coverage metrics from dnaseq pipeline but on raw AND on filtered bam file.
+    metrics_dna_sample_qualimap: Generates metrics with qualimap bamqc.
+Parameters:
+    protocol (str): Protocol to use for the pipeline.
     """
 
     def __init__(self, *args, protocol=None, **kwargs):

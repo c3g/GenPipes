@@ -46,65 +46,65 @@ log = logging.getLogger(__name__)
 
 class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
     """
-    RNA-Seq De Novo Assembly Pipeline
-    =================================
+RNA-Seq De Novo Assembly Pipeline
+=================================
 
-    The standard Genpipes RNA-Seq De Novo Assembly pipeline now has two protocols:
-    The [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki)
-    software suite to reconstruct transcriptomes from RNA-Seq data or the Seq2Fun software suite to generate several
-    informative outputs including gene abundance tables, pathway and species hit tables which
-    are required for the [Networkanalyst] (https://www.networkanalyst.ca/home.xhtml). Only RNA-Seq data is used for
-    both of the protocols and any reference genome or transcriptome is not required.
+The standard Genpipes RNA-Seq De Novo Assembly pipeline now has two protocols:
+The [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki)
+software suite to reconstruct transcriptomes from RNA-Seq data or the Seq2Fun software suite to generate several
+informative outputs including gene abundance tables, pathway and species hit tables which
+are required for the [Networkanalyst] (https://www.networkanalyst.ca/home.xhtml). Only RNA-Seq data is used for
+both of the protocols and any reference genome or transcriptome is not required.
 
-    The trinity De Novo Assembly pipeline, selected using the "-t trinity" parameter starts by trimming reads
-    with [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-    Then reads are normalized in order to reduce memory requirement and decrease assembly runtime, using the Trinity
-    normalization utility inspired by the [Diginorm](http://arxiv.org/abs/1203.4802) algorithm.
+The trinity De Novo Assembly pipeline, selected using the "-t trinity" parameter starts by trimming reads
+with [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+Then reads are normalized in order to reduce memory requirement and decrease assembly runtime, using the Trinity
+normalization utility inspired by the [Diginorm](http://arxiv.org/abs/1203.4802) algorithm.
 
-    Then, the transcriptome is assembled on normalized reads using the Trinity assembler. Trinity creates
-    a Trinity.fasta file with a list of contigs representing the transcriptome isoforms. Those transcripts
-    are grouped in components mostly representing genes.
+Then, the transcriptome is assembled on normalized reads using the Trinity assembler. Trinity creates
+a Trinity.fasta file with a list of contigs representing the transcriptome isoforms. Those transcripts
+are grouped in components mostly representing genes.
 
-    Components and transcripts are functionally annotated using the [Trinotate](https://github.com/Trinotate/Trinotate/wiki) suite.
+Components and transcripts are functionally annotated using the [Trinotate](https://github.com/Trinotate/Trinotate/wiki) suite.
 
-    Gene abundance estimation for each sample has been performed using [RSEM](https://deweylab.github.io/RSEM/)
-    (RNA-Seq by Expectation-Maximization). Differential gene expression analysis is performed using
-    [DESeq](http://genomebiology.com/2010/11/10/R106) and [edgeR](http://bioinformatics.oxfordjournals.org/content/26/1/139/) R Bioconductor packages.
+Gene abundance estimation for each sample has been performed using [RSEM](https://deweylab.github.io/RSEM/)
+(RNA-Seq by Expectation-Maximization). Differential gene expression analysis is performed using
+[DESeq](http://genomebiology.com/2010/11/10/R106) and [edgeR](http://bioinformatics.oxfordjournals.org/content/26/1/139/) R Bioconductor packages.
 
-    The DESeq and edgeR methods model **count data** by a negative binomial distribution. The parameters of
-    the distribution (mean and dispersion) are estimated from the data, i.e. from the read counts in the input files.
-    Both methods compute a measure of read abundance, i.e. expression level (called *base mean* or
-    *mean of normalized counts* in DESeq, and *concentration* in edgeR) for each gene and apply a hypothesis test
-    to each gene to evaluate differential expression. In particular, both methods determine a p-value and
-    a log2 fold change (in expression level) for each gene. The Log2 FC of EdgeR is reported in the differential gene
-    results file, one file per design.
+The DESeq and edgeR methods model **count data** by a negative binomial distribution. The parameters of
+the distribution (mean and dispersion) are estimated from the data, i.e. from the read counts in the input files.
+Both methods compute a measure of read abundance, i.e. expression level (called *base mean* or
+*mean of normalized counts* in DESeq, and *concentration* in edgeR) for each gene and apply a hypothesis test
+to each gene to evaluate differential expression. In particular, both methods determine a p-value and
+a log2 fold change (in expression level) for each gene. The Log2 FC of EdgeR is reported in the differential gene
+results file, one file per design.
 
-    The log2fold change is the logarithm (to basis 2) of the fold change condition from condition A to B
-    (mutation or treatment are the most common conditions). A "fold change" between conditions A and B at a gene
-    or transcript is normally computed as the ratio at gene or transcript of the base mean of scaled counts
-    for condition B to the base mean of scaled counts for condition A. Counts are scaled by a size factor in
-    a step called normalization (if the counts of non-differentially expressed genes in one sample are, on average,
-    twice as high as in another,  the size factor for the first sample should be twice that of the other sample).
-    Each column of the count table is then divided by the size factor for this column and the count values
-    are brought to a common scale, making them comparable. See the [EdgeR vignette](http://www.bioconductor.org/packages/2.12/bioc/vignettes/edgeR/inst/doc/edgeR.pdf) for additional information on normalization approaches used in the pipeline.
+The log2fold change is the logarithm (to basis 2) of the fold change condition from condition A to B
+(mutation or treatment are the most common conditions). A "fold change" between conditions A and B at a gene
+or transcript is normally computed as the ratio at gene or transcript of the base mean of scaled counts
+for condition B to the base mean of scaled counts for condition A. Counts are scaled by a size factor in
+a step called normalization (if the counts of non-differentially expressed genes in one sample are, on average,
+twice as high as in another,  the size factor for the first sample should be twice that of the other sample).
+Each column of the count table is then divided by the size factor for this column and the count values
+are brought to a common scale, making them comparable. See the [EdgeR vignette](http://www.bioconductor.org/packages/2.12/bioc/vignettes/edgeR/inst/doc/edgeR.pdf) for additional information on normalization approaches used in the pipeline.
 
-    The differential gene analysis is followed by a Gene Ontology (GO) enrichment analysis.
-    This analysis use the [goseq approach](http://bioconductor.org/packages/release/bioc/html/goseq.html).
-    The goseq is based on the use of non-native GO terms resulting from trinotate annotations (see details in the section 5 of
-    [the corresponding vignette](http://bioconductor.org/packages/release/bioc/vignettes/goseq/inst/doc/goseq.pdf).
+The differential gene analysis is followed by a Gene Ontology (GO) enrichment analysis.
+This analysis use the [goseq approach](http://bioconductor.org/packages/release/bioc/html/goseq.html).
+The goseq is based on the use of non-native GO terms resulting from trinotate annotations (see details in the section 5 of
+[the corresponding vignette](http://bioconductor.org/packages/release/bioc/vignettes/goseq/inst/doc/goseq.pdf).
 
-    Thus a high quality contigs assembly is created by extracting all transcripts having a functionnal annotation as defined by trinotate,
-    the Top BLASTX hit and TmHMM annotations are used by default.
+Thus a high quality contigs assembly is created by extracting all transcripts having a functionnal annotation as defined by trinotate,
+the Top BLASTX hit and TmHMM annotations are used by default.
 
-    Finally, different exploratory data analysis (EDA) techniques are applied to filtered isoforms expression levels.
-    Main goals of expression level EDA are the detection of outliers, potential mislabeling,  to explore the homogeneity
-    of biological replicates and  to appreciate the global effects of the different experimental variables.
+Finally, different exploratory data analysis (EDA) techniques are applied to filtered isoforms expression levels.
+Main goals of expression level EDA are the detection of outliers, potential mislabeling,  to explore the homogeneity
+of biological replicates and  to appreciate the global effects of the different experimental variables.
 
-    An HTML summary report is automatically generated by the pipeline. Various Quality Control (QC) 
-    summary statistics are included in the report and can be explored interactively.
+An HTML summary report is automatically generated by the pipeline. Various Quality Control (QC) 
+summary statistics are included in the report and can be explored interactively.
     
-    The Seq2Fun De Novo Assembly pipeline, selected using the "-t seq2fun" parameter directly starts with Seq2Fun
-    software suit from fastq files.
+The Seq2Fun De Novo Assembly pipeline, selected using the "-t seq2fun" parameter directly starts with Seq2Fun
+software suit from fastq files.
     """
 
     def __init__(self, *args, protocol=None, batch=None, **kwargs):

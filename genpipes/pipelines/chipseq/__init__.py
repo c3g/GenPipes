@@ -52,44 +52,44 @@ log = logging.getLogger(__name__)
 
 class ChipSeq(common.Illumina):
     """
-    ChIP-Seq Pipeline
-    =================
+ChIP-Seq Pipeline
+=================
 
-    A pipeline to process ChIP-seq data. The pipeline is designed to handle both paired-end and single-end reads and can be used to process data from any Illumina sequencer. The pipeline uses Trimmomatic to trim reads and remove Illumina adapters, BWA to align reads to the reference genome, Sambamba to sort and filter BAM files, and Picard to mark duplicates and collect quality metrics. The pipeline also uses MACS2 to call peaks, HOMER to annotate peaks, and DiffBind to perform differential binding analysis.
+A pipeline to process ChIP-seq data. The pipeline is designed to handle both paired-end and single-end reads and can be used to process data from any Illumina sequencer. The pipeline uses Trimmomatic to trim reads and remove Illumina adapters, BWA to align reads to the reference genome, Sambamba to sort and filter BAM files, and Picard to mark duplicates and collect quality metrics. The pipeline also uses MACS2 to call peaks, HOMER to annotate peaks, and DiffBind to perform differential binding analysis.
 
-    The pipeline takes as input a readset file and a design file. The readset file contains the list of samples and readsets, while the design file contains the list of contrasts to be analyzed. The pipeline outputs BAM files, peak calls, and differential binding results. The pipeline also generates quality metrics and reports for each sample.
+The pipeline takes as input a readset file and a design file. The readset file contains the list of samples and readsets, while the design file contains the list of contrasts to be analyzed. The pipeline outputs BAM files, peak calls, and differential binding results. The pipeline also generates quality metrics and reports for each sample.
 
-    The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
+The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
 
-    Attributes:
-        output_dirs (dict): Output directory paths
-        mark_type_conversion (dict): Conversion of mark type codes to mark type names
-        ucsc_genome (str): UCSC genome assembly name
-        readsets (list): List of readsets, making sure that the mark name and mark type are defined
-        multiqc_inputs (list): List of MultiQC input files
-        contrasts (list): List of contrasts
-        sequence_dictionary_variant (dict): Sequence dictionary variant
-        mappable_genome_size (int): Mappable genome size
-    Methods:
-        trimmomatic: Raw reads quality trimming and removing of Illumina adapters
-        merge_trimmomatic_stats: Merge trim statistics per readset
-        mapping_bwa_mem_sambamba: Align reads to the reference genome
-        sambamba_merge_bam_files: Merge BAM readset files into one file per sample
-        sambamba_mark_duplicates: Mark duplicates
-        sambamba_view_filter: Filter out unmapped reads and low quality reads
-        bedtools_blacklist_filter: Remove reads in blacklist regions from BAM
-        metrics: Compute the number of raw/filtered and aligned reads per sample
-        macs2_callpeak: Call peaks
-        homer_annotate_peaks: Annotate peaks
-        diffbind: Perform differential binding analysis
-        multiqc: Generate a MultiQC report
-    Parameters:
-        readsets_file (str): Readset file path
-        design_file (str): Design file path
-        output_dir (str): Output directory path
-        run_type (str): Run type (default PAIRED_END)
-        samples (list): List of samples
-        protocol (str): Type of pipeline (default chipseq)
+Attributes:
+    output_dirs (dict): Output directory paths
+    mark_type_conversion (dict): Conversion of mark type codes to mark type names
+    ucsc_genome (str): UCSC genome assembly name
+    readsets (list): List of readsets, making sure that the mark name and mark type are defined
+    multiqc_inputs (list): List of MultiQC input files
+    contrasts (list): List of contrasts
+    sequence_dictionary_variant (dict): Sequence dictionary variant
+    mappable_genome_size (int): Mappable genome size
+Methods:
+    trimmomatic: Raw reads quality trimming and removing of Illumina adapters
+    merge_trimmomatic_stats: Merge trim statistics per readset
+    mapping_bwa_mem_sambamba: Align reads to the reference genome
+    sambamba_merge_bam_files: Merge BAM readset files into one file per sample
+    sambamba_mark_duplicates: Mark duplicates
+    sambamba_view_filter: Filter out unmapped reads and low quality reads
+    bedtools_blacklist_filter: Remove reads in blacklist regions from BAM
+    metrics: Compute the number of raw/filtered and aligned reads per sample
+    macs2_callpeak: Call peaks
+    homer_annotate_peaks: Annotate peaks
+    diffbind: Perform differential binding analysis
+    multiqc: Generate a MultiQC report
+Parameters:
+    readsets_file (str): Readset file path
+    design_file (str): Design file path
+    output_dir (str): Output directory path
+    run_type (str): Run type (default PAIRED_END)
+    samples (list): List of samples
+    protocol (str): Type of pipeline (default chipseq)
     """
 
     def __init__(self, *args, protocol="chipseq", **kwargs):

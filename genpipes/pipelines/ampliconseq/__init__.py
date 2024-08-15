@@ -39,30 +39,30 @@ log = logging.getLogger(__name__)
 
 class AmpliconSeq(common.Illumina):
     """
-    Amplicon-Seq Pipeline
-    =================
+Amplicon-Seq Pipeline
+=================
 
-    A pipeline to process amplicon sequencing data. The pipeline is designed to handle both paired-end and single-end reads and can be used to process data from any Illumina sequencer. The pipeline uses Trimmomatic to trim adapters and primers, FLASh to merge paired-end reads, and DADA2 to infer sequence variants of microbial communities.
+A pipeline to process amplicon sequencing data. The pipeline is designed to handle both paired-end and single-end reads and can be used to process data from any Illumina sequencer. The pipeline uses Trimmomatic to trim adapters and primers, FLASh to merge paired-end reads, and DADA2 to infer sequence variants of microbial communities.
 
-    The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
+The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
 
-    Attributes:
-        output_dirs (dict): Output directory paths
-        multiqc_inputs (list): List of input files for MultiQC
-    Methods:
-        trimmomatic16S: MiSeq raw reads adapter & primers trimming and basic QC is performed using Trimmomatic.
-        merge_trimmomatic_stats16S: The trim statistics per readset are merged at this step.
-        flash: Merge paired end reads using FLASh.
-        flash_pass1: Merges paired end reads using FLASh. Overlapping regions between paired-end reads are found and then merged into a continuous strand.
-        flash_pass2: Merges paired end reads using FLASh. The second pass uses statistics obtained from the first pass to adjust merging.
-        merge_flash_stats: Merges statistics from both flash passes.
-        amplicon_length_parser: Looks at FLASH output statistics to set input amplicon lengths for dada2. Minimum lengths are set by ensuring that they represent at least 1% of the total number of amplicons.
-        asva: Checks for design files required for PCA plots, sets up directories, links readset fastq files, and initiates DADA2.
-        multiqc: A quality control report for all samples is generated.
-        step_list: Returns the list of steps in the pipeline.
-        protocols: Returns the protocol for the pipeline.
-    Parameters:
-        protocol (str): Protocol to use for the pipeline
+Attributes:
+    output_dirs (dict): Output directory paths
+    multiqc_inputs (list): List of input files for MultiQC
+Methods:
+    trimmomatic16S: MiSeq raw reads adapter & primers trimming and basic QC is performed using Trimmomatic.
+    merge_trimmomatic_stats16S: The trim statistics per readset are merged at this step.
+    flash: Merge paired end reads using FLASh.
+    flash_pass1: Merges paired end reads using FLASh. Overlapping regions between paired-end reads are found and then merged into a continuous strand.
+    flash_pass2: Merges paired end reads using FLASh. The second pass uses statistics obtained from the first pass to adjust merging.
+    merge_flash_stats: Merges statistics from both flash passes.
+    amplicon_length_parser: Looks at FLASH output statistics to set input amplicon lengths for dada2. Minimum lengths are set by ensuring that they represent at least 1% of the total number of amplicons.
+    asva: Checks for design files required for PCA plots, sets up directories, links readset fastq files, and initiates DADA2.
+    multiqc: A quality control report for all samples is generated.
+    step_list: Returns the list of steps in the pipeline.
+    protocols: Returns the protocol for the pipeline.
+Parameters:
+    protocol (str): Protocol to use for the pipeline
     """
 
     def __init__(self, *args, protocol=None, **kwargs):

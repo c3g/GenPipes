@@ -85,40 +85,40 @@ log = logging.getLogger(__name__)
 
 class DnaSeqRaw(common.Illumina):
     """
-    DNA-Seq Pipeline
-    ================
+DNA-Seq Pipeline
+================
 
-    A pipeline to process DNA sequencing data. The pipeline uses Trimmomatic for quality control, BWA for alignment to a reference genome, Picard for marking duplicates, GATK for indel realignment and variant calling, SnpEff for variant annotation, SnpSift for filtering variants and MultiQC for aggregate reports.
+A pipeline to process DNA sequencing data. The pipeline uses Trimmomatic for quality control, BWA for alignment to a reference genome, Picard for marking duplicates, GATK for indel realignment and variant calling, SnpEff for variant annotation, SnpSift for filtering variants and MultiQC for aggregate reports.
 
-    The pipeline contains protocols for processing both germline and somatic sequencing data; high-coverage data from targeted sequencing experiments; SNVs and structural variants.
+The pipeline contains protocols for processing both germline and somatic sequencing data; high-coverage data from targeted sequencing experiments; SNVs and structural variants.
 
-    The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
+The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
 
-    Attributes:
-        pairs_file (str): A string containing the path to the pairs file.
-        profyle (str): A string containing the path to the profyle file.
-        pairs (str): The pairs attribute is a property that returns the parsed tumor pairs file.
-        output_dirs (dict): The output_dirs attribute is a property that returns a dictionary of output directories.
-        multiqc_inputs (dict): The multiqc_inputs attribute is a property that returns a dictionary of multiqc inputs.
-        sequence_dictionary (dict): The sequence_dictionary attribute is a property that returns a parsed sequence dictionary file.
-        sequence_dictionary_variant (dict): The sequence_dictionary_variant attribute is a property that returns a parsed sequence dictionary file.
-        tumor_pairs (dict): The tumor_pairs attribute is a property that returns a parsed tumor pairs file.
-    Methods:
-        generate_approximate_windows(): The generate_approximate_windows method generates approximate windows based on the number of jobs.
-        is_gz_file(): The is_gz_file method checks if a file is a gzipped file.
-        sym_link_fastq(): The sym_link_fastq method creates a symbolic link of raw reads fastq files.
-        sym_link_fastq_pair(): The sym_link_fastq_pair method creates symbolic links and md5 sums for tumor and normal fastq files.
-        build_adapter_file(): The build_adapter_file method builds an adapter file.
-        bwa_mem_sambamba_sort_sam(): The bwa_mem_sambamba_sort_sam method aligns filtered reads to a reference genome.
-        gatk_fixmate(): The gatk_fixmate method verifies mate-pair information between mates and fixes if needed.
-        mark_duplicates(): The mark_duplicates method marks duplicates in aligned reads.
-        sym_link_final_bam(): The sym_link_final_bam method creates a symbolic link of the final bam for delivery of data to clients.
-        sym_link_final_bam_pair(): The sym_link_final_bam_pair method creates a symbolic link of the final bam for delivery of data to clients.
-        conpair_concordance_contamination(): The conpair_concordance_contamination method performs concordance verification and contamination level estimation.
-        metrics_dna_picard_metrics(): The metrics_dna_picard_metrics method generates metrics with picard.
-    Parameters:
-        pairs_file (str): A string containing the path to the pairs file.
-        profyle (str): A string containing the path to the profyle file.
+Attributes:
+    pairs_file (str): A string containing the path to the pairs file.
+    profyle (str): A string containing the path to the profyle file.
+    pairs (str): The pairs attribute is a property that returns the parsed tumor pairs file.
+    output_dirs (dict): The output_dirs attribute is a property that returns a dictionary of output directories.
+    multiqc_inputs (dict): The multiqc_inputs attribute is a property that returns a dictionary of multiqc inputs.
+    sequence_dictionary (dict): The sequence_dictionary attribute is a property that returns a parsed sequence dictionary file.
+    sequence_dictionary_variant (dict): The sequence_dictionary_variant attribute is a property that returns a parsed sequence dictionary file.
+    tumor_pairs (dict): The tumor_pairs attribute is a property that returns a parsed tumor pairs file.
+Methods:
+    generate_approximate_windows(): The generate_approximate_windows method generates approximate windows based on the number of jobs.
+    is_gz_file(): The is_gz_file method checks if a file is a gzipped file.
+    sym_link_fastq(): The sym_link_fastq method creates a symbolic link of raw reads fastq files.
+    sym_link_fastq_pair(): The sym_link_fastq_pair method creates symbolic links and md5 sums for tumor and normal fastq files.
+    build_adapter_file(): The build_adapter_file method builds an adapter file.
+    bwa_mem_sambamba_sort_sam(): The bwa_mem_sambamba_sort_sam method aligns filtered reads to a reference genome.
+    gatk_fixmate(): The gatk_fixmate method verifies mate-pair information between mates and fixes if needed.
+    mark_duplicates(): The mark_duplicates method marks duplicates in aligned reads.
+    sym_link_final_bam(): The sym_link_final_bam method creates a symbolic link of the final bam for delivery of data to clients.
+    sym_link_final_bam_pair(): The sym_link_final_bam_pair method creates a symbolic link of the final bam for delivery of data to clients.
+    conpair_concordance_contamination(): The conpair_concordance_contamination method performs concordance verification and contamination level estimation.
+    metrics_dna_picard_metrics(): The metrics_dna_picard_metrics method generates metrics with picard.
+Parameters:
+    pairs_file (str): A string containing the path to the pairs file.
+    profyle (str): A string containing the path to the profyle file.
     """
 
     def __init__(self, *args, pairs_file=None, profyle=None, **kwargs):
