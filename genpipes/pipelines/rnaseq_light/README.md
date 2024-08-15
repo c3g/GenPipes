@@ -8,7 +8,6 @@
     The pipeline is based on [Kallisto](https://pachterlab.github.io/kallisto/about.html) and differential expression analysis is performed by [Sleuth](http://pachterlab.github.io/sleuth/).
     It is especially useful for quick Quality Control (QC) in gene sequencing studies.
     
-================
 
 Usage
 -----

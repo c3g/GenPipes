@@ -29,7 +29,6 @@
     [GenPipes Documentation](https://genpipes.readthedocs.io/en/latest/user_guide/pipelines/gp_wgs_methylseq.html)
 
     
-================
 
 Usage
 -----

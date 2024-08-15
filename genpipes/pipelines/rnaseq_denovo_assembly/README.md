@@ -61,7 +61,6 @@
     The Seq2Fun De Novo Assembly pipeline, selected using the "-t seq2fun" parameter directly starts with Seq2Fun
     software suit from fastq files.
     
-================
 
 Usage
 -----
