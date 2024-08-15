@@ -1,6 +1,5 @@
 
 import argparse
-import os
 import sys
 
 from ... import utils
@@ -9,7 +8,7 @@ from ..ampliconseq import AmpliconSeq
 
 def main(argv=None):
     """
-    Stub so people can still call the pipeline file as a script, this will have to go away at some point
+    Stub so people can still call the pipeline file as a script
     """
 
     if argv is None:

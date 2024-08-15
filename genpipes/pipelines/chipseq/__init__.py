@@ -164,18 +164,13 @@ class ChipSeq(common.Illumina):
         Returns:
             list: List of readsets.
         """
-        flag = False
         if getattr(self, "_readsets") is None:
             self._readsets = parse_illumina_readset_file(self.readsets_file)
             for readset in self.readsets:
                 if not readset.mark_name:
                     _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
-                    flag = True
                 elif not readset.mark_type:
                     _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
-                    flag = True
-            if flag:
-                exit()
         return self._readsets
 
     @property

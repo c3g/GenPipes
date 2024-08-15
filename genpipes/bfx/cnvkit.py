@@ -18,7 +18,6 @@
 ################################################################################
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
@@ -72,7 +71,11 @@ cnvkit.py batch {options} \\
         )
     )
 
-def fix(target_cov, antitarget_cov, output_cnr, reference=None, ref_cnn=None):
+def fix(target_cov,
+        antitarget_cov,
+        output_cnr,
+        reference=None,
+        ref_cnn=None):
     return Job(
         [target_cov, antitarget_cov],
         [output_cnr],
@@ -96,7 +99,11 @@ cnvkit.py fix {options} \\
         )
     )
 
-def segment(input_cnr, output_cns, vcf=None, sample_id=None, normal_id=None):
+def segment(input_cnr,
+            output_cns,
+            vcf=None,
+            sample_id=None,
+            normal_id=None):
     
     if vcf:
         inputs = [input_cnr, vcf]
@@ -123,7 +130,8 @@ cnvkit.py segment {options} \\
         )
     )
 
-def call(input_cns, output_cns):
+def call(input_cns,
+         output_cns):
     return Job(
         [input_cns],
         [output_cns],
@@ -141,7 +149,9 @@ cnvkit.py call {options} \\
         )
     )
 
-def export(tumor_cns, output, sample_id=None):
+def export(tumor_cns,
+           output,
+           sample_id=None):
     return Job(
         [tumor_cns],
         [output],
@@ -160,7 +170,9 @@ cnvkit.py export {options} \\
         )
     )
 
-def metrics(input_cnr, input_cns, output):
+def metrics(input_cnr,
+            input_cns,
+            output):
     return Job(
         [input_cnr, input_cns],
         [output],
@@ -180,7 +192,9 @@ cnvkit.py metrics {options} \\
         )
     )
 
-def segmetrics(input_cnr, input_cns, output):
+def segmetrics(input_cnr,
+               input_cns,
+               output):
     return Job(
         [input_cnr, input_cns],
         [output],
@@ -200,7 +214,9 @@ cnvkit.py segmetrics {options} \\
         )
     )
 
-def select_background(input_cnr, input_cns, output):
+def select_background(input_cnr,
+                      input_cns,
+                      output):
     
     return Job(
         [input_cnr, input_cns],
@@ -221,14 +237,21 @@ def select_background(input_cnr, input_cns, output):
         )
     )
 
-def read_metrics_file(in_file):
+def read_metrics_file(
+        in_file
+        ):
     with open(in_file) as in_handle:
         header = next(in_handle).strip().split("\t")[1:]
         vals = map(float, next(in_handle).strip().split("\t")[1:])
     return dict(zip(header, vals))
     
 
-def scatter(input_cnr, input_cns, output, vcf=None, normal=None, tumor=None):
+def scatter(input_cnr,
+            input_cns,
+            output,
+            vcf=None,
+            normal=None,
+            tumor=None):
     return Job(
         [input_cnr, input_cns, vcf],
         [output],
@@ -251,7 +274,9 @@ cnvkit.py scatter {options} \\
         )
     )
 
-def diagram(input_cnr, input_cns, output):
+def diagram(input_cnr,
+            input_cns,
+            output):
     return Job(
         [input_cnr, input_cns],
         [output],
@@ -271,7 +296,9 @@ cnvkit.py diagram {options} \\
         )
     )
 
-def read_metrics_file(in_file):
+def read_metrics_file(
+        in_file
+        ):
     with open(in_file) as in_handle:
         header = next(in_handle).strip().split("\t")[1:]
         vals = map(float, next(in_handle).strip().split("\t")[1:])
