@@ -2790,6 +2790,24 @@ class RunProcessing(common.MUGQICPipeline):
                 input_dependency=False)
         )
 
+        jobs_to_concat.append(
+            bash.cp(os.path.join(self.output_dir,
+                                 "job_output",
+                                 "job_output.tar.gz"),
+                    os.path.join(full_destination_folder,
+                                 "job_output")
+                    )
+        )
+
+        jobs_to_concat.append(
+            bash.cp(os.path.join(self.output_dir,
+                                 "job_output",
+                                 "job_output.list"),
+                    os.path.join(full_destination_folder,
+                                 "job_output")
+                    )
+        )
+
         for lane in self.lanes:
 
             inputs = self.copy_job_inputs[lane]
