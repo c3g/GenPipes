@@ -77,7 +77,7 @@ def report2(
         ):
     assembly = global_conf.global_get(ini_section, 'assembly')
     output = [
-        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
+        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".vcf.gz"),
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html")
     ]
     # use tmp dir for cpsr to avoid disk quota issues caused by bcftools tmp dir settings
