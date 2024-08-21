@@ -14,7 +14,7 @@ On this page:
 
 Software requirement
 --------------------
-GenPipes have been tested with Python 3.6+
+GenPipes have been tested with Python 3.6+ # TBD What will new minimum python requirement be?
 
 
 Quick setup for Abacus, Beluga, Narval, Graham and Cedar users
@@ -80,7 +80,7 @@ MUGQIC pipelines and compatible Python version are already installed as modules 
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/3.9.1
+module load mugqic/python/3.11.1
 module load mugqic/genpipes/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
@@ -141,7 +141,7 @@ Set `MUGQIC_PIPELINES_HOME` to your local copy path, in your *$HOME/.bash_profil
 export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
 ```
 
-GenPipes (formerly called MUGQIC Pipelines) require genomes and modules resources to run properly.
+GenPipes (formerly called MUGQIC Pipelines) requires genomes and modules resources to run properly.
 First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install those resources, in your *$HOME/.bash_profile*:
 ```
 #!bash
@@ -299,15 +299,10 @@ Usage
 
 For each pipeline, get help about usage, arguments and steps with:
 
-* if you use a `mugqic/genpipes/<version>` module on our clusters (or `mugqic/mugqic_pipelines/<version>`), simply:
+* if you use a `mugqic/genpipes/<version>` module on our clusters or a local pip install, simply:
 ```
 #!bash
-<pipeline_name>.py --help
-```
-* if you use your own local install:
-```
-#!bash
-$MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.py --help
+genpipes <pipeline_name> --help
 ```
 
 Pipelines require as input one Readset File, one or more Configuration File(s) and possibly one Design File, all described below.
@@ -318,7 +313,6 @@ For documentation on how to use each of the pipelines, visit:
 For more information about and source code for a specific pipeline, visit:
 
 ### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq/)
-### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq_high_coverage/)
 ### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
 ### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_denovo_assembly/)
 ### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_light/)
@@ -326,7 +320,6 @@ For more information about and source code for a specific pipeline, visit:
 ### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
 ### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
 ### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
-### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)
 ### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore_covseq/)
 
@@ -336,7 +329,7 @@ Readset File
 The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
 
 
-### DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Tumor Pair, Methyl-Seq, CoV-Seq
+### DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Methyl-Seq, CoV-Seq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
@@ -385,24 +378,6 @@ Example:
     sampleA readset2 H3K27ac  N        lib0001 PAIRED_END  run100  2   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset2.paired1.fastq.gz   path/to/readset2.paired2.fastq.gz   path/to/readset2.bam
     sampleB readset3 Input    I        lib0002 PAIRED_END  run200  5   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset3.paired1.fastq.gz   path/to/readset3.paired2.fastq.gz   path/to/readset3.bam
     sampleB readset4 Input    I        lib0002 PAIRED_END  run200  6   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset4.paired1.fastq.gz   path/to/readset4.paired2.fastq.gz   path/to/readset4.bam
-
-### PacBio Assembly
-
-* Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; mandatory;
-* Readset: a unique readset name with the same allowed characters as above; mandatory;
-* Smartcell: mandatory;
-* NbBasePairs: total number of base pairs for this readset; mandatory;
-* EstimatedGenomeSize: estimated genome size in number of base pairs used to compute seeding read length cutoff; mandatory;
-* BAS: comma-separated list of relative or absolute paths to BAS files (old PacBio format); mandatory if BAX value is missing, ignored otherwise;
-* BAX: comma-separated list of relative or absolute paths to BAX files; BAX file list is used first if both BAX/BAS lists are present; mandatory if BAS value is missing.
-
-Example:
-
-    Sample	Readset	Smartcell	NbBasePairs	EstimatedGenomeSize	BAS	BAX
-    sampleA	readset1	F_01_1	122169744	150000	path/to/readset1.bas.h5	path/to/readset1.1.bax.h5,path/to/readset1.2.bax.h5,path/to/readset1.3.bax.h5
-    sampleA	readset2	F_01_2	105503472	150000	path/to/readset2.bas.h5	path/to/readset2.1.bax.h5,path/to/readset2.2.bax.h5,path/to/readset2.3.bax.h5
-    sampleB	readset3	G_01_1	118603200	150000	path/to/readset3.bas.h5	path/to/readset3.1.bax.h5,path/to/readset3.2.bax.h5,path/to/readset3.3.bax.h5
-    sampleB	readset4	G_01_2	104239488	150000	path/to/readset4.bas.h5	path/to/readset4.1.bax.h5,path/to/readset4.2.bax.h5,path/to/readset4.3.bax.h5
 
 ### Nanopore, Nanopore CoV-Seq
 
@@ -543,23 +518,16 @@ Example:
 
 HTML Analysis Report
 --------------------
-While pipelines are run, some jobs create a partial analysis report in [Markdown](http://daringfireball.net/projects/markdown/) format in
-`<output_dir>/report/<pipeline_name>.<step_name>.md` e.g. `<output_dir>/report/DnaSeq.bwa_mem_picard_sort_sam.md`.
+For most pipelines, metrics and logs are automatically collected to be displayed in a MultiQC report in HTML format.
 
-At any time during the pipeline processing, you can run the same pipeline command and add the option `--report`.
-This will create a bash script calling the [Pandoc](http://pandoc.org/) converter to aggregate all partial Markdown reports already created into one single HTML document, which you can view in `<output_dir>/report/index.html`.
+This report will be saved under the `report` folder of the GenPipes output directory. 
 
-Thus, if the last pipeline steps fail, you will still get an HTML report containing sections for the first steps only.
-
-The report title value can be overwritten in your copy of `$MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.base.ini` in section `[report]`.
-You can also edit the partial Markdown reports before running the pandoc script, to add custom comments in your HTML report.
-
-For developers: if you want to modify the Markdown report templates, they are all located in `$MUGQIC_PIPELINES_HOME/bfx/report/`.
+If users wish to include additional log files that are not already captured, but are supported by MultiQC, we encourage you to reach out to our deverlopers by emailing [pipelines@computationalgenomics.ca](mailto:pipelines@computationalgenomics.ca). To view all tools currently supported by MultiQC, please visit the [MultiQC](https://multiqc.info/modules/) website. 
 
 
 PBS/Slurm Job Logs
 ------------
-When pipelines are run in PBS (Portable Batch System)  or SLURM job scheduler mode (default), a job list file is created in `<output_dir>/job_output/<PipelineName>_job_list_<timestamp>` and subsequent job log files are placed in `<output_dir>/job_output/<step_name>/<job_name>_<timestamp>.o` e.g.:
+When pipelines are run in PBS (Portable Batch System) or SLURM job scheduler mode (default), a job list file is created in `<output_dir>/job_output/<PipelineName>_job_list_<timestamp>` and subsequent job log files are placed in `<output_dir>/job_output/<step_name>/<job_name>_<timestamp>.o` e.g.:
 ```
 #!text
 my_output_dir/job_output/
@@ -573,10 +541,16 @@ my_output_dir/job_output/
     └── trinotate_2014-10-22T14.05.58.o
 ```
 
-To view a TAB-separated values log report, use `$MUGQIC_PIPELINES_HOME/utils/log_report.pl` script by typing:
+To view a TAB-separated values log report, use the `$MUGQIC_PIPELINES_HOME/utils/log_report.pl` (PBS) or `$MUGQIC_PIPELINES_HOME/utils/log_report.py` (SLURM) script by typing:
 ```
 #!bash
-$MUGQIC_PIPELINES_HOME/utils/log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+```
+or 
+
+```
+#!bash
+log_report.py --tsv log.out <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 ```
 
 which will output e.g.:
@@ -605,9 +579,9 @@ which will output e.g.:
 ...
 ```
 
-A Note about Cedar and Graham
+A Note about non-Alliance Clusters
 ------------
-The default scheduler in GenPipes is the PBS scheduler. Cedar and Graham use the SLURM scheduler. To use GenPipes on Cedar or Graham, don't forget to add the "-j slurm" option.
+The default scheduler in GenPipes is the SLURM scheduler. Beluga, Narval, Cedar and Graham use the SLURM scheduler. To use GenPipes on abacus, don't forget to add the "-j pbs" option.
 
 Call home
 ---------
