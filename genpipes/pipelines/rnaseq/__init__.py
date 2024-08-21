@@ -1859,6 +1859,7 @@ pandoc \\
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".snvs_indels_ann.tsv.gz")
                     ]
                 final_command = bash.ls(output[0])
+                input_dependencies = [input, input_cpsr]
             
             else:
                 output = [
@@ -1867,6 +1868,7 @@ pandoc \\
                         os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv")
                     ]
                 final_command = bash.ls(output[0])
+                input_dependencies = [input]
 
             jobs.append(
                 concat_jobs(
@@ -1886,7 +1888,7 @@ pandoc \\
                     name="report_pcgr." + sample.name,
                     samples=[sample],
                     readsets=list(sample.readsets),
-                    input_dependency=[input_cpsr],
+                    input_dependency=input_dependencies,
                     output_dependency=output
                 )
             )
