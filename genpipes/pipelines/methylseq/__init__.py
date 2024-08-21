@@ -23,7 +23,6 @@ import logging
 import os
 import re
 import itertools
-import csv
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
@@ -32,7 +31,6 @@ from .. import dnaseq
 
 from ...bfx import (
     bash_cmd as bash,
-    bcftools,
     bedtools,
     bismark,
     bissnp,
@@ -105,7 +103,7 @@ Parameters:
     def argparser(cls, argparser):
         super().argparser(argparser)
         cls._argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)",
-                                    choices=["bismark", "hybrid", "dragen"], default="bismark", dest='protocol')
+                                    choices=["bismark", "gembs", "hybrid", "dragen"], default="bismark", dest='protocol')
         return cls._argparser
     @property
     def readsets(self):
@@ -1309,14 +1307,12 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                     )
         return jobs
 
-    def bedtools_intersect(self):
+    def gembs_bcf_to_vcf(self):
         """
         Create vcf of SNPs with bedtools intersect, by intersecting gemBS .bcf with SNP DB.
         """
         jobs = []
 
-        # decide on what to use for snp output - dbSNP database?
-        dbSNP = global_conf.global_get('bedtools_intersect','known_snps')
         # create vcf of snps instead of using gemBS snp output format
 
         for sample in self.samples:
@@ -1329,30 +1325,20 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
             jobs.append(
                 concat_jobs(
                     [
-                    pipe_jobs(
-                        [
-                            bash.mkdir(
-                                variants_dir
-                                ),
-                            bcftools.view(
-                                input,
-                                None,
-                                '-f.,PASS -Ov'
-                                ),
-                            bedtools.intersect(
-                                '-',
-                                snp_output,
-                                dbSNP,
-                                include_header=True
-                                )
-                        ]
+                        bash.mkdir(
+                            variants_dir
+                            ),
+                        tools.gembs_bcf_to_vcf(
+                            input,
+                            snp_output
                             ),
                         bash.gzip(
                             snp_output,
-                            None
+                            None,
+                            '-f '
                             )
                     ],
-                    name = "bedtools_intersect." + sample.name,
+                    name = "gembs_bcf_to_vcf." + sample.name,
                     samples = [sample],
                     input_dependency=[input],
                     output_dependency=[snp_output + ".gz"]
