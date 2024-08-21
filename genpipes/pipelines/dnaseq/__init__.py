@@ -2821,12 +2821,15 @@ END
                         pcgr_directory,
                         f"{sample.name}.pcgr_acmg.{assembly}.flexdb.html"
                     )
+                    input_dependencies = [input_file, input_cpsr, output_cna]
                 # output file name patterns have changed in pcgr versions >2.0.0
+                # cpsr not accepted as input in pcgr v.2.0.3, may change in future releases
                 else:
                     output = os.path.join(
                         pcgr_directory, 
                         f"{sample.name}.pcgr.{assembly}.html"
                     )
+                    input_dependencies = [input_file, output_cna]
             
                 jobs.append(
                     concat_jobs(
@@ -2847,7 +2850,7 @@ END
                         name=f"report_pcgr_tumor_only.{sample.name}",
                         samples=[sample],
                         readsets=[*list(sample.readsets)],
-                        input_dependency=[input_file, input_cpsr, output_cna],
+                        input_dependency=input_dependencies,
                         output_dependency=[output]
                     )
                 )
@@ -2926,11 +2929,15 @@ END
                         pcgr_directory,
                         f"{tumor_pair.name}.pcgr_acmg.{assembly}.flexdb.html"
                     )
+                    input_dependencies = [input_file, input_cpsr, output_cna]
+                # output file name patterns have changed in pcgr versions >2.0.0
+                # cpsr not accepted as input in pcgr v.2.0.3, may change in future releases
                 else:
                     output = os.path.join(
                         pcgr_directory,
                         f"{tumor_pair.name}.pcgr.{assembly}.html"
                     )
+                    input_dependencies = [input_file, output_cna]
 
                 jobs.append(
                     concat_jobs(
@@ -2951,7 +2958,7 @@ END
                         name=job_name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                        input_dependency=[input_file, input_cpsr, output_cna],
+                        input_dependency=input_dependencies,
                         output_dependency=[output]
                     )
                 )
