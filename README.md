@@ -80,7 +80,7 @@ MUGQIC pipelines and compatible Python version are already installed as modules 
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/3.9.1 #TBD UPDATE
+module load mugqic/python/3.11.1
 module load mugqic/genpipes/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
@@ -299,15 +299,10 @@ Usage
 
 For each pipeline, get help about usage, arguments and steps with:
 
-* if you use a `mugqic/genpipes/<version>` module on our clusters (or `mugqic/mugqic_pipelines/<version>`), simply:
+* if you use a `mugqic/genpipes/<version>` module on our clusters or a local pip install, simply:
 ```
 #!bash
 genpipes <pipeline_name> --help
-```
-* if you use your own local install: # TBD CHANGE FOR PIP INSTALL
-```
-#!bash
-$MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.py --help
 ```
 
 Pipelines require as input one Readset File, one or more Configuration File(s) and possibly one Design File, all described below.
@@ -383,24 +378,6 @@ Example:
     sampleA readset2 H3K27ac  N        lib0001 PAIRED_END  run100  2   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset2.paired1.fastq.gz   path/to/readset2.paired2.fastq.gz   path/to/readset2.bam
     sampleB readset3 Input    I        lib0002 PAIRED_END  run200  5   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset3.paired1.fastq.gz   path/to/readset3.paired2.fastq.gz   path/to/readset3.bam
     sampleB readset4 Input    I        lib0002 PAIRED_END  run200  6   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset4.paired1.fastq.gz   path/to/readset4.paired2.fastq.gz   path/to/readset4.bam
-
-### PacBio Assembly # TBD REMOVE?
-
-* Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; mandatory;
-* Readset: a unique readset name with the same allowed characters as above; mandatory;
-* Smartcell: mandatory;
-* NbBasePairs: total number of base pairs for this readset; mandatory;
-* EstimatedGenomeSize: estimated genome size in number of base pairs used to compute seeding read length cutoff; mandatory;
-* BAS: comma-separated list of relative or absolute paths to BAS files (old PacBio format); mandatory if BAX value is missing, ignored otherwise;
-* BAX: comma-separated list of relative or absolute paths to BAX files; BAX file list is used first if both BAX/BAS lists are present; mandatory if BAS value is missing.
-
-Example:
-
-    Sample	Readset	Smartcell	NbBasePairs	EstimatedGenomeSize	BAS	BAX
-    sampleA	readset1	F_01_1	122169744	150000	path/to/readset1.bas.h5	path/to/readset1.1.bax.h5,path/to/readset1.2.bax.h5,path/to/readset1.3.bax.h5
-    sampleA	readset2	F_01_2	105503472	150000	path/to/readset2.bas.h5	path/to/readset2.1.bax.h5,path/to/readset2.2.bax.h5,path/to/readset2.3.bax.h5
-    sampleB	readset3	G_01_1	118603200	150000	path/to/readset3.bas.h5	path/to/readset3.1.bax.h5,path/to/readset3.2.bax.h5,path/to/readset3.3.bax.h5
-    sampleB	readset4	G_01_2	104239488	150000	path/to/readset4.bas.h5	path/to/readset4.1.bax.h5,path/to/readset4.2.bax.h5,path/to/readset4.3.bax.h5
 
 ### Nanopore, Nanopore CoV-Seq
 
@@ -539,11 +516,13 @@ Example:
     sampleD 3
 
 
-HTML Analysis Report # DEPRECATED, REPLACE WITH MULTIQC
+HTML Analysis Report
 --------------------
 For most pipelines, metrics and logs are automatically collected to be displayed in a MultiQC report in HTML format.
 
 This report will be saved under the `report` folder of the GenPipes output directory. 
+
+If users wish to include additional log files that are not already captured, but are supported by MultiQC, we encourage you to reach out to our deverlopers by emailing [pipelines@computationalgenomics.ca](mailto:pipelines@computationalgenomics.ca). To view all tools currently supported by MultiQC, please visit the [MultiQC](https://multiqc.info/modules/) website. 
 
 
 PBS/Slurm Job Logs
@@ -565,13 +544,13 @@ my_output_dir/job_output/
 To view a TAB-separated values log report, use the `$MUGQIC_PIPELINES_HOME/utils/log_report.pl` (PBS) or `$MUGQIC_PIPELINES_HOME/utils/log_report.py` (SLURM) script by typing:
 ```
 #!bash
-$MUGQIC_PIPELINES_HOME/utils/log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 ```
 or 
 
 ```
 #!bash
-$MUGQIC_PIPELINES_HOME/utils/log_report.py <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+log_report.py --tsv log.out <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 ```
 
 which will output e.g.:
