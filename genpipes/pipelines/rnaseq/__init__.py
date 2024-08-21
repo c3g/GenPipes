@@ -1852,6 +1852,7 @@ pandoc \\
                             ]
                         )
             # output file name patterns have changed in pcgr versions >2.0.0
+            # cpsr input not accepted in pcgr 2.0.3, may change in future releases
             elif global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] > "2":
                 output = [
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".html"),
@@ -1859,7 +1860,7 @@ pandoc \\
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".snvs_indels_ann.tsv.gz")
                     ]
                 final_command = bash.ls(output[0])
-                input_dependencies = [input, input_cpsr]
+                input_dependencies = [input]
             
             else:
                 output = [
@@ -1868,7 +1869,7 @@ pandoc \\
                         os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv")
                     ]
                 final_command = bash.ls(output[0])
-                input_dependencies = [input]
+                input_dependencies = [input, input_cpsr]
 
             jobs.append(
                 concat_jobs(
