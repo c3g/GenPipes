@@ -22,11 +22,10 @@ import itertools
 import logging
 import os
 import re
-import itertools
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
-from ...core.job import Job, concat_jobs, pipe_jobs
+from ...core.job import Job, concat_jobs
 from .. import dnaseq
 
 from ...bfx import (
