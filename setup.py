@@ -1,7 +1,7 @@
 import setuptools
 
 setuptools.setup(
-    name='genpipes-suite',
+    name='c3g-genpipes',
     version='5.0.0_beta',
     packages=setuptools.find_packages(),
     url='https://bitbucket.org/mugqic/genpipes/',
