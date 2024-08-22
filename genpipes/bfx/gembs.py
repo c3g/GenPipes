@@ -19,10 +19,11 @@
 
 # Python Standard Modules
 import os
+import re
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
+from ..core.config import global_conf
+from ..core.job import Job
 
 def make_config(genpipes_dir, output):
 
