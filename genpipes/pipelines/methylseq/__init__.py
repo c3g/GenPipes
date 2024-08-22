@@ -332,7 +332,7 @@ Parameters:
                             )
                         ],
                     name="gembs_prepare",
-                    input_dependency=[self.args.readsets.name]
+                    input_dependency=[self.readsets.name]
                     )
                 )
 
