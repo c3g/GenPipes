@@ -1204,7 +1204,7 @@ def gembs_bcf_to_vcf(
             [ini_section, 'module_bedtools']
         ],
         command="""\
-mkdir -p {tmp_dir}/tmp \\
+mkdir -p {tmp_dir}/tmp && \\
 bcftools sort \\
   -T {tmp_dir}/tmp \\
   -m {ram} \\
