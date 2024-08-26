@@ -1204,7 +1204,9 @@ def gembs_bcf_to_vcf(
             [ini_section, 'module_bedtools']
         ],
         command="""\
+mkdir -p {tmp_dir}/tmp \\
 bcftools sort \\
+  -T {tmp_dir}/tmp \\
   -m {ram} \\
   -Ov -o {filter_sorted_bed} \\
   {filter_file} && \\
@@ -1212,6 +1214,7 @@ bcftools view {bcftools_options} \\
   {input} \\
   -o {tmp_output} && \\
 bcftools sort \\
+  -T {tmp_dir}/tmp \\
   -m {ram} \\
   -Ov -o {sorted_tmp_output} \\
   {tmp_output} && \\
@@ -1220,7 +1223,7 @@ bedtools intersect {bedtools_options} \\
   -b {filter_sorted_bed} \\
   > {output}""".format(
         filter_file=global_conf.global_get(ini_section, 'known_variants'),
-        #tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+        tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
         ram=global_conf.global_get(ini_section, 'ram'),
         bcftools_options=global_conf.global_get(ini_section, 'bcftools_options'),
         input=input,
