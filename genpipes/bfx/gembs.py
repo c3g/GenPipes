@@ -80,6 +80,7 @@ call_threads = {global_conf.global_get('gembs_call', 'threads')}
 memory = {global_conf.global_get('gembs_call', 'ram')}
 left_trim = {global_conf.global_get('gembs_call', 'left_trim')}
 right_trim = {global_conf.global_get('gembs_call', 'right_trim')}
+contig_list = {global_conf.global_get('gembs_call', 'contig_list')}
 
 [extract]
 cores = {global_conf.global_get('gembs_extract', 'cores')}
