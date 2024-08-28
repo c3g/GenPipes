@@ -14,7 +14,8 @@ On this page:
 
 Software requirement
 --------------------
-GenPipes have been tested with Python 3.6+ # TBD What will new minimum python requirement be?
+GenPipes has been tested with Python 3.11.1
+It may work with other versions of python, but this has not been extensively tested. 
 
 
 Quick setup for Abacus, Beluga, Narval, Graham and Cedar users
@@ -76,7 +77,7 @@ Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
 export JOB_MAIL=<my.name@my.email.ca>
 ```
 
-MUGQIC pipelines and compatible Python version are already installed as modules on those clusters.
+GenPipes pipelines and compatible Python version are already installed as modules on those clusters.
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
