@@ -905,7 +905,7 @@ END
                                 samtools.sort(
                                     "/dev/stdin",
                                     readset_prefix,
-                                    ini_section='samtools_sort_cram'
+                                    ini_section='samtools_sort'
                                 )
                             ]
                         ),
