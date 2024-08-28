@@ -905,13 +905,13 @@ END
                                 samtools.sort(
                                     "/dev/stdin",
                                     readset_prefix,
-                                    ini_section='samtools_sort_cram'
+                                    ini_section='samtools_sort'
                                 )
                             ]
                         ),
                         samtools.index(
                             readset_prefix,
-                            ini_section='samtools_index_cram'
+                            ini_section='samtools_index'
                         )
                     ],
                     name=f"bwa_mem2_samtools_sort.{readset.name}",
@@ -1161,7 +1161,7 @@ END
                         ),
                         samtools.index(
                             output,
-                            ini_section='samtools_index_cram'
+                            ini_section='samtools_index'
                         ),
                         job_project_tracking_metrics
                     ],
