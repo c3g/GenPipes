@@ -175,7 +175,7 @@ class Pipeline(object):
         steps_doc = []
         for protocol, steps in cls.protocols(cls).items():
             step_lst.append('\nProtocol {}'.format(protocol))
-            for i, step in enumerate(steps):
+            for i, step in enumerate(steps, 1):
                 step_lst.append('{} {}'.format(i, step.__name__))
                 steps_doc.append('{} \n{}\n {}'.format(step.__name__, "-" * len(step.__name__),
                                                        textwrap.dedent(step.__doc__) if step.__doc__ else ""))
