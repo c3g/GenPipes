@@ -1956,6 +1956,7 @@ def main(parsed_args):
     clean = parsed_args.clean
     no_json = parsed_args.no_json
     force = parsed_args.force
+    force_mem_per_cpu = parsed_args.force_mem_per_cpu
     job_scheduler = parsed_args.job_scheduler
     output_dir = parsed_args.output_dir
     steps = parsed_args.steps
@@ -1965,6 +1966,6 @@ def main(parsed_args):
     # Specific pipeline options
     protocol = parsed_args.protocol
 
-    pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
+    pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
 
     pipeline.submit_jobs()

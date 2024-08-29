@@ -8373,6 +8373,7 @@ def main(parsed_args):
     clean = parsed_args.clean
     no_json = parsed_args.no_json
     force = parsed_args.force
+    force_mem_per_cpu = parsed_args.force_mem_per_cpu
     job_scheduler = parsed_args.job_scheduler
     output_dir = parsed_args.output_dir
     steps = parsed_args.steps
@@ -8382,6 +8383,6 @@ def main(parsed_args):
     profyle = parsed_args.profyle
     pairs_file = parsed_args.pairs
 
-    pipeline = DnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, no_json=no_json, container=container, profyle=profyle, pairs_file=pairs_file)
+    pipeline = DnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, no_json=no_json, container=container, profyle=profyle, pairs_file=pairs_file)
 
     pipeline.submit_jobs()

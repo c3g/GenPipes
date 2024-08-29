@@ -51,7 +51,7 @@ class Pipeline(object):
 
     def __init__(self, config_files, sanity_check=False,
                  output_dir=None, job_scheduler=None, container=None, genpipes_file=None, no_json=False,
-                 json_pt=None, steps=None, clean=False, force=False):
+                 json_pt=None, steps=None, clean=False, force=False, force_mem_per_cpu=None):
 
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H.%M.%S")
 
@@ -274,6 +274,10 @@ class Pipeline(object):
     @property
     def force_jobs(self):
         return self._force_jobs
+    
+    @property
+    def force_mem_per_cpu(self):
+        return self._force_mem_per_cpu
 
     @property
     def protocol(self):
