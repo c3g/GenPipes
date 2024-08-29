@@ -163,6 +163,8 @@ class Pipeline(object):
     {error}
 ***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""".format(error=e))
                 exit(1)
+
+        self._force_mem_per_cpu=force_mem_per_cpu
             
     @classmethod
     def process_help(cls, argv):
