@@ -109,6 +109,20 @@ If you want to use the most recent development version:
 git clone git@bitbucket.org:mugqic/genpipes.git
 ```
 
+### Installation
+
+GenPipes can be installed via pip:
+```
+pip install c3g-genpipes
+```
+or to install a version downloaded from bitbucket:
+```
+cd <bitbucket-repo>
+pip install .
+```
+
+The installation location may have to be added to your PATH, if it is not already on PATH. (See Setup)
+
 #### GenPipes' Container:
 
 A new installation with a better taste:
@@ -140,6 +154,13 @@ Set `MUGQIC_PIPELINES_HOME` to your local copy path, in your *$HOME/.bash_profil
 ```
 #!bash
 export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
+```
+
+Add the installation location to your path, if it is not already on path, in your *$HOME/.bash_profile*:
+```
+# for example:
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+export PATH
 ```
 
 GenPipes (formerly called MUGQIC Pipelines) requires genomes and modules resources to run properly.
