@@ -532,8 +532,8 @@ exit \$GenPipes_STATE" | \\
                         global_conf.global_get(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
                         global_conf.global_get(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
                         self.walltime(job_name_prefix) + " " + \
-                        self.memory(job_name_prefix) + " " + \
-                        self.cpu(job_name_prefix) + " " + \
+                        self.memory(job_name_prefix, adapt=pipeline._force_mem_per_cpu) + " " + \
+                        self.cpu(job_name_prefix, adapt=pipeline._force_mem_per_cpu) + " " + \
                         global_conf.global_get(job_name_prefix, 'cluster_queue') + " "
 
                     if job.dependency_jobs:
