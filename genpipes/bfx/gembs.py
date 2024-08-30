@@ -33,7 +33,7 @@ def make_config(genpipes_dir, output):
 
 reference = {global_conf.global_get('gembs_prepare', 'gem3_genome_fasta')}
 
-index_dir = {genpipes_dir}/alignment/index
+index_dir = {global_conf.global_get('gembs_prepare', 'gem3_index_dir')}
 sequence_dir = {genpipes_dir}
 bam_dir = {genpipes_dir}/alignment/@BARCODE
 bcf_dir = {genpipes_dir}/methylation_call/@BARCODE
@@ -41,7 +41,7 @@ extract_dir = {genpipes_dir}/variants/@BARCODE
 report_dir = {genpipes_dir}/report
 
 project = {global_conf.global_get('gembs_report', 'project_name')}
-species = {global_conf.global_get('default', 'scientific_name')}
+species = {global_conf.global_get('default', 'scientific_name')}.{global_conf.global_get('default', 'assembly')}
 
 # Default parameters
 threads = 1
@@ -54,7 +54,7 @@ memory = {global_conf.global_get('gembs_index', 'ram')}
 
 [dbsnp]
 dbsnp_files = {global_conf.global_get('default', 'known_variants')}
-dbsnp_index = {genpipes_dir}/alignment/index/dbSNP_gemBS.idx
+dbsnp_index = {global_conf.global_get('default', 'gem3_index_dir')}/dbSNP_gemBS.idx
 {"dbsnp_selected = " + global_conf.global_get('default', 'selected_snps') if global_conf.global_get('default', 'selected_snps', required = False) else ""}
 {"dbsnp_chrom_alias = " + global_conf.global_get('default', 'alias_file') if global_conf.global_get('default', 'alias_file', required = False) else ""}
 
@@ -115,14 +115,8 @@ echo -e 'sampleID,dataset,library,sample,file1,file2 {metadata_list}' > {metadat
 
 def prepare(metadata, config_file, output_dir):
 
-    prefix = os.path.join(output_dir, "alignment/index", global_conf.global_get('default', 'scientific_name') + ".gemBS.")
     output = [
             output_dir + "/.gemBS/gemBS.mp",
-            prefix + "ref",
-            prefix + "ref.fai",
-            prefix + "ref.gzi",
-            prefix + "contig_sizes",
-            prefix + "contig_md5"
             ]
     
     return Job(
@@ -163,7 +157,7 @@ gemBS {gembs_flags} {gembs_options} \\
             )
         )
 
-def map(sample, index, output_dir):
+def map(sample, output_dir):
     outputs = [
             output_dir + "/" + sample + ".bam",
             output_dir + "/" + sample + ".bam.csi",
@@ -172,7 +166,7 @@ def map(sample, index, output_dir):
             ]
 
     return Job(
-        index,
+        [os.path.join(output_dir, ".gemBS", "gemBS.mp")],
         outputs,
         [
             ['gembs_map', 'module_gembs']

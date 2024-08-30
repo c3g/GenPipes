@@ -277,7 +277,6 @@ Parameters:
 
         metadata_file = os.path.join(self.output_dir, "metadata.csv")
         gembs_config_file = os.path.join(self.output_dir, "gembs.config")
-        index_dir = os.path.join(self.output_dirs["alignment_directory"], "index")
 
         metadata_list = []
         
@@ -316,7 +315,6 @@ Parameters:
         jobs.append(
                 concat_jobs(
                     [
-                        bash.mkdir(index_dir),
                         gembs.make_metadata(
                             metadata_list,
                             metadata_file
@@ -346,21 +344,6 @@ Parameters:
         jobs = []
 
         gembs_config = os.path.join(self.output_dir, ".gemBS/gemBS.mp")
-        index = os.path.join(self.output_dirs["alignment_directory"], "index", global_conf.global_get('default', 'scientific_name') + ".BS.gem")
-
-        jobs.append(
-                concat_jobs(
-                    [
-                        bash.rm(index),
-                        gembs.index(
-                            gembs_config,
-                            index
-                            )
-                        ],
-                    name = "gembs_index",
-                    input_dependency=[gembs_config]
-                    )
-                )
 
         for sample in self.samples:
             alignment_dir = os.path.join(self.output_dirs["alignment_directory"], sample.name)
@@ -392,8 +375,7 @@ Parameters:
                                 config_dir
                                 ),
                             gembs.map(
-                                sample.name, 
-                                index,
+                                sample.name,
                                 alignment_dir
                                 ),
                             bash.ln(
@@ -403,7 +385,7 @@ Parameters:
                         ],
                         name = "gembs_map." + sample.name,
                         samples = [sample],
-                        input_dependency=[gembs_config,index] + trim_files
+                        input_dependency=[gembs_config] + trim_files
                         )
                     )
         return jobs
