@@ -363,7 +363,7 @@ def mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates="
     else:
         return Job(
             inputs,
-            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            [output, re.sub(r"\.([sb])am$", ".\\1ai", output), metrics_file],
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_picard']

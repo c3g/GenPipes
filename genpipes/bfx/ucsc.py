@@ -46,7 +46,7 @@ def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True, ini_section='u
         remove_head_command="""\
 ({open} {input_bed_graph} | head -n 1 > {input_bed_graph}.head.tmp ; ec=$?; if [ "$ec" -eq 141 ]; then exit 0; else exit "$ec"; fi) && \\
 {open} {input_bed_graph} | awk ' NR > 1 ' | sort  --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
-awk '{{if($0 !~ /^[A-W]/) print "{chrom}"$0; else print $0}}' | grep -v "GL\\|lambda\\|pUC19\\|KI\\|\KN\\|random" {chromosome_sed} | \\
+awk '{{if($0 !~ /^[A-W]/) print "{chrom}"$0; else print $0}}' | grep -v "GL\\|lambda\\|pUC19\\|KI\\|\\KN\\|random" {chromosome_sed} | \\
 awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.body.tmp && \\
 cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.sorted && \\
 rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
@@ -59,7 +59,7 @@ rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
     else:
         remove_head_command="""\
 {open} {input_bed_graph} | sort --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
-awk '{{if($0 !~ /^[A-W]/) print "{chrom}"$0; else print $0}}' | grep -v "GL\\|lambda\\|pUC19\\|KI\\|\KN\\|random" {chromosome_sed} | \\
+awk '{{if($0 !~ /^[A-W]/) print "{chrom}"$0; else print $0}}' | grep -v "GL\\|lambda\\|pUC19\\|KI\\|\\KN\\|random" {chromosome_sed} | \\
 awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.sorted""".format(
             open="zcat" if (os.path.splitext(input_bed_graph)[1] == ".gz") else "cat",
             input_bed_graph=input_bed_graph,

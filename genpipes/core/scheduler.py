@@ -222,7 +222,7 @@ class Scheduler:
             append_command = f" | tee {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o "
             test_condition = """
 grep {pattern} {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o
-NO_PROBLEM_IN_LOG=\$?
+NO_PROBLEM_IN_LOG=\\$?
 
   if [[  \\$NO_PROBLEM_IN_LOG == 0 ]] ; then
    echo {pattern} found in job log, forcing error 
@@ -506,10 +506,10 @@ echo GenPipesExitStatus:\\$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
-if [ \$GenPipes_STATE -eq 0 ] ; then
+if [ \\$GenPipes_STATE -eq 0 ] ; then
   touch $JOB_DONE ;
 fi
-exit \$GenPipes_STATE" | \\
+exit \\$GenPipes_STATE" | \\
 """.format(
                         container_line=self.container_line,
                         job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),

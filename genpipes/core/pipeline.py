@@ -116,7 +116,7 @@ class Pipeline(object):
             if re.search(r"^\d+([,-]\d+)*$", steps):
                 self._step_to_execute = [Step(self.step_list[i - 1]) for i in parse_range(steps)]
             else:
-                raise Exception(f"""Error: step range "{steps}" is invalid (should match \d+([,-]\d+)*)!""")
+                raise Exception(f"""Error: step range "{steps}" is invalid (should match \\d+([,-]\\d+)*)!""")
         else:
             log.warning("No step provided by the user => launching the entire pipeline\n")
             self._step_to_execute = [Step(step) for step in self.step_list]

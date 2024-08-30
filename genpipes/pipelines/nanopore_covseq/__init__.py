@@ -688,8 +688,8 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
                             input_files=[quast_tsv, quast_html],
                             output_files=[],
                             command="""\\
-cons_len=`grep -oP "Total length \\(>= 0 bp\\)\\t\K.*?(?=$)" {quast_tsv}`
-N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\\[\K.*?(?=])" {quast_html}`
+cons_len=`grep -oP "Total length \\(>= 0 bp\\)\\t\\K.*?(?=$)" {quast_tsv}`
+N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\\[\\K.*?(?=])" {quast_html}`
 cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
 frameshift=`if grep -q "frameshift_variant" {annotated_vcf}; then echo "FLAG"; fi`
 STATUS=`awk -v frameshift=$frameshift -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 5 && frameshift != "FLAG") {{print "pass"}} else if ((cons_perc_N >= 5 && cons_perc_N <= 10 ) || frameshift == "FLAG") {{print "flag"}} else if (cons_perc_N > 10) {{print "rej"}} }}'`

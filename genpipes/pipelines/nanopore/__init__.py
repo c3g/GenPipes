@@ -134,7 +134,7 @@ For information on the structure and contents of the Nanopore readset file, plea
 
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
             out_bam = os.path.join(alignment_directory, readset.name + ".sorted.bam")
-            out_bai = re.sub("\.bam$", ".bam.bai", out_bam)
+            out_bai = re.sub(r"\.bam$", ".bam.bai", out_bam)
 
             if readset.fastq_files:
                 reads_fastq_dir = readset.fastq_files
