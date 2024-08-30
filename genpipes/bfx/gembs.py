@@ -31,7 +31,7 @@ def make_config(genpipes_dir, output):
 # gemBS config file 
 # base = {genpipes_dir}
 
-reference = {global_conf.global_get('gembs_prepare', 'gem3_genome_fasta')}
+reference = {global_conf.global_get('gembs_prepare', 'genome_fasta')}
 
 index_dir = {global_conf.global_get('gembs_prepare', 'gem3_index_dir')}
 sequence_dir = {genpipes_dir}
