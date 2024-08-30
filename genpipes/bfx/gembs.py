@@ -113,7 +113,12 @@ echo -e 'sampleID,dataset,library,sample,file1,file2 {metadata_list}' > {metadat
                 )
             )
 
-def prepare(metadata, config_file, output_dir):
+def prepare(
+        metadata, 
+        config_file, 
+        output_dir,
+        ini_section="gembs_prepare"
+        ):
 
     output = [
             output_dir + "/.gemBS/gemBS.mp",
@@ -123,16 +128,19 @@ def prepare(metadata, config_file, output_dir):
         [metadata,config_file],
         output,
         [
-            ['gembs_prepare', 'module_gembs']
+            [ini_section, 'module_gembs']
         ],
         command="""\
 rm -rf {hidden_dir}
-gemBS prepare {flags} {options} \\
+gemBS {gembs_flags} {gembs_options} \\
+  prepare {flags} {options} \\
   --config {config_file} \\
   --text-metadata {metadata}""".format(
       hidden_dir=output_dir + "/.gemBS",
-      flags=global_conf.global_get('gembs_prepare', 'flags', required=False),
-      options=global_conf.global_get('gembs_prepare', 'options', required=False),
+      gembs_flags=global_conf.global_get(ini_section, 'gembs_flags', required=False),
+      gembs_options=global_conf.global_get(ini_section, 'gembs_options', required=False),
+      flags=global_conf.global_get(ini_section, 'flags', required=False),
+      options=global_conf.global_get(ini_section, 'options', required=False),
       config_file=config_file,
       metadata=metadata
       )
@@ -157,7 +165,11 @@ gemBS {gembs_flags} {gembs_options} \\
             )
         )
 
-def map(sample, output_dir):
+def map(
+        sample, 
+        output_dir,
+        ini_section="gembs_map"
+        ):
     outputs = [
             output_dir + "/" + sample + ".bam",
             output_dir + "/" + sample + ".bam.csi",
@@ -169,7 +181,7 @@ def map(sample, output_dir):
         [os.path.join(output_dir, ".gemBS", "gemBS.mp")],
         outputs,
         [
-            ['gembs_map', 'module_gembs']
+            [ini_section, 'module_gembs']
         ],
         command="""\
 gemBS {gembs_flags} {gembs_options} \\
@@ -177,17 +189,22 @@ gemBS {gembs_flags} {gembs_options} \\
   map {flags} {options} \\
   --barcode {sample} \\
   --tmp-dir {tmp_dir}""".format(
-      gembs_flags=global_conf.global_get('gembs_map', 'gembs_flags', required=False),
-      gembs_options=global_conf.global_get('gembs_map', 'gembs_options', required=False),
+      gembs_flags=global_conf.global_get(ini_section, 'gembs_flags', required=False),
+      gembs_options=global_conf.global_get(ini_section, 'gembs_options', required=False),
       working_dir=output_dir,
-      flags=global_conf.global_get('gembs_map', 'flags', required=False),
-      options=global_conf.global_get('gembs_map', 'options', required=False),
+      flags=global_conf.global_get(ini_section, 'flags', required=False),
+      options=global_conf.global_get(ini_section, 'options', required=False),
       sample=sample,
-      tmp_dir=global_conf.global_get('gembs_map', 'tmp_dir')
+      tmp_dir=global_conf.global_get(ini_section, 'tmp_dir')
       )
     )
 
-def call(sample, input, output_prefix):
+def call(
+        sample, 
+        input, 
+        output_prefix,
+        ini_section="gembs_call"
+        ):
     outputs = [
             output_prefix + "_call.json",
             output_prefix + ".bcf",
@@ -199,7 +216,7 @@ def call(sample, input, output_prefix):
         [input],
         outputs,
         [
-            ['gembs_call', 'module_gembs']
+            [ini_section, 'module_gembs']
         ],
         command = """\
 gemBS {gembs_flags} {gembs_options} \\
@@ -207,18 +224,23 @@ gemBS {gembs_flags} {gembs_options} \\
   call {flags} {options} \\
   --barcode {sample} \\
   --tmp-dir {tmp_dir} {dbSNP}""".format(
-      gembs_flags=global_conf.global_get('gembs_call', 'gembs_flags', required=False),
-      gembs_options=global_conf.global_get('gembs_call', 'gembs_options', required=False),
+      gembs_flags=global_conf.global_get(ini_section, 'gembs_flags', required=False),
+      gembs_options=global_conf.global_get(ini_section, 'gembs_options', required=False),
       working_dir=os.path.dirname(output_prefix),
-      flags=global_conf.global_get('gembs_call', 'flags', required=False),
-      options=global_conf.global_get('gembs_call', 'options', required=False),
+      flags=global_conf.global_get(ini_section, 'flags', required=False),
+      options=global_conf.global_get(ini_section, 'options', required=False),
       sample=sample,
-      tmp_dir=global_conf.global_get('gembs_call', 'tmp_dir'),
-      dbSNP="-D " + global_conf.global_get('gembs_call', 'dbSNP_index') if global_conf.global_get('gembs_call', 'dbSNP_index', required=False) else ""
+      tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+      dbSNP="-D " + global_conf.global_get(ini_section, 'dbSNP_index') if global_conf.global_get(ini_section, 'dbSNP_index', required=False) else ""
       )
     )
 
-def extract(input, sample, output_dir):
+def extract(
+        input, 
+        sample, 
+        output_dir,
+        ini_section="gembs_extract"
+        ):
     output = [
             output_dir + "/" + sample + "_cpg.bb",
             output_dir + "/" + sample + "_cpg.bed.gz"
@@ -228,23 +250,27 @@ def extract(input, sample, output_dir):
         [input],
         output,
         [
-            ['gembs_extract', 'module_gembs']
+            [ini_section, 'module_gembs']
         ],
         command="""\
 gemBS {gembs_flags} {gembs_options} \\
   --dir {working_dir} \\
   extract {flags} {options} \\
   --barcode {sample}""".format(
-    gembs_flags=global_conf.global_get('gembs_extract', 'gembs_flags', required=False),
-    gembs_options=global_conf.global_get('gembs_extract', 'gembs_options', required=False),
+    gembs_flags=global_conf.global_get(ini_section, 'gembs_flags', required=False),
+    gembs_options=global_conf.global_get(ini_section, 'gembs_options', required=False),
     working_dir=output_dir,
-    flags=global_conf.global_get('gembs_extract', 'flags', required=False),
-    options=global_conf.global_get('gembs_extract', 'options', required=False),
+    flags=global_conf.global_get(ini_section, 'flags', required=False),
+    options=global_conf.global_get(ini_section, 'options', required=False),
     sample=sample
     )
 )
 
-def report(inputs, output):
+def report(
+        inputs, 
+        output,
+        ini_section="gembs_report"
+        ):
 
     output_dir = os.path.dirname(output)
     outputs = [
@@ -257,10 +283,13 @@ def report(inputs, output):
         inputs,
         outputs,
         [
-            ['gembs_report', 'module_gembs']
+            [ini_section, 'module_gembs']
         ],
         command="""\
-gemBS report {flags} {options}""".format(
+gemBS {gembs_flags} {gembs_options} \\
+  report {flags} {options}""".format(
+    gembs_flags=global_conf.global_get(ini_section, 'gembs_flags', required=False),
+    gembs_options=global_conf.global_get(ini_section, 'gembs_options', required=False),
     flags=global_conf.global_get('gembs_report', 'flags', required=False),
     options=global_conf.global_get('gembs_report', 'options', required=False),
             )
