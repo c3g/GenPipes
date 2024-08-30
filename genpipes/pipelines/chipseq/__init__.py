@@ -1413,12 +1413,14 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
   {readset_file} \\
   {self.output_dir} && \\
 declare -A samples_associative_array=({" ".join(samples_associative_array)}) && \\
+first_time=true && \\
 for sample in ${{!samples_associative_array[@]}}
 do
-    header=$(head -n 1 annotation/$sample/peak_stats.csv)
+    if $first_time; then
+        head -n 1 annotation/$sample/peak_stats.csv > annotation/peak_stats_AllSamples.csv
+        first_time=false
     tail -n+2 annotation/$sample/peak_stats.csv >> annotation/peak_stats_AllSamples.csv
 done && \\
-sed -i -e "1 i\\\$header" annotation/peak_stats_AllSamples.csv && \\
 mkdir -p {report_output_directory}/annotation/$sample && \\
 cp annotation/peak_stats_AllSamples.csv {report_output_directory}/annotation/peak_stats_AllSamples.csv && \\
 peak_stats_table=`LC_NUMERIC=en_CA awk -F "," '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, $2,  sprintf("%\\47d", $3), $4, sprintf("%\\47.1f", $5), sprintf("%\\47.1f", $6), sprintf("%\\47.1f", $7), sprintf("%\\47.1f", $8)}}}}' annotation/peak_stats_AllSamples.csv` && \\
@@ -1572,9 +1574,12 @@ done""",
                 name="merge_ihec_metrics",
                 command=f"""\
 cp /dev/null {metrics_merged_out} && \\
+first_time=true && \\
 for sample in {" ".join(metrics_to_merge)}
 do
-    header=$(head -n 1 $sample | cut -f -3,5-17,30-33,35,37,39-)
+    if $first_time; then
+        head -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- > {metrics_merged_out}
+        first_time=false
     tail -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- >> {metrics_merged_out}
 done && \\
 sample_name=`tail -n 1 $sample | cut -f 1` && \\
@@ -1588,8 +1593,7 @@ input_quality=`tail -n 1 $sample | cut -f 38` && \\
 if [[ $input_name != "no_input" ]]
   then
     echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\tNA\\tNA\\tNA\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\tNA\\tNA" >> {metrics_merged_out}
-fi && \\
-sed -i -e "1 i\\\$header" {metrics_merged_out}""",
+fi""",
             )
         )
 # ihec table is read by multiqc
