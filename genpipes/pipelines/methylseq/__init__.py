@@ -1287,7 +1287,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                     samples=[readset.sample]
                     )
                 else:
-                    _raise(SanitycheckError(f"Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"))
+                    _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
                 dragen_align = concat_jobs([
                     # To track the dragen output files and done file input dependency and output dependency of the original location should be defined
                     cp_dragen_fastq_job,
@@ -1411,7 +1411,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 rm_dragen_bam_job
                 ],
                 name=f"dragen_methylation_call.{sample.name}",
-                samples=[sample], 
+                samples=[sample],
                 input_dependency=[dragen_bam],
                 output_dependency=[output_report]
                 )
@@ -1430,7 +1430,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
 
         duplicate_marking = global_conf.global_get('dragen_align', 'duplicate_marking', param_type='boolean')
 
-        if duplicate_marking == True:
+        if duplicate_marking is True:
 
             for sample in self.samples:
                 alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
@@ -1582,21 +1582,21 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.bismark_align,
-                self.add_bam_umi,              # step 5  
+                self.add_bam_umi,              # step 5
                 self.sambamba_merge_sam_files,
                 self.picard_remove_duplicates,
                 self.metrics,
                 self.methylation_call,
-                self.wiggle_tracks,           # step 10  
-                self.methylation_profile,      
+                self.wiggle_tracks,           # step 10
+                self.methylation_profile,
                 self.ihec_sample_metrics_report,
                 self.bis_snp,
                 self.filter_snp_cpg,
-                self.prepare_methylkit,           # step 15 
+                self.prepare_methylkit,           # step 15
                 self.methylkit_differential_analysis,
                 self.multiqc,
                 self.cram_output
-            ], 'hybrid': 
+            ], 'hybrid':
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
@@ -1613,7 +1613,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.bis_snp,
                 self.filter_snp_cpg,
                 self.prepare_methylkit,            # step 15
-                self.methylkit_differential_analysis, 
+                self.methylkit_differential_analysis,
                 self.multiqc,
                 self.cram_output
             ], 'dragen':
