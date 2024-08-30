@@ -560,7 +560,7 @@ For information on the structure and contents of the Nanopore readset file, plea
             metrics_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics", sample.name + ".snpEff")
 
             input_vcf = os.path.join(variant_directory, sample.name + ".pass.vcf.gz")
-            output_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+            output_vcf = os.path.join(variant_directory, re.sub(r"\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
 
             jobs.append(
                 concat_jobs([
@@ -678,7 +678,7 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
 
             variant_directory = os.path.join("variant", sample.name)
             input_vcf = os.path.join(variant_directory, sample.name + ".pass.vcf.gz")
-            annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+            annotated_vcf = os.path.join(variant_directory, re.sub(r"\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
 
             jobs.append(
                 concat_jobs(
@@ -688,8 +688,8 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
                             input_files=[quast_tsv, quast_html],
                             output_files=[],
                             command="""\\
-cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_tsv}`
-N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_html}`
+cons_len=`grep -oP "Total length \\(>= 0 bp\\)\\t\K.*?(?=$)" {quast_tsv}`
+N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\\[\K.*?(?=])" {quast_html}`
 cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
 frameshift=`if grep -q "frameshift_variant" {annotated_vcf}; then echo "FLAG"; fi`
 STATUS=`awk -v frameshift=$frameshift -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 5 && frameshift != "FLAG") {{print "pass"}} else if ((cons_perc_N >= 5 && cons_perc_N <= 10 ) || frameshift == "FLAG") {{print "flag"}} else if (cons_perc_N > 10) {{print "rej"}} }}'`

@@ -146,7 +146,7 @@ def junction_saturation(input, output, ini_section='rseqc'):
     )
 
 def tin(input, output_dir, ini_section='rseqc'):
-    file = re.sub("\.bam$", ".summary.txt", os.path.basename(input))
+    file = re.sub(r"\.bam$", ".summary.txt", os.path.basename(input))
     output = os.path.join(output_dir, file)
     return Job(
         [input],

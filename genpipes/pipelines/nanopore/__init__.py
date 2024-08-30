@@ -250,8 +250,8 @@ For information on the structure and contents of the Nanopore readset file, plea
 
                 readset_bam = readset_bams[0]
 
-                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
+                readset_index = re.sub(r"\.bam$", ".bam.bai", readset_bam)
+                sample_index = re.sub(r"\.bam$", ".bam.bai", sample_bam)
 
                 job = concat_jobs(
                     [

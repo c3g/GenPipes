@@ -156,8 +156,8 @@ bedtools genomecov {other_options} \\
   {input} \\
   {genome} \\
   > {output_file}""".format(
-            input="-ibam " + input_file if re.search("\.bam$", os.path.basename(input_file)) else "-i " + input_file,
-            genome="-g " + global_conf.global_get('bedtools_genomecov', 'genome_fasta') if not re.search("\.bam$", os.path.basename(input_file)) else "",
+            input="-ibam " + input_file if re.search(r"\.bam$", os.path.basename(input_file)) else "-i " + input_file,
+            genome="-g " + global_conf.global_get('bedtools_genomecov', 'genome_fasta') if not re.search(r"\.bam$", os.path.basename(input_file)) else "",
             other_options=global_conf.global_get('bedtools_genomecov', 'other_options', required=False),
             output_file=output_file
         )

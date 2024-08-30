@@ -113,11 +113,10 @@ class Pipeline(object):
         self._step_to_execute = None
         self.steps = steps
         if self.steps:
-            if re.search("^\d+([,-]\d+)*$", steps):
+            if re.search(r"^\d+([,-]\d+)*$", steps):
                 self._step_to_execute = [Step(self.step_list[i - 1]) for i in parse_range(steps)]
             else:
-                raise Exception("Error: step range \"" + steps +
-                    "\" is invalid (should match \d+([,-]\d+)*)!")
+                raise Exception(f"""Error: step range "{steps}" is invalid (should match \d+([,-]\d+)*)!""")
         else:
             log.warning("No step provided by the user => launching the entire pipeline\n")
             self._step_to_execute = [Step(step) for step in self.step_list]
@@ -441,13 +440,13 @@ class Pipeline(object):
         if self.json:
             # Check if portal_output_dir is set from a valid environment variable
             self.portal_output_dir = global_conf.global_get('DEFAULT', 'portal_output_dir', required=False)
-            if self.portal_output_dir.startswith("$") and (os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
+            if self.portal_output_dir.startswith("$") and (os.environ.get(re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
                 if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
                     self.portal_output_dir = ""
                     log.info(" --> PORTAL_OUTPUT_DIR environment variable is not set... no JSON file will be generated during analysis...\n")
                     self._json = False
                 else:
-                    _raise(SanitycheckError("Environment variable \"" + re.search("^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
+                    _raise(SanitycheckError("Environment variable \"" + re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
             elif not os.path.isdir(os.path.expandvars(self.portal_output_dir)):
                 _raise(SanitycheckError("Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
             else:

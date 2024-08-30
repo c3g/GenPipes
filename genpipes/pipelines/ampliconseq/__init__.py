@@ -289,7 +289,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END)!"""))
 
             job = flash.flash(
                 fastq1,
@@ -468,7 +468,7 @@ cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/""".format(
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, _] = self.select_input_files(candidate_input_files)
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END)!"""))
 
             flash_hist = os.path.join(self.output_dirs["merge_directory"], readset.sample.name, readset.name + ".flash.hist")
             job = concat_jobs(
@@ -573,8 +573,7 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                 dada2_inputs.append(left_or_single_reads)
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
         jobs.append(
             concat_jobs(

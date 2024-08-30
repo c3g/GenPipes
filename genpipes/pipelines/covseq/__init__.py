@@ -1407,8 +1407,8 @@ Parameters:
                             input_files=[quast_ivar_tsv, quast_ivar_html],
                             output_files=[],
                             command=f"""\\
-ivar_cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_ivar_tsv}`
-ivar_N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_ivar_html}`
+ivar_cons_len=`grep -oP "Total length \\(>= 0 bp\\)\\t\K.*?(?=$)" {quast_ivar_tsv}`
+ivar_N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\\[\K.*?(?=])" {quast_ivar_html}`
 ivar_cons_perc_N=`echo "scale=2; 100*$ivar_N_count/$ivar_cons_len" | bc -l`
 ivar_frameshift=`if grep -q "frameshift_variant" {ivar_annotated_vcf}; then echo "FLAG"; fi`
 genome_size=`awk '{{print $2}}' {global_conf.global_get('DEFAULT', 'igv_genome', required=True)}`
@@ -1477,8 +1477,8 @@ ln -sf {os.path.basename(ivar_output_status_fa)} {ivar_output_fa}"""
                             input_files=[quast_freebayes_tsv, quast_freebayes_html],
                             output_files=[],
                             command=f"""\\
-freebayes_cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_freebayes_tsv}`
-freebayes_N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_freebayes_html}`
+freebayes_cons_len=`grep -oP "Total length \\(>= 0 bp\\)\\t\K.*?(?=$)" {quast_freebayes_tsv}`
+freebayes_N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\\[\K.*?(?=])" {quast_freebayes_html}`
 freebayes_cons_perc_N=`echo "scale=2; 100*$freebayes_N_count/$freebayes_cons_len" | bc -l`
 freebayes_frameshift=`if grep -q "frameshift_variant" {freebayes_annotated_vcf}; then echo "FLAG"; fi`
 genome_size=`awk '{{print $2}}' {global_conf.global_get('DEFAULT', 'igv_genome', required=False)}`

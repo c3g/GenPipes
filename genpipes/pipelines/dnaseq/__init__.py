@@ -3724,7 +3724,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             bash.sed(
                                 None,
                                 None,
-                                "-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                                r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
                             ),
                             htslib.bgzip_tabix(
                                 None,
@@ -3967,7 +3967,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         bash.sed(
                             None,
                             None,
-                            "-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                            r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -6571,7 +6571,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                                 bash.sed(
                                                     None,
                                                     None,
-                                                    "-e 's#/\.##g'"
+                                                    r"-e 's#/\.##g'"
                                                 )
                                             ]
                                         ),
@@ -6638,7 +6638,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                                 bash.sed(
                                                     None,
                                                     None,
-                                                    "-e 's#/\.##g'"
+                                                    r"-e 's#/\.##g'"
                                                 )
                                             ]
                                         ),
@@ -6705,7 +6705,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                                 bash.sed(
                                                     None,
                                                     None,
-                                                    "-e 's#/\.##g'"
+                                                    r"-e 's#/\.##g'"
                                                 )
                                             ]
                                         ),

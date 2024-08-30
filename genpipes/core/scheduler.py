@@ -105,9 +105,9 @@ class Scheduler:
         try:
             if "ppn" in cpu_str or '-c' in cpu_str:
                 # to be back compatible
-                cpu = re.search("(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
+                cpu = re.search(r"(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
             else:
-                cpu = re.search("[0-9]+", cpu_str).group()
+                cpu = re.search(r"[0-9]+", cpu_str).group()
         except AttributeError:
             raise ValueError(f'"{cpu_str}" is not a valid entry for "cluster_cpu" ({job_name_prefix=})')
         return cpu
@@ -224,7 +224,7 @@ class Scheduler:
 grep {pattern} {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o
 NO_PROBLEM_IN_LOG=\$?
 
-  if [[  \$NO_PROBLEM_IN_LOG == 0 ]] ; then
+  if [[  \\$NO_PROBLEM_IN_LOG == 0 ]] ; then
    echo {pattern} found in job log, forcing error 
    GenPipes_STATE=74
 fi
@@ -501,8 +501,8 @@ chmod 755 $COMMAND
 
                     cmd = """\
 echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
-GenPipes_STATE=\$PIPESTATUS
-echo GenPipesExitStatus:\$GenPipes_STATE
+GenPipes_STATE=\\$PIPESTATUS
+echo GenPipesExitStatus:\\$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
@@ -742,23 +742,23 @@ echo "#! /bin/bash
 echo '#######################################'
 echo 'SLURM FAKE PROLOGUE (GenPipes)'
 date
-scontrol show job \$SLURM_JOBID
-sstat -j \$SLURM_JOBID.batch
+scontrol show job \\$SLURM_JOBID
+sstat -j \\$SLURM_JOBID.batch
 echo '#######################################'
 rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
-GenPipes_STATE=\$PIPESTATUS
-echo GenPipesExitStatus:\$GenPipes_STATE
+GenPipes_STATE=\\$PIPESTATUS
+echo GenPipesExitStatus:\\$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
-if [ \$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+if [ \\$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 echo '#######################################'
 echo 'SLURM FAKE EPILOGUE (GenPipes)'
 date
-scontrol show job \$SLURM_JOBID
-sstat -j \$SLURM_JOBID.batch
+scontrol show job \\$SLURM_JOBID
+sstat -j \\$SLURM_JOBID.batch
 echo '#######################################'
-exit \$GenPipes_STATE" | \\
+exit \\$GenPipes_STATE" | \\
 """.format(
                         job=job,
                         job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),

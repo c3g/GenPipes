@@ -32,7 +32,7 @@ def parse_sequence_dictionary_file(sequence_dictionary_file, variant=False):
 
     with open(sequence_dictionary_file) as sdf:
         for line in sdf:
-            parsed_line = re.search("^@SQ\tSN:([^\t]+)\tLN:(\d+)", line)
+            parsed_line = re.search(r"^@SQ\tSN:([^\t]+)\tLN:(\d+)", line)
             if parsed_line:
                 if variant:
                     if "_" in parsed_line.group(1) or "." in parsed_line.group(1) or "EBV" in parsed_line.group(1) or "hs37d5" in parsed_line.group(1):
