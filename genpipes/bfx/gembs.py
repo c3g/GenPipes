@@ -48,10 +48,6 @@ threads = 1
 cores = 1
 jobs = 1
 
-[index]
-threads = {global_conf.global_get('gembs_index', 'threads')}
-memory = {global_conf.global_get('gembs_index', 'ram')}
-
 [dbsnp]
 dbsnp_files = {global_conf.global_get('default', 'known_variants')}
 dbsnp_index = {global_conf.global_get('default', 'gem3_index_dir')}/dbSNP_gemBS.idx
