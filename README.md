@@ -14,7 +14,8 @@ On this page:
 
 Software requirement
 --------------------
-GenPipes have been tested with Python 3.6+ # TBD What will new minimum python requirement be?
+GenPipes has been tested with Python 3.11.1
+It may work with other versions of python, but this has not been extensively tested. 
 
 
 Quick setup for Abacus, Beluga, Narval, Graham and Cedar users
@@ -76,7 +77,7 @@ Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
 export JOB_MAIL=<my.name@my.email.ca>
 ```
 
-MUGQIC pipelines and compatible Python version are already installed as modules on those clusters.
+GenPipes pipelines and compatible Python version are already installed as modules on those clusters.
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
@@ -107,6 +108,20 @@ If you want to use the most recent development version:
 #!bash
 git clone git@bitbucket.org:mugqic/genpipes.git
 ```
+
+### Installation
+
+GenPipes can be installed via pip:
+```
+pip install c3g-genpipes
+```
+or to install a version downloaded from bitbucket:
+```
+cd <bitbucket-repo>
+pip install .
+```
+
+The installation location may have to be added to your PATH, if it is not already on PATH. (See Setup)
 
 #### GenPipes' Container:
 
@@ -139,6 +154,13 @@ Set `MUGQIC_PIPELINES_HOME` to your local copy path, in your *$HOME/.bash_profil
 ```
 #!bash
 export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
+```
+
+Add the installation location to your path, if it is not already on path, in your *$HOME/.bash_profile*:
+```
+# for example:
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+export PATH
 ```
 
 GenPipes (formerly called MUGQIC Pipelines) requires genomes and modules resources to run properly.

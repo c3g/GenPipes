@@ -51,7 +51,7 @@ class Pipeline(object):
 
     def __init__(self, config_files, sanity_check=False,
                  output_dir=None, job_scheduler=None, container=None, genpipes_file=None, no_json=False,
-                 json_pt=None, steps=None, clean=False, force=False):
+                 json_pt=None, steps=None, clean=False, force=False, force_mem_per_cpu=None):
 
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H.%M.%S")
 
@@ -163,6 +163,8 @@ class Pipeline(object):
     {error}
 ***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""".format(error=e))
                 exit(1)
+
+        self._force_mem_per_cpu=force_mem_per_cpu
             
     @classmethod
     def process_help(cls, argv):
@@ -175,7 +177,7 @@ class Pipeline(object):
         steps_doc = []
         for protocol, steps in cls.protocols(cls).items():
             step_lst.append('\nProtocol {}'.format(protocol))
-            for i, step in enumerate(steps):
+            for i, step in enumerate(steps, 1):
                 step_lst.append('{} {}'.format(i, step.__name__))
                 steps_doc.append('{} \n{}\n {}'.format(step.__name__, "-" * len(step.__name__),
                                                        textwrap.dedent(step.__doc__) if step.__doc__ else ""))
@@ -274,6 +276,10 @@ class Pipeline(object):
     @property
     def force_jobs(self):
         return self._force_jobs
+    
+    @property
+    def force_mem_per_cpu(self):
+        return self._force_mem_per_cpu
 
     @property
     def protocol(self):
