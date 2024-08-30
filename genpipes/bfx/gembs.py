@@ -41,7 +41,7 @@ extract_dir = {genpipes_dir}/variants/@BARCODE
 report_dir = {genpipes_dir}/report
 
 project = {global_conf.global_get('gembs_report', 'project_name')}
-species = {global_conf.global_get('default', 'scientific_name')}.{global_conf.global_get('default', 'assembly')}
+species = {global_conf.global_get('default', 'scientific_name')}_{global_conf.global_get('default', 'assembly')}
 
 # Default parameters
 threads = 1
