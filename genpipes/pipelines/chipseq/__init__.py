@@ -1581,6 +1581,7 @@ do
     if $first_time; then
         head -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- > {metrics_merged_out}
         first_time=false
+    fi
     tail -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- >> {metrics_merged_out}
 done && \\
 sample_name=`tail -n 1 $sample | cut -f 1` && \\
