@@ -133,7 +133,7 @@ class Pipeline(object):
                         config_trace_content.append(line)
             jsonator_project_tracking.init(
                 operation_name=operation_name,
-                operation_config_version=self._genpipes_version,
+                operation_config_version=self.version,
                 operation_cmd_line=full_command,
                 operation_config_md5sum=md5(config_trace_filename),
                 operation_config_data=config_trace_content,
