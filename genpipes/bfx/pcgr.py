@@ -162,5 +162,5 @@ def parse_pcgr_passed_variants_pt(input_file):
         [],
         [],
         command=f"""\
-export pcgr_passed_variants=`grep "pcgr-gene-annotate - INFO - Number of PASSed variant calls:" {input_file} | awk -F': ' '{{print $2}}`"""
+export pcgr_passed_variants=`grep "pcgr-gene-annotate - INFO - Number of PASSed variant calls:" {input_file} | awk -F': ' '{{print $2}}'`"""
         )
