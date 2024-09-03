@@ -326,7 +326,6 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
 
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
         return """\
-module load {module_python}
 {job2json_script} \\
   -u \\"$USER\\" \\
   -c \\"{config_files}\\" \\
@@ -335,8 +334,7 @@ module load {module_python}
   -d \\"$JOB_DONE\\" \\
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
-  -f {status}
-module unload {module_python} {command_separator}
+  -f {status} {command_separator}
 """.format(
             job2json_script="job2json.py",
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
@@ -355,14 +353,13 @@ module unload {module_python} {command_separator}
         json_folder = os.path.join(pipeline_output_dir, "json")
         timestamp = pipeline.timestamp
         try:
-            json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{timestamp}.json")
+            json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.protocol}_{timestamp}.json")
         except AttributeError:
             json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}_{timestamp}.json")
 
         # The project tracking json file is exported here as a variable for use by job2json_project_tracking.py.
         # Avoids restarts in steps that used to reference the json file name with timestamp in the name.
         return """\
-module load {module_python}
 {job2json_project_tracking_script} \\
   -s \\"{samples}\\" \\
   -r \\"{readsets}\\" \\
@@ -370,7 +367,7 @@ module load {module_python}
   -o \\"{json_outfile}\\" \\
   -f {status}
 export PT_JSON_OUTFILE=\\"{json_outfile}\\"
-module unload {module_python} {command_separator}
+{command_separator}
 """.format(
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
             job2json_project_tracking_script="job2json_project_tracking.py",
