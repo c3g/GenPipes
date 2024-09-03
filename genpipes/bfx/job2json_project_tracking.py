@@ -22,7 +22,6 @@ import logging
 import os
 
 from ..core.job import Job
-from ..core.config import global_conf
 
 log = logging.getLogger(__name__)
 
@@ -38,15 +37,13 @@ def run(input_file, pipeline, samples, readsets, job_name, metrics):
         [],
         [],
         command="""\
-module load {module_python}
+module purge && \\
 {job2json_project_tracking_script} \\
   -s {samples} \\
   -r {readsets} \\
   -j {job_name} \\
   -o $PT_JSON_OUTFILE \\
-  -m {metrics}
-module unload {module_python}""".format(
-    module_python=global_conf.global_get('DEFAULT', 'module_python'),
+  -m {metrics}""".format(
     job2json_project_tracking_script="job2json_project_tracking.py",
     samples=samples,
     readsets=readsets,
