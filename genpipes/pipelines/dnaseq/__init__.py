@@ -2815,7 +2815,7 @@ END
                     sample.name,
                     "pcgr"
                 )
-                
+
                 if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] < "2":
                     output = os.path.join(
                         pcgr_directory,
@@ -2826,11 +2826,12 @@ END
                 # cpsr not accepted as input in pcgr v.2.0.3, may change in future releases
                 else:
                     output = os.path.join(
-                        pcgr_directory, 
+                        pcgr_directory,
                         f"{sample.name}.pcgr.{assembly}.html"
                     )
                     input_dependencies = [input_file, output_cna]
-            
+                job_name = f"report_pcgr_tumor_only.{sample.name}"
+
                 jobs.append(
                     concat_jobs(
                         [
@@ -2847,13 +2848,14 @@ END
                             ),
                             bash.ls(output)
                         ],
-                        name=f"report_pcgr_tumor_only.{sample.name}",
+                        name=job_name,
                         samples=[sample],
                         readsets=[*list(sample.readsets)],
                         input_dependency=input_dependencies,
                         output_dependency=[output]
                     )
                 )
+                samples = [sample]
         else:
             for tumor_pair in self.tumor_pairs.values():
                 # Set directory, ini_section, job and sample name for tumor pair Fastpass protocol
@@ -2962,6 +2964,22 @@ END
                         output_dependency=[output]
                     )
                 )
+                samples = [tumor_pair.normal, tumor_pair.tumor]
+        if self.project_tracking_json:
+            pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+            job_project_tracking_metrics = concat_jobs(
+                [
+                pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
+                job2json_project_tracking.run(
+                    input_file=pcgr_output_file,
+                    pipeline=self,
+                    samples=",".join([sample.name for sample in samples]),
+                    readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                    job_name=job_name,
+                    metrics="pcgr_passed_variants=$pcgr_passed_variants"
+                    )
+                ])
+            jobs.append(job_project_tracking_metrics)
 
         return jobs
 
