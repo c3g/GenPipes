@@ -2832,30 +2832,55 @@ END
                     input_dependencies = [input_file, output_cna]
                 job_name = f"report_pcgr_tumor_only.{sample.name}"
 
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                pcgr_directory,
-                            ),
-                            pcgr.report(
-                                input_file,
-                                input_cpsr,
-                                pcgr_directory,
-                                sample.name,
-                                input_cna=output_cna,
-                                ini_section=ini_section
-                            ),
-                            bash.ls(output)
-                        ],
-                        name=job_name,
-                        samples=[sample],
-                        readsets=[*list(sample.readsets)],
-                        input_dependency=input_dependencies,
-                        output_dependency=[output]
-                    )
+                pcgr_job = concat_jobs(
+                    [
+                        bash.mkdir(
+                            pcgr_directory,
+                        ),
+                        pcgr.report(
+                            input_file,
+                            input_cpsr,
+                            pcgr_directory,
+                            sample.name,
+                            input_cna=output_cna,
+                            ini_section=ini_section
+                        ),
+                        bash.ls(output)
+                    ],
+                    name=job_name,
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)],
+                    input_dependency=input_dependencies,
+                    output_dependency=[output]
                 )
-                samples = [sample]
+                
+                if self.project_tracking_json:
+                    samples = [sample]
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                pcgr_job,
+                                pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
+                                job2json_project_tracking.run(
+                                    input_file=pcgr_output_file,
+                                    pipeline=self,
+                                    samples=",".join([sample.name for sample in samples]),
+                                    readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                                    job_name=job_name,
+                                    metrics="pcgr_passed_variants=$pcgr_passed_variants"
+                                )
+                            ], 
+                            name=job_name,
+                            samples=[sample],
+                            readsets=[*list(sample.readsets)],
+                            input_dependency=input_dependencies,
+                            output_dependency=[output]
+                        )
+                    )
+                else:
+                    jobs.append(pcgr_job)
+                
         else:
             for tumor_pair in self.tumor_pairs.values():
                 # Set directory, ini_section, job and sample name for tumor pair Fastpass protocol
@@ -2941,45 +2966,55 @@ END
                     )
                     input_dependencies = [input_file, output_cna]
 
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                pcgr_directory,
-                            ),
-                            pcgr.report(
-                                input_file,
-                                input_cpsr,
-                                pcgr_directory,
-                                tumor_pair.name,
-                                input_cna=output_cna,
-                                ini_section=ini_section
-                            ),
-                            bash.ls(output)
-                        ],
-                        name=job_name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                        input_dependency=input_dependencies,
-                        output_dependency=[output]
-                    )
+                pcgr_job = concat_jobs(
+                    [
+                        bash.mkdir(
+                            pcgr_directory,
+                        ),
+                        pcgr.report(
+                            input_file,
+                            input_cpsr,
+                            pcgr_directory,
+                            tumor_pair.name,
+                            input_cna=output_cna,
+                            ini_section=ini_section
+                        ),
+                        bash.ls(output)
+                    ],
+                    name=job_name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    input_dependency=input_dependencies,
+                    output_dependency=[output]
                 )
+                
                 samples = [tumor_pair.normal, tumor_pair.tumor]
-        if self.project_tracking_json:
-            pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
-            job_project_tracking_metrics = concat_jobs(
-                [
-                pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
-                job2json_project_tracking.run(
-                    input_file=pcgr_output_file,
-                    pipeline=self,
-                    samples=",".join([sample.name for sample in samples]),
-                    readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
-                    job_name=job_name,
-                    metrics="pcgr_passed_variants=$pcgr_passed_variants"
+                
+                if self.project_tracking_json:
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                pcgr_job,
+                                pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
+                                job2json_project_tracking.run(
+                                    input_file=pcgr_output_file,
+                                    pipeline=self,
+                                    samples=",".join([sample.name for sample in samples]),
+                                    readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                                    job_name=job_name,
+                                    metrics="pcgr_passed_variants=$pcgr_passed_variants"
+                                )
+                            ], 
+                            name=job_name, 
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                            input_dependency=input_dependencies,
+                            output_dependency=[output]
+                        )
                     )
-                ], name="pcgr_metrics2json_pt", input_dependency=[output])
-            jobs.append(job_project_tracking_metrics)
+                else:
+                    jobs.append(pcgr_job)
 
         return jobs
 
