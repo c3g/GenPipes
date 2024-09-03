@@ -35,7 +35,7 @@ def create(pipeline, sample):
 
     json_folder = os.path.join(pipeline.output_dir, "json")
     try:
-        json_file = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{pipeline.timestamp}.json")
+        json_file = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.protocol}_{pipeline.timestamp}.json")
     except AttributeError:
         json_file = os.path.join(json_folder, f"{pipeline.__class__.__name__}_{pipeline.timestamp}.json")
 
