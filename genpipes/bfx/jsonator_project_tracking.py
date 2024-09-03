@@ -72,7 +72,7 @@ def create(pipeline, sample):
             sample_json['readset'].append(readset_json)
         else:
             readset_json = sample_json['readset'][readset_hash_position[0]]
-        for step in pipeline.step_range:
+        for step in pipeline.steps:
             for job in step.jobs:
                 if readset in job.readsets:
                     job_hash_position = [pos for pos, val in enumerate(readset_json['job']) if val['job_name'] == job.name]
