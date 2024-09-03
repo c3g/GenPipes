@@ -1419,6 +1419,7 @@ do
     if $first_time; then
         head -n 1 annotation/$sample/peak_stats.csv > annotation/peak_stats_AllSamples.csv
         first_time=false
+    fi
     tail -n+2 annotation/$sample/peak_stats.csv >> annotation/peak_stats_AllSamples.csv
 done && \\
 mkdir -p {report_output_directory}/annotation/$sample && \\
