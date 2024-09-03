@@ -366,8 +366,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
   -j \\"{job_name}\\" \\{metrics}
   -o \\"{json_outfile}\\" \\
   -f {status}
-export PT_JSON_OUTFILE=\\"{json_outfile}\\"
-{command_separator}
+export PT_JSON_OUTFILE=\\"{json_outfile}\\" {command_separator}
 """.format(
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
             job2json_project_tracking_script="job2json_project_tracking.py",
