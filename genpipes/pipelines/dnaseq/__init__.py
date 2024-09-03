@@ -2978,7 +2978,7 @@ END
                     job_name=job_name,
                     metrics="pcgr_passed_variants=$pcgr_passed_variants"
                     )
-                ], name="pcgr_metrics2json_pt")
+                ], name="pcgr_metrics2json_pt", input_dependency=[output])
             jobs.append(job_project_tracking_metrics)
 
         return jobs
