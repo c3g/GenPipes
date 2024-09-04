@@ -279,6 +279,7 @@ Parameters:
         gembs_config_file = os.path.join(self.output_dir, "gembs.config")
 
         metadata_list = []
+        trim_files = []
         
         for readset in self.readsets:
                 
@@ -292,8 +293,9 @@ Parameters:
                 if readset.bam:
                     candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                trim_files.append([fastq1, fastq2])
                 
-                metadata = ','.join([readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1,fastq2])
+                metadata = ','.join([readset.sample.name,readset.name,readset.library,readset.sample.name,os.path.basename(fastq1),os.path.basename(fastq2)])
                 
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
@@ -303,6 +305,7 @@ Parameters:
                     candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
+                trim_files.append(fastq1)
     
                 metadata = ','.join([readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1])
     

@@ -34,7 +34,7 @@ def make_config(genpipes_dir, output):
 reference = {global_conf.global_get('gembs_prepare', 'genome_fasta')}
 
 index_dir = {global_conf.global_get('gembs_prepare', 'gem3_index_dir')}
-sequence_dir = {genpipes_dir}
+sequence_dir = {genpipes_dir}/trim/@BARCODE
 bam_dir = {genpipes_dir}/alignment/@BARCODE
 bcf_dir = {genpipes_dir}/methylation_call/@BARCODE
 extract_dir = {genpipes_dir}/variants/@BARCODE
