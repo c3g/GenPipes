@@ -65,3 +65,15 @@ def report(
             tumor_id=tumor_id
         )
     )
+
+def parse_cpsr_passed_variants_pt(input_file):
+    """
+    Parse PCGR passed variants.
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export cpsr_passed_variants=`grep "cpsr-gene-annotate - INFO - Number of PASSed variant calls:" {input_file} | awk -F': ' '{{print $2}}'`"""
+        )
