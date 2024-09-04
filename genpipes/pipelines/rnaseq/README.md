@@ -43,16 +43,15 @@ Usage
 ```
 #!text
 
-usage: genpipes rnaseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
-                       [-j {pbs,batch,daemon,slurm}] [-f]
-                       [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
-                       [--json-pt] [--clean]
-                       [--container {wrapper, singularity} <IMAGE PATH>]
+usage: genpipes rnaseq [-h] [--clean] -c CONFIG [CONFIG ...]
+                       [--container {wrapper, singularity} <IMAGE PATH>] [-f]
+                       [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                        [--genpipes_file GENPIPES_FILE]
-                       [-l {debug,info,warning,error,critical}]
-                       [--sanity-check] [--wrap [WRAP]] -r READSETS_FILE
-                       [-d DESIGN_FILE] [-v] [-t {stringtie,variants,cancer}]
-                       [-b BATCH]
+                       [-j {pbs,batch,daemon,slurm}] [--json-pt]
+                       [-l {debug,info,warning,error,critical}] [--no-json]
+                       [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
+                       [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
+                       [-t {stringtie,variants,cancer}] [-b BATCH]
 
 Version: 5.0.0
 
@@ -60,44 +59,44 @@ For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes
 
 options:
   -h, --help            show this help message and exit
+  --clean               create 'rm' commands for all job removable files in
+                        the given step range, if they exist; if --clean is
+                        set, --job-scheduler, --force options and job up-to-
+                        date status are ignored (default: false)
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
-                        output directory (default: current)
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
-                        job scheduler type (default: slurm)
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a valid singularity
+                        image path
   -f, --force           force creation of jobs even if up to date (default:
                         false)
   --force_mem_per_cpu FORCE_MEM_PER_CPU
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  --json-pt             create JSON file for project_tracking database
-                        ingestion (default: false i.e. JSON file will NOT be
-                        created)
-  --clean               create 'rm' commands for all job removable files in
-                        the given step range, if they exist; if --clean is
-                        set, --job-scheduler, --force options and job up-to-
-                        date status are ignored (default: false)
-  --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
-                        image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+                        job scheduler type (default: slurm)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
+  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+                        output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
+  -s STEPS, --steps STEPS
+                        step range e.g. '1-5', '3,6,7', '2,4-8'
   --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
                         enpipes/ressources/container/bin/container_wrapper.sh.
                         This is a convenience options for using genpipes in a
@@ -115,85 +114,85 @@ options:
 Steps:
 
 Protocol stringtie
-0 picard_sam_to_fastq
-1 trimmomatic
-2 merge_trimmomatic_stats
+1 picard_sam_to_fastq
+2 trimmomatic
+3 merge_trimmomatic_stats
+4 sortmerna
+5 star
+6 picard_merge_sam_files
+7 picard_sort_sam
+8 mark_duplicates
+9 picard_rna_metrics
+10 estimate_ribosomal_rna
+11 rnaseqc2
+12 wiggle
+13 raw_counts
+14 raw_counts_metrics
+15 stringtie
+16 stringtie_merge
+17 stringtie_abund
+18 ballgown
+19 differential_expression
+20 multiqc
+21 cram_output
+
+Protocol variants
+1 picard_sam_to_fastq
+2 skewer_trimming
 3 sortmerna
 4 star
 5 picard_merge_sam_files
-6 picard_sort_sam
-7 mark_duplicates
-8 picard_rna_metrics
-9 estimate_ribosomal_rna
-10 rnaseqc2
-11 wiggle
-12 raw_counts
-13 raw_counts_metrics
-14 stringtie
-15 stringtie_merge
-16 stringtie_abund
-17 ballgown
-18 differential_expression
-19 multiqc
-20 cram_output
-
-Protocol variants
-0 picard_sam_to_fastq
-1 skewer_trimming
-2 sortmerna
-3 star
-4 picard_merge_sam_files
-5 mark_duplicates
-6 split_N_trim
-7 sambamba_merge_splitNtrim_files
-8 gatk_indel_realigner
-9 sambamba_merge_realigned
-10 recalibration
-11 gatk_haplotype_caller
-12 merge_hc_vcf
-13 run_vcfanno
-14 variant_filtration
-15 decompose_and_normalize
-16 compute_snp_effects
-17 gemini_annotations
-18 picard_rna_metrics
-19 estimate_ribosomal_rna
-20 rnaseqc2
-21 gatk_callable_loci
-22 wiggle
-23 multiqc
-24 cram_output
+6 mark_duplicates
+7 split_N_trim
+8 sambamba_merge_splitNtrim_files
+9 gatk_indel_realigner
+10 sambamba_merge_realigned
+11 recalibration
+12 gatk_haplotype_caller
+13 merge_hc_vcf
+14 run_vcfanno
+15 variant_filtration
+16 decompose_and_normalize
+17 compute_snp_effects
+18 gemini_annotations
+19 picard_rna_metrics
+20 estimate_ribosomal_rna
+21 rnaseqc2
+22 gatk_callable_loci
+23 wiggle
+24 multiqc
+25 cram_output
 
 Protocol cancer
-0 picard_sam_to_fastq
-1 skewer_trimming
-2 sortmerna
-3 star
-4 picard_merge_sam_files
-5 mark_duplicates
-6 split_N_trim
-7 sambamba_merge_splitNtrim_files
-8 gatk_indel_realigner
-9 sambamba_merge_realigned
-10 recalibration
-11 gatk_haplotype_caller
-12 merge_hc_vcf
-13 run_vcfanno
-14 decompose_and_normalize
-15 filter_gatk
-16 report_cpsr
-17 report_pcgr
-18 run_star_fusion
-19 run_arriba
-20 run_annofuse
-21 picard_rna_metrics
-22 estimate_ribosomal_rna
-23 rnaseqc2
-24 rseqc
-25 gatk_callable_loci
-26 wiggle
-27 multiqc
-28 cram_output
+1 picard_sam_to_fastq
+2 skewer_trimming
+3 sortmerna
+4 star
+5 picard_merge_sam_files
+6 mark_duplicates
+7 split_N_trim
+8 sambamba_merge_splitNtrim_files
+9 gatk_indel_realigner
+10 sambamba_merge_realigned
+11 recalibration
+12 gatk_haplotype_caller
+13 merge_hc_vcf
+14 run_vcfanno
+15 decompose_and_normalize
+16 filter_gatk
+17 report_cpsr
+18 report_pcgr
+19 run_star_fusion
+20 run_arriba
+21 run_annofuse
+22 picard_rna_metrics
+23 estimate_ribosomal_rna
+24 rnaseqc2
+25 rseqc
+26 gatk_callable_loci
+27 wiggle
+28 multiqc
+29 cram_output
 ```
 
 picard_sam_to_fastq 

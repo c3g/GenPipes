@@ -14,15 +14,15 @@ Usage
 ```
 #!text
 
-usage: genpipes nanopore_covseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
-                                [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}]
-                                [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
-                                [--no-json] [--json-pt] [--clean]
+usage: genpipes nanopore_covseq [-h] [--clean] -c CONFIG [CONFIG ...]
                                 [--container {wrapper, singularity} <IMAGE PATH>]
+                                [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                                 [--genpipes_file GENPIPES_FILE]
+                                [-j {pbs,batch,daemon,slurm}] [--json-pt]
                                 [-l {debug,info,warning,error,critical}]
-                                [--sanity-check] [--wrap [WRAP]] -r
-                                READSETS_FILE [-d DESIGN_FILE] [-v]
+                                [--no-json] [-o OUTPUT_DIR] [--sanity-check]
+                                [-s STEPS] [--wrap [WRAP]] -r READSETS_FILE
+                                [-d DESIGN_FILE] [-v]
                                 [-t {default,basecalling}]
 
 Version: 5.0.0
@@ -31,44 +31,44 @@ For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes
 
 options:
   -h, --help            show this help message and exit
+  --clean               create 'rm' commands for all job removable files in
+                        the given step range, if they exist; if --clean is
+                        set, --job-scheduler, --force options and job up-to-
+                        date status are ignored (default: false)
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
-                        output directory (default: current)
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
-                        job scheduler type (default: slurm)
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a valid singularity
+                        image path
   -f, --force           force creation of jobs even if up to date (default:
                         false)
   --force_mem_per_cpu FORCE_MEM_PER_CPU
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  --json-pt             create JSON file for project_tracking database
-                        ingestion (default: false i.e. JSON file will NOT be
-                        created)
-  --clean               create 'rm' commands for all job removable files in
-                        the given step range, if they exist; if --clean is
-                        set, --job-scheduler, --force options and job up-to-
-                        date status are ignored (default: false)
-  --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
-                        image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+                        job scheduler type (default: slurm)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
+  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+                        output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
+  -s STEPS, --steps STEPS
+                        step range e.g. '1-5', '3,6,7', '2,4-8'
   --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
                         enpipes/ressources/container/bin/container_wrapper.sh.
                         This is a convenience options for using genpipes in a
@@ -85,29 +85,29 @@ options:
 Steps:
 
 Protocol default
-0 host_reads_removal
-1 kraken_analysis
-2 artic_nanopolish
-3 wub_metrics
-4 covseq_metrics
-5 snpeff_annotate
-6 quast_consensus_metrics
-7 rename_consensus_header
-8 prepare_report
+1 host_reads_removal
+2 kraken_analysis
+3 artic_nanopolish
+4 wub_metrics
+5 covseq_metrics
+6 snpeff_annotate
+7 quast_consensus_metrics
+8 rename_consensus_header
+9 prepare_report
 
 Protocol basecalling
-0 guppy_basecall
-1 guppy_demultiplex
-2 pycoqc
-3 host_reads_removal_dependency
-4 kraken_analysis
-5 artic_nanopolish
-6 wub_metrics
-7 covseq_metrics
-8 snpeff_annotate
-9 quast_consensus_metrics
-10 rename_consensus_header
-11 prepare_report
+1 guppy_basecall
+2 guppy_demultiplex
+3 pycoqc
+4 host_reads_removal_dependency
+5 kraken_analysis
+6 artic_nanopolish
+7 wub_metrics
+8 covseq_metrics
+9 snpeff_annotate
+10 quast_consensus_metrics
+11 rename_consensus_header
+12 prepare_report
 ```
 
 host_reads_removal 

@@ -69,16 +69,18 @@ Usage
 ```
 #!text
 
-usage: genpipes rnaseq_denovo_assembly [-h] -c CONFIG [CONFIG ...] [-s STEPS]
-                                       [-o OUTPUT_DIR]
-                                       [-j {pbs,batch,daemon,slurm}] [-f]
-                                       [--force_mem_per_cpu FORCE_MEM_PER_CPU]
-                                       [--no-json] [--json-pt] [--clean]
+usage: genpipes rnaseq_denovo_assembly [-h] [--clean] -c CONFIG [CONFIG ...]
                                        [--container {wrapper, singularity} <IMAGE PATH>]
+                                       [-f]
+                                       [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                                        [--genpipes_file GENPIPES_FILE]
+                                       [-j {pbs,batch,daemon,slurm}]
+                                       [--json-pt]
                                        [-l {debug,info,warning,error,critical}]
-                                       [--sanity-check] [--wrap [WRAP]] -r
-                                       READSETS_FILE [-d DESIGN_FILE] [-v]
+                                       [--no-json] [-o OUTPUT_DIR]
+                                       [--sanity-check] [-s STEPS]
+                                       [--wrap [WRAP]] -r READSETS_FILE
+                                       [-d DESIGN_FILE] [-v]
                                        [-t {trinity,seq2fun}] [-b BATCH]
 
 Version: 5.0.0
@@ -87,44 +89,44 @@ For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes
 
 options:
   -h, --help            show this help message and exit
+  --clean               create 'rm' commands for all job removable files in
+                        the given step range, if they exist; if --clean is
+                        set, --job-scheduler, --force options and job up-to-
+                        date status are ignored (default: false)
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
-                        output directory (default: current)
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
-                        job scheduler type (default: slurm)
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a valid singularity
+                        image path
   -f, --force           force creation of jobs even if up to date (default:
                         false)
   --force_mem_per_cpu FORCE_MEM_PER_CPU
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  --json-pt             create JSON file for project_tracking database
-                        ingestion (default: false i.e. JSON file will NOT be
-                        created)
-  --clean               create 'rm' commands for all job removable files in
-                        the given step range, if they exist; if --clean is
-                        set, --job-scheduler, --force options and job up-to-
-                        date status are ignored (default: false)
-  --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
-                        image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+                        job scheduler type (default: slurm)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
+  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+                        output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
+  -s STEPS, --steps STEPS
+                        step range e.g. '1-5', '3,6,7', '2,4-8'
   --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
                         enpipes/ressources/container/bin/container_wrapper.sh.
                         This is a convenience options for using genpipes in a
@@ -142,37 +144,37 @@ options:
 Steps:
 
 Protocol trinity
-0 picard_sam_to_fastq
-1 trimmomatic
-2 merge_trimmomatic_stats
-3 insilico_read_normalization_readsets
-4 insilico_read_normalization_all
-5 trinity
-6 exonerate_fastasplit
-7 blastx_trinity_uniprot
-8 blastx_trinity_uniprot_merge
-9 transdecoder
-10 hmmer
-11 infernal_transcriptome
-12 blastp_transdecoder_uniprot
-13 signalp
-14 tmhmm
-15 trinotate
-16 align_and_estimate_abundance_prep_reference
-17 align_and_estimate_abundance
-18 gq_seq_utils_exploratory_analysis_rnaseq_denovo
-19 differential_expression
-20 filter_annotated_components
-21 gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered
-22 differential_expression_filtered
-23 multiqc
+1 picard_sam_to_fastq
+2 trimmomatic
+3 merge_trimmomatic_stats
+4 insilico_read_normalization_readsets
+5 insilico_read_normalization_all
+6 trinity
+7 exonerate_fastasplit
+8 blastx_trinity_uniprot
+9 blastx_trinity_uniprot_merge
+10 transdecoder
+11 hmmer
+12 infernal_transcriptome
+13 blastp_transdecoder_uniprot
+14 signalp
+15 tmhmm
+16 trinotate
+17 align_and_estimate_abundance_prep_reference
+18 align_and_estimate_abundance
+19 gq_seq_utils_exploratory_analysis_rnaseq_denovo
+20 differential_expression
+21 filter_annotated_components
+22 gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered
+23 differential_expression_filtered
+24 multiqc
 
 Protocol seq2fun
-0 picard_sam_to_fastq
-1 merge_fastq
-2 seq2fun
-3 differential_expression_seq2fun
-4 pathway_enrichment_seq2fun
+1 picard_sam_to_fastq
+2 merge_fastq
+3 seq2fun
+4 differential_expression_seq2fun
+5 pathway_enrichment_seq2fun
 ```
 
 picard_sam_to_fastq 
