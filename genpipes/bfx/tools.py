@@ -1230,7 +1230,7 @@ bedtools intersect {bedtools_options} \\
         tmp_output=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(input) + ".tmp.vcf"),
         sorted_tmp_output=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(input) + ".sorted.tmp.vcf"),
         bedtools_options=global_conf.global_get(ini_section, 'bedtools_options'),
-        filter_sorted_bed=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(global_conf.global_get('filter_snp_cpg', 'known_variants'))+".tmp.sorted.vcf"),
+        filter_sorted_bed=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(global_conf.global_get(ini_section, 'known_variants'))+".tmp.sorted.vcf"),
         output=output
       )
     )
