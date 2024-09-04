@@ -333,7 +333,7 @@ Parameters:
                             )
                         ],
                     name="gembs_prepare",
-                    input_dependency=[self.readsets_file.name]
+                    input_dependency=[self.readsets_file.name] + trim_files
                     )
                 )
 
