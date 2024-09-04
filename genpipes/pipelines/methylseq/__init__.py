@@ -293,7 +293,7 @@ Parameters:
                 if readset.bam:
                     candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                trim_files.append([fastq1, fastq2])
+                trim_files.extend([fastq1, fastq2])
                 
                 metadata = ','.join([readset.sample.name,readset.name,readset.library,readset.sample.name,os.path.basename(fastq1),os.path.basename(fastq2)])
                 
