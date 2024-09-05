@@ -286,7 +286,7 @@ gemBS {gembs_flags} {gembs_options} \\
   report {flags} {options}""".format(
     gembs_flags=global_conf.global_get(ini_section, 'gembs_flags', required=False),
     gembs_options=global_conf.global_get(ini_section, 'gembs_options', required=False),
-    flags=global_conf.global_get('gembs_report', 'flags', required=False),
-    options=global_conf.global_get('gembs_report', 'options', required=False),
+    flags=global_conf.global_get(ini_section, 'flags', required=False),
+    options=global_conf.global_get(ini_section, 'options', required=False),
             )
         )

@@ -1344,7 +1344,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
 
         for sample in self.samples:
             map_json = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".json")
-            call_json = os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + "_call.json")
+            call_json = os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".json")
             inputs.extend([map_json, call_json])
 
         jobs.append(
