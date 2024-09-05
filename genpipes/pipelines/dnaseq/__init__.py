@@ -2815,7 +2815,7 @@ END
                     sample.name,
                     "pcgr"
                 )
-                
+
                 if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] < "2":
                     output = os.path.join(
                         pcgr_directory,
@@ -2826,34 +2826,61 @@ END
                 # cpsr not accepted as input in pcgr v.2.0.3, may change in future releases
                 else:
                     output = os.path.join(
-                        pcgr_directory, 
+                        pcgr_directory,
                         f"{sample.name}.pcgr.{assembly}.html"
                     )
                     input_dependencies = [input_file, output_cna]
-            
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                pcgr_directory,
-                            ),
-                            pcgr.report(
-                                input_file,
-                                input_cpsr,
-                                pcgr_directory,
-                                sample.name,
-                                input_cna=output_cna,
-                                ini_section=ini_section
-                            ),
-                            bash.ls(output)
-                        ],
-                        name=f"report_pcgr_tumor_only.{sample.name}",
-                        samples=[sample],
-                        readsets=[*list(sample.readsets)],
-                        input_dependency=input_dependencies,
-                        output_dependency=[output]
-                    )
+                job_name = f"report_pcgr_tumor_only.{sample.name}"
+
+                pcgr_job = concat_jobs(
+                    [
+                        bash.mkdir(
+                            pcgr_directory,
+                        ),
+                        pcgr.report(
+                            input_file,
+                            input_cpsr,
+                            pcgr_directory,
+                            sample.name,
+                            input_cna=output_cna,
+                            ini_section=ini_section
+                        ),
+                        bash.ls(output)
+                    ],
+                    name=job_name,
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)],
+                    input_dependency=input_dependencies,
+                    output_dependency=[output]
                 )
+                
+                if self.project_tracking_json:
+                    samples = [sample]
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                pcgr_job,
+                                pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
+                                job2json_project_tracking.run(
+                                    input_file=pcgr_output_file,
+                                    pipeline=self,
+                                    samples=",".join([sample.name for sample in samples]),
+                                    readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                                    job_name=job_name,
+                                    metrics="pcgr_passed_variants=$pcgr_passed_variants"
+                                )
+                            ], 
+                            name=job_name,
+                            samples=[sample],
+                            readsets=[*list(sample.readsets)],
+                            input_dependency=input_dependencies,
+                            output_dependency=[output]
+                        )
+                    )
+                else:
+                    jobs.append(pcgr_job)
+                
         else:
             for tumor_pair in self.tumor_pairs.values():
                 # Set directory, ini_section, job and sample name for tumor pair Fastpass protocol
@@ -2939,29 +2966,55 @@ END
                     )
                     input_dependencies = [input_file, output_cna]
 
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                pcgr_directory,
-                            ),
-                            pcgr.report(
-                                input_file,
-                                input_cpsr,
-                                pcgr_directory,
-                                tumor_pair.name,
-                                input_cna=output_cna,
-                                ini_section=ini_section
-                            ),
-                            bash.ls(output)
-                        ],
-                        name=job_name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                        input_dependency=input_dependencies,
-                        output_dependency=[output]
-                    )
+                pcgr_job = concat_jobs(
+                    [
+                        bash.mkdir(
+                            pcgr_directory,
+                        ),
+                        pcgr.report(
+                            input_file,
+                            input_cpsr,
+                            pcgr_directory,
+                            tumor_pair.name,
+                            input_cna=output_cna,
+                            ini_section=ini_section
+                        ),
+                        bash.ls(output)
+                    ],
+                    name=job_name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    input_dependency=input_dependencies,
+                    output_dependency=[output]
                 )
+                
+                samples = [tumor_pair.normal, tumor_pair.tumor]
+                
+                if self.project_tracking_json:
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                pcgr_job,
+                                pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
+                                job2json_project_tracking.run(
+                                    input_file=pcgr_output_file,
+                                    pipeline=self,
+                                    samples=",".join([sample.name for sample in samples]),
+                                    readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                                    job_name=job_name,
+                                    metrics="pcgr_passed_variants=$pcgr_passed_variants"
+                                )
+                            ], 
+                            name=job_name, 
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                            input_dependency=input_dependencies,
+                            output_dependency=[output]
+                        )
+                    )
+                else:
+                    jobs.append(pcgr_job)
 
         return jobs
 
@@ -3724,7 +3777,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             bash.sed(
                                 None,
                                 None,
-                                "-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                                r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
                             ),
                             htslib.bgzip_tabix(
                                 None,
@@ -3967,7 +4020,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         bash.sed(
                             None,
                             None,
-                            "-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                            r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -6571,7 +6624,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                                 bash.sed(
                                                     None,
                                                     None,
-                                                    "-e 's#/\.##g'"
+                                                    r"-e 's#/\.##g'"
                                                 )
                                             ]
                                         ),
@@ -6638,7 +6691,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                                 bash.sed(
                                                     None,
                                                     None,
-                                                    "-e 's#/\.##g'"
+                                                    r"-e 's#/\.##g'"
                                                 )
                                             ]
                                         ),
@@ -6705,7 +6758,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                                 bash.sed(
                                                     None,
                                                     None,
-                                                    "-e 's#/\.##g'"
+                                                    r"-e 's#/\.##g'"
                                                 )
                                             ]
                                         ),
@@ -8228,17 +8281,17 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.metrics_verify_bam_id,
                 self.run_multiqc,
                 self.set_interval_list,
-                self.gatk_haplotype_caller,  # 10
+                self.gatk_haplotype_caller, 
                 self.merge_and_call_individual_gvcf,
                 self.combine_gvcf,
                 self.merge_and_call_combined_gvcf,
                 self.variant_recalibrator,
-                self.haplotype_caller_decompose_and_normalize,  # 15
+                self.haplotype_caller_decompose_and_normalize,
                 self.cnvkit_batch,
                 self.split_tumor_only,
                 self.filter_tumor_only,
                 self.report_cpsr,
-                self.report_pcgr  # 20
+                self.report_pcgr
             ], 'somatic_fastpass':
             [
                 self.gatk_sam_to_fastq,
@@ -8271,36 +8324,36 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.bwa_mem2_samtools_sort,
                 self.gatk_mark_duplicates,
                 self.set_interval_list,
-                self.conpair_concordance_contamination,  # 10
+                self.conpair_concordance_contamination,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
                 self.sequenza,
-                self.manta_sv_calls,  # 15
+                self.manta_sv_calls,
                 self.strelka2_paired_somatic,
                 self.strelka2_paired_germline,
                 self.strelka2_paired_snpeff,
                 self.purple,
-                self.rawmpileup,  # 20
+                self.rawmpileup,
                 self.paired_varscan2,
                 self.merge_varscan2,
                 self.paired_mutect2,
                 self.merge_mutect2,
-                self.vardict_paired,  # 25
+                self.vardict_paired,
                 self.merge_filter_paired_vardict,
                 self.ensemble_somatic,
                 self.gatk_variant_annotator_somatic,
                 self.merge_gatk_variant_annotator_somatic,
-                self.ensemble_germline_loh,  # 30
+                self.ensemble_germline_loh,
                 self.gatk_variant_annotator_germline,
                 self.merge_gatk_variant_annotator_germline,
                 self.cnvkit_batch,
                 self.filter_germline,
-                self.report_cpsr,# 35
+                self.report_cpsr,
                 self.filter_somatic,
                 self.report_pcgr,
                 self.run_multiqc,
                 self.sym_link_fastq_pair,
-                self.sym_link_final_bam,  # 40
+                self.sym_link_final_bam,
                 self.sym_link_report,
                 self.sym_link_ensemble,
                 self.cram_output
@@ -8311,13 +8364,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.bwa_mem2_samtools_sort,
                 self.gatk_mark_duplicates,
                 self.set_interval_list,
-                self.manta_sv_calls,  # 10
+                self.manta_sv_calls,
                 self.strelka2_paired_somatic,
                 # self.sv_prep,
                 self.gridss_paired_somatic,
                 self.purple_sv,
                 self.linx_annotations_somatic,
-                self.linx_annotations_germline,  # 15
+                self.linx_annotations_germline,
                 self.linx_plot,
                 self.run_multiqc,
                 self.cram_output
@@ -8372,6 +8425,7 @@ def main(parsed_args):
     container = parsed_args.container
     clean = parsed_args.clean
     no_json = parsed_args.no_json
+    json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
     job_scheduler = parsed_args.job_scheduler
@@ -8383,6 +8437,6 @@ def main(parsed_args):
     profyle = parsed_args.profyle
     pairs_file = parsed_args.pairs
 
-    pipeline = DnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, no_json=no_json, container=container, profyle=profyle, pairs_file=pairs_file)
+    pipeline = DnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, profyle=profyle, pairs_file=pairs_file)
 
     pipeline.submit_jobs()

@@ -137,7 +137,7 @@ def hic_interactionMatrix_chr(
     # norm can be "raw", "simpleNorm", "norm"
 
     if fileNameRN is None:
-        fileNameRN = re.sub("\.txt", "RN.txt", fileName)
+        fileNameRN = re.sub(r"\.txt", "RN.txt", fileName)
 
     commandFormatMatrix = None
     if format:
@@ -189,7 +189,7 @@ def hic_interactionMatrix_genome(
     # norm can be "raw", "simpleNorm", "norm"
 
     if fileNameRN is None:
-        fileNameRN = re.sub("\.txt", "RN.txt", fileName)
+        fileNameRN = re.sub(r"\.txt", "RN.txt", fileName)
  
     commandFormatMatrix = None
     if format:

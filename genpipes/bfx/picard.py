@@ -161,7 +161,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             output=output,
             max_records_in_ram=global_conf.global_get(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+            removable_files=[output, re.sub(r"\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
 def mark_duplicates(
@@ -180,7 +180,7 @@ def mark_duplicates(
     else:
         outputs = [output, metrics_file]
         if create_index:
-            outputs.append(re.sub("\.([sb])am$", ".\\1ai", output))
+            outputs.append(re.sub(r"\.([sb])am$", ".\\1ai", output))
         return Job(
             inputs,
             outputs,
@@ -208,7 +208,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
                 max_records_in_ram=global_conf.global_get(ini_section, 'max_records_in_ram', param_type='int'),
                 other_options= global_conf.global_get(ini_section, 'other_options',required = False)
             ),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+            removable_files=[output, re.sub(r"\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
 def merge_sam_files(inputs, output, ini_section='picard_merge_sam_files'):
@@ -220,7 +220,7 @@ def merge_sam_files(inputs, output, ini_section='picard_merge_sam_files'):
     else:
         return Job(
             inputs,
-            [output, re.sub("\.([sb])am$", ".\\1ai", output)],
+            [output, re.sub(r"\.([sb])am$", ".\\1ai", output)],
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_picard']
@@ -239,7 +239,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         output=output,
         max_records_in_ram=global_conf.global_get(ini_section, 'max_records_in_ram', param_type='int')
         ),
-        removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
+        removable_files=[output, re.sub(r"\.([sb])am$", ".\\1ai", output)]
     )
 
 # Reorder BAM/SAM files based on reference/dictionary
@@ -271,7 +271,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             reference=global_conf.global_get(ini_section, 'genome_fasta', param_type='filepath'),
             max_records_in_ram=global_conf.global_get(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
+            removable_files=[output, re.sub(r"\.([sb])am$", ".\\1ai", output)]
         )
 
 # Convert SAM/BAM file to fastq format
@@ -312,7 +312,7 @@ def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sa
         return Job(
             [input],
             # Add SAM/BAM index as output only when writing a coordinate-sorted BAM file
-            [output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None],
+            [output, re.sub(r"\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None],
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_picard']
@@ -333,7 +333,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             sort_order=sort_order,
             max_records_in_ram=global_conf.global_get(ini_section, 'max_records_in_ram', param_type='int')
             ),
-            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
+            removable_files=[output, re.sub(r"\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
         )
 
 def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
@@ -414,7 +414,7 @@ def add_read_groups(input, output, readgroup, library, processing_unit, sample, 
         return Job(
             [input],
             # collect specific RNA metrics (exon rate, strand specificity, etc...)
-            [output, re.sub("\.([sb])am$", ".\\1ai", output)],
+            [output, re.sub(r"\.([sb])am$", ".\\1ai", output)],
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_picard']

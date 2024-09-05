@@ -782,7 +782,7 @@ def methylkit_differential_analysis(
         ini_section='methylkit_differential_analysis'
         ):
 
-    suffix = re.sub(".*\.readset_", ".readset_", input_files[0])
+    suffix = re.sub(r".*\.readset_", ".readset_", input_files[0])
 
     return Job(
         input_files,

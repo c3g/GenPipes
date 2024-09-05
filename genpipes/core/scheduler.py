@@ -105,9 +105,9 @@ class Scheduler:
         try:
             if "ppn" in cpu_str or '-c' in cpu_str:
                 # to be back compatible
-                cpu = re.search("(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
+                cpu = re.search(r"(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
             else:
-                cpu = re.search("[0-9]+", cpu_str).group()
+                cpu = re.search(r"[0-9]+", cpu_str).group()
         except AttributeError:
             raise ValueError(f'"{cpu_str}" is not a valid entry for "cluster_cpu" ({job_name_prefix=})')
         return cpu
@@ -222,9 +222,9 @@ class Scheduler:
             append_command = f" | tee {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o "
             test_condition = """
 grep {pattern} {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o
-NO_PROBLEM_IN_LOG=\$?
+NO_PROBLEM_IN_LOG=\\$?
 
-  if [[  \$NO_PROBLEM_IN_LOG == 0 ]] ; then
+  if [[  \\$NO_PROBLEM_IN_LOG == 0 ]] ; then
    echo {pattern} found in job log, forcing error 
    GenPipes_STATE=74
 fi
@@ -326,7 +326,6 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
 
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
         return """\
-module load {module_python}
 {job2json_script} \\
   -u \\"$USER\\" \\
   -c \\"{config_files}\\" \\
@@ -335,8 +334,7 @@ module load {module_python}
   -d \\"$JOB_DONE\\" \\
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
-  -f {status}
-module unload {module_python} {command_separator}
+  -f {status} {command_separator}
 """.format(
             job2json_script="job2json.py",
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
@@ -355,22 +353,20 @@ module unload {module_python} {command_separator}
         json_folder = os.path.join(pipeline_output_dir, "json")
         timestamp = pipeline.timestamp
         try:
-            json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{timestamp}.json")
+            json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.protocol}_{timestamp}.json")
         except AttributeError:
             json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}_{timestamp}.json")
 
         # The project tracking json file is exported here as a variable for use by job2json_project_tracking.py.
         # Avoids restarts in steps that used to reference the json file name with timestamp in the name.
         return """\
-module load {module_python}
 {job2json_project_tracking_script} \\
   -s \\"{samples}\\" \\
   -r \\"{readsets}\\" \\
   -j \\"{job_name}\\" \\{metrics}
   -o \\"{json_outfile}\\" \\
   -f {status}
-export PT_JSON_OUTFILE=\\"{json_outfile}\\"
-module unload {module_python} {command_separator}
+export PT_JSON_OUTFILE=\\"{json_outfile}\\" {command_separator}
 """.format(
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
             job2json_project_tracking_script="job2json_project_tracking.py",
@@ -501,15 +497,15 @@ chmod 755 $COMMAND
 
                     cmd = """\
 echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
-GenPipes_STATE=\$PIPESTATUS
-echo GenPipesExitStatus:\$GenPipes_STATE
+GenPipes_STATE=\\$PIPESTATUS
+echo GenPipesExitStatus:\\$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
-if [ \$GenPipes_STATE -eq 0 ] ; then
+if [ \\$GenPipes_STATE -eq 0 ] ; then
   touch $JOB_DONE ;
 fi
-exit \$GenPipes_STATE" | \\
+exit \\$GenPipes_STATE" | \\
 """.format(
                         container_line=self.container_line,
                         job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
@@ -742,23 +738,23 @@ echo "#! /bin/bash
 echo '#######################################'
 echo 'SLURM FAKE PROLOGUE (GenPipes)'
 date
-scontrol show job \$SLURM_JOBID
-sstat -j \$SLURM_JOBID.batch
+scontrol show job \\$SLURM_JOBID
+sstat -j \\$SLURM_JOBID.batch
 echo '#######################################'
 rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
-GenPipes_STATE=\$PIPESTATUS
-echo GenPipesExitStatus:\$GenPipes_STATE
+GenPipes_STATE=\\$PIPESTATUS
+echo GenPipesExitStatus:\\$GenPipes_STATE
 {job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
-if [ \$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+if [ \\$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 echo '#######################################'
 echo 'SLURM FAKE EPILOGUE (GenPipes)'
 date
-scontrol show job \$SLURM_JOBID
-sstat -j \$SLURM_JOBID.batch
+scontrol show job \\$SLURM_JOBID
+sstat -j \\$SLURM_JOBID.batch
 echo '#######################################'
-exit \$GenPipes_STATE" | \\
+exit \\$GenPipes_STATE" | \\
 """.format(
                         job=job,
                         job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),

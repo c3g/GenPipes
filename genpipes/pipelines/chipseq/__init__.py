@@ -362,10 +362,10 @@ echo -e "Sample\\tReadset\\tMark Name\\tRaw {read_type} Reads #\\tSurviving {rea
             trim_log = os.path.join("trim", readset.sample.name, readset.mark_name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
                 # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
-                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\\t{readset.name}\\t{readset.mark_name}\\t\\1\\t\\2/'".format(
+                perl_command = "perl -pe 's/^Input Read Pairs: (\\d+).*Both Surviving: (\\d+).*Forward Only Surviving: (\\d+).*$/{readset.sample.name}\\t{readset.name}\\t{readset.mark_name}\\t\\1\\t\\2/'".format(
                     readset=readset)
             elif readset.run_type == "SINGLE_END":
-                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\\t{readset.name}\\t{readset.mark_name}\\t\\1\\t\\2/'".format(
+                perl_command = "perl -pe 's/^Input Reads: (\\d+).*Surviving: (\\d+).*$/{readset.sample.name}\\t{readset.name}\\t{readset.mark_name}\\t\\1\\t\\2/'".format(
                     readset=readset)
 
             job = concat_jobs([
@@ -1413,12 +1413,15 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
   {readset_file} \\
   {self.output_dir} && \\
 declare -A samples_associative_array=({" ".join(samples_associative_array)}) && \\
+first_time=true && \\
 for sample in ${{!samples_associative_array[@]}}
 do
-    header=$(head -n 1 annotation/$sample/peak_stats.csv)
+    if $first_time; then
+        head -n 1 annotation/$sample/peak_stats.csv > annotation/peak_stats_AllSamples.csv
+        first_time=false
+    fi
     tail -n+2 annotation/$sample/peak_stats.csv >> annotation/peak_stats_AllSamples.csv
 done && \\
-sed -i -e "1 i\\\$header" annotation/peak_stats_AllSamples.csv && \\
 mkdir -p {report_output_directory}/annotation/$sample && \\
 cp annotation/peak_stats_AllSamples.csv {report_output_directory}/annotation/peak_stats_AllSamples.csv && \\
 peak_stats_table=`LC_NUMERIC=en_CA awk -F "," '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, $2,  sprintf("%\\47d", $3), $4, sprintf("%\\47.1f", $5), sprintf("%\\47.1f", $6), sprintf("%\\47.1f", $7), sprintf("%\\47.1f", $8)}}}}' annotation/peak_stats_AllSamples.csv` && \\
@@ -1572,9 +1575,13 @@ done""",
                 name="merge_ihec_metrics",
                 command=f"""\
 cp /dev/null {metrics_merged_out} && \\
+first_time=true && \\
 for sample in {" ".join(metrics_to_merge)}
 do
-    header=$(head -n 1 $sample | cut -f -3,5-17,30-33,35,37,39-)
+    if $first_time; then
+        head -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- > {metrics_merged_out}
+        first_time=false
+    fi
     tail -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- >> {metrics_merged_out}
 done && \\
 sample_name=`tail -n 1 $sample | cut -f 1` && \\
@@ -1588,8 +1595,7 @@ input_quality=`tail -n 1 $sample | cut -f 38` && \\
 if [[ $input_name != "no_input" ]]
   then
     echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\tNA\\tNA\\tNA\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\tNA\\tNA" >> {metrics_merged_out}
-fi && \\
-sed -i -e "1 i\\\$header" {metrics_merged_out}""",
+fi""",
             )
         )
 # ihec table is read by multiqc
@@ -1955,6 +1961,7 @@ def main(parsed_args):
     container = parsed_args.container
     clean = parsed_args.clean
     no_json = parsed_args.no_json
+    json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
     job_scheduler = parsed_args.job_scheduler
@@ -1966,6 +1973,6 @@ def main(parsed_args):
     # Specific pipeline options
     protocol = parsed_args.protocol
 
-    pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
+    pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, protocol=protocol)
 
     pipeline.submit_jobs()

@@ -194,7 +194,7 @@ quality of the data.
                     prefix = os.path.join(
                         self.output_dirs['raw_reads_directory'],
                         readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                        re.sub(r"\.bam$", ".", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append(
                         [
@@ -221,7 +221,7 @@ quality of the data.
                     prefix = os.path.join(
                         self.output_dirs['raw_reads_directory'],
                         readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                        re.sub(r"\.bam$", ".", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
@@ -391,8 +391,8 @@ quality of the data.
                     if readset.bam:
                         candidate_input_files.append(
                             [
-                                re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                                re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                                re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam),
+                                re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)
                             ]
                         )
                     [fastq1, fastq2] = self.select_input_files(candidate_input_files)
@@ -401,7 +401,7 @@ quality of the data.
                     if readset.fastq1:
                         candidate_input_files.append([readset.fastq1])
                     if readset.bam:
-                        candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                        candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
                     [fastq1] = self.select_input_files(candidate_input_files)
                     fastq2 = None
                 else:
@@ -477,8 +477,8 @@ quality of the data.
                 if readset.bam:
                     candidate_input_files.append(
                         [
-                            re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                            re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                            re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam),
+                            re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)
                         ]
                     )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
@@ -487,7 +487,7 @@ quality of the data.
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
             else:
@@ -1321,14 +1321,14 @@ pandoc \\
                     [os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.bam")]
                 ]
             )
-            print_reads_output = re.sub("\.bam$", ".recal.bam", input)
-            base_recalibrator_output = re.sub("\.bam$", ".recalibration_report.grp", input)
+            print_reads_output = re.sub(r"\.bam$", ".recal.bam", input)
+            base_recalibrator_output = re.sub(r"\.bam$", ".recalibration_report.grp", input)
 
             interval_list = None
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = re.sub(r"\.[^.]+$", ".interval_list", coverage_bed)
 
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(coverage_bed, interval_list)
@@ -1918,8 +1918,8 @@ pandoc \\
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
                     candidate_input_files.append([
-                        re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                        re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                        re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam),
+                        re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)
                         ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
@@ -1927,7 +1927,7 @@ pandoc \\
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
 
@@ -2003,8 +2003,8 @@ pandoc \\
                 if readset.bam:
                     candidate_input_files.append(
                         [
-                            re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                            re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                            re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam),
+                            re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)
                         ]
                     )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
@@ -2013,7 +2013,7 @@ pandoc \\
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
 
@@ -2807,6 +2807,7 @@ def main(parsed_args):
     container = parsed_args.container
     clean = parsed_args.clean
     no_json = parsed_args.no_json
+    json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
     job_scheduler = parsed_args.job_scheduler
@@ -2816,7 +2817,7 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = RnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
+    pipeline = RnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, protocol=protocol)
 
     pipeline.submit_jobs()
 

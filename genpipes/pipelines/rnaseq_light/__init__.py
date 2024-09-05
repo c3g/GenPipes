@@ -100,7 +100,7 @@ It is especially useful for quick Quality Control (QC) in gene sequencing studie
                     if readset.fastq1 and readset.fastq2:
                         candidate_input_files.append([readset.fastq1, readset.fastq2])
                     if readset.bam:
-                        candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                        candidate_input_files.append([re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam), re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)])
                     [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                     input_fastqs.extend([fastq1, fastq2])
 
@@ -112,7 +112,7 @@ It is especially useful for quick Quality Control (QC) in gene sequencing studie
                     if readset.fastq1:
                         candidate_input_files.append([readset.fastq1])
                     if readset.bam:
-                        candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                        candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
                     [fastq1] = self.select_input_files(candidate_input_files)
                     input_fastqs.append(fastq1)
 
@@ -121,8 +121,7 @@ It is especially useful for quick Quality Control (QC) in gene sequencing studie
                     parameters = "--single -l "+ fragment_length +" -s " + fragment_length_sd + " --bootstrap-samples=" + str(bootstraps)
 
                 else:
-                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                    _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
             output_dir = os.path.join(self.output_dirs["kallisto_directory"], sample.name)
             link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
@@ -475,6 +474,7 @@ def main(parsed_args):
     container = parsed_args.container
     clean = parsed_args.clean
     no_json = parsed_args.no_json
+    json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
     job_scheduler = parsed_args.job_scheduler
@@ -483,7 +483,7 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     design_file = parsed_args.design_file
 
-    pipeline = RnaSeqLight(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container)
+    pipeline = RnaSeqLight(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container)
 
     pipeline.submit_jobs()
 

@@ -17,15 +17,15 @@ Usage
 ```
 #!text
 
-usage: genpipes dnaseq [-h] -c CONFIG [CONFIG ...] [-s STEPS] [-o OUTPUT_DIR]
-                       [-j {pbs,batch,daemon,slurm}] [-f]
-                       [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
-                       [--json-pt] [--clean]
-                       [--container {wrapper, singularity} <IMAGE PATH>]
+usage: genpipes dnaseq [-h] [--clean] -c CONFIG [CONFIG ...]
+                       [--container {wrapper, singularity} <IMAGE PATH>] [-f]
+                       [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                        [--genpipes_file GENPIPES_FILE]
-                       [-l {debug,info,warning,error,critical}]
-                       [--sanity-check] [--wrap [WRAP]] -r READSETS_FILE
-                       [-d DESIGN_FILE] [-v] [-p PAIRS] [--profyle]
+                       [-j {pbs,batch,daemon,slurm}] [--json-pt]
+                       [-l {debug,info,warning,error,critical}] [--no-json]
+                       [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
+                       [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
+                       [-p PAIRS] [--profyle]
                        [-t {germline_snv,germline_sv,germline_high_cov,somatic_tumor_only,somatic_fastpass,somatic_ensemble,somatic_sv}]
 
 Version: 5.0.0
@@ -34,44 +34,44 @@ For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes
 
 options:
   -h, --help            show this help message and exit
+  --clean               create 'rm' commands for all job removable files in
+                        the given step range, if they exist; if --clean is
+                        set, --job-scheduler, --force options and job up-to-
+                        date status are ignored (default: false)
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
-                        output directory (default: current)
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
-                        job scheduler type (default: slurm)
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a valid singularity
+                        image path
   -f, --force           force creation of jobs even if up to date (default:
                         false)
   --force_mem_per_cpu FORCE_MEM_PER_CPU
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  --json-pt             create JSON file for project_tracking database
-                        ingestion (default: false i.e. JSON file will NOT be
-                        created)
-  --clean               create 'rm' commands for all job removable files in
-                        the given step range, if they exist; if --clean is
-                        set, --job-scheduler, --force options and job up-to-
-                        date status are ignored (default: false)
-  --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
-                        image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+                        job scheduler type (default: slurm)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
+  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+                        output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
+  -s STEPS, --steps STEPS
+                        step range e.g. '1-5', '3,6,7', '2,4-8'
   --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
                         enpipes/ressources/container/bin/container_wrapper.sh.
                         This is a convenience options for using genpipes in a
@@ -91,182 +91,182 @@ options:
 Steps:
 
 Protocol germline_snv
-0 gatk_sam_to_fastq
-1 trim_fastp
-2 bwa_mem2_samtools_sort
-3 gatk_mark_duplicates
-4 set_interval_list
-5 gatk_haplotype_caller
-6 merge_and_call_individual_gvcf
-7 combine_gvcf
-8 merge_and_call_combined_gvcf
-9 variant_recalibrator
-10 haplotype_caller_decompose_and_normalize
-11 haplotype_caller_flag_mappability
-12 haplotype_caller_snp_id_annotation
-13 haplotype_caller_snp_effect
-14 haplotype_caller_dbnsfp_annotation
-15 haplotype_caller_gemini_annotations
-16 metrics_dna_picard_metrics
-17 metrics_dna_sample_mosdepth
-18 metrics_picard_calculate_hs
-19 metrics_verify_bam_id
-20 run_multiqc
-21 sym_link_fastq
-22 sym_link_final_bam
-23 metrics_vcftools_missing_indiv
-24 metrics_vcftools_depth_indiv
-25 metrics_gatk_sample_fingerprint
-26 metrics_gatk_cluster_fingerprint
-
-Protocol germline_sv
-0 gatk_sam_to_fastq
-1 trim_fastp
-2 bwa_mem2_samtools_sort
-3 gatk_mark_duplicates
-4 sym_link_final_bam
+1 gatk_sam_to_fastq
+2 trim_fastp
+3 bwa_mem2_samtools_sort
+4 gatk_mark_duplicates
 5 set_interval_list
 6 gatk_haplotype_caller
 7 merge_and_call_individual_gvcf
-8 metrics_dna_picard_metrics
-9 metrics_dna_sample_mosdepth
-10 metrics_picard_calculate_hs
-11 run_multiqc
-12 delly_call_filter
-13 delly_sv_annotation
-14 germline_manta
-15 manta_sv_annotation
-16 lumpy_paired_sv
-17 lumpy_sv_annotation
-18 wham_call_sv
-19 wham_sv_annotation
-20 cnvkit_batch
-21 cnvkit_sv_annotation
-22 run_breakseq2
-23 ensemble_metasv
-24 metasv_sv_annotation
+8 combine_gvcf
+9 merge_and_call_combined_gvcf
+10 variant_recalibrator
+11 haplotype_caller_decompose_and_normalize
+12 haplotype_caller_flag_mappability
+13 haplotype_caller_snp_id_annotation
+14 haplotype_caller_snp_effect
+15 haplotype_caller_dbnsfp_annotation
+16 haplotype_caller_gemini_annotations
+17 metrics_dna_picard_metrics
+18 metrics_dna_sample_mosdepth
+19 metrics_picard_calculate_hs
+20 metrics_verify_bam_id
+21 run_multiqc
+22 sym_link_fastq
+23 sym_link_final_bam
+24 metrics_vcftools_missing_indiv
+25 metrics_vcftools_depth_indiv
+26 metrics_gatk_sample_fingerprint
+27 metrics_gatk_cluster_fingerprint
+
+Protocol germline_sv
+1 gatk_sam_to_fastq
+2 trim_fastp
+3 bwa_mem2_samtools_sort
+4 gatk_mark_duplicates
+5 sym_link_final_bam
+6 set_interval_list
+7 gatk_haplotype_caller
+8 merge_and_call_individual_gvcf
+9 metrics_dna_picard_metrics
+10 metrics_dna_sample_mosdepth
+11 metrics_picard_calculate_hs
+12 run_multiqc
+13 delly_call_filter
+14 delly_sv_annotation
+15 germline_manta
+16 manta_sv_annotation
+17 lumpy_paired_sv
+18 lumpy_sv_annotation
+19 wham_call_sv
+20 wham_sv_annotation
+21 cnvkit_batch
+22 cnvkit_sv_annotation
+23 run_breakseq2
+24 ensemble_metasv
+25 metasv_sv_annotation
 
 Protocol germline_high_cov
-0 gatk_sam_to_fastq
-1 trim_fastp
-2 bwa_mem2_samtools_sort
-3 samtools_merge_files
-4 gatk_fixmate
-5 metrics_dna_picard_metrics
-6 metrics_dna_sample_mosdepth
-7 metrics_picard_calculate_hs
-8 metrics_verify_bam_id
-9 germline_varscan2
-10 preprocess_vcf
-11 snp_effect
-12 gemini_annotations
-13 run_multiqc
-14 cram_output
-
-Protocol somatic_tumor_only
-0 gatk_sam_to_fastq
-1 trim_fastp
-2 bwa_mem2_samtools_sort
-3 gatk_mark_duplicates
-4 sym_link_final_bam
-5 metrics_dna_picard_metrics
-6 metrics_dna_sample_mosdepth
-7 metrics_picard_calculate_hs
-8 metrics_verify_bam_id
-9 run_multiqc
-10 set_interval_list
-11 gatk_haplotype_caller
-12 merge_and_call_individual_gvcf
-13 combine_gvcf
-14 merge_and_call_combined_gvcf
-15 variant_recalibrator
-16 haplotype_caller_decompose_and_normalize
-17 cnvkit_batch
-18 split_tumor_only
-19 filter_tumor_only
-20 report_cpsr
-21 report_pcgr
-
-Protocol somatic_fastpass
-0 gatk_sam_to_fastq
-1 trim_fastp
-2 bwa_mem2_samtools_sort
-3 gatk_mark_duplicates
-4 set_interval_list
-5 sequenza
-6 rawmpileup
-7 paired_varscan2
-8 merge_varscan2
-9 preprocess_vcf
-10 cnvkit_batch
-11 filter_germline
-12 report_cpsr
-13 filter_somatic
-14 report_pcgr
-15 conpair_concordance_contamination
-16 metrics_dna_picard_metrics
-17 metrics_dna_sample_mosdepth
-18 run_multiqc
-19 sym_link_report
-20 sym_link_fastq_pair
-21 sym_link_panel
-22 cram_output
-
-Protocol somatic_ensemble
-0 gatk_sam_to_fastq
-1 trim_fastp
-2 bwa_mem2_samtools_sort
-3 gatk_mark_duplicates
-4 set_interval_list
-5 conpair_concordance_contamination
+1 gatk_sam_to_fastq
+2 trim_fastp
+3 bwa_mem2_samtools_sort
+4 samtools_merge_files
+5 gatk_fixmate
 6 metrics_dna_picard_metrics
 7 metrics_dna_sample_mosdepth
-8 sequenza
-9 manta_sv_calls
-10 strelka2_paired_somatic
-11 strelka2_paired_germline
-12 strelka2_paired_snpeff
-13 purple
-14 rawmpileup
-15 paired_varscan2
-16 merge_varscan2
-17 paired_mutect2
-18 merge_mutect2
-19 vardict_paired
-20 merge_filter_paired_vardict
-21 ensemble_somatic
-22 gatk_variant_annotator_somatic
-23 merge_gatk_variant_annotator_somatic
-24 ensemble_germline_loh
-25 gatk_variant_annotator_germline
-26 merge_gatk_variant_annotator_germline
-27 cnvkit_batch
-28 filter_germline
-29 report_cpsr
-30 filter_somatic
-31 report_pcgr
-32 run_multiqc
-33 sym_link_fastq_pair
-34 sym_link_final_bam
-35 sym_link_report
-36 sym_link_ensemble
-37 cram_output
+8 metrics_picard_calculate_hs
+9 metrics_verify_bam_id
+10 germline_varscan2
+11 preprocess_vcf
+12 snp_effect
+13 gemini_annotations
+14 run_multiqc
+15 cram_output
+
+Protocol somatic_tumor_only
+1 gatk_sam_to_fastq
+2 trim_fastp
+3 bwa_mem2_samtools_sort
+4 gatk_mark_duplicates
+5 sym_link_final_bam
+6 metrics_dna_picard_metrics
+7 metrics_dna_sample_mosdepth
+8 metrics_picard_calculate_hs
+9 metrics_verify_bam_id
+10 run_multiqc
+11 set_interval_list
+12 gatk_haplotype_caller
+13 merge_and_call_individual_gvcf
+14 combine_gvcf
+15 merge_and_call_combined_gvcf
+16 variant_recalibrator
+17 haplotype_caller_decompose_and_normalize
+18 cnvkit_batch
+19 split_tumor_only
+20 filter_tumor_only
+21 report_cpsr
+22 report_pcgr
+
+Protocol somatic_fastpass
+1 gatk_sam_to_fastq
+2 trim_fastp
+3 bwa_mem2_samtools_sort
+4 gatk_mark_duplicates
+5 set_interval_list
+6 sequenza
+7 rawmpileup
+8 paired_varscan2
+9 merge_varscan2
+10 preprocess_vcf
+11 cnvkit_batch
+12 filter_germline
+13 report_cpsr
+14 filter_somatic
+15 report_pcgr
+16 conpair_concordance_contamination
+17 metrics_dna_picard_metrics
+18 metrics_dna_sample_mosdepth
+19 run_multiqc
+20 sym_link_report
+21 sym_link_fastq_pair
+22 sym_link_panel
+23 cram_output
+
+Protocol somatic_ensemble
+1 gatk_sam_to_fastq
+2 trim_fastp
+3 bwa_mem2_samtools_sort
+4 gatk_mark_duplicates
+5 set_interval_list
+6 conpair_concordance_contamination
+7 metrics_dna_picard_metrics
+8 metrics_dna_sample_mosdepth
+9 sequenza
+10 manta_sv_calls
+11 strelka2_paired_somatic
+12 strelka2_paired_germline
+13 strelka2_paired_snpeff
+14 purple
+15 rawmpileup
+16 paired_varscan2
+17 merge_varscan2
+18 paired_mutect2
+19 merge_mutect2
+20 vardict_paired
+21 merge_filter_paired_vardict
+22 ensemble_somatic
+23 gatk_variant_annotator_somatic
+24 merge_gatk_variant_annotator_somatic
+25 ensemble_germline_loh
+26 gatk_variant_annotator_germline
+27 merge_gatk_variant_annotator_germline
+28 cnvkit_batch
+29 filter_germline
+30 report_cpsr
+31 filter_somatic
+32 report_pcgr
+33 run_multiqc
+34 sym_link_fastq_pair
+35 sym_link_final_bam
+36 sym_link_report
+37 sym_link_ensemble
+38 cram_output
 
 Protocol somatic_sv
-0 gatk_sam_to_fastq
-1 trim_fastp
-2 bwa_mem2_samtools_sort
-3 gatk_mark_duplicates
-4 set_interval_list
-5 manta_sv_calls
-6 strelka2_paired_somatic
-7 gridss_paired_somatic
-8 purple_sv
-9 linx_annotations_somatic
-10 linx_annotations_germline
-11 linx_plot
-12 run_multiqc
-13 cram_output
+1 gatk_sam_to_fastq
+2 trim_fastp
+3 bwa_mem2_samtools_sort
+4 gatk_mark_duplicates
+5 set_interval_list
+6 manta_sv_calls
+7 strelka2_paired_somatic
+8 gridss_paired_somatic
+9 purple_sv
+10 linx_annotations_somatic
+11 linx_annotations_germline
+12 linx_plot
+13 run_multiqc
+14 cram_output
 ```
 
 gatk_sam_to_fastq 

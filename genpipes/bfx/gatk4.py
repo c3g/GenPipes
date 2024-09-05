@@ -138,7 +138,7 @@ def mark_duplicates_spark(
 
     return Job(
         inputs,
-        [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+        [output, re.sub(r"\.([sb])am$", ".\\1ai", output), metrics_file],
         [
             [ini_section, 'module_java'],
             [ini_section, 'module_gatk']
@@ -1485,7 +1485,7 @@ def mark_duplicates_mate_cigar(
     else:
         return Job(
             inputs,
-            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            [output, re.sub(r"\.([sb])am$", ".\\1ai", output), metrics_file],
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_gatk']
@@ -1532,7 +1532,7 @@ def picard_mark_duplicates_mate_cigar(
     else:
         return Job(
             inputs,
-            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            [output, re.sub(r"\.([sb])am$", ".\\1ai", output), metrics_file],
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_gatk']
@@ -1577,7 +1577,7 @@ def merge_sam_files(
             inputs,
             [
                 output,
-                re.sub("\.([sb])am$", ".\\1ai", output)
+                re.sub(r"\.([sb])am$", ".\\1ai", output)
             ],
             [
                 [ini_section, 'module_java'],
@@ -1694,7 +1694,7 @@ def sort_sam(
             # Add SAM/BAM index as output only when writing a coordinate-sorted BAM file
             [
                 output,
-                re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None
+                re.sub(r"\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None
             ],
             [
                 [ini_section, 'module_java'],

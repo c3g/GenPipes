@@ -61,22 +61,31 @@ The GenPIpes Methyl-Seq pipeline now has three protocols.
 3. dragen
 
 The "bismark" protocol uses Bismark to align reads to the reference genome.
-Picard is used to mark and remove duplicates and generate metric files. The
-"hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html)
-and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm)
-software to align the reads to the reference genome. All the other steps are common
-with bismark protocol. The "dragen" protocol uses Dragen to align reads to the
-reference genome, call methylation, mark and remove duplicates.
+Picard is used to mark and remove duplicates and generate metric files. The "hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html) and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) software to align the reads to the reference genome. All the other steps are common with bismark protocol. The "dragen" protocol uses Dragen to align reads to the reference genome, call methylation, mark and remove duplicates.
 
-Although dragen provides higher rate of mapping percentage with in a very short time
-duration (approximately three hours compared to 30 hours from bismark), it only
-accessible through McGill Genome Center cluster Abacus and The jobs cannot be
-submitted to any of the HPCs from the [Digital Research Aliance](https://status.computecanada.ca/).
-Importantly, the user needs to have permission to submit jobs to Abacus. Therefore,
-other users may continue to use only bismark protocol since it works in all the clusters.
+Although dragen provides higher rate of mapping percentage with in a very short time duration (approximately three hours compared to 30 hours from bismark), it only accessible through McGill Genome Center cluster Abacus and The jobs cannot be submitted to any of the HPCs from the [Digital Research Aliance](https://status.computecanada.ca/). Importantly, the user needs to have permission to submit jobs to Abacus. Therefore, other users may continue to use only bismark protocol since it works in all the clusters.
 
 However, if you would like to setup and use dragen in own cluster please refer to our [GenPipes Documentation](https://genpipes.readthedocs.io/en/latest/user_guide/pipelines/gp_wgs_methylseq.html)
 
+A pipeline for processing and analyzing bisulfite sequencing data. The pipeline uses Bismark to align reads and extract methylation information, and Picard to remove duplicates, add read groups and index the BAM files. The pipeline also computes metrics and generates coverage tracks per sample. The pipeline currently supports the following protocols: bismark, hybrid and dragen.
+
+The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
+
+Attributes:
+    readsets (list): A list of readsets to process.
+    output_dirs (dict): A dictionary of output directories.
+    multiqc_inputs (list): A list of files to include in the MultiQC report.
+Methods:
+    bismark_align: Align reads with Bismark.
+    add_bam_umi: Add read UMI tag to individual bam files using fgbio.
+    picard_remove_duplicates: Remove duplicates using Picard.
+    metrics: Compute metrics and generate coverage tracks per sample.
+    methylation_call: Extract methylation information for individual cytosines.
+    wiggle_tracks: Generate wiggle tracks suitable for multiple browsers.
+    methylation_profile: Generate a CpG methylation profile by combining both forward and reverse strand Cs.
+    ihec_sample_metrics_report: Retrieve the computed metrics which fit the IHEC standards and build a tsv report table for IHEC.
+Parameters:
+    protocol (str): Type of pipeline (default bismark).
     """
 
     def __init__(self, *args, protocol='bismark', **kwargs):
@@ -92,6 +101,11 @@ However, if you would like to setup and use dragen in own cluster please refer t
         return cls._argparser
     @property
     def readsets(self):
+        """
+        A list of readsets to process.
+        Returns:
+            list: A list of readsets.
+        """
         # extra check on readsets
         for readset in super().readsets:
             if readset._run == "":
@@ -103,6 +117,11 @@ However, if you would like to setup and use dragen in own cluster please refer t
 
     @property
     def output_dirs(self):
+        """
+        Output directory paths.
+        Returns:
+            dict: Output directory paths.
+        """
         dirs = {
             'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
             'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
@@ -120,6 +139,11 @@ However, if you would like to setup and use dragen in own cluster please refer t
 
     @property
     def multiqc_inputs(self):
+        """
+        List of MultiQC input files.
+        Returns:
+            list: List of MultiQC input files.
+        """
         if not hasattr(self, "_multiqc_inputs"):
             self._multiqc_inputs = []
         return self._multiqc_inputs
@@ -131,6 +155,8 @@ However, if you would like to setup and use dragen in own cluster please refer t
     def bismark_align(self):
         """
         Align reads with [Bismark](https://www.bioinformatics.babraham.ac.uk/projects/bismark/Bismark_User_Guide.pdf).
+        Returns:
+            list: A list of bismark jobs.
         """
 
         jobs = []
@@ -138,9 +164,9 @@ However, if you would like to setup and use dragen in own cluster please refer t
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, f"{readset.name}.trim.")
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
-            no_readgroup_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
+            no_readgroup_bam = os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted_noRG.bam")
             output_bam = re.sub("_noRG.bam", ".bam", no_readgroup_bam)
             index_bam = re.sub("_noRG.bam", ".bam.bai", no_readgroup_bam)
 
@@ -150,7 +176,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam), re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
                 # Note : these files will then be renamed (using a "mv" command) to fit with the GenPipes nomenclature (cf. no_readgroup_bam)
@@ -162,7 +188,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
                 # Defining the bismark output files (bismark sets the names of its output files from the basename of fastq1)
@@ -171,8 +197,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                 bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_SE_report.txt", os.path.basename(fastq1)))
                 report_suffix = "_bismark_bt2_SE_report.txt"
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
             jobs.append(
                 concat_jobs([
@@ -184,14 +209,16 @@ However, if you would like to setup and use dragen in own cluster please refer t
                         os.path.dirname(no_readgroup_bam),
                         [no_readgroup_bam, re.sub(".bam", report_suffix, no_readgroup_bam)],
                     ),
-                    Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
-                    Job(command="mv " + bismark_out_report + " " + re.sub(".bam", report_suffix, no_readgroup_bam)),
+                    Job(command=f"mv {bismark_out_bam} {no_readgroup_bam}"),
+                    Job(command=f"mv {bismark_out_report} {re.sub('.bam', report_suffix, no_readgroup_bam)}"),
                     bash.ln(
                         os.path.relpath(re.sub(".bam", report_suffix, no_readgroup_bam), link_directory),
-                        os.path.join(link_directory, readset.name + report_suffix), 
+                        os.path.join(link_directory, readset.name + report_suffix),
                         input=re.sub(".bam", report_suffix, no_readgroup_bam)
                         )
-                ], name="bismark_align." + readset.name, samples=[readset.sample])
+                ],
+                name=f"bismark_align.{readset.name}",
+                samples=[readset.sample])
             )
             self.multiqc_inputs.append(re.sub(".bam", report_suffix, no_readgroup_bam))
 
@@ -203,10 +230,12 @@ However, if you would like to setup and use dragen in own cluster please refer t
                         output_bam,
                         readset.name,
                         readset.library if readset.library else readset.sample.name,
-                        readset.run + "_" + readset.lane,
+                        f"{readset.run}_{readset.lane}",
                         readset.sample.name
                     )
-                ], name="picard_add_read_groups." + readset.name, samples=[readset.sample])
+                ],
+                name=f"picard_add_read_groups.{readset.name}",
+                samples=[readset.sample])
             )
             jobs.append(
                 concat_jobs([
@@ -215,7 +244,9 @@ However, if you would like to setup and use dragen in own cluster please refer t
                         output_bam,
                         index_bam
                     )
-                ], name="sambamba_index." + readset.name, samples=[readset.sample])
+                ],
+                name=f"sambamba_index.{readset.name}",
+                samples=[readset.sample])
             )
             jobs.append(
                 concat_jobs([
@@ -225,7 +256,9 @@ However, if you would like to setup and use dragen in own cluster please refer t
                         re.sub(".bam", "_flagstat.txt", output_bam),
                         global_conf.global_get('sambamba_flagstat', 'flagstat_options')
                     )
-                ], name="sambamba_flagstat." + readset.name, samples=[readset.sample])
+                ],
+                name=f"sambamba_flagstat.{readset.name}",
+                samples=[readset.sample])
             )
 
         return jobs
@@ -234,17 +267,19 @@ However, if you would like to setup and use dragen in own cluster please refer t
     def add_bam_umi(self):
         """
         Add read UMI tag to individual bam files using [fgbio](https://fulcrumgenomics.github.io/fgbio/tools/latest/GroupReadsByUmi.html).
+        Returns:
+            list: A list of fgbio jobs.
         """
 
         jobs = []
         for readset in self.readsets:
             if readset.umi:
                 alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
-                input_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-                output_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam")
-                output_bai = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bai")
+                input_bam = os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam")
+                output_bam = os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.UMI.bam")
+                output_bai = os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.UMI.bai")
                 input_umi = readset.umi
-                input_umi_corrected = os.path.join(self.output_dirs["corrected_umi_directory"], readset.name, readset.name + ".corrected.fastq.gz")
+                input_umi_corrected = os.path.join(self.output_dirs["corrected_umi_directory"], readset.name, f"{readset.name}.corrected.fastq.gz")
 
                 #correct umi fastq name (removing space)
 
@@ -256,7 +291,10 @@ However, if you would like to setup and use dragen in own cluster please refer t
                                 input_umi,
                                 input_umi_corrected
                             ),
-                    ], name="fgbio_correct_readname." + readset.name, samples=[readset.sample])
+                    ],
+                    name=f"fgbio_correct_readname.{readset.name}",
+                    samples=[readset.sample]
+                    )
                 )
 
                 jobs.append(
@@ -268,7 +306,10 @@ However, if you would like to setup and use dragen in own cluster please refer t
                             output_bam,
                             output_bai
                         ),
-                    ], name="fgbio_addumi." + readset.name, samples=[readset.sample])
+                    ],
+                    name=f"fgbio_addumi.{readset.name}",
+                    samples=[readset.sample]
+                    )
                 )
 
         return jobs
@@ -280,23 +321,25 @@ However, if you would like to setup and use dragen in own cluster please refer t
         (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
         will be removed as a duplicate in the BAM file. Removing duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
         This step is used in bismark and hybrid protocols.
+        Returns:
+            list: A list of picard jobs.
         """
 
         jobs = []
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
         for sample in self.samples:
-            alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".")
-            input = alignment_file_prefix + "sorted.bam"
-            bam_output = alignment_file_prefix + "sorted.dedup.bam"
-            metrics_file = alignment_file_prefix + "sorted.dedup.metrics"
+            alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.")
+            input_file = f"{alignment_file_prefix}sorted.bam"
+            bam_output = f"{alignment_file_prefix}sorted.dedup.bam"
+            metrics_file = f"{alignment_file_prefix}sorted.dedup.metrics"
             flagstat_file = re.sub(".bam", "_flagstat.txt", bam_output)
 
             job = concat_jobs(
                     [
                         bash.mkdir(link_directory),
                         picard.mark_duplicates(
-                            [input],
+                            [input_file],
                             bam_output,
                             metrics_file,
                             remove_duplicates="true",
@@ -304,7 +347,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                             ),
                         bash.ln(
                             os.path.relpath(metrics_file, link_directory),
-                            os.path.join(link_directory, sample.name + ".sorted.dedup.metrics"),
+                            os.path.join(link_directory, f"{sample.name}.sorted.dedup.metrics"),
                             input=metrics_file
                             )
                     ]
@@ -323,12 +366,12 @@ However, if you would like to setup and use dragen in own cluster please refer t
                             ),
                         bash.ln(
                             os.path.relpath(flagstat_file, link_directory),
-                            os.path.join(link_directory, sample.name + ".sorted.dedup_flagstat.txt"),
+                            os.path.join(link_directory, f"{sample.name}.sorted.dedup_flagstat.txt"),
                             input=flagstat_file
                             )
                     ]
                 )
-            job.name = "samtools_flagstat_dedup." + sample.name
+            job.name = f"samtools_flagstat_dedup.{sample.name}"
             job.samples = [sample]
             self.multiqc_inputs.append(flagstat_file)
             jobs.append(job)
@@ -346,10 +389,11 @@ However, if you would like to setup and use dragen in own cluster please refer t
         whole genome or targeted percentage of bases covered at X reads (%_bases_above_50 means the % of exons
         bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
         for easy visualization of coverage in the IGV browser.
-
+        Returns:
+            list: A list of metrics jobs.
         """
 
-        # check the library status
+        # Check the library status
         library, bam = {}, {}
         for readset in self.readsets:
             if not readset.sample in library:
@@ -366,21 +410,21 @@ However, if you would like to setup and use dragen in own cluster please refer t
 
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
         for sample in self.samples:
-            file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.")
+            file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.dedup.")
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
             candidate_input_files = [[file_prefix + "bam"]]
             if bam[sample]:
                 candidate_input_files.append([bam[sample]])
-            [input] = self.select_input_files(candidate_input_files)
+            [input_file] = self.select_input_files(candidate_input_files)
 
             # picard collect multiple metrics
             job = concat_jobs(
                     [
                         picard.collect_multiple_metrics(
-                        input,
-                        re.sub("bam", "all.metrics", input),
-                        library_type=library[sample]
+                            input_file,
+                            re.sub("bam", "all.metrics", input_file),
+                            library_type=library[sample]
                         ),
                         bash.mkdir(link_directory)
                     ]
@@ -394,28 +438,28 @@ However, if you would like to setup and use dragen in own cluster please refer t
                                 os.path.relpath(outfile, link_directory),
                                 os.path.join(link_directory, os.path.basename(outfile)),
                                 input=outfile
-                                )
+                            )
                         ]
                     )
 
-            job.name = "picard_collect_multiple_metrics." + sample.name
+            job.name = f"picard_collect_multiple_metrics.{sample.name}"
             job.samples = [sample]
             jobs.append(job)
 
             # Compute genome coverage with GATK
             job = gatk.depth_of_coverage(
-                input,
-                re.sub("bam", "all.coverage", input),
+                input_file,
+                re.sub("bam", "all.coverage", input_file),
                 coverage_bed
             )
-            job.name = "gatk_depth_of_coverage.genome." + sample.name
+            job.name = f"gatk_depth_of_coverage.genome.{sample.name}"
             job.samples = [sample]
             jobs.append(job)
 
             # Compute genome or target coverage with BVATools
             job = bvatools.depth_of_coverage(
-                input,
-                re.sub("bam", "coverage.tsv", input),
+                input_file,
+                re.sub("bam", "coverage.tsv", input_file),
                 coverage_bed,
                 other_options=global_conf.global_get('bvatools_depth_of_coverage', 'other_options', required=False)
             )
@@ -424,11 +468,11 @@ However, if you would like to setup and use dragen in own cluster please refer t
             jobs.append(job)
 
             # Get reads# raw and after duplication
-            dedup_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.bam")
-            raw_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.bam")
+            dedup_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.dedup.bam")
+            raw_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.bam")
 
-            count_dedup_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".dedup.count")
-            count_raw_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".raw.count")
+            count_dedup_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.dedup.count")
+            count_raw_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.raw.count")
 
 
             job = samtools.mapped_count(
@@ -454,8 +498,8 @@ However, if you would like to setup and use dragen in own cluster please refer t
             if coverage_bed:
                 # Get on-target reads (if on-target context is detected) raw and after duplication
 
-                count_dedup_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".onTarget.dedup.count")
-                count_raw_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".onTarget.raw.count")
+                count_dedup_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.onTarget.dedup.count")
+                count_raw_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.onTarget.raw.count")
                 job = samtools.mapped_count(
                     raw_bam,
                     count_raw_output,
@@ -477,7 +521,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                 jobs.append(job)
 
                 # Compute on target percent of hybridisation based capture
-                interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
+                interval_list = re.sub(r"\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(
                         coverage_bed,
@@ -486,7 +530,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
-                file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.")
+                file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.dedup.")
                 job = picard.calculate_hs_metrics(
                     file_prefix + "bam",
                     file_prefix + "onTarget.tsv",
@@ -499,8 +543,8 @@ However, if you would like to setup and use dragen in own cluster please refer t
             # Calculate the number of reads with higher mapping quality than the threshold passed in the ini file
             job = concat_jobs([
                 samtools.view(
-                    input,
-                    re.sub(".bam", ".filtered_reads.counts.txt", input),
+                    input_file,
+                    re.sub(".bam", ".filtered_reads.counts.txt", input_file),
                     "-c " + global_conf.global_get('mapping_quality_filter', 'quality_threshold')
                 )
             ])
@@ -509,14 +553,14 @@ However, if you would like to setup and use dragen in own cluster please refer t
             jobs.append(job)
 
             # Calculate GC bias
-            gc_content_file = re.sub(".bam", ".gc_cov.1M.txt", input)
+            gc_content_file = re.sub(".bam", ".gc_cov.1M.txt", input_file)
             job = bedtools.coverage(
-                input,
+                input_file,
                 gc_content_file
             )
             # For captured analysis
             if coverage_bed:
-                gc_content_on_target_file = re.sub(".bam", ".gc_cov.1M.on_target.txt", input)
+                gc_content_on_target_file = re.sub(".bam", ".gc_cov.1M.on_target.txt", input_file)
                 gc_content_target_job = bedtools.intersect(
                     gc_content_file,
                     gc_content_on_target_file,
@@ -531,14 +575,14 @@ However, if you would like to setup and use dragen in own cluster please refer t
                 job,
                 metrics.gc_bias(
                     gc_content_file,
-                    re.sub(".bam", ".GCBias_all.txt", input)
+                    re.sub(".bam", ".GCBias_all.txt", input_file)
                 )
             ])
             job.name = "GC_bias." + sample.name
             job.samples = [sample]
             jobs.append(job)
 
-            job = igvtools.compute_tdf(input, input + ".tdf")
+            job = igvtools.compute_tdf(input_file, input_file + ".tdf")
             job.name = "igvtools_compute_tdf." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -551,6 +595,8 @@ However, if you would like to setup and use dragen in own cluster please refer t
         and extracts the methylation information for individual cytosines.
         The methylation extractor outputs result files for cytosines in CpG, CHG and CHH context.
         It also outputs bedGraph, a coverage file from positional methylation data and cytosine methylation report.
+        Returns:
+            list: A list of bismark methylation call jobs.
         """
 
         # Check the library status
@@ -572,7 +618,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
-            input_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+            input_file = os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam")
 
             methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             outputs = [
@@ -599,7 +645,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                             )
                     ], name="picard_sort_sam." + sample.name, samples=[sample])
                 )
-            
+
             else:
                 jobs.append(
                     concat_jobs([
@@ -611,7 +657,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                             )
                     ], name="picard_sort_sam." + sample.name, samples=[sample])
                 )
-            
+
             outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
             bismark_job = concat_jobs(
                     [
@@ -622,24 +668,24 @@ However, if you would like to setup and use dragen in own cluster please refer t
                             library[sample]
                             ),
                         bash.ln(
-                            os.path.relpath(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup_splitting_report.txt"), link_directory),
-                            os.path.join(link_directory, sample.name + ".dedup_splitting_report.txt"),
-                            input=os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup_splitting_report.txt")
+                            os.path.relpath(os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup_splitting_report.txt"), link_directory),
+                            os.path.join(link_directory, f"{sample.name}.dedup_splitting_report.txt"),
+                            input=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup_splitting_report.txt")
                             ),
                         bash.ln(
-                            os.path.relpath(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.M-bias.txt"), link_directory),
-                            os.path.join(link_directory, sample.name + ".dedup.M-bias.txt"),
-                            input=os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.M-bias.txt")
+                            os.path.relpath(os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.M-bias.txt"), link_directory),
+                            os.path.join(link_directory, f"{sample.name}.dedup.M-bias.txt"),
+                            input=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.M-bias.txt")
                             )
                     ]
                 )
 
             bismark_job.name = "bismark_methyl_call." + sample.name
             bismark_job.samples = [sample]
-            self.multiqc_inputs.append(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.M-bias.txt"))
-            self.multiqc_inputs.append(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup_splitting_report.txt"))
-            jobs.append( bismark_job )
-    
+            self.multiqc_inputs.append(os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.M-bias.txt"))
+            self.multiqc_inputs.append(os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup_splitting_report.txt"))
+            jobs.append(bismark_job)
+
         return jobs
 
     def wiggle_tracks(self):
@@ -647,6 +693,8 @@ However, if you would like to setup and use dragen in own cluster please refer t
         Generate wiggle tracks suitable for multiple browsers, to show coverage and methylation data.
         When using GRCh37 build of Human genome, to be compatible with the UCSC Genome Browser we only keep chromosomes 1-22, X, Y and MT,
         and we also rename them by prefixing "chr" to the chromosome anme (e.g. "1" becomes "chr1"), and changing the mitocondrial chromosome from "MT" to "chrM", and keeping the GRCh37 coordinates.
+        Returns:
+            list: A list of wiggle tracks jobs.
         """
 
         jobs = []
@@ -655,7 +703,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
             # Generation of a bedGraph and a bigWig track to show the genome coverage
-            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+            input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam")
             bed_graph_prefix = os.path.join(self.output_dirs["tracks_directory"], sample.name, sample.name)
             big_wig_prefix = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
             bed_graph_output = bed_graph_prefix + ".bedGraph"
@@ -685,8 +733,8 @@ However, if you would like to setup and use dragen in own cluster please refer t
 
             # Generation of a bigWig from the methylation bedGraph
             methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
-            input_bed_graph = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")
-            output_wiggle = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".methylation.bw")
+            input_bed_graph = os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.bedGraph.gz")
+            output_wiggle = os.path.join(self.output_dirs["tracks_directory"], "bigWig", f"{sample.name}.methylation.bw")
 
             jobs.append(
                 concat_jobs([
@@ -704,13 +752,15 @@ However, if you would like to setup and use dragen in own cluster please refer t
         """
         Generation of a CpG methylation profile by combining both forward and reverse strand Cs.
         Also generating of all the methylatoin metrics : CpG stats, pUC19 CpG stats, lambda conversion rate, median CpG coverage, GC bias.
+        Returns:
+            list: A list of methylation profile jobs.
         """
 
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
 
-            cpg_input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")
+            cpg_input_file = os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.CpG_report.txt.gz")
             cpg_profile = re.sub(".CpG_report.txt.gz", ".CpG_profile.strand.combined.csv", cpg_input_file)
 
             # Generate CpG methylation profile
@@ -718,7 +768,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                 cpg_input_file,
                 cpg_profile
             )
-            job.name = "methylation_profile." + sample.name
+            job.name = f"methylation_profile.{sample.name}"
             job.samples = [sample]
             jobs.append(job)
 
@@ -751,7 +801,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
                 jobs.append(job)
                 cpg_profile = target_cpg_profile
 
-                target_cpg_profile_count=os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count")
+                target_cpg_profile_count=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.CpG_profile.strand.combined.on_target.count")
                 job = metrics.target_cpg_profile(
                     target_cpg_profile,
                     target_cpg_profile_count,
@@ -764,12 +814,12 @@ However, if you would like to setup and use dragen in own cluster please refer t
 
 
             # Caluculate median & mean CpG coverage
-            median_CpG_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpg_input_file)
+            median_cpg_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpg_input_file)
             job = tools.cpg_cov_stats(
                 cpg_profile,
-                median_CpG_coverage
+                median_cpg_coverage
             )
-            job.name = "median_CpG_coverage." + sample.name
+            job.name = f"median_CpG_coverage.{sample.name}"
             job.samples = [sample]
             if target_bed:
                 job.removable_files = [target_cpg_profile]
@@ -781,6 +831,8 @@ However, if you would like to setup and use dragen in own cluster please refer t
         """
         Retrieve the computed metrics which fit the IHEC standards and build a tsv report table for IHEC.
         Note: The dragen protocol does not generate a metric for estimated library size. You will have to run Picard separately for this metric.
+        Returns:
+            list: A list of IHEC sample metrics report jobs.
         """
 
         jobs = []
@@ -804,68 +856,68 @@ However, if you would like to setup and use dragen in own cluster please refer t
         for sample in self.samples:
             inputs = []
             sample_list.append(sample.name)
-            metrics_file =  os.path.join(self.output_dirs["ihec_metrics_directory"], sample.name + ".read_stats.txt")
+            metrics_file =  os.path.join(self.output_dirs["ihec_metrics_directory"], f"{sample.name}.read_stats.txt")
 
             metrics_output_list.append(metrics_file)
-            #add dependency for previous job in order to fill the allSample output correctly
+            # Add dependency for previous job in order to fill the allSample output correctly
             inputs.append(metrics_output_list[counter])
 
             # Trim log files
             for readset in sample.readsets:
-                inputs.append((os.path.join(self.output_dirs["trim_directory"], sample.name, readset.name + ".trim.log")))
+                inputs.append((os.path.join(self.output_dirs["trim_directory"], sample.name, f"{readset.name}.trim.log")))
 
             # Aligned pre-deduplicated bam files
-            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.bam"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.bam"))
 
             # Deduplicated bam files
-            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.bam"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.dedup.bam"))
 
             # Coverage summary files
-            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.dedup.all.coverage.sample_summary"))
 
             # Filtered reads count files
-            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.filtered_reads.counts.txt"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.dedup.filtered_reads.counts.txt"))
 
             # GC bias files
-            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.GCBias_all.txt"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.dedup.GCBias_all.txt"))
 
             if self.protocol == "bismark":
                 # Bismark alignment files
                 for readset in sample.readsets:
                     [bismark_report] = self.select_input_files([
-                        [os.path.join(self.output_dirs["alignment_directory"], sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_PE_report.txt")],
-                        [os.path.join(self.output_dirs["alignment_directory"], sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_SE_report.txt")]
+                        [os.path.join(self.output_dirs["alignment_directory"], sample.name, readset.name, f"{readset.name}.sorted_noRG_bismark_bt2_PE_report.txt")],
+                        [os.path.join(self.output_dirs["alignment_directory"], sample.name, readset.name, f"{readset.name}.sorted_noRG_bismark_bt2_SE_report.txt")]
                         ])
                     inputs.append(bismark_report)
 
             # CpG coverage files
-            inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
+            inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, f"{sample.name}.readset_sorted.dedup.median_CpG_coverage.txt"))
 
             # pUC19 methylation files
-            inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.profile.pUC19.txt"))
+            inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, f"{sample.name}.readset_sorted.dedup.profile.pUC19.txt"))
 
             # Lambda conversion rate files
-            inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv"))
+            inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, f"{sample.name}.readset_sorted.dedup.profile.lambda.conversion.rate.tsv"))
 
             # CG stat files
             [cgstats_file] = self.select_input_files([
-                [os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
-                [os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
+                [os.path.join(self.output_dirs["methylation_call_directory"], sample.name, f"{sample.name}.sorted.dedup.profile.cgstats.txt")],
+                [os.path.join(self.output_dirs["methylation_call_directory"], sample.name, f"{sample.name}.readset_sorted.dedup.profile.cgstats.txt")]
             ])
             inputs.append(cgstats_file)
 
             #Estimated library sizes
-            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.metrics"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.sorted.dedup.metrics"))
 
             # read count (raw, dedup)
-            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".dedup.count"))
-            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".raw.count"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.dedup.count"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.raw.count"))
 
             # read count (raw, dedup)  and CpG_profyle in targeted context
             if target_bed :
-                inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".onTarget.dedup.count"))
-                inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".onTarget.raw.count"))
-                inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
+                inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.onTarget.dedup.count"))
+                inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, f"{sample.name}.onTarget.raw.count"))
+                inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, f"{sample.name}.readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
 
 
             jobs.append(
@@ -887,30 +939,6 @@ However, if you would like to setup and use dragen in own cluster please refer t
                 )
             )
             counter+=1
-
-        report_job = Job(
-                [metrics_all_file],
-                [report_file],
-                [['ihec_sample_metrics_report', 'module_pandoc']],
-                command="""\
-mkdir -p report && \\
-cp {metrics_all_file} {report_metrics_file} && \\
-metrics_table_md=`sed 's/\t/|/g' {metrics_file}`
-pandoc \\
-  {report_template_dir}/{basename_report_file} \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable sequence_alignment_table="$metrics_table_md" \\
-  --to markdown \\
-  > {report_file}""".format(
-                    report_template_dir=self.report_template_dir,
-                    metrics_all_file=metrics_all_file,
-                    metrics_file=metrics_file,
-                    basename_report_file=os.path.basename(report_file),
-                    report_metrics_file=report_metrics_file,
-                    report_file=report_file
-                    ),
-                report_files=[report_file]
-            )
 
         report_multiqc_format_job = Job(
                 [metrics_all_file],
@@ -1020,8 +1048,9 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 bash.mkdir(self.output_dirs["metrics_directory"]),
                 bash.mkdir(link_directory),
                 report_multiqc_format_job
-                ], 
-            name="ihec_sample_metrics_report")
+                ],
+            name="ihec_sample_metrics_report"
+            )
         )
 
         return jobs
@@ -1029,17 +1058,19 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
     def bis_snp(self):
         """
         SNP calling with [BisSNP](https://people.csail.mit.edu/dnaase/bissnp2011/).
+        Returns:
+            list: A list of BisSNP jobs.
         """
 
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
-            input_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+            input_file = os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam")
 
             variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
-            cpg_output_file = os.path.join(variant_directory, sample.name + ".cpg.vcf")
-            snp_output_file = os.path.join(variant_directory, sample.name + ".snp.vcf")
+            cpg_output_file = os.path.join(variant_directory, f"{sample.name}.cpg.vcf")
+            snp_output_file = os.path.join(variant_directory, f"{sample.name}.snp.vcf")
 
             jobs.append(
                 concat_jobs([
@@ -1051,14 +1082,16 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         ),
                     htslib.bgzip(
                         cpg_output_file,
-                        cpg_output_file + ".gz"
+                        f"{cpg_output_file}.gz"
                         ),
                     htslib.bgzip(
                         snp_output_file,
-                        snp_output_file + ".gz"
+                        f"{snp_output_file}.gz"
                         )
-                ], name="bissnp." + sample.name, samples=[sample], 
-                output_dependency=[snp_output_file + ".gz", cpg_output_file + ".gz"],
+                ],
+                name=f"bissnp.{sample.name}",
+                samples=[sample], 
+                output_dependency=[f"{snp_output_file}.gz", f"{cpg_output_file}.gz"],
                 removable_files=[cpg_output_file, snp_output_file]
                 )
             )
@@ -1068,12 +1101,14 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
     def filter_snp_cpg(self):
         """
         SNP CpGs filtering.
+        Returns:
+            list: A list of SNP CpGs filtering jobs.
         """
 
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
-            input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.csv")
+            input_file = os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.CpG_profile.strand.combined.csv")
 
             output_file = re.sub("CpG_profile.strand.combined.csv", "filtered.bed", input_file)
 
@@ -1084,19 +1119,24 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         input_file,
                         output_file
                     )
-                ], name="filter_snp_cpg." + sample.name, samples=[sample])
+                ],
+                name=f"filter_snp_cpg.{sample.name}",
+                samples=[sample]
+                )
             )
         return jobs
 
     def prepare_methylkit(self):
         """
         Prepare input file for [methylKit](https://www.bioconductor.org/packages/release/bioc/vignettes/methylKit/inst/doc/methylKit.html) differential analysis.
+        Returns:
+            list: A list of methylKit preparation jobs.
         """
 
         jobs = []
         for sample in self.samples:
             methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
-            input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.filtered.bed")
+            input_file = os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.filtered.bed")
 
             output_directory = os.path.join(self.output_dirs["methylkit_directory"], "inputs")
             output_file = os.path.join(output_directory, re.sub("filtered.bed", "map.input", os.path.basename(input_file)))
@@ -1108,16 +1148,20 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         input_file,
                         output_file
                     )
-                ], name="prepare_methylkit." + sample.name, samples=[sample])
+                ],
+                name=f"prepare_methylkit.{sample.name}",
+                samples=[sample]
+                )
             )
         return jobs
 
     def methylkit_differential_analysis(self):
         """
         Run methylKit to get DMCs & DMRs for different design comparisons.
+        Returns:
+            list: A list of methylKit differential analysis jobs.
         """
 
-        jobs = []
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
             design_file = os.path.relpath(self.design_file.name, self.output_dir)
@@ -1125,7 +1169,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         input_directory = os.path.join(self.output_dirs["methylkit_directory"], "inputs")
         input_files = []
         for contrast in self.contrasts:
-            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input") for sample in group] for group in [contrast.controls, contrast.treatments]])
+            input_files.extend([[os.path.join(input_directory, f"{sample.name}.readset_sorted.dedup.map.input") for sample in group] for group in [contrast.controls, contrast.treatments]])
 
         input_files = list(itertools.chain.from_iterable(input_files))
 
@@ -1139,15 +1183,20 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
             output_directory
         )
 
-        return [concat_jobs([
-            bash.mkdir(output_directory),
-            methylkit_job
-        ], name="methylkit_differential_analysis")]
+        return [
+            concat_jobs([
+                bash.mkdir(output_directory),
+                methylkit_job
+                ],
+                name="methylkit_differential_analysis"
+                )]
 
     def dragen_align(self):
         """
         Align reads with [Dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) both hybrid and dragen protocols use this step to align reads.
         The Dragen parameters can be changed using other_options of the ini configuration.
+        Returns:
+            list: A list of Dragen alignment jobs.
         """
 
         jobs = []
@@ -1163,45 +1212,47 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         # methylation_protocol=directional
         # OR, for multi-pass mapping_implementation:
         # methylation_protocol=directional, sort=false, mapping_implementation=multi-pass, duplicate_marking=false, remove_duplicates=false.
-        # note that the "multi-pass" mapping implementation is deprecated and no longer recommended by Illumina. 
+        # note that the "multi-pass" mapping implementation is deprecated and no longer recommended by Illumina.
         if not (methylseq_protocol == "hybrid" and methylation_protocol == "directional-complement" and mapping_implementation=="single-pass"):
 
             for readset in self.readsets:
-                trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+                trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, f"{readset.name}.trim")
                 alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
                 # All the input files should copy to dragen work folder because IO operations with default locations
                 # are really slow or have permission issues. After processing files all the files should move back to
                 # the default GenPipes folder and remove files from dragen work folder
                 dragen_inputfolder = os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "reads", readset.name)
                 dragen_workfolder = os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "alignment", readset.name)
-                dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
                 # dragen output file name
-                dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+                dragen_bam = os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam")
                 dragen_report_files = [
-                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.mapping_metrics.csv"),
-                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.wgs_coverage_metrics.csv"),
-                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.wgs_fine_hist.csv"),
-                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.wgs_contig_mean_cov.csv"),
-                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.fragment_length_hist.csv"),
-                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.trimmer_metrics.csv"),
-                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.time_metrics.csv"),
-                        os.path.join(alignment_directory, readset.name, readset.name + ".sorted.fastqc_metrics.csv")
+                        os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.mapping_metrics.csv"),
+                        os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.wgs_coverage_metrics.csv"),
+                        os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.wgs_fine_hist.csv"),
+                        os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.wgs_contig_mean_cov.csv"),
+                        os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.fragment_length_hist.csv"),
+                        os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.trimmer_metrics.csv"),
+                        os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.time_metrics.csv"),
+                        os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.fastqc_metrics.csv")
                         ]
-                #output_bam = dragen_bam
-                index_bam = dragen_bam + ".bai"
+                index_bam = f"{dragen_bam}.bai"
 
                 # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
                 if readset.run_type == "PAIRED_END":
-                    candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                    candidate_input_files = [[f"{trim_file_prefix}.pair1.fastq.gz", f"{trim_file_prefix}.pair2.fastq.gz"]]
                     if readset.fastq1 and readset.fastq2:
-                         candidate_input_files.append([readset.fastq1, readset.fastq2])
+                        candidate_input_files.append([readset.fastq1, readset.fastq2])
                     if readset.bam:
-                        candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                                                      re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                        candidate_input_files.append(
+                            [
+                                re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam),
+                                re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)
+                            ]
+                        )
                     [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                     # first fastqs need to be copy to the dragen work_folder
-                    dragen_tmp_fastq1 = os.path.join(dragen_inputfolder, readset.name + ".pair1.fastq.gz")
-                    dragen_tmp_fastq2 = os.path.join(dragen_inputfolder, readset.name + ".pair2.fastq.gz")
+                    dragen_tmp_fastq1 = os.path.join(dragen_inputfolder, f"{readset.name}.pair1.fastq.gz")
+                    dragen_tmp_fastq2 = os.path.join(dragen_inputfolder, f"{readset.name}.pair2.fastq.gz")
                     cp_dragen_fastq_job = concat_jobs([
                         bash.mkdir(dragen_inputfolder),
                         bash.cp(os.path.abspath(fastq1), dragen_tmp_fastq1),
@@ -1212,29 +1263,33 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         bash.rm(dragen_tmp_fastq2, recursive=True, force=True)
                     ], name="dragen_remove_fastq." + readset.name, samples=[readset.sample])
                 elif readset.run_type == "SINGLE_END":
-                    candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                    candidate_input_files = [[f"{trim_file_prefix}.single.fastq.gz"]]
                     if readset.fastq1:
                         candidate_input_files.append([readset.fastq1])
                     if readset.bam:
-                        candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                        candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
                     [fastq1] = self.select_input_files(candidate_input_files)
                     fastq2 = None
                     # first fastqs need to be copy to the dragen work_folder
-                    dragen_tmp_fastq1 = os.path.join(dragen_workfolder, readset.name + ".single.fastq.gz")
+                    dragen_tmp_fastq1 = os.path.join(dragen_workfolder, f"{readset.name}.single.fastq.gz")
                     dragen_tmp_fastq2 = fastq2
                     cp_dragen_fastq_job = concat_jobs([
                         bash.mkdir(dragen_inputfolder ),
                         bash.cp(os.path.abspath(fastq1), dragen_tmp_fastq1)
-                    ], name="dragen_copy_fastq." + readset.name, samples=[readset.sample])
+                    ],
+                    name=f"dragen_copy_fastq.{readset.name}",
+                    samples=[readset.sample]
+                    )
                     rm_dragen_fastq_job = concat_jobs([
                         bash.rm(dragen_tmp_fastq1, recursive=True, force=True)
-                    ], name="dragen_remove_fastq." + readset.name, samples=[readset.sample])
+                    ],
+                    name=f"dragen_remove_fastq.{readset.name}",
+                    samples=[readset.sample]
+                    )
                 else:
-                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                                            "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                    _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
                 dragen_align = concat_jobs([
-                    #to track the dragen output files and done file input dependency and output dependency of the original
-                    #location should be defined
+                    # To track the dragen output files and done file input dependency and output dependency of the original location should be defined
                     cp_dragen_fastq_job,
                     bash.mkdir(dragen_workfolder),
                     bash.mkdir(os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "job_output", "dragen_align")),
@@ -1246,13 +1301,18 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         readset.name,
                         readset.sample.name,
                         readset.library if readset.library else readset.sample.name,
-                        readset.name + "_" + readset.run + "_" + readset.lane, protocol=methylseq_protocol
+                        f"{readset.name}_{readset.run}_{readset.lane}",
+                        protocol=methylseq_protocol
 
                     ),
-                    bash.cp(dragen_workfolder, os.path.abspath(alignment_directory) + "/", recursive=True),
+                    bash.cp(dragen_workfolder, f"{os.path.abspath(alignment_directory)}/", recursive=True),
                     bash.rm(dragen_workfolder, recursive=True, force=True),
                     rm_dragen_fastq_job
-                ], name="dragen_align." + readset.name, samples=[readset.sample], input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam] + dragen_report_files)
+                ],
+                name=f"dragen_align.{readset.name}",
+                samples=[readset.sample],
+                input_dependency=[fastq1, fastq2],
+                output_dependency=[dragen_bam] + dragen_report_files)
                 jobs.append(
                     dragen_align
                 )
@@ -1263,10 +1323,14 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                             dragen_bam,
                             re.sub(".bam", "_flagstat.txt", dragen_bam),
                         )
-                    ], name="samtools_flagstat." + readset.name, samples=[readset.sample], output_dependency = [re.sub(".bam", "_flagstat.txt", dragen_bam)])
+                    ],
+                    name=f"samtools_flagstat.{readset.name}",
+                    samples=[readset.sample],
+                    output_dependency = [re.sub(".bam", "_flagstat.txt", dragen_bam)]
+                    )
 
                 )
-                # create symlinks to dragen_align metrics outputs to be used for multiqc
+                # Create symlinks to dragen_align metrics outputs to be used for multiqc
                 link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
                 symlink_job = bash.mkdir(link_directory)
                 for outfile in dragen_align.report_files:
@@ -1281,7 +1345,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                                     )
                                 ]
                             )
-                symlink_job.name = "symlink_dragen_metrics." + readset.name
+                symlink_job.name = f"symlink_dragen_metrics.{readset.name}"
                 symlink_job.samples = [readset.sample]
                 jobs.append(symlink_job)
 
@@ -1292,7 +1356,10 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                             dragen_bam,
                             index_bam
                         )
-                    ], name="sambamba_index." + readset.name, samples=[readset.sample]))
+                    ],
+                    name=f"sambamba_index.{readset.name}",
+                    samples=[readset.sample])
+                    )
 
             return jobs
 
@@ -1302,6 +1369,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
     def dragen_methylation_call(self):
         """
         Call methylation with Dragen using the 2nd run of Dragen alignment.
+        Returns:
+            list: A list of Dragen methylation call jobs.
         """
 
         jobs = []
@@ -1310,20 +1379,24 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
             methylation_call_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             dragen_inputfolder = os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "reads", sample.name)
             dragen_workfolder = os.path.join(global_conf.global_get('dragen_align', 'work_folder'), "dragen_methylation_call", sample.name)
-            dragen_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            output_report = os.path.join(methylation_call_directory, sample.name + ".CX_report.txt")
+            dragen_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
+            output_report = os.path.join(methylation_call_directory, f"{sample.name}.CX_report.txt")
 
-            dragen_tmp_bam = os.path.join(dragen_inputfolder, sample.name + ".sorted.bam")
+            dragen_tmp_bam = os.path.join(dragen_inputfolder, f"{sample.name}.sorted.bam")
             cp_dragen_bam_job = concat_jobs([
                 bash.mkdir(dragen_inputfolder),
                 bash.cp(os.path.abspath(dragen_bam), dragen_tmp_bam)
-            ], name="dragen_copy_bam." + sample.name, samples=[sample])
+                ],
+                name=f"dragen_copy_bam.{sample.name}",
+                samples=[sample]
+                )
             rm_dragen_bam_job = concat_jobs([
                 bash.rm(dragen_tmp_bam, recursive=True, force=True)
-            ], name="dragen_remove_bam." + sample.name, samples=[sample])
+                ],
+                name=f"dragen_remove_bam.{sample.name}",
+                samples=[sample]
+                )
 
-
-           # candidate_input_files2 = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             dragen_methylationn_call = concat_jobs([
                 cp_dragen_bam_job,
                 bash.mkdir(dragen_workfolder),
@@ -1336,8 +1409,12 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 bash.cp(dragen_workfolder, os.path.abspath(self.output_dirs["methylation_call_directory"]) + "/", recursive=True),
                 bash.rm(dragen_workfolder, recursive=True, force=True ),
                 rm_dragen_bam_job
-            ], name="dragen_methylation_call." + sample.name, samples=[sample],  input_dependency=[dragen_bam],
-                         output_dependency=[output_report])
+                ],
+                name=f"dragen_methylation_call.{sample.name}",
+                samples=[sample],
+                input_dependency=[dragen_bam],
+                output_dependency=[output_report]
+                )
             jobs.append(
                 dragen_methylationn_call
             )
@@ -1346,49 +1423,53 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
     def sort_dragen_sam(self):
         """
         Coordinate sorting the bam file resulted from dragen and create an index.
+        Returns:
+            list: A list of Dragen sam sorting jobs.
         """
         jobs = []
 
         duplicate_marking = global_conf.global_get('dragen_align', 'duplicate_marking', param_type='boolean')
 
-        if duplicate_marking == True:
+        if duplicate_marking is True:
 
             for sample in self.samples:
                 alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
-                input_file = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-                output_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
-                output_file_index = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam.bai")
+                input_file = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
+                output_file = os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam")
+                output_file_index = os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam.bai")
                 # empty metric file will be created for "ihec_sample_metrics_report" steps. Otherwise it will be failed.
                 # Therefore added an empty file with ESTIMATED_LIBRARY_SIZE = NA
                 # so the dragen protocol will not estimate the library size
-                empty_metric_file= os.path.join(alignment_directory, sample.name + ".sorted.dedup.metrics")
+                empty_metric_file= os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.metrics")
 
                 jobs.append(
-
                     concat_jobs([
                         bash.mkdir(alignment_directory),
                         picard.sort_sam(
                             input_file,
                             output_file
-                        ), Job(output_files=[empty_metric_file], command="""\
-                        printf "ESTIMATED_LIBRARY_SIZE\\nNA" > {output}""".
-                            format(
-                            output=empty_metric_file
-                        ) )
-                    ], name="picard_sort_sam." + sample.name, samples=[sample]
-
+                            ),
+                        Job(
+                            output_files=[empty_metric_file],
+                            command=f"""printf "ESTIMATED_LIBRARY_SIZE\\nNA" > {empty_metric_file}"""
+                            )
+                        ],
+                        name=f"picard_sort_sam.{sample.name}",
+                        samples=[sample]
+                        )
                     )
-
-                )
                 jobs.append(
                     concat_jobs([
                         picard.build_bam_index(
-                        output_file,
-                        output_file_index
+                            output_file,
+                            output_file_index
+                            )
+                        ],
+                        name=f"build_bam_index.{sample.name}",
+                        samples=[sample]
+                        )
                     )
-                ], name = "build_bam_index." + sample.name, samples = [sample]
-                ))
         else:
             log.info("skipping symlinks creation for duplicate marked bams....")
 
@@ -1399,27 +1480,27 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         """
         Dragen methylation report contains all three methylation context.
         To create combined CSV CpGs should be extracted from the dragen methylation report.
+        Returns:
+            list: A list of split dragen methylation report
         """
 
         jobs = []
 
-
         for sample in self.samples:
             methylation_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
 
-            input_file = os.path.join(methylation_directory, sample.name + ".CX_report.txt")
-            output_file = os.path.join(methylation_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")
+            input_file = os.path.join(methylation_directory, f"{sample.name}.CX_report.txt")
+            output_file = os.path.join(methylation_directory, f"{sample.name}.readset_sorted.dedup.CpG_report.txt.gz")
 
             jobs.append(
                 concat_jobs([
-
                     dragen.split_dragen_methylation_report(
                         input_file,
                         output_file,
                         meth_contex="CG"
                     )
                 ],
-                    name="split_dragen_methylation_report." + sample.name,
+                    name=f"split_dragen_methylation_report.{sample.name}",
                     samples=[sample]
                 )
             )
@@ -1430,14 +1511,16 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
 
         """
         Creates bedgraph file from combined strand CpG file
+        Returns:
+            list: A list of dragen bedgraph jobs
         """
         jobs = []
 
         for sample in self.samples:
             methylation_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
 
-            input_file = os.path.join(methylation_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.csv")
-            output_file = os.path.join(methylation_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")
+            input_file = os.path.join(methylation_directory, f"{sample.name}.readset_sorted.dedup.CpG_profile.strand.combined.csv")
+            output_file = os.path.join(methylation_directory, f"{sample.name}.readset_sorted.dedup.bedGraph.gz")
 
             jobs.append(
                 concat_jobs([
@@ -1447,7 +1530,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         output_file
                     )
                 ],
-                    name="dragen_bedgraph." + sample.name,
+                    name=f"dragen_bedgraph.{sample.name}",
                     samples=[sample]
                 )
             )
@@ -1459,6 +1542,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         Aggregate results from bioinformatics analyses across many samples into a single report.
         MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
         perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
+        Returns:
+            list: A list of MultiQC jobs.
         """
         jobs = []
 
@@ -1486,27 +1571,32 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         return self.protocols()[self._protocol]
 
     def protocols(self):
-        return { 'bismark':
+        """
+        Returns the protocol for the pipeline.
+        Returns:
+            dict: A dictionary of protocols for the pipeline.
+        """
+        return {'bismark':
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.bismark_align,
-                self.add_bam_umi,              # step 5  
+                self.add_bam_umi,              # step 5
                 self.sambamba_merge_sam_files,
                 self.picard_remove_duplicates,
                 self.metrics,
                 self.methylation_call,
-                self.wiggle_tracks,           # step 10  
-                self.methylation_profile,      
+                self.wiggle_tracks,           # step 10
+                self.methylation_profile,
                 self.ihec_sample_metrics_report,
                 self.bis_snp,
                 self.filter_snp_cpg,
-                self.prepare_methylkit,           # step 15 
+                self.prepare_methylkit,           # step 15
                 self.methylkit_differential_analysis,
                 self.multiqc,
                 self.cram_output
-            ], 'hybrid': 
+            ], 'hybrid':
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
@@ -1523,7 +1613,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.bis_snp,
                 self.filter_snp_cpg,
                 self.prepare_methylkit,            # step 15
-                self.methylkit_differential_analysis, 
+                self.methylkit_differential_analysis,
                 self.multiqc,
                 self.cram_output
             ], 'dragen':
@@ -1553,6 +1643,9 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
 
 def main(parsed_args):
     """
+    The function that will call this pipeline!
+    Parameters:
+        parsed_args (argparse.Namespace): The parsed arguments from the command line.
     """
 
     # Pipeline config
@@ -1563,6 +1656,7 @@ def main(parsed_args):
     container = parsed_args.container
     clean = parsed_args.clean
     no_json = parsed_args.no_json
+    json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
     job_scheduler = parsed_args.job_scheduler
@@ -1572,6 +1666,6 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = MethylSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container, protocol=protocol)
+    pipeline = MethylSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, protocol=protocol)
 
     pipeline.submit_jobs()

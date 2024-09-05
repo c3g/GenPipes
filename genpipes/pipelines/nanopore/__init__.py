@@ -134,7 +134,7 @@ For information on the structure and contents of the Nanopore readset file, plea
 
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
             out_bam = os.path.join(alignment_directory, readset.name + ".sorted.bam")
-            out_bai = re.sub("\.bam$", ".bam.bai", out_bam)
+            out_bai = re.sub(r"\.bam$", ".bam.bai", out_bam)
 
             if readset.fastq_files:
                 reads_fastq_dir = readset.fastq_files
@@ -250,8 +250,8 @@ For information on the structure and contents of the Nanopore readset file, plea
 
                 readset_bam = readset_bams[0]
 
-                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
+                readset_index = re.sub(r"\.bam$", ".bam.bai", readset_bam)
+                sample_index = re.sub(r"\.bam$", ".bam.bai", sample_bam)
 
                 job = concat_jobs(
                     [
@@ -334,6 +334,7 @@ def main(parsed_args):
     container = parsed_args.container
     clean = parsed_args.clean
     no_json = parsed_args.no_json
+    json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
     job_scheduler = parsed_args.job_scheduler
@@ -342,7 +343,7 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     design_file = parsed_args.design_file
 
-    pipeline = Nanopore(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container)
+    pipeline = Nanopore(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container)
 
     pipeline.submit_jobs()
 

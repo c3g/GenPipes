@@ -31,13 +31,13 @@ def report(input_vcf,
            input_cna,
            ini_section='report_pcgr'
            ):
-    
+
     if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] >= "1":
         call = 'pcgr'
     else:
         call = 'pcgr.py'
     if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] >= "2":
-          return report2(input_vcf, output_dir, tumor_id, input_cna, ini_section=ini_section)
+        return report2(input_vcf, output_dir, tumor_id, input_cna, ini_section=ini_section)
     else:
         tumor_id = tumor_id[:35]
 
@@ -146,11 +146,21 @@ cp -r {tmp_dir}/pcgr {output_dir}""".format(
     )
 
 def create_header(output):
-            return Job(
-                command="""\
-`cat > {header} << END
+    return Job(
+        command=f"""\
+`cat > {output} << END
 Chromosome\tStart\tEnd\tSegment_Mean
-END`""".format(
-            header=output,
-            )
+END`"""
+        )
+
+def parse_pcgr_passed_variants_pt(input_file):
+    """
+    Parse PCGR passed variants.
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export pcgr_passed_variants=`grep "pcgr-gene-annotate - INFO - Number of PASSed variant calls:" {input_file} | awk -F': ' '{{print $2}}'`"""
         )

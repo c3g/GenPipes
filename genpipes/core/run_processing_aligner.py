@@ -156,7 +156,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 BwaRunProcessingAligner.downloaded_bed_files.append(coverage_bed)
                 jobs.append(job)
 
-            interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+            interval_list = re.sub(r"\.[^.]+$", ".interval_list", coverage_bed)
 
             if interval_list not in BwaRunProcessingAligner.created_interval_lists:
                 # Create one job to generate the interval list from the bed file

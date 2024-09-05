@@ -60,7 +60,7 @@ class Pipeline(object):
         self.sanity_check = sanity_check
         if sanity_check:
             self.config_parser.sanity = True
-        
+
         self._output_dir = os.path.abspath(output_dir)
 
         # Create a config trace from merged config file values
@@ -113,11 +113,10 @@ class Pipeline(object):
         self._step_to_execute = None
         self.steps = steps
         if self.steps:
-            if re.search("^\d+([,-]\d+)*$", steps):
+            if re.search(r"^\d+([,-]\d+)*$", steps):
                 self._step_to_execute = [Step(self.step_list[i - 1]) for i in parse_range(steps)]
             else:
-                raise Exception("Error: step range \"" + steps +
-                    "\" is invalid (should match \d+([,-]\d+)*)!")
+                raise Exception(f"""Error: step range "{steps}" is invalid (should match \\d+([,-]\\d+)*)!""")
         else:
             log.warning("No step provided by the user => launching the entire pipeline\n")
             self._step_to_execute = [Step(step) for step in self.step_list]
@@ -134,7 +133,7 @@ class Pipeline(object):
                         config_trace_content.append(line)
             jsonator_project_tracking.init(
                 operation_name=operation_name,
-                operation_config_version=self._genpipes_version,
+                operation_config_version=self.version,
                 operation_cmd_line=full_command,
                 operation_config_md5sum=md5(config_trace_filename),
                 operation_config_data=config_trace_content,
@@ -158,14 +157,14 @@ class Pipeline(object):
                 self._force_jobs = force
                 self.create_jobs()
             except SanitycheckError as e:
-                log.error("""
+                log.error(f"""
 ***The pipeline encountered an error :
-    {error}
-***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""".format(error=e))
+    {e}
+***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""")
                 exit(1)
 
         self._force_mem_per_cpu=force_mem_per_cpu
-            
+
     @classmethod
     def process_help(cls, argv):
         """
@@ -176,11 +175,10 @@ class Pipeline(object):
         step_lst = []
         steps_doc = []
         for protocol, steps in cls.protocols(cls).items():
-            step_lst.append('\nProtocol {}'.format(protocol))
+            step_lst.append(f'\nProtocol {protocol}')
             for i, step in enumerate(steps, 1):
-                step_lst.append('{} {}'.format(i, step.__name__))
-                steps_doc.append('{} \n{}\n {}'.format(step.__name__, "-" * len(step.__name__),
-                                                       textwrap.dedent(step.__doc__) if step.__doc__ else ""))
+                step_lst.append(f'{i} {step.__name__}')
+                steps_doc.append(f'{step.__name__} \n{"-" * len(step.__name__)}\n {textwrap.dedent(step.__doc__) if step.__doc__ else ""}')
         epilog = "\n".join(step_lst)
         summary = cls.__doc__
         if '--help' in argv:
@@ -190,66 +188,107 @@ class Pipeline(object):
     @classmethod
     def argparser(cls, argparser):
 
-            cls._argparser = argparser
+        cls._argparser = argparser
 
-            cls._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are "
-                                                                "overwritten based on files order",
-                                        nargs="+", type=argparse.FileType('r'), required=True)
+        cls._argparser.add_argument(
+            "--clean",
+            help="create 'rm' commands for all job removable files in the given step range, if they exist; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)",
+            action="store_true"
+            )
 
-            cls._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'")
+        cls._argparser.add_argument(
+            "-c",
+            "--config",
+            help="config INI-style list of files; config parameters are overwritten based on files order",
+            nargs="+",
+            type=argparse.FileType('r'),
+            required=True
+            )
 
-            cls._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)",
-                                        default=os.getcwd())
+        cls._argparser.add_argument(
+            "--container",
+            help="Run inside a container providing a valid singularity image path",
+            nargs=2,
+            action=ValidateContainer,
+            metavar=("{wrapper, singularity}","<IMAGE PATH>")
+            )
 
-            cls._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: slurm)",
-                                        choices=["pbs", "batch", "daemon", "slurm"], default="slurm")
+        cls._argparser.add_argument(
+            "-f",
+            "--force",
+            help="force creation of jobs even if up to date (default: false)",
+            action="store_true"
+            )
 
-            cls._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date "
-                                                              "(default: false)", action="store_true")
+        cls._argparser.add_argument(
+            "--force_mem_per_cpu",
+            help="Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default: None)",
+            default=None
+            )
 
-            cls._argparser.add_argument("--force_mem_per_cpu", help="Take the mem input in the ini file "
-                                                                    "and force to have a minimum of mem_per_cpu "
-                                                                    "by correcting the number of cpu "
-                                                                    "(default: None)", default=None)
+        cls._argparser.add_argument(
+            "--genpipes_file",
+            '-g',
+            help="Command file output path. This is the command used to process the data, or said otherwise, this command will \"run the Genpipes pipeline\". Will be redirected to stdout if the option is not provided.",
+            default=sys.stdout,
+            type=argparse.FileType('w')
+            )
 
-            cls._argparser.add_argument("--no-json", help="do not create JSON file per analysed sample to track the "
-                                                          "analysis status (default: false i.e. JSON file will be "
-                                                          "created)", action="store_true")
+        cls._argparser.add_argument(
+            "-j",
+            "--job-scheduler",
+            help="job scheduler type (default: slurm)",
+            choices=["pbs", "batch", "daemon", "slurm"],
+            default="slurm"
+            )
 
-            cls._argparser.add_argument("--json-pt", help="create JSON file for project_tracking database ingestion "
-                                                          "(default: false i.e. JSON file will NOT be created)",
-                                       action="store_true")
+        cls._argparser.add_argument(
+            "--json-pt",
+            help="create JSON file for project_tracking database ingestion (default: false i.e. JSON file will NOT be created)",
+            action="store_true"
+            )
 
-            cls._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given"
-                                                        " step range, if they exist; if --clean is set,"
-                                                        " --job-scheduler, --force options and job up-to-date status "
-                                                        "are ignored (default: false)", action="store_true")
-            cls._argparser.add_argument("--container", nargs=2,
-                                        help="Run inside a container providing a valid"
-                                        "singularity image path", action=ValidateContainer,
-                                        metavar=("{wrapper, singularity}",
-                                                 "<IMAGE PATH>"))
+        cls._argparser.add_argument(
+            "-l",
+            "--log",
+            help="log level (default: info)",
+            choices=["debug", "info", "warning", "error", "critical"],
+            default="info"
+            )
 
-            cls._argparser.add_argument("--genpipes_file", '-g', default=sys.stdout, type=argparse.FileType('w'),
-                                        help="Command file output path. This is the command used to process "
-                                             "the data, or said otherwise, this command will \"run the "
-                                             "Genpipes pipeline\". Will be redirected to stdout if the "
-                                             "option is not provided.")
+        cls._argparser.add_argument(
+            "--no-json",
+            help="do not create JSON file per analysed sample to track the analysis status (default: false i.e. JSON file will be created)",
+            action="store_true"
+            )
 
-            cls._argparser.add_argument("-l", "--log", help="log level (default: info)",
-                                        choices=["debug", "info", "warning", "error", "critical"], default="info")
+        cls._argparser.add_argument(
+            "-o",
+            "--output-dir",
+            help="output directory (default: current)",
+            default=os.getcwd()
+            )
 
-            cls._argparser.add_argument("--sanity-check", help="run the pipeline in `sanity check mode` to verify that"
-                                                               " all the input files needed for the pipeline to run "
-                                                               "are available on the system (default: false)",
-                                        action="store_true")
+        cls._argparser.add_argument(
+            "--sanity-check",
+            help="run the pipeline in `sanity check mode` to verify that all the input files needed for the pipeline to run are available on the system (default: false)",
+            action="store_true"
+            )
 
-            cls._argparser.add_argument('--wrap', type=str, help="Path to the genpipe cvmfs wrapper script.\n"
-                                        "Default is genpipes/ressources/container/bin/container_wrapper.sh. This is "
-                                        "a convenience options for using genpipes in a container",
-                                        nargs='?')
+        cls._argparser.add_argument(
+            "-s",
+            "--steps",
+            help="step range e.g. '1-5', '3,6,7', '2,4-8'"
+            )
 
-            return cls._argparser
+        cls._argparser.add_argument(
+            '--wrap',
+            help="Path to the genpipe cvmfs wrapper script.\nDefault is genpipes/ressources/container/bin/container_wrapper.sh. This is a convenience options for using genpipes in a container",
+            nargs='?',
+            type=str
+            )
+
+        return cls._argparser
 
     # Pipeline command line arguments
     @property
@@ -276,7 +315,7 @@ class Pipeline(object):
     @property
     def force_jobs(self):
         return self._force_jobs
-    
+
     @property
     def force_mem_per_cpu(self):
         return self._force_mem_per_cpu
@@ -329,8 +368,7 @@ class Pipeline(object):
     def genpipes_version(cls):
         if cls.version is None:
             try:
-                cls.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-                                             "VERSION"), 'r').read().split('\n')[0]
+                cls.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
             except:
                 import genpipes
                 cls.version = genpipes.__VERSION__
@@ -441,13 +479,13 @@ class Pipeline(object):
         if self.json:
             # Check if portal_output_dir is set from a valid environment variable
             self.portal_output_dir = global_conf.global_get('DEFAULT', 'portal_output_dir', required=False)
-            if self.portal_output_dir.startswith("$") and (os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
+            if self.portal_output_dir.startswith("$") and (os.environ.get(re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
                 if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
                     self.portal_output_dir = ""
                     log.info(" --> PORTAL_OUTPUT_DIR environment variable is not set... no JSON file will be generated during analysis...\n")
                     self._json = False
                 else:
-                    _raise(SanitycheckError("Environment variable \"" + re.search("^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
+                    _raise(SanitycheckError("Environment variable \"" + re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
             elif not os.path.isdir(os.path.expandvars(self.portal_output_dir)):
                 _raise(SanitycheckError("Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
             else:
@@ -464,7 +502,7 @@ class Pipeline(object):
         Submits jobs
         """
         self.job_scheduler.submit(self)
- 
+
     def clean_jobs(self):
         """
         Cleans jobs

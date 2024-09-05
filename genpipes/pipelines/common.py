@@ -247,7 +247,7 @@ class Illumina(GenPipesPipeline):
                         ], name="samtools_bam_sort."+readset.name, samples=[readset.sample])
                     )
                 else:
-                    _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
+                    _raise(SanitycheckError(f"""Error: BAM file not available for readset "{readset.name}"!"""))
         return jobs
 
 
@@ -287,8 +287,7 @@ class Illumina(GenPipesPipeline):
                         fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.single.fastq.gz")
                         fastq2 = None
                     else:
-                        _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                        _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
                     mkdir_job = bash.mkdir(rawReadsDirectory)
                     jobs.append(
@@ -405,7 +404,7 @@ class Illumina(GenPipesPipeline):
 END
 `""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(str.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(str.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
                     else:
-                        _raise(SanitycheckError("Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
+                        _raise(SanitycheckError(f"""Error: missing adapter1 and/or adapter2 for PAIRED_END readset "{readset.name}", or missing adapter_fasta parameter in config file!"""))
                 elif readset.run_type == "SINGLE_END":
                     if readset.adapter1:
                         adapter_job = Job(command="""\
@@ -415,7 +414,7 @@ END
 END
 `""".format(adapter_fasta=adapter_fasta, sequence=readset.adapter1))
                     else:
-                        _raise(SanitycheckError("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
+                        _raise(SanitycheckError(f"""Error: missing adapter1 for SINGLE_END readset "{readset.name}", or missing adapter_fasta parameter in config file!"""))
 
             trim_stats = trim_file_prefix + "stats.csv"
             if readset.run_type == "PAIRED_END":
@@ -455,8 +454,7 @@ END
                     trim_log
                 )
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
             if adapter_job:
                 job = concat_jobs([adapter_job, job])
@@ -494,9 +492,9 @@ END
             trim_log = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
                 # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
-                perl_command = f"perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\\t{readset.name}\\t\\1\\t\\2/'"
+                perl_command = f"perl -pe 's/^Input Read Pairs: (\\d+).*Both Surviving: (\\d+).*Forward Only Surviving: (\\d+).*$/{readset.sample.name}\\t{readset.name}\\t\\1\\t\\2/'"
             elif readset.run_type == "SINGLE_END":
-                perl_command = f"perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\\t{readset.name}\\t\\1\\t\\2/'"
+                perl_command = f"perl -pe 's/^Input Reads: (\\d+).*Surviving: (\\d+).*$/{readset.sample.name}\\t{readset.name}\\t\\1\\t\\2/'"
 
             job = concat_jobs(
                 [
@@ -621,7 +619,7 @@ END
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                        re.sub(r"\.bam$", ".", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                     prefix = os.path.join(
@@ -638,7 +636,7 @@ END
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                        re.sub(r"\.bam$", ".", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
@@ -715,7 +713,7 @@ END
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
-                        re.sub("\.bam$", "", os.path.basename(readset.bam))
+                        re.sub(r"\.bam$", "", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([f"{prefix}.pair1.fastq.gz", f"{prefix}.pair2.fastq.gz"])
                     prefix = os.path.join(
@@ -734,7 +732,7 @@ END
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
-                        re.sub("\.bam$", "", os.path.basename(readset.bam))
+                        re.sub(r"\.bam$", "", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([f"{prefix}.single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
@@ -861,7 +859,7 @@ END
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                        re.sub(r"\.bam$", ".", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([f"{prefix}.pair1.fastq.gz", f"{prefix}.pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
@@ -874,7 +872,7 @@ END
                     prefix = os.path.join(
                         self.output_dirs["raw_reads_directory"],
                         readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                        re.sub(r"\.bam$", ".", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([f"{prefix}.single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
@@ -951,8 +949,8 @@ END
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
-                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
+                readset_index = re.sub(r"\.bam$", ".bam.bai", readset_bam)
+                sample_index = re.sub(r"\.bam$", ".bam.bai", sample_bam)
 
                 if alignment_directory in readset_bam:
                     bam_link = os.path.relpath(readset_bam, alignment_directory)
@@ -990,7 +988,7 @@ END
                         [
                             mkdir_job,
                             bash.rm(sample_bam),
-                            bash.rm(re.sub("\.bam$", ".bam.bai", sample_bam)),
+                            bash.rm(re.sub(r"\.bam$", ".bam.bai", sample_bam)),
                             sambamba.merge(
                                 readset_bams,
                                 sample_bam
@@ -1037,12 +1035,12 @@ END
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
                 if compression_postfix == 'bam':
-                    readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
-                    sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
+                    readset_index = re.sub(r"\.bam$", ".bam.bai", readset_bam)
+                    sample_index = re.sub(r"\.bam$", ".bam.bai", sample_bam)
                     
                 elif compression_postfix == 'cram':
-                    readset_index = re.sub("\.cram$", ".cram.crai", readset_bam)
-                    sample_index = re.sub("\.cram$", ".cram.crai", sample_bam)
+                    readset_index = re.sub(r"\.cram$", ".cram.crai", readset_bam)
+                    sample_index = re.sub(r"\.cram$", ".cram.crai", sample_bam)
                 
                 if alignment_directory in readset_bam:
                     bam_link = os.path.relpath(readset_bam, alignment_directory)
@@ -1088,7 +1086,7 @@ END
                                 ini_section='samtools_merge_bams'
                             )
                         ],
-                        name="samtools_merge_sam_files." + sample.name,
+                        name=f"samtools_merge_sam_files.{sample.name}",
                         samples=[sample],
                         input_dependency=readset_bams
                     )
@@ -1273,7 +1271,7 @@ END
             
             [input_bam] = self.select_input_files(candidate_input_files)
 
-            output_cram = re.sub("\.bam$", ".cram", input_bam)
+            output_cram = re.sub(r"\.bam$", ".cram", input_bam)
 
             if "recal" in input_bam:
                 job = variantBam.run(

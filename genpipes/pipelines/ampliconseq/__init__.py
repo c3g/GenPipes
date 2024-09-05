@@ -224,11 +224,11 @@ Parameters:
             trim_log = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
                 # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
-                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
+                perl_command = "perl -pe 's/^Input Read Pairs: (\\d+).*Both Surviving: (\\d+).*Forward Only Surviving: (\\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
             elif readset.run_type == "SINGLE_END":
-                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
+                perl_command = "perl -pe 's/^Input Reads: (\\d+).*Surviving: (\\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
             job = concat_jobs(
                 [
@@ -289,7 +289,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END)!"""))
 
             job = flash.flash(
                 fastq1,
@@ -468,7 +468,7 @@ cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/""".format(
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, _] = self.select_input_files(candidate_input_files)
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END)!"""))
 
             flash_hist = os.path.join(self.output_dirs["merge_directory"], readset.sample.name, readset.name + ".flash.hist")
             job = concat_jobs(
@@ -573,8 +573,7 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                 dada2_inputs.append(left_or_single_reads)
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
         jobs.append(
             concat_jobs(
@@ -663,6 +662,7 @@ def main(parsed_args):
     container = parsed_args.container
     clean = parsed_args.clean
     no_json = parsed_args.no_json
+    json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
     job_scheduler = parsed_args.job_scheduler
@@ -671,6 +671,6 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     design_file = parsed_args.design_file
 
-    pipeline = AmpliconSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, container=container)
+    pipeline = AmpliconSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container)
 
     pipeline.submit_jobs()

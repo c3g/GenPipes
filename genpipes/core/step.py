@@ -24,7 +24,7 @@ class Step(object):
     def __init__(self, create_jobs, analyse_type=None):
         # Step name is used in Bash $JOB_ID variable, hence only alphanumeric and "_" characters are allowed
         step_name = create_jobs.__name__
-        if re.search("^[a-zA-Z]\w+$", step_name):
+        if re.search(r"^[a-zA-Z]\w+$", step_name):
             self._name = step_name
         else:
             raise Exception("Error: step name \"" + step_name +
@@ -67,10 +67,6 @@ class Step(object):
     def analyse_type(self, value):
         self._analyse_type = value
 
-    def add_job(self, job):
-        self.jobs.append(job)
-        job.id = self.name + "_" + str(len(self.jobs)) + "_JOB_ID"
-        
     def add_job(self, job):
         self.jobs.append(job)
         job.id = self.name + "_" + str(len(self.jobs)) + "_JOB_ID"

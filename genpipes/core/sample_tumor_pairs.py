@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 class SampleTumorPair(object):
 
     def __init__(self, name, normal, tumor, readsets, multiple_normal, pair_profyle, normal_profyle, tumor_profyle):
-        if re.search("^\w[\w.-]*$", name):
+        if re.search(r"^\w[\w.-]*$", name):
             self._name = name
             self._normal = normal
             self._tumor = tumor

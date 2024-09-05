@@ -10,23 +10,15 @@ The GenPIpes Methyl-Seq pipeline now has three protocols.
 3. dragen
 
 The "bismark" protocol uses Bismark to align reads to the reference genome.
-Picard is used to mark and remove duplicates and generate metric files. The
-"hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html)
-and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm)
-software to align the reads to the reference genome. All the other steps are common
-with bismark protocol. The "dragen" protocol uses Dragen to align reads to the
-reference genome, call methylation, mark and remove duplicates.
+Picard is used to mark and remove duplicates and generate metric files. The "hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html) and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) software to align the reads to the reference genome. All the other steps are common with bismark protocol. The "dragen" protocol uses Dragen to align reads to the reference genome, call methylation, mark and remove duplicates.
 
-Although dragen provides higher rate of mapping percentage with in a very short time
-duration (approximately three hours compared to 30 hours from bismark), it only
-accessible through McGill Genome Center cluster Abacus and The jobs cannot be
-submitted to any of the HPCs from the [Digital Research Aliance](https://status.computecanada.ca/).
-Importantly, the user needs to have permission to submit jobs to Abacus. Therefore,
-other users may continue to use only bismark protocol since it works in all the clusters.
+Although dragen provides higher rate of mapping percentage with in a very short time duration (approximately three hours compared to 30 hours from bismark), it only accessible through McGill Genome Center cluster Abacus and The jobs cannot be submitted to any of the HPCs from the [Digital Research Aliance](https://status.computecanada.ca/). Importantly, the user needs to have permission to submit jobs to Abacus. Therefore, other users may continue to use only bismark protocol since it works in all the clusters.
 
 However, if you would like to setup and use dragen in own cluster please refer to our [GenPipes Documentation](https://genpipes.readthedocs.io/en/latest/user_guide/pipelines/gp_wgs_methylseq.html)
 
-    
+A pipeline for processing and analyzing bisulfite sequencing data. The pipeline uses Bismark to align reads and extract methylation information, and Picard to remove duplicates, add read groups and index the BAM files. The pipeline also computes metrics and generates coverage tracks per sample. The pipeline currently supports the following protocols: bismark, hybrid and dragen.
+
+The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
 
 Usage
 -----
@@ -35,15 +27,15 @@ Usage
 ```
 #!text
 
-usage: genpipes methylseq [-h] -c CONFIG [CONFIG ...] [-s STEPS]
-                          [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
-                          [--force_mem_per_cpu FORCE_MEM_PER_CPU] [--no-json]
-                          [--json-pt] [--clean]
+usage: genpipes methylseq [-h] [--clean] -c CONFIG [CONFIG ...]
                           [--container {wrapper, singularity} <IMAGE PATH>]
+                          [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                           [--genpipes_file GENPIPES_FILE]
-                          [-l {debug,info,warning,error,critical}]
-                          [--sanity-check] [--wrap [WRAP]] -r READSETS_FILE
-                          [-d DESIGN_FILE] [-v] [-t {bismark,hybrid,dragen}]
+                          [-j {pbs,batch,daemon,slurm}] [--json-pt]
+                          [-l {debug,info,warning,error,critical}] [--no-json]
+                          [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
+                          [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE]
+                          [-v] [-t {bismark,hybrid,dragen}]
 
 Version: 5.0.0
 
@@ -51,44 +43,44 @@ For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes
 
 options:
   -h, --help            show this help message and exit
+  --clean               create 'rm' commands for all job removable files in
+                        the given step range, if they exist; if --clean is
+                        set, --job-scheduler, --force options and job up-to-
+                        date status are ignored (default: false)
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
-                        output directory (default: current)
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
-                        job scheduler type (default: slurm)
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a valid singularity
+                        image path
   -f, --force           force creation of jobs even if up to date (default:
                         false)
   --force_mem_per_cpu FORCE_MEM_PER_CPU
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  --json-pt             create JSON file for project_tracking database
-                        ingestion (default: false i.e. JSON file will NOT be
-                        created)
-  --clean               create 'rm' commands for all job removable files in
-                        the given step range, if they exist; if --clean is
-                        set, --job-scheduler, --force options and job up-to-
-                        date status are ignored (default: false)
-  --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
-                        image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+                        job scheduler type (default: slurm)
+  --json-pt             create JSON file for project_tracking database
+                        ingestion (default: false i.e. JSON file will NOT be
+                        created)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
+  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+                        output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
+  -s STEPS, --steps STEPS
+                        step range e.g. '1-5', '3,6,7', '2,4-8'
   --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
                         enpipes/ressources/container/bin/container_wrapper.sh.
                         This is a convenience options for using genpipes in a
@@ -104,66 +96,66 @@ options:
 Steps:
 
 Protocol bismark
-0 picard_sam_to_fastq
-1 trimmomatic
-2 merge_trimmomatic_stats
-3 bismark_align
-4 add_bam_umi
-5 sambamba_merge_sam_files
-6 picard_remove_duplicates
-7 metrics
-8 methylation_call
-9 wiggle_tracks
-10 methylation_profile
-11 ihec_sample_metrics_report
-12 bis_snp
-13 filter_snp_cpg
-14 prepare_methylkit
-15 methylkit_differential_analysis
-16 multiqc
-17 cram_output
+1 picard_sam_to_fastq
+2 trimmomatic
+3 merge_trimmomatic_stats
+4 bismark_align
+5 add_bam_umi
+6 sambamba_merge_sam_files
+7 picard_remove_duplicates
+8 metrics
+9 methylation_call
+10 wiggle_tracks
+11 methylation_profile
+12 ihec_sample_metrics_report
+13 bis_snp
+14 filter_snp_cpg
+15 prepare_methylkit
+16 methylkit_differential_analysis
+17 multiqc
+18 cram_output
 
 Protocol hybrid
-0 picard_sam_to_fastq
-1 trimmomatic
-2 merge_trimmomatic_stats
-3 dragen_align
-4 add_bam_umi
-5 sambamba_merge_sam_files
-6 picard_remove_duplicates
-7 metrics
-8 methylation_call
-9 wiggle_tracks
-10 methylation_profile
-11 ihec_sample_metrics_report
-12 bis_snp
-13 filter_snp_cpg
-14 prepare_methylkit
-15 methylkit_differential_analysis
-16 multiqc
-17 cram_output
+1 picard_sam_to_fastq
+2 trimmomatic
+3 merge_trimmomatic_stats
+4 dragen_align
+5 add_bam_umi
+6 sambamba_merge_sam_files
+7 picard_remove_duplicates
+8 metrics
+9 methylation_call
+10 wiggle_tracks
+11 methylation_profile
+12 ihec_sample_metrics_report
+13 bis_snp
+14 filter_snp_cpg
+15 prepare_methylkit
+16 methylkit_differential_analysis
+17 multiqc
+18 cram_output
 
 Protocol dragen
-0 picard_sam_to_fastq
-1 trimmomatic
-2 merge_trimmomatic_stats
-3 dragen_align
-4 add_bam_umi
-5 sambamba_merge_sam_files
-6 sort_dragen_sam
-7 metrics
-8 dragen_methylation_call
-9 split_dragen_methylation_report
-10 methylation_profile
-11 dragen_bedgraph
-12 wiggle_tracks
-13 ihec_sample_metrics_report
-14 bis_snp
-15 filter_snp_cpg
-16 prepare_methylkit
-17 methylkit_differential_analysis
-18 multiqc
-19 cram_output
+1 picard_sam_to_fastq
+2 trimmomatic
+3 merge_trimmomatic_stats
+4 dragen_align
+5 add_bam_umi
+6 sambamba_merge_sam_files
+7 sort_dragen_sam
+8 metrics
+9 dragen_methylation_call
+10 split_dragen_methylation_report
+11 methylation_profile
+12 dragen_bedgraph
+13 wiggle_tracks
+14 ihec_sample_metrics_report
+15 bis_snp
+16 filter_snp_cpg
+17 prepare_methylkit
+18 methylkit_differential_analysis
+19 multiqc
+20 cram_output
 ```
 
 picard_sam_to_fastq 

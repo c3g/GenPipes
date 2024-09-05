@@ -42,7 +42,7 @@ class UniqueName(type):
 class Sample(metaclass=UniqueName):
 
     def __init__(self, name):
-        if re.search("^\w[\w.-]*$", name):
+        if re.search(r"^\w[\w.-]*$", name):
             self._name = name
         else:
             _raise(SanitycheckError("Sample Error: sample name \"" + name +

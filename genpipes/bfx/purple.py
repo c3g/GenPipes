@@ -143,6 +143,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $PURPLE_JAR c
 
 def parse_purity_metrics_pt(input_file):
     """
+    Parse purity metrics from Purple output.
     """
     return Job(
         [input_file],
