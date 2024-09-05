@@ -542,6 +542,7 @@ pandoc \\
                         ],
                         name="sambamba_merge_sam_files." + sample.name,
                         samples=[sample],
+                        readsets=list(sample.readsets),
                         input_dependency=readset_bams
                     )
                 )
