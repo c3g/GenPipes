@@ -940,7 +940,7 @@ END
                 [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.UMI.bam") for readset in sample.readsets],
                 [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam") for readset in sample.readsets],
                 [readset.bam for readset in sample.readsets if readset.bam]]
-            
+
             readset_bams = self.select_input_files(candidate_readset_bams)
 
             sample_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
@@ -959,7 +959,7 @@ END
                 else:
                     bam_link = os.path.relpath(readset_bam, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
                     index_link = os.path.relpath(readset_index, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
-                
+
                 jobs.append(
                     concat_jobs(
                         [
@@ -996,12 +996,13 @@ END
                         ],
                         name="sambamba_merge_sam_files." + sample.name,
                         samples=[sample],
+                        readsets=list(sample.readsets),
                         input_dependency=readset_bams
                     )
                 )
 
         return jobs
-    
+
     def samtools_merge_files(self):
         """
         BAM readset files are merged into one file per sample. Merge is done using [Samtools](https://www.htslib.org/).
@@ -1011,10 +1012,10 @@ END
         1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
         2. Else, BAM files from the readset file
         """
-        
+
         jobs = []
         compression_postfix = global_conf.global_get('bwa_mem2_samtools_sort', 'compression')
-        
+
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
@@ -1025,35 +1026,31 @@ END
                 [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.{compression_postfix}") for readset in
                  sample.readsets],
                 [readset.bam for readset in sample.readsets if readset.bam]]
-            
+
             readset_bams = self.select_input_files(candidate_readset_bams)
-            
+
             sample_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.{compression_postfix}")
             mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
-            
+
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
                 if compression_postfix == 'bam':
                     readset_index = re.sub(r"\.bam$", ".bam.bai", readset_bam)
                     sample_index = re.sub(r"\.bam$", ".bam.bai", sample_bam)
-                    
+
                 elif compression_postfix == 'cram':
                     readset_index = re.sub(r"\.cram$", ".cram.crai", readset_bam)
                     sample_index = re.sub(r"\.cram$", ".cram.crai", sample_bam)
-                
+
                 if alignment_directory in readset_bam:
                     bam_link = os.path.relpath(readset_bam, alignment_directory)
                     index_link = os.path.relpath(readset_index, alignment_directory)
-                
+
                 else:
-                    bam_link = os.path.relpath(readset_bam,
-                                               os.path.join(self.output_dir, self.output_dirs['alignment_directory'],
-                                                            sample.name))
-                    index_link = os.path.relpath(readset_index,
-                                                 os.path.join(self.output_dir, self.output_dirs['alignment_directory'],
-                                                              sample.name))
-                
+                    bam_link = os.path.relpath(readset_bam, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
+                    index_link = os.path.relpath(readset_index, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
+
                 jobs.append(
                     concat_jobs(
                         [
@@ -1074,7 +1071,7 @@ END
                         readsets=list(sample.readsets)
                     )
                 )
-                
+
             elif len(sample.readsets) > 1:
                 jobs.append(
                     concat_jobs(
@@ -1091,7 +1088,7 @@ END
                         input_dependency=readset_bams
                     )
                 )
-        
+
         return jobs
 
 
@@ -1106,15 +1103,12 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             metrics_directory = os.path.join(self.output_dirs["metrics_directory"][sample.name])
-            
+
             # Find input readset CRAMs/BAMs first from previous bwa_mem2_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [
-                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.UMI.bam") for readset in
-                 sample.readsets],
-                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.cram") for readset in
-                 sample.readsets],
-                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam") for readset in
-                 sample.readsets], 
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.UMI.bam") for readset in sample.readsets],
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.cram") for readset in sample.readsets],
+                [os.path.join(alignment_directory, readset.name, f"{readset.name}.sorted.bam") for readset in sample.readsets],
                 [readset.bam for readset in sample.readsets if readset.bam]
             ]
             input = self.select_input_files(candidate_readset_bams)
@@ -1140,7 +1134,7 @@ END
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
-                                metrics=f"duplication_percent=$duplication_percent"
+                                metrics="duplication_percent=$duplication_percent"
                             ),
                         ]
                 )
@@ -1172,9 +1166,9 @@ END
             self.multiqc_inputs[sample.name].append(
                 metrics_file
             )
-            
+
         return jobs
-    
+
     def verify_bam_id(self):
         """
         verifyBamID is a software that verifies whether the reads in particular file match previously known
@@ -1185,7 +1179,7 @@ END
         """
 
         # Known variants file
-        population_AF = global_conf.global_get('verify_bam_id', 'population_AF', required=False)
+        population_af = global_conf.global_get('verify_bam_id', 'population_AF', required=False)
         candidate_input_files = [[global_conf.global_get('verify_bam_id', 'verifyBamID_variants_file', required=False)],
                                  [global_conf.global_get('verify_bam_id', 'verifyBamID_variants_file', required=False) + ".gz"]]
         [known_variants_annotated] = self.select_input_files(candidate_input_files)
@@ -1221,8 +1215,8 @@ END
                 name = f"verify_bam_id.{sample.name}",
                 samples = [sample]
                 )
-            ) 
-            
+            )
+
             verify_bam_results.extend([f"{output_prefix}.selfSM" ])
 
         # Coverage bed is null if whole genome experiment
@@ -1232,13 +1226,13 @@ END
         jobs.append(
             rmarkdown.render(
                 job_input=verify_bam_results ,
-                job_name=f"verify_bam_id_report",
+                job_name="verify_bam_id_report",
                 input_rmarkdown_file=os.path.join(self.report_template_dir, "Illumina.verify_bam_id.Rmd"),
                 samples=self.samples,
                 readsets=self.readsets,
                 render_output_dir='report',
                 module_section='report',
-                prerun_r=f'source_dir="{verify_bam_id_directory}"; report_dir="report" ; params=list(verifyBamID_variants_file="{known_variants_annotated}", dbnsfp_af_field="{population_AF}", coverage_bed="{target_bed}");'
+                prerun_r=f'source_dir="{verify_bam_id_directory}"; report_dir="report" ; params=list(verifyBamID_variants_file="{known_variants_annotated}", dbnsfp_af_field="{population_af}", coverage_bed="{target_bed}");'
             )
         )
 
@@ -1255,20 +1249,22 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, f"{sample.name}.sorted.dup.recal.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.mdup.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.merged.mdup.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.matefixed.sorted.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.realigned.sorted.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.merged.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.sorted_noRG.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.UMI.bam")],
-                                     [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]]
-            
+            candidate_input_files = [
+                [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.recal.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.sorted.dedup.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.sorted.mdup.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.merged.mdup.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.matefixed.sorted.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.realigned.sorted.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.merged.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.sorted_noRG.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.sorted.UMI.bam")],
+                [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")]
+                ]
+
             [input_bam] = self.select_input_files(candidate_input_files)
 
             output_cram = re.sub(r"\.bam$", ".cram", input_bam)
@@ -1303,6 +1299,8 @@ class Error(Exception):
     """
     pass
 
-
 class MissingInputError(Error):
+    """
+    Error for missing input files
+    """
     pass
