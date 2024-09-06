@@ -14,7 +14,7 @@ On this page:
 
 Software requirement
 --------------------
-GenPipes has been tested with Python 3.11.1
+GenPipes has been tested with Python 3.11.1 and 3.12.2
 It may work with other versions of python, but this has not been extensively tested. 
 
 
