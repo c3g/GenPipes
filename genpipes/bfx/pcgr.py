@@ -149,9 +149,26 @@ def create_header(output):
     return Job(
         command=f"""\
 `cat > {output} << END
-Chromosome\tStart\tEnd\tSegment_Mean
+Chromosome\tStart\tEnd\tSegment_Mean\tnMajor\tnMinor
 END`"""
         )
+
+def create_input_cna(
+        cna_body,
+        header,
+        cnvkit_calls, 
+        output
+        ):
+    return Job(
+        [cna_body, cnvkit_calls],
+        [output],
+        [],
+        command=f"""\
+ cat {header} > {output}
+ while read line; do 
+    LOCUS=$(echo $line | awk 'BEGIN {{OFS="\\t"}} {{print $1, $2, $3}}')
+    grep "$LOCUS" {cnvkit_calls} | awk 'BEGIN {{OFS="\\t"}} {{print $1, $2, $3, $5, $8, $9}}' >> {output}; done < {cna_body}"""
+)
 
 def parse_pcgr_passed_variants_pt(input_file):
     """
