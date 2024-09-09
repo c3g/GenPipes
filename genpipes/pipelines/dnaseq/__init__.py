@@ -4140,11 +4140,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             output_cna_body,
                             query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
                         ),
-                        bash.cat(
-                            [
-                                header,
-                                output_cna_body,
-                            ],
+                        pcgr.create_input_cna(
+                            output_cna_body,
+                            header,
+                            call_cns,
                             output_cna
                         ),
                         cnvkit.file_check(
