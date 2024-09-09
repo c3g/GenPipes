@@ -3869,7 +3869,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             pipe_jobs(
                                 [
                                     cnvkit.export(
-                                        os.path.join(cnvkit_dir, f"{sample.name}.call.cns"),
+                                        call_cns,
                                         None,
                                         sample_id=sample_id
                                     ),
@@ -3890,18 +3890,17 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                     concat_jobs(
                         [
                             pcgr.create_header(
-                                header,
+                                header
                             ),
                             bcftools.query(
                                 input_cna,
                                 output_cna_body,
                                 query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
                             ),
-                            bash.cat(
-                                [
-                                    header,
-                                    output_cna_body,
-                                ],
+                            pcgr.create_input_cna(
+                                output_cna_body,
+                                header,
+                                call_cns,
                                 output_cna
                             ),
                             cnvkit.file_check(
@@ -4141,11 +4140,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             output_cna_body,
                             query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
                         ),
-                        bash.cat(
-                            [
-                                header,
-                                output_cna_body,
-                            ],
+                        pcgr.create_input_cna(
+                            output_cna_body,
+                            header,
+                            call_cns,
                             output_cna
                         ),
                         cnvkit.file_check(
