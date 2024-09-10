@@ -3741,7 +3741,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 tarcov_cnn = os.path.join(cnvkit_dir, f"{sample.name}.sorted.dup.targetcoverage.cnn")
                 antitarcov_cnn = os.path.join(cnvkit_dir, f"{sample.name}.sorted.dup.antitargetcoverage.cnn")
 
-                if 'germline_sv' in self.protocol:
+                if 'germline_sv' in self.protocol or 'tumor_only' in self.protocol:
                     filter_options = "-i '%QUAL>=50' -m2 -M2 -v snps"
                 else:
                     filter_options = "-f PASS -i '%QUAL>=50' -m2 -M2 -v snps"
