@@ -291,7 +291,7 @@ Parameters:
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam), re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 trim_files.extend([fastq1, fastq2])
                 
@@ -302,7 +302,7 @@ Parameters:
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
                 trim_files.append(fastq1)
@@ -310,8 +310,7 @@ Parameters:
                 metadata = ','.join([readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1])
     
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
                 
             metadata_list.append(metadata)
 
