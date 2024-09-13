@@ -37,6 +37,7 @@ from ...bfx import (
     dragen,
     fgbio,
     gatk,
+    gembs,
     htslib,
     igvtools,
     metrics,
@@ -55,13 +56,17 @@ class MethylSeq(dnaseq.DnaSeqRaw):
 Methyl-Seq Pipeline
 ================
 
-The GenPIpes Methyl-Seq pipeline now has three protocols.
-1. bismark
-2. hybrid
-3. dragen
+The GenPIpes Methyl-Seq pipeline now has four protocols.
+ 1. bismark
+ 2. gembs
+ 3. hybrid
+ 4. dragen
 
-The "bismark" protocol uses Bismark to align reads to the reference genome.
-Picard is used to mark and remove duplicates and generate metric files. The "hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html) and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) software to align the reads to the reference genome. All the other steps are common with bismark protocol. The "dragen" protocol uses Dragen to align reads to the reference genome, call methylation, mark and remove duplicates.
+The "bismark" protocol uses Bismark to align reads to the reference genome. Picard is used to mark and remove duplicates and generate metric files. 
+
+The "gembs" procotol uses GemBS for mapping and methylation and variant calling (http://statgen.cnag.cat/GEMBS/UserGuide/_build/html/index.html).
+
+The "hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html) and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) software to align the reads to the reference genome. All the other steps are common with bismark protocol. The "dragen" protocol uses Dragen to align reads to the reference genome, call methylation, mark and remove duplicates.
 
 Although dragen provides higher rate of mapping percentage with in a very short time duration (approximately three hours compared to 30 hours from bismark), it only accessible through McGill Genome Center cluster Abacus and The jobs cannot be submitted to any of the HPCs from the [Digital Research Aliance](https://status.computecanada.ca/). Importantly, the user needs to have permission to submit jobs to Abacus. Therefore, other users may continue to use only bismark protocol since it works in all the clusters.
 
@@ -97,7 +102,7 @@ Parameters:
     def argparser(cls, argparser):
         super().argparser(argparser)
         cls._argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)",
-                                    choices=["bismark", "hybrid", "dragen"], default="bismark", dest='protocol')
+                                    choices=["bismark", "gembs", "hybrid", "dragen"], default="bismark", dest='protocol')
         return cls._argparser
     @property
     def readsets(self):
@@ -263,6 +268,129 @@ Parameters:
 
         return jobs
 
+    def gembs_prepare(self):
+        """
+        Prepare metadata and config files for mapping with gemBS.
+        """
+
+        jobs = []
+
+        metadata_file = os.path.join(self.output_dir, "metadata.csv")
+        gembs_config_file = os.path.join(self.output_dir, "gembs.config")
+
+        metadata_list = []
+        trim_files = []
+        
+        for readset in self.readsets:
+                
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+                
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub(r"\.bam$", ".pair1.fastq.gz", readset.bam), re.sub(r"\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                trim_files.extend([fastq1, fastq2])
+                
+                metadata = ','.join([readset.sample.name,readset.name,readset.library,readset.sample.name,os.path.basename(fastq1),os.path.basename(fastq2)])
+                
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub(r"\.bam$", ".single.fastq.gz", readset.bam)])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+                trim_files.append(fastq1)
+    
+                metadata = ','.join([readset.sample.name,readset.name,readset.library,readset.sample.name,fastq1])
+    
+            else:
+                _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
+                
+            metadata_list.append(metadata)
+
+        jobs.append(
+                concat_jobs(
+                    [
+                        gembs.make_metadata(
+                            metadata_list,
+                            metadata_file
+                            ),
+                        gembs.make_config(
+                            self.output_dir,
+                            gembs_config_file
+                            ),
+                        gembs.prepare(
+                            metadata_file,
+                            gembs_config_file,
+                            self.output_dir
+                            )
+                        ],
+                    name="gembs_prepare",
+                    input_dependency=[self.readsets_file.name] + trim_files
+                    )
+                )
+
+        return jobs
+
+    def gembs_map(self):
+        """
+        Map reads to reference genome with GemBS's gem-mapper.
+        """
+
+        jobs = []
+
+        gembs_config = os.path.join(self.output_dir, ".gemBS/gemBS.mp")
+
+        for sample in self.samples:
+            alignment_dir = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            config_dir = os.path.join(alignment_dir, ".gemBS")
+            trim_directory = os.path.join(self.output_dirs["trim_directory"], sample.name)
+            trim_files = []
+
+            for readset in sample.readsets:
+                trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
+                if readset.run_type == "PAIRED_END":
+                    trim_fastqs = [trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]
+                    trim_files.extend(trim_fastqs)
+                elif readset.run_type == "SINGLE_END":
+                    trim_fastq = trim_file_prefix + "single.fastq.gz"
+                    trim_files.append(trim_fastq)
+                else:
+                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.rm(alignment_dir),
+                            bash.mkdir(alignment_dir),
+                            bash.mkdir(config_dir),
+                            bash.cp(
+                                gembs_config,
+                                config_dir
+                                ),
+                            gembs.map(
+                                sample.name,
+                                alignment_dir
+                                ),
+                            bash.ln(
+                                sample.name + ".bam",
+                                os.path.join(alignment_dir, sample.name + ".sorted.bam"),
+                                input = os.path.join(alignment_dir, sample.name + ".bam"))
+                        ],
+                        name = "gembs_map." + sample.name,
+                        samples = [sample],
+                        input_dependency=[gembs_config] + trim_files
+                        )
+                    )
+        return jobs
 
     def add_bam_umi(self):
         """
@@ -1053,6 +1181,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
             )
         )
 
+        self.multiqc_inputs.append(ihec_multiqc_file)
+
         return jobs
 
     def bis_snp(self):
@@ -1095,6 +1225,162 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 removable_files=[cpg_output_file, snp_output_file]
                 )
             )
+
+        return jobs
+
+    def gembs_call(self):
+        """
+        Methylation calling with bs_call as part of GemBS pipeline
+        """
+        jobs = []
+        
+        for sample in self.samples:
+            bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".bam")
+            output_dir = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
+            output_prefix = os.path.join(output_dir, sample.name)
+            config_dir = os.path.join(output_dir, ".gemBS")
+            gembs_config = os.path.join(self.output_dir, ".gemBS/gemBS.mp")
+            
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.rm(output_dir),
+                            bash.mkdir(output_dir),
+                            bash.mkdir(config_dir),
+                            bash.cp(
+                                gembs_config,
+                                config_dir
+                                ),
+                            gembs.call(
+                                sample.name,
+                                bam,
+                                output_prefix
+                                )
+                            ],
+                        name = "gembs_call." + sample.name,
+                        samples = [sample],
+                        input_dependency=[bam,gembs_config]
+                        )
+                    )
+            
+            variants_dir = os.path.join(self.output_dirs["variants_directory"], sample.name)
+            config_dir = os.path.join(variants_dir, ".gemBS")
+            input = output_prefix + ".bcf"
+
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.rm(variants_dir),
+                            bash.mkdir(variants_dir),
+                            bash.mkdir(config_dir),
+                            bash.cp(
+                                gembs_config,
+                                config_dir
+                                ),
+                            gembs.extract(
+                                input,
+                                sample.name,
+                                variants_dir
+                                )
+                            ],
+                        name = "gembs_extract." + sample.name,
+                        samples = [sample],
+                        input_dependency = [input]
+                        )
+                    )
+        return jobs
+
+    def gembs_bcf_to_vcf(self):
+        """
+        Create vcf of SNPs with bedtools intersect, by intersecting gemBS .bcf with SNP DB.
+        """
+        jobs = []
+
+        # create vcf of snps instead of using gemBS snp output format
+
+        for sample in self.samples:
+            bcf_dir = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
+            bcf_prefix = os.path.join(bcf_dir, sample.name)
+            variants_dir = os.path.join(self.output_dirs["variants_directory"], sample.name)
+            snp_output = os.path.join(variants_dir, sample.name + "_snps.vcf")
+            input = bcf_prefix + ".bcf"
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            variants_dir
+                            ),
+                        tools.gembs_bcf_to_vcf(
+                            input,
+                            snp_output
+                            ),
+                        bash.gzip(
+                            snp_output,
+                            None,
+                            '-f '
+                            )
+                    ],
+                    name = "gembs_bcf_to_vcf." + sample.name,
+                    samples = [sample],
+                    input_dependency=[input],
+                    output_dependency=[snp_output + ".gz"]
+                        )
+                    )
+
+        return jobs
+
+    def gembs_report(self):
+        """
+        GemBS report
+        """
+        jobs = []
+
+        report_dir = self.output_dirs["report_directory"]
+        project = global_conf.global_get("gembs_report", "project_name")
+        report = os.path.join(report_dir, project + "_QC_Report.html")
+        inputs = []
+
+        for sample in self.samples:
+            map_json = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".json")
+            call_json = os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".json")
+            inputs.extend([map_json, call_json])
+
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(report_dir),
+                        gembs.report(
+                            inputs,
+                            report
+                            )
+                    ],
+                    name = "gembs_report"
+                )
+            )
+        
+        return jobs
+
+    def gembs_format_cpg_report(self):
+        """
+        Reformat gemBS output to match bismark and dragen output, so following steps can be followed. 
+        """
+        
+        jobs = []
+
+        for sample in self.samples:
+            cpg_report_input = os.path.join(self.output_dirs["variants_directory"], sample.name, sample.name + "_cpg.bed.gz")
+            methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
+            cpg_output = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")
+
+            job = tools.gembs_format_cpg_report(
+                        cpg_report_input,
+                        cpg_output
+                        )
+            job.name = "gembs_format_cpg_report." + sample.name
+            job.samples = [sample]
+
+            jobs.append(job)
 
         return jobs
 
@@ -1596,7 +1882,30 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.methylkit_differential_analysis,
                 self.multiqc,
                 self.cram_output
-            ], 'hybrid':
+            ], 'gembs':
+            [
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.gembs_prepare,
+                self.gembs_map,   
+            #    self.add_bam_umi, # important to include? Slightly annoying because merge step not needed for gemBS
+                self.picard_remove_duplicates,
+                self.metrics,
+                self.gembs_call,
+                self.gembs_bcf_to_vcf,
+                self.gembs_format_cpg_report,
+                self.methylation_profile,
+                self.dragen_bedgraph,
+                self.wiggle_tracks,
+                self.ihec_sample_metrics_report,
+                self.gembs_report,
+                self.filter_snp_cpg,
+                self.prepare_methylkit,
+                self.methylkit_differential_analysis,
+                self.multiqc,
+                self.cram_output
+            ], 'hybrid': 
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,

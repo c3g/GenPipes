@@ -1190,6 +1190,51 @@ bedops --not-element-of \\
         )
     )
 
+def gembs_bcf_to_vcf(
+    input,
+    output,
+    ini_section='gembs_bcf_to_vcf'
+    ):
+
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_bcftools'],
+            [ini_section, 'module_bedtools']
+        ],
+        command="""\
+mkdir -p {tmp_dir}/tmp && \\
+bcftools sort \\
+  -T {tmp_dir}/tmp \\
+  -m {ram} \\
+  -Ov -o {filter_sorted_bed} \\
+  {filter_file} && \\
+bcftools view {bcftools_options} \\
+  {input} \\
+  -o {tmp_output} && \\
+bcftools sort \\
+  -T {tmp_dir}/tmp \\
+  -m {ram} \\
+  -Ov -o {sorted_tmp_output} \\
+  {tmp_output} && \\
+bedtools intersect {bedtools_options} \\
+  -a {sorted_tmp_output} \\
+  -b {filter_sorted_bed} \\
+  > {output}""".format(
+        filter_file=global_conf.global_get(ini_section, 'known_variants'),
+        tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+        ram=global_conf.global_get(ini_section, 'ram'),
+        bcftools_options=global_conf.global_get(ini_section, 'bcftools_options'),
+        input=input,
+        tmp_output=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(input) + ".tmp.vcf"),
+        sorted_tmp_output=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(input) + ".sorted.tmp.vcf"),
+        bedtools_options=global_conf.global_get(ini_section, 'bedtools_options'),
+        filter_sorted_bed=os.path.join(global_conf.global_get(ini_section, 'tmp_dir'), os.path.basename(global_conf.global_get(ini_section, 'known_variants'))+".tmp.sorted.vcf"),
+        output=output
+      )
+    )
+
 def prepare_methylkit(
         input, 
         output,
@@ -1213,6 +1258,26 @@ awk -F"\t" '$11>={cutoff} {{print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$
             cutoff=int(cutoff)
         )
     )
+
+def gembs_format_cpg_report(
+        input, 
+        output,
+        ini_section='methylseq_gembs_format_cpg_report'
+        ):
+    return Job(
+            [input],
+            [output],
+            [
+                [ini_section, 'module_mugqic_tools']
+            ],
+            command="""\
+zcat {input} | tail -n +2 | \\
+awk -F"\t" -v OFS="\t" '{{print $1, $3, $6, int($10*($11/100)+0.5), int($10*((100-$11)/100)+0.5), $12, $13}}' | \\
+gzip -c > {output}""".format(
+    input=input,
+    output=output
+    )
+  )
 
 def methylseq_metrics_report(
         sample_list, 
