@@ -695,6 +695,9 @@ class SlurmScheduler(Scheduler):
 
     def submit(self, pipeline):
         self.print_header(pipeline)
+        logger.info("main header written")
+        logger.info(f"{self.genpipes_file}")
+        time.sleep(30)
         for step in pipeline.step_to_execute:
             if step.jobs:
                 self.print_step(step)
@@ -735,7 +738,7 @@ chmod 755 $COMMAND
                         )
                     
                     logger.info(f"job {job.name} header written")
-                    time.sleep(20)
+                    time.sleep(5)
 
                     cmd = """\
 echo "#! /bin/bash
@@ -805,7 +808,7 @@ exit \\$GenPipes_STATE" | \\
 
                     self.genpipes_file.write(cmd)
                     logger.info(f"job command for {job.name} written")
-                    time.sleep(20)
+                    time.sleep(5)
         logger.info(f"{self.genpipes_file}")
         logger.info("\nGenpipes file generated\"")
         # Check cluster maximum job submission
