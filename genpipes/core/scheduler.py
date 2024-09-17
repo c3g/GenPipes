@@ -71,6 +71,7 @@ class Scheduler:
                 st = os.stat(genpipes_file.name)
                 os.chmod(genpipes_file.name, st.st_mode | stat.S_IEXEC | stat.S_IXGRP)
         self.write = self.genpipes_file.write
+        self.flush = self.genpipes_file.flush
 
     @property
     def submit_cmd(self):
