@@ -24,6 +24,7 @@ import stat
 import sys
 import tempfile
 import textwrap
+import time # temp for debug
 from uuid import uuid4
 
 from ..utils import utils
@@ -732,6 +733,9 @@ chmod 755 $COMMAND
                             limit_string=os.path.basename(job.done)
                     )
                         )
+                    
+                    logger.info(f"job {job.name} header written")
+                    time.sleep(20)
 
                     cmd = """\
 echo "#! /bin/bash
@@ -800,6 +804,9 @@ exit \\$GenPipes_STATE" | \\
                     cmd += "\nsleep 0.1\n"
 
                     self.genpipes_file.write(cmd)
+                    logger.info(f"job command for {job.name} written")
+                    time.sleep(20)
+        logger.info(f"{self.genpipes_file}")
         logger.info("\nGenpipes file generated\"")
         # Check cluster maximum job submission
         cluster_max_jobs = global_conf.global_get('DEFAULT', 'cluster_max_jobs', param_type='posint', required=False)
