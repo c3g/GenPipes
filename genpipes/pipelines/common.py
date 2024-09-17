@@ -149,12 +149,12 @@ LOG_MD5=$(echo $USER-'{unique_identifier}' | md5sum | awk '{{ print $1 }}')
 if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; fi; fi
 wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, unique_identifier=unique_identifier))
+        self.job_scheduler.flush()
 
     def submit_jobs(self):
         super(GenPipesPipeline, self).submit_jobs()
         if self.jobs and self.job_scheduler.name.lower() in ["pbs", "batch", "slurm"]:
             self.genpipes_log()
-
 
 
 
