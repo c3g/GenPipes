@@ -150,6 +150,7 @@ if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolor
 wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, unique_identifier=unique_identifier))
         self.job_scheduler.flush()
+        log.info("Pipeline stats call home written")
 
     def submit_jobs(self):
         super(GenPipesPipeline, self).submit_jobs()
