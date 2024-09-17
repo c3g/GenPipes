@@ -24,7 +24,6 @@ import stat
 import sys
 import tempfile
 import textwrap
-import time # temp for debug
 from uuid import uuid4
 
 from ..utils import utils
