@@ -456,6 +456,7 @@ class PBSScheduler(Scheduler):
 
     def submit(self, pipeline):
         self.print_header(pipeline)
+        self.genpipes_file.flush()
         for step in pipeline.step_to_execute:
             if step.jobs:
                 self.print_step(step)
@@ -495,6 +496,8 @@ chmod 755 $COMMAND
                             limit_string=os.path.basename(job.done)
                         )
                     )
+
+                    self.genpipes_file.flush()
 
                     cmd = """\
 echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
@@ -546,6 +549,7 @@ exit \\$GenPipes_STATE" | \\
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
 
                     self.genpipes_file.write(cmd)
+                    self.genpipes_file.flush()
 
         # Check cluster maximum job submission
         cluster_max_jobs = global_conf.global_get('DEFAULT', 'cluster_max_jobs', param_type='posint', required=False)
@@ -696,9 +700,7 @@ class SlurmScheduler(Scheduler):
     def submit(self, pipeline):
         self.print_header(pipeline)
         self.genpipes_file.flush()
-        logger.info("main header written")
-        logger.info(f"{self.genpipes_file}")
-        time.sleep(30)
+
         for step in pipeline.step_to_execute:
             if step.jobs:
                 self.print_step(step)
@@ -738,8 +740,6 @@ chmod 755 $COMMAND
                     )
                         )
                     self.genpipes_file.flush()
-                    logger.info(f"job {job.name} header written")
-                    time.sleep(5)
 
                     cmd = """\
 echo "#! /bin/bash
@@ -809,9 +809,7 @@ exit \\$GenPipes_STATE" | \\
 
                     self.genpipes_file.write(cmd)
                     self.genpipes_file.flush()
-                    logger.info(f"job command for {job.name} written")
-                    time.sleep(5)
-        logger.info(f"{self.genpipes_file}")
+
         logger.info("\nGenpipes file generated\"")
         # Check cluster maximum job submission
         cluster_max_jobs = global_conf.global_get('DEFAULT', 'cluster_max_jobs', param_type='posint', required=False)
