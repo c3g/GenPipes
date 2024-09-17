@@ -695,6 +695,7 @@ class SlurmScheduler(Scheduler):
 
     def submit(self, pipeline):
         self.print_header(pipeline)
+        self.genpipes_file.flush()
         logger.info("main header written")
         logger.info(f"{self.genpipes_file}")
         time.sleep(30)
@@ -736,7 +737,7 @@ chmod 755 $COMMAND
                             limit_string=os.path.basename(job.done)
                     )
                         )
-                    
+                    self.genpipes_file.flush()
                     logger.info(f"job {job.name} header written")
                     time.sleep(5)
 
@@ -807,6 +808,7 @@ exit \\$GenPipes_STATE" | \\
                     cmd += "\nsleep 0.1\n"
 
                     self.genpipes_file.write(cmd)
+                    self.genpipes_file.flush()
                     logger.info(f"job command for {job.name} written")
                     time.sleep(5)
         logger.info(f"{self.genpipes_file}")
