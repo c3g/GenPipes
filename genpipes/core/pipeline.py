@@ -366,12 +366,8 @@ class Pipeline(object):
 
     @classmethod
     def genpipes_version(cls):
-        if cls.version is None:
-            try:
-                cls.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
-            except:
-                import genpipes
-                cls.version = genpipes.__VERSION__
+        import genpipes
+        cls.version = genpipes.__version__
         return cls.version
 
     # Given a list of lists of input files, return the first valid list of input files which can be found either in previous jobs output files or on file system.
