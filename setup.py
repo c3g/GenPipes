@@ -29,7 +29,8 @@ setuptools.setup(
         'genpipes/utils/dump_ChangeLog.sh',
         'genpipes/utils/submit_genpipes',
         'genpipes/utils/statistics/logToJson.py'],
-    install_requires = [ "packaging >=   20.9"],
+    install_requires = [ "packaging >=   20.9" ],
+    python_requires = '>=3.11',
     include_package_data=True
 )
 

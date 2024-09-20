@@ -26,8 +26,6 @@ PIPELINES = [
 "RnaSeq_Light"
 ]
 
-__VERSION__ = "5.0.0"
-
 def add_default_command(parser):
     """
     Sets the default command to run when none is provided.
