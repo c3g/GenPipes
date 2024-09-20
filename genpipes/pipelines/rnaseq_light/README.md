@@ -26,7 +26,7 @@ usage: genpipes rnaseq_light [-h] [--clean] -c CONFIG [CONFIG ...]
                              [-s STEPS] [--wrap [WRAP]] -r READSETS_FILE
                              [-d DESIGN_FILE] [-v]
 
-Version: 5.0.0
+Version: 5.0.0-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

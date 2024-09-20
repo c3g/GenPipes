@@ -4,13 +4,17 @@
 Methyl-Seq Pipeline
 ================
 
-The GenPIpes Methyl-Seq pipeline now has three protocols.
-1. bismark
-2. hybrid
-3. dragen
+The GenPIpes Methyl-Seq pipeline now has four protocols.
+ 1. bismark
+ 2. gembs
+ 3. hybrid
+ 4. dragen
 
-The "bismark" protocol uses Bismark to align reads to the reference genome.
-Picard is used to mark and remove duplicates and generate metric files. The "hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html) and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) software to align the reads to the reference genome. All the other steps are common with bismark protocol. The "dragen" protocol uses Dragen to align reads to the reference genome, call methylation, mark and remove duplicates.
+The "bismark" protocol uses Bismark to align reads to the reference genome. Picard is used to mark and remove duplicates and generate metric files. 
+
+The "gembs" procotol uses GemBS for mapping and methylation and variant calling (http://statgen.cnag.cat/GEMBS/UserGuide/_build/html/index.html).
+
+The "hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html) and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) software to align the reads to the reference genome. All the other steps are common with bismark protocol. The "dragen" protocol uses Dragen to align reads to the reference genome, call methylation, mark and remove duplicates.
 
 Although dragen provides higher rate of mapping percentage with in a very short time duration (approximately three hours compared to 30 hours from bismark), it only accessible through McGill Genome Center cluster Abacus and The jobs cannot be submitted to any of the HPCs from the [Digital Research Aliance](https://status.computecanada.ca/). Importantly, the user needs to have permission to submit jobs to Abacus. Therefore, other users may continue to use only bismark protocol since it works in all the clusters.
 
@@ -35,9 +39,9 @@ usage: genpipes methylseq [-h] [--clean] -c CONFIG [CONFIG ...]
                           [-l {debug,info,warning,error,critical}] [--no-json]
                           [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
                           [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE]
-                          [-v] [-t {bismark,hybrid,dragen}]
+                          [-v] [-t {bismark,gembs,hybrid,dragen}]
 
-Version: 5.0.0
+Version: 5.0.0-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -90,7 +94,7 @@ options:
   -d DESIGN_FILE, --design DESIGN_FILE
                         design file
   -v, --version         show the version information and exit
-  -t {bismark,hybrid,dragen}, --type {bismark,hybrid,dragen}
+  -t {bismark,gembs,hybrid,dragen}, --type {bismark,gembs,hybrid,dragen}
                         Type of pipeline (default chipseq)
 
 Steps:
@@ -114,6 +118,28 @@ Protocol bismark
 16 methylkit_differential_analysis
 17 multiqc
 18 cram_output
+
+Protocol gembs
+1 picard_sam_to_fastq
+2 trimmomatic
+3 merge_trimmomatic_stats
+4 gembs_prepare
+5 gembs_map
+6 picard_remove_duplicates
+7 metrics
+8 gembs_call
+9 gembs_bcf_to_vcf
+10 gembs_format_cpg_report
+11 methylation_profile
+12 dragen_bedgraph
+13 wiggle_tracks
+14 ihec_sample_metrics_report
+15 gembs_report
+16 filter_snp_cpg
+17 prepare_methylkit
+18 methylkit_differential_analysis
+19 multiqc
+20 cram_output
 
 Protocol hybrid
 1 picard_sam_to_fastq
@@ -282,6 +308,41 @@ cram_output
 Generate long term storage version of the final alignment files in CRAM format.
 Using this function will add the orginal final bam file to the removable file list.
 
+gembs_prepare 
+-------------
+ 
+Prepare metadata and config files for mapping with gemBS.
+
+gembs_map 
+---------
+ 
+Map reads to reference genome with GemBS's gem-mapper.
+
+gembs_call 
+----------
+ 
+Methylation calling with bs_call as part of GemBS pipeline
+
+gembs_bcf_to_vcf 
+----------------
+ 
+Create vcf of SNPs with bedtools intersect, by intersecting gemBS .bcf with SNP DB.
+
+gembs_format_cpg_report 
+-----------------------
+ 
+Reformat gemBS output to match bismark and dragen output, so following steps can be followed. 
+
+dragen_bedgraph 
+---------------
+ 
+Creates bedgraph file from combined strand CpG file
+
+gembs_report 
+------------
+ 
+GemBS report
+
 dragen_align 
 ------------
  
@@ -303,9 +364,4 @@ split_dragen_methylation_report
  
 Dragen methylation report contains all three methylation context.
 To create combined CSV CpGs should be extracted from the dragen methylation report.
-
-dragen_bedgraph 
----------------
- 
-Creates bedgraph file from combined strand CpG file
 

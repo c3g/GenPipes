@@ -46,7 +46,7 @@ usage: genpipes nanopore [-h] [--clean] -c CONFIG [CONFIG ...]
                          [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE]
                          [-v]
 
-Version: 5.0.0
+Version: 5.0.0-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

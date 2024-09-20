@@ -28,7 +28,7 @@ usage: genpipes dnaseq [-h] [--clean] -c CONFIG [CONFIG ...]
                        [-p PAIRS] [--profyle]
                        [-t {germline_snv,germline_sv,germline_high_cov,somatic_tumor_only,somatic_fastpass,somatic_ensemble,somatic_sv}]
 
-Version: 5.0.0
+Version: 5.0.0-beta
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
