@@ -20,10 +20,6 @@
 # Check Python version
 import sys
 
-# TODO should be in setup.py
-if sys.version_info < (3,):
-    raise SystemExit("Incompatible Python version: " + sys.version + "\nPython 3.X is required")
-
 # Python Standard Modules
 import argparse
 import collections

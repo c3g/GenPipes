@@ -53,6 +53,8 @@ def make_parser(argv=None):
                       "fail during pipeline execution. Jobs can be submitted in different ways: by being sent to "
                       "a PBS or a SLURM scheduler or by being run as a series of commands in batch through a Bash "
                       "script. Job commands and parameters can be modified through several configuration files.")
+    
+    parser.add_argument("-v", "--version", action="version", version='%(prog)s {version}'.format(version=__version__))
 
     subparsers = parser.add_subparsers()
 
