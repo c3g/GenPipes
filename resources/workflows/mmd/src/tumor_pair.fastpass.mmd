@@ -1,0 +1,98 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'lineColor': '#404040'}}}%%
+
+        %% GenPipes Schema for tumor_pair.py
+        %% Ref: https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/
+        %% Author Shaloo Shalini <shalz@hotmail.com>
+        %% -t sv
+
+        graph LR
+        Node1{{ 1. <br/> Picard<br/>SAM<br/>to FASTQ }}:::nodefill
+        Node2{{ 2. <br/> Skewer<br/>Trimming }}:::nodefill
+        Node3{{ 3. <br/> BWA<br/>Mem<br/>SAMbamba }}:::nodefill
+        Node4{{ 4. <br/> SAMbamba<br/>sort }}:::nodefill
+        Node5{{ 5. <br/> SAMbamba<br/>Merge<br/>SAM Files }}:::nodefillblack
+        Node6{{ 6. <br/> GATK<br/>indel<br/>re-aligner }}:::nodefill
+        Node7{{ 7. <br/> SAMBAM<br/>merge<br/>realigned }}:::nodefill
+        Node8{{ 8. <br/> SAMBAM<br/>Mark<br/>Duplicates }}:::nodefill
+        Node9{{ 9. <br/> Recalibration }}:::nodefill
+        Node10{{ 10. <br/> Manta<br/>SV<br/>Calls }}:::nodefill
+        Node11{{ 11. <br/> Raw Mpileup<br/>Panel }}:::nodefill
+        Node12{{ 12. <br/> Paired&<br/>VARScan2<br/>Panel }}:::nodefill
+        Node13{{ 13. <br/> Merge<br/>VARScan2<br/>Panel }}:::nodefill
+        Node14{{ 14. <br/> Preprocess<br/>VCF<br/>Panel }}:::nodefill
+        Node15{{ 15. <br/> SNP<br/>Effect<br/>Panel }}:::nodefill
+        Node16{{ 16. <br/> Gemini<br/>Annotations<br/>Panel }}:::nodefill
+        Node17{{ 17. <br/> Conpair<br/>Concordance<br/>Contamination }}:::nodefill
+        Node18{{ 18. <br/> Metrics<br/>DNA Picard<br/>Metrics  }}:::nodefill
+        Node19{{ 19. <br/> Metrics<br/>DNA<br/>Sample<br/>Qualimap }}:::nodefill
+        Node20{{ 20. <br/> Metrics<br/>DNA<br/>FASTQC }}:::nodefill
+        Node21{{ 21. <br/> Sequenza }}:::nodefill
+        Node22{{ 22. <br/> Run Pair<br/>MultiQC }}:::nodefill
+        Node23{{ 23. <br/> Sym Link<br/>Report }}:::nodefill
+        Node24{{ 24. <br/> Sym Link<br/>FASTQ<br/>Pair }}:::nodefill
+        Node25{{ 25. <br/> Sym Link<br/>Panel }}:::nodefill
+
+        Input1[[fa:fa-file-archive-o .BAM]]
+        Input2[[fa:fa-file-archive-o .FASTQ]]
+
+        Report([fa:fa-sticky-note-o Report ])
+        RepFASTQ([fa:fa-sticky-note-o Report ])
+        RepPanel([fa:fa-sticky-note-o Report ])
+
+        Input1 --> Node1 -.-> Node2
+        Input2 --> Node2
+
+        Node2 -.-> Node3 -.-> Node4 -.-> Node5 -.-> Node6 -.-> Node7 -.-> Node8 -.-> Node9
+        Node9 -.-> Node10 
+        Node9 -.-> Node11 -.-> Node12 -.-> Node13 -.-> Node14 -.-> Node15 -.-> Node16
+        Node9  -.->Node17 & Node20
+        Node9 -.-> Node18 & Node19 & Node21
+        Node18 & Node19 & Node20 -.-> Node22 
+        Node22 -.-> Node23
+
+        Node22 -.-> Node24
+        Node23 -.-> Report
+        Node24 -.-> RepFASTQ
+        Node13 & Node15 & Node16 -.-> Node25 -.-> RepPanel
+
+        subgraph readSetSteps[" "]
+          Node1
+          Node2
+          Node3
+          Node4
+        end
+        subgraph sampleSetSteps[" "]
+          Node6
+          Node7
+          Node8
+          Node9
+          Node10
+          Node11
+          Node12
+          Node13
+          Node14
+          Node15
+          Node16
+          Node17
+          Node18
+          Node19
+          Node20
+          Node21
+          Node22
+          Node23
+          Node24
+          Node25
+
+          Report
+          RepPanel
+          RepFASTQ
+
+
+        end
+
+        classDef greenRect fill:#E4FBF4,stroke:white
+        class readSetSteps greenRect
+        classDef blueRect fill:#DEF6FC,stroke:white
+        class sampleSetSteps blueRect
+        classDef nodefill fill:#ffffff,stroke:gray,stroke-width:2px
+        classDef nodefillblack fill:black,stroke:black,color:white,stroke-width:2px
