@@ -1,0 +1,74 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'lineColor': '#404040'}}}%%
+
+        %% GenPipes Schema for tumor_pair.py
+        %% Ref: https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/
+        %% Author Shaloo Shalini <shalz@hotmail.com>
+        %% -t sv
+
+        graph LR
+        Node1{{ 1. <br/> Picard<br/>SAM<br/>to FASTQ }}:::nodefill
+        Node2{{ 2. <br/> Skewer<br/>Trimming }}:::nodefill
+        Node3{{ 3. <br/> BWA<br/>Mem SAMbamba }}:::nodefill
+        Node4{{ 4. <br/> SAMBAM<br/>sort }}:::nodefill
+        Node5{{ 5. <br/> SAMbamba<br/>Merge<br/>SAM<br/>Files }}:::nodefillblack
+        Node6{{ 6. <br/> GATK<br/>Indel<br/>Re-aligner }}:::nodefill
+        Node7{{ 7. <br/> SAMbamba<br/>Merge<br/>Realigned }}:::nodefill
+        Node8{{ 8. <br/> SAMbamba<br/>Mark<br/>Duplicates }}:::nodefill
+        Node9{{ 9. <br/> Recalibration }}:::nodefill
+        Node10{{ 10. <br/> Manta<br/>SV<br/>Calls }}:::nodefill
+        Node11{{ 11. <br/> Strelka2<br/>Paired<br/>Somatic }}:::nodefill
+        Node12{{ 12. <br/> GridSS<br/>Paired<br/>Germline}}:::nodefill
+        Node13{{ 13. <br/> Purple<br/>SV }}:::nodefill
+        Node14{{ 14. <br/> Linx<br/>Annotations<br/>Somatic }}:::nodefill
+        Node15{{ 15. <br/> Linx<br/>Annotations<br/>Germline }}:::nodefill
+        Node16{{ 16. <br/> Linx<br/>Plot }}:::nodefill
+
+        Input1[[fa:fa-file-archive-o .BAM]]
+        Input2[[fa:fa-file-archive-o .FASTQ]]
+
+        RepPurple([fa:fa-sticky-note-o Report ])
+        RepLinx([fa:fa-sticky-note-o Report ])
+
+        Input1 --> Node1 -.-> Node2
+        Input2 --> Node2
+
+        Node2 -.-> Node3 -.-> Node4 -.-> Node5 -.-> Node6 -.-> Node7 -.-> Node8
+        Node8 -.-> Node9 -.-> Node10
+        Node9 & Node10 -.-> Node11 -.-> Node13 -.->RepPurple
+        Node9 & Node11 -.-> Node12
+        Node9 -.-> Node13
+        Node10 -.-> Node12 -.-> Node13 -.-> Node14
+        Node13 & Node14 -.-> Node15 
+        Node15 -.-> Node16 -.-> RepLinx
+        Node10 -.-> Node16
+
+        subgraph readSetSteps[" "]
+          Node1
+          Node2
+          Node3
+          Node4
+        end
+        subgraph sampleSetSteps[" "]
+          Node6
+          Node7
+          Node8
+          Node9
+          Node10
+          Node11
+          Node12
+          Node13
+          Node14
+          Node15
+          Node16
+
+          RepPurple
+          RepLinx
+   
+        end
+
+        classDef greenRect fill:#E4FBF4,stroke:white
+        class readSetSteps greenRect
+        classDef blueRect fill:#DEF6FC,stroke:white
+        class sampleSetSteps blueRect
+        classDef nodefill fill:#ffffff,stroke:gray,stroke-width:2px
+        classDef nodefillblack fill:black,stroke:black,color:white,stroke-width:2px

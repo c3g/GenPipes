@@ -1,4 +1,4 @@
-%%{init: {'theme': 'base', 'themeVariables': { 'lineColor': '#404040'}, 'fontFamily': 'Montserrat', 'fontSize': 10}}%%
+%%{init: {'theme': 'base', 'themeVariables': { 'lineColor': '#404040'}, 'fontFamily': 'Montserrat', 'fontSize': 10}}}%%
 
         %% GenPipes Schema for methylseq.py
         %% Ref: https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/
@@ -9,10 +9,12 @@
           InputFASTQ[[fa:fa-sticky-note-o .FASTQ ]]
           Output([fa:fa-sticky-note-o Report ])
           MetricsOP([fa:fa-sticky-note-o Report ])
+          QCReport([fa:fa-sticky-note-o Report])
+          DAReport([fa:fa-sticky-note-o Report])
 
           Node1{{ 1. <br/> Picard<br/>SAM<br/>to<br/>FASTQ }}:::nodefill
           Node2{{ 2. <br/> Trimmomatic }}:::nodefill
-          Node3{{ 3. <br/> Picard <br/> Merge <br/> SAM <br/> Files }}:::nodefillblack
+          Node3{{ 3. <br/> Merge <br/> Trimmomatic <br/> Stats }}:::nodefillblack
           Node4{{ 4. <br/> Bismark <br/> Align }}:::nodefill
           Node5{{ 5. <br/> Add <br/> BAM <br/> UMI }}:::nodefill
           Node6{{ 6. <br/> SAMbamba <br/> merge <br/> SAM <br/> files }}:::nodefillblack
@@ -20,27 +22,34 @@
           Node8{{ 8. <br/> Metrics }}:::nodefill
           Node9{{ 9. <br/> Methylation <br/> Call }}:::nodefill
           Node10{{ 10. <br/> Wiggle <br/> Tracks }}:::nodefill
-          Node11{{ 11. <br/> Methylation <br/> Profile }}:::nodefillblack
-          Node12{{ 12. <br/> IHEC <br/> Sample <br/> Metrics <br/> Report }}:::nodefillblack
+          Node11{{ 11. <br/> Methylation <br/> Profile }}:::nodefill
+          Node12{{ 12. <br/> IHEC <br/> Sample <br/> Metrics <br/> Report }}:::nodefill
           Node13{{ 13. <br/> BIS <br/> SNP  }}:::nodefill
           Node14{{ 14. <br/> Filter <br/> SNP <br/> CPG }}:::nodefill
           Node15{{ 15. <br/> Prepare <br/> Methylkit }}:::nodefill
-          Node16{{ 16. <br/> Cram <br/> Output }}:::nodefill
+          Node16{{ 16. <br/> Methylkit Differential <br/> Analysis }}:::nodefill
+          Node17{{ 17. <br/> MultiQC }}:::nodefill
+          Node18{{ 18. <br/> Cram <br/> Output }}:::nodefill
 
           InputBAM --> Node1 -.-> Node2
           InputFASTQ --> Node2
 
-          Node2 -.-> Node3 & Node4 & Node12
+          Node2 -.-> Node3
+          Node3 -.-> Node4 & Node6 & Node12
           Node4 -.-> Node5 -.-> Node6
-          Node6 -.-> Node7 & Node12
-          Node7 -.-> Node8 & Node9 & Node10 & Node12 & Node13 & Node16
+          Node4 -.-> Node16
+          Node6 -.-> Node7 & Node9 & Node12
+          Node7 -.-> Node8 & Node9 & Node10 & Node12 & Node13 & Node16 & Node18
           Node8 -.-> Node12
           Node9 -.-> Node10 & Node11
           Node11 -.-> Node12 & Node14
-          Node14 -.-> Node15
+          Node14 -.-> Node15 -.-> Node16
+          Node4 & Node7 & Node9 -.-> Node17
 
           Node12 --> MetricsOP
-          Node16 --> Output
+          Node16 --> DAReport
+          Node17 --> QCReport
+          Node18 --> Output
 
           subgraph readSetSteps[" "]
             Node1
@@ -61,7 +70,11 @@
             Node14
             Node15
             Node16
+            Node17
+            Node18
             MetricsOP
+            QCReport
+            DAReport
             Output
           end
 
