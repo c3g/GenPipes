@@ -81,7 +81,6 @@ GenPipes pipelines and compatible Python version are already installed as module
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/3.11.1
 module load mugqic/genpipes/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
@@ -115,8 +114,9 @@ GenPipes can be installed via pip:
 ```
 pip install c3g-genpipes
 ```
-or to install a version downloaded from bitbucket:
+or to install a development version downloaded from bitbucket:
 ```
+module load mugqic/python/3.11.1
 cd <bitbucket-repo>
 pip install .
 ```
