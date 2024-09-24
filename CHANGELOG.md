@@ -1,6 +1,22 @@
-      51 tags,    10963 commits
+      52 tags,    10974 commits
 
-HEAD        Mon Sep 23 15:53:06 2024 -0400               0 commits
+HEAD        Tue Sep 24 12:53:00 2024 -0400               0 commits
+
+5.0.1        Tue Sep 24 16:59:32 2024 +0000              11 commits
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>            11 commits
+
+       5a270a224 Merged in release_5.0.1 (pull request #532)
+       be6efc5f5 update READMEs
+       42c5bd73b preparations for release
+       6709a29c7 Merged in autocomplete_updates (pull request #531)
+       812854127 add autocomplete files to pip package
+       06275f77b update autocompletes
+       b40d70a9b update paths in README for new directory structure
+       c05ff7201 update MUGQIC_PIPELINES_HOME variable to GENPIPES_INIS in the context of accessing config file
+       6d25df89e Version bump to 5.0.1-beta
+       5a5f345cc Merged in release_5.0.0 (pull request #530)
+       bf560c86c Version bump to 5.0.0
 
 5.0.0        Mon Sep 23 19:59:48 2024 +0000             566 commits
 
