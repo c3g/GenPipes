@@ -1,6 +1,5 @@
 [TOC]
 
-
 RNA-Seq Light Pipeline
 ================
 
@@ -8,14 +7,11 @@ The RNA-Seq Light Pipeline is a lightweight analysis of gene expression in RNA s
 The pipeline is based on [Kallisto](https://pachterlab.github.io/kallisto/about.html) and differential expression analysis is performed by [Sleuth](http://pachterlab.github.io/sleuth/).
 It is especially useful for quick Quality Control (QC) in gene sequencing studies.
     
-
 Usage
 -----
 
-
 ```
 #!text
-
 usage: genpipes rnaseq_light [-h] [--clean] -c CONFIG [CONFIG ...]
                              [--container {wrapper, singularity} <IMAGE PATH>]
                              [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -26,7 +22,7 @@ usage: genpipes rnaseq_light [-h] [--clean] -c CONFIG [CONFIG ...]
                              [-s STEPS] [--wrap [WRAP]] -r READSETS_FILE
                              [-d DESIGN_FILE] [-v]
 
-Version: 5.0.0-beta
+Version: 5.0.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

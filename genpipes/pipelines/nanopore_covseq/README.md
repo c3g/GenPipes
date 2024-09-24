@@ -1,19 +1,15 @@
 [TOC]
 
-
 Nanopore CoVSeq Pipeline
 ==============
 
 For information on the structure and contents of the Nanopore readset file, please consult [here](https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
     
-
 Usage
 -----
 
-
 ```
 #!text
-
 usage: genpipes nanopore_covseq [-h] [--clean] -c CONFIG [CONFIG ...]
                                 [--container {wrapper, singularity} <IMAGE PATH>]
                                 [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -25,7 +21,7 @@ usage: genpipes nanopore_covseq [-h] [--clean] -c CONFIG [CONFIG ...]
                                 [-d DESIGN_FILE] [-v]
                                 [-t {default,basecalling}]
 
-Version: 5.0.0-beta
+Version: 5.0.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
