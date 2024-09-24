@@ -335,16 +335,16 @@ For documentation on how to use each of the pipelines, visit:
 
 For more information about and source code for a specific pipeline, visit:
 
-### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq/)
-### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
-### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_denovo_assembly/)
-### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_light/)
-### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/chipseq/)
-### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
-### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
-### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
-### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)
-### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore_covseq/)
+### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/dnaseq/)
+### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq/)
+### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq_denovo_assembly/)
+### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq_light/)
+### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/chipseq/)
+### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/ampliconseq/)
+### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/methylseq/)
+### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/nanopore/)
+### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/covseq/)
+### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/nanopore_covseq/)
 
 Readset File
 ------------
