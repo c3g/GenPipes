@@ -1,19 +1,15 @@
 [TOC]
 
-
 CoVSeq Pipeline
 ================
 A pipeline to process and analyze SARS-CoV-2 sequencing data from Illumina platforms. The pipeline uses Cutadapt for adapter trimming, Kraken for taxonomic classification, BWA for read alignment, Sambamba for sorting and indexing, and Freebayes for variant calling. The pipeline also includes a number of metrics to assess the quality.
 
 The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
-
 Usage
 -----
 
-
 ```
 #!text
-
 usage: genpipes covseq [-h] [--clean] -c CONFIG [CONFIG ...]
                        [--container {wrapper, singularity} <IMAGE PATH>] [-f]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -23,7 +19,7 @@ usage: genpipes covseq [-h] [--clean] -c CONFIG [CONFIG ...]
                        [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
                        [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
 
-Version: 5.0.0-beta
+Version: 5.0.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

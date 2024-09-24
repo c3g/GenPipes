@@ -1,6 +1,5 @@
 [TOC]
 
-
 Nanopore Pipeline
 ==============
 
@@ -28,14 +27,11 @@ approach, please consult [this GitHub repository](https://github.com/nanoporetec
 
 For information on the structure and contents of the Nanopore readset file, please consult [here](https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
     
-
 Usage
 -----
 
-
 ```
 #!text
-
 usage: genpipes nanopore [-h] [--clean] -c CONFIG [CONFIG ...]
                          [--container {wrapper, singularity} <IMAGE PATH>]
                          [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -46,7 +42,7 @@ usage: genpipes nanopore [-h] [--clean] -c CONFIG [CONFIG ...]
                          [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE]
                          [-v]
 
-Version: 5.0.0-beta
+Version: 5.0.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

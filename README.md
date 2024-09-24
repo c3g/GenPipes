@@ -150,10 +150,11 @@ You can get more information to run [Genpipes with containers here](https://gith
 
 ### Setup
 
-Set `MUGQIC_PIPELINES_HOME` to your local copy path, in your *$HOME/.bash_profile*:
+Set `MUGQIC_PIPELINES_HOME` and `GENPIPES_INIS` to your local copy path, in your *$HOME/.bash_profile*:
 ```
 #!bash
 export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
+export GENPIPES_INIS=$MUGQIC_PIPELINES_HOME/genpipes/pipelines
 ```
 
 Add the installation location to your path, if it is not already on path, in your *$HOME/.bash_profile*:
@@ -334,16 +335,16 @@ For documentation on how to use each of the pipelines, visit:
 
 For more information about and source code for a specific pipeline, visit:
 
-### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq/)
-### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
-### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_denovo_assembly/)
-### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_light/)
-### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/chipseq/)
-### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
-### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
-### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
-### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)
-### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore_covseq/)
+### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/dnaseq/)
+### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq/)
+### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq_denovo_assembly/)
+### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq_light/)
+### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/chipseq/)
+### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/ampliconseq/)
+### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/methylseq/)
+### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/nanopore/)
+### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/covseq/)
+### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/nanopore_covseq/)
 
 Readset File
 ------------
@@ -454,7 +455,7 @@ would resolve `genome_fasta` value to `$MUGQIC_INSTALL_HOME/genomes/species/Homo
 Each pipeline has several configuration files in:
 ```
 #!bash
-$MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.*.ini
+$GENPIPES_INIS/<pipeline_name>/<pipeline_name>.*.ini
 ```
 A default configuration file (`.base.ini` extension) is set for running on abacus cluster using *Homo sapiens* reference genome
 and must always be passed first to the `--config` option.
@@ -464,12 +465,12 @@ Files are read in the list order and each parameter value is overwritten if rede
 
 This is useful to customize settings for a specific cluster or genome.
 Each cluster has a special configuration file available (for example, `beluga.ini` and `narval.ini`) in the common_ini directory.
-And various genome settings are available in `$MUGQIC_PIPELINES_HOME/resources/genomes/config/`.
+And various genome settings are available in `$MUGQIC_INSTALL_HOME/genomes/species/`.
 
 For example, to run the DNA-Seq pipeline on the beluga cluster with *Mus musculus* reference genome:
 ```
 #!bash
-$MUGQIC_PIPELINES_HOME/pipelines/dnaseq/dnaseq.py --config $MUGQIC_PIPELINES_HOME/pipelines/dnaseq/dnaseq.base.ini $MUGQIC_PIPELINES_HOME/pipelines/common_ini/beluga.ini $MUGQIC_PIPELINES_HOME/resources/genomes/config/Mus_musculus.GRCm38.ini ...
+genpipes dnaseq --config $GENPIPES_INIS/dnaseq/dnaseq.base.ini $GENPIPES_INIS/common_ini/beluga.ini $MUGQIC_INSTALL_HOME/genomes/species/Mus_musculus.GRCm38/Mus_musculus.GRCm38.ini ...
 ```
 
 
@@ -563,7 +564,7 @@ my_output_dir/job_output/
     └── trinotate_2014-10-22T14.05.58.o
 ```
 
-To view a TAB-separated values log report, use the `$MUGQIC_PIPELINES_HOME/utils/log_report.pl` (PBS) or `$MUGQIC_PIPELINES_HOME/utils/log_report.py` (SLURM) script by typing:
+To view a TAB-separated values log report, use the `log_report.pl` (PBS) or `log_report.py` (SLURM) script by typing:
 ```
 #!bash
 log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>

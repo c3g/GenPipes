@@ -1,6 +1,5 @@
 [TOC]
 
-
 ChIP-Seq Pipeline
 =================
 
@@ -9,14 +8,11 @@ A pipeline to process ChIP-seq data. The pipeline is designed to handle both pai
 The pipeline takes as input a readset file and a design file. The readset file contains the list of samples and readsets, while the design file contains the list of contrasts to be analyzed. The pipeline outputs BAM files, peak calls, and differential binding results. The pipeline also generates quality metrics and reports for each sample.
 
 The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
-
 Usage
 -----
 
-
 ```
 #!text
-
 usage: genpipes chipseq [-h] [--clean] -c CONFIG [CONFIG ...]
                         [--container {wrapper, singularity} <IMAGE PATH>] [-f]
                         [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -27,7 +23,7 @@ usage: genpipes chipseq [-h] [--clean] -c CONFIG [CONFIG ...]
                         [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
                         [-t {chipseq,atacseq}]
 
-Version: 5.0.0-beta
+Version: 5.0.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

@@ -1,6 +1,5 @@
 [TOC]
 
-
 RNA-Seq De Novo Assembly Pipeline
 =================================
 
@@ -61,14 +60,11 @@ summary statistics are included in the report and can be explored interactively.
 The Seq2Fun De Novo Assembly pipeline, selected using the "-t seq2fun" parameter directly starts with Seq2Fun
 software suit from fastq files.
     
-
 Usage
 -----
 
-
 ```
 #!text
-
 usage: genpipes rnaseq_denovo_assembly [-h] [--clean] -c CONFIG [CONFIG ...]
                                        [--container {wrapper, singularity} <IMAGE PATH>]
                                        [-f]
@@ -83,7 +79,7 @@ usage: genpipes rnaseq_denovo_assembly [-h] [--clean] -c CONFIG [CONFIG ...]
                                        [-d DESIGN_FILE] [-v]
                                        [-t {trinity,seq2fun}] [-b BATCH]
 
-Version: 5.0.0-beta
+Version: 5.0.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

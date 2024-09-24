@@ -1,6 +1,5 @@
 [TOC]
 
-
 RNA-Seq Pipeline
 ================
 
@@ -35,14 +34,11 @@ are related to detection and annotation of gene fusions. For that, [Star-fusion]
 used. Furthermore, [RSeQC](http://rseqc.sourceforge.net/) provides RNA-seq quality control metrics to asses the
 quality of the data.
     
-
 Usage
 -----
 
-
 ```
 #!text
-
 usage: genpipes rnaseq [-h] [--clean] -c CONFIG [CONFIG ...]
                        [--container {wrapper, singularity} <IMAGE PATH>] [-f]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU]
@@ -53,7 +49,7 @@ usage: genpipes rnaseq [-h] [--clean] -c CONFIG [CONFIG ...]
                        [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
                        [-t {stringtie,variants,cancer}] [-b BATCH]
 
-Version: 5.0.0-beta
+Version: 5.0.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
