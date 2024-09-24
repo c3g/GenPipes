@@ -29,8 +29,8 @@ complete genpipes \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
-        'n/-t/(bismark hybrid dragen)/' \
-        'n/--type/(bismark hybrid dragen)/' \
+        'n/-t/(bismark gembs hybrid dragen)/' \
+        'n/--type/(bismark gembs hybrid dragen)/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
