@@ -22,11 +22,10 @@
 
 usage <- function (){
   print("Rscript csvToreadset.R csv_input.csv output_name [fastq|bam] data_path")
-  print("   csv_input.csv is a comma separated file that contains experimental details about each sample. It can be downloaded from nanuq's Readset page (not Libraries page).")
+  print("    csv_input.csv is a comma separated file that contains experimental details about each sample. It can be downloaded from nanuq's Readset page (not Libraries page).")
   print("    indicate the name of the output readset file.")
   print("    indicate the type of input as fastq files or a bam.")
-  print("    data_path is the relative path to the data from the project folder")
-  
+  print("    data_path is the relative path to the data from the project folder")  
 }
 
 
