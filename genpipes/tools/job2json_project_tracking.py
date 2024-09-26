@@ -15,23 +15,20 @@ import signal
 
 from datetime import datetime
 
-def main():
+def main(args=None):
+    """
+    Main function
+    """
+    if args is None:
+        parser = argparse.ArgumentParser(prog='job2json_project_tracking.py', description="Appends a JSON section describing a pipeline job that has just finished to a JSON file which was pre-generated when the pipeline was launched. This script is usually launched automatically before and after each pipeline job. /!\\ This version is for project tracking database only.")
+        parser.add_argument('-s', '--sample_names', required=True, help="comma-separated list of names of the samples of the current job")
+        parser.add_argument('-r', '--readset_names', required=True, help="comma-separated list of names of the readsets of the current job")
+        parser.add_argument('-j','--job_name', required=True, help="name of the current job")
+        parser.add_argument('-m', '--metrics', required=False, help="comma-separated list of metrics of the current job: name=value,name=value,... With <name> = metric name; <value> = metric value")
+        parser.add_argument('-o','--json_outfile', required=True, help="name of json output file")
+        parser.add_argument('-f', '--status', required=False, help="status of job")
+        args = parser.parse_args()
 
-    parser = argparse.ArgumentParser(prog='job2json_project_tracking.py', description="Appends a JSON section describing a pipeline job that has just finished to a JSON file which was pre-generated when the pipeline was launched. This script is usually launched automatically before and after each pipeline job. /!\\ This version is for project trasking database only.")
-    parser.add_argument('-s', '--sample_names', required=True, help="comma-separated list of names of the samples of the current job")
-    parser.add_argument('-r', '--readset_names', required=True, help="comma-separated list of names of the readsets of the current job")
-    parser.add_argument('-j','--job_name', required=True, help="name of the current job")
-    parser.add_argument('-m', '--metrics', required=False, help="comma-separated list of metrics of the current job: name=value,name=value,... With <name> = metric name; <value> = metric value")
-    # parser.add_argument('-l','--job_log', required=True, help="name of the log file for the current job")
-    # parser.add_argument('-d','--job_done', required=True, help="name of the done file for the current job")
-    # parser.add_argument('-c','--config', required=True, help="")
-    # parser.add_argument('-u','--user', required=True, help="name of user running GenPipes")
-    parser.add_argument('-o','--json_outfile', required=True, help="name of json output file")
-    parser.add_argument('-f', '--status', required=False, help="status of job")
-    args = parser.parse_args()
-
-    # step_name, job_name, job_log, job_done, json_files, config_files, user, status = getarg(sys.argv)
-    # job_log = args.job_log
     sample_list = args.sample_names.split(",")
     readset_list = args.readset_names.split(",")
     if args.metrics:

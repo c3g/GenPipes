@@ -25,7 +25,7 @@ import re
 import subprocess
 import io
 
-from ..utils import utils
+from .utils import time_to_datetime
 
 log = logging.getLogger(__name__)
 
@@ -106,9 +106,9 @@ class Config(configparser.ConfigParser):
 
                 from_section = super().get(section, option)
                 from_default = super().get('DEFAULT', option)
-                if not utils.time_to_datetime(from_section):
+                if not time_to_datetime(from_section):
                     return from_default
-                elif utils.time_to_datetime(from_default) <= utils.time_to_datetime(from_section):
+                elif time_to_datetime(from_default) <= time_to_datetime(from_section):
                     return from_default
                 else:
                     return from_section

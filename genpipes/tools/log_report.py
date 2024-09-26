@@ -30,7 +30,7 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
-class JobStat(object):
+class JobStat():
     JOBID = 'JobId'
     JOBSTATE = 'JobState'
     SUBMITTIME = 'SubmitTime'
@@ -43,7 +43,6 @@ class JobStat(object):
     REMOTE_LIST = {'narval': 'narval.calculcanada.ca',
               'beluga': 'beluga.calculcanada.ca',
               'cedar': 'cedar.calculcanada.ca',
-              'narval': 'narval.calculcanada.ca',
               'graham': 'graham.calculcanada.ca'}
 
     # Fields extracted from sacct
@@ -87,7 +86,7 @@ class JobStat(object):
             self.fill_from_file(self._path)
         else:
             self.log_missing = True
-            logger.warning('{} output path is missing'.format(self._path))
+            logger.warning(f'{self._path} output path is missing')
 
         self.registery[self.jobid] = self
         # self.get_job_status()
@@ -95,8 +94,7 @@ class JobStat(object):
 
     def __str__(self):
 
-        return '{} {} {} {} {} {} {}'.format(self.jobid, self.output_log_id, self.name, self.n_cpu,
-                                             self.mem, self.runtime_job, self.log_file_exit_status)
+        return f'{self.jobid} {self.output_log_id} {self.name} {self.n_cpu} {self.mem} {self.runtime_job} {self.log_file_exit_status}'
 
     @classmethod
     def get_remote(cls):
@@ -192,9 +190,7 @@ class JobStat(object):
                 pro, epi = fake_pro_epi
             elif len(fake_pro_epi) >= 2:
 
-                logger.error('{} log is not in {}, there is a mismatch '
-                             'between the job number and the output'
-                             .format(self.jobid, self._path))
+                logger.error(f'{self.jobid} log is not in {self._path}, there is a mismatch between the job number and the output')
 
                 # Get the closest number
                 diff = [abs(int(v) - self.jobid) for v in all_value[self.JOBID]]
@@ -218,7 +214,7 @@ class JobStat(object):
                     self._prologue[k] = v[pro]
                     self._epilogue[k] = v[epi]
                 except (IndexError, TypeError):
-                    logger.warning('{} = {} is not a slurm prologue/epilogue value or is ambiguous'.format(k, v))
+                    logger.warning(f'{k} = {v} is not a slurm prologue/epilogue value or is ambiguous')
 
             tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\.?\d*\w)", to_parse)
             try:
@@ -361,13 +357,13 @@ def print_report(report, to_stdout=True, to_tsv=None):
         if to_stdout:
             if not j.completed:
                 if j.log_missing:
-                    bad_message.append("Job Name {}, jobid {} has no log file {}. May not be started.".format(j.name, j.jobid, j.path))
+                    bad_message.append(f"Job Name {j.name}, jobid {j.jobid} has no log file {j.path}. May not be started.")
                 else:
-                    bad_message.append("Job Name {}, jobid {} has not completed with status {}, log file status {}".format(j.name, j.jobid, j.slurm_state.keys(), j.log_file_exit_status))
+                    bad_message.append(f"Job Name {j.name}, jobid {j.jobid} has not completed with status {j.slurm_state.keys()}, log file status {j.log_file_exit_status}")
             elif (j.output_log_id and j.jobid != int(j.output_log_id[0])) or len(j.output_log_id) > 1:
-                bad_message.append("Job Name {}, jobid {} has log from job {} in its log file {}".format(j.name, j.jobid, j.output_log_id, j.path))
+                bad_message.append(f"Job Name {j.name}, jobid {j.jobid} has log from job {j.output_log_id} in its log file {j.path}")
             else:
-                ok_message.append("Job Name {}, jobid {} is all good!".format(j.name, j.jobid))
+                ok_message.append(f"Job Name {j.name}, jobid {j.jobid} is all good!")
 
             if j.log_missing:
                 total_machine = datetime.timedelta(0)
@@ -446,20 +442,19 @@ def fine_grain(stats):
     print(total.total_seconds() / 3600.)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('job_list_path', help="Path to a GenPipes job list")
-    parser.add_argument('--remote', '-r', help="Remote HPC where the job was ran",
-                        choices=['beluga', 'cedar', 'narval'],
-                        default=None)
-    parser.add_argument('--loglevel', help="Standard Python log level",
-                        choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"],
-                        default='ERROR')
-    parser.add_argument('--tsv', help="output to tsv file")
-    parser.add_argument('--quiet', '-q', help="No report printed to terminal",
-                        action='store_true', default=False)
+def main(args=None):
+    """
+    Main function to run the log_report script
+    """
+    if args is None:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('job_list_path', help="Path to a GenPipes job list")
+        parser.add_argument('--remote', '-r', help="Remote HPC where the job was ran", choices=['beluga', 'cedar', 'narval'], default=None)
+        parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
+        parser.add_argument('--tsv', help="output to tsv file")
+        parser.add_argument('--quiet', '-q', help="No report printed to terminal", action='store_true', default=False)
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
     log_level = args.loglevel
     logging.basicConfig(level=log_level)
@@ -471,3 +466,7 @@ if __name__ == '__main__':
 
     stats = get_report(path, remote_hpc=remote)
     print_report(stats, to_tsv=to_tsv, to_stdout=to_stdout)
+
+
+if __name__ == '__main__':
+    main()

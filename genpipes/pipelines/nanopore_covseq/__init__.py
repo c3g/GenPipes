@@ -45,7 +45,7 @@ from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
 from ...core.readset import parse_nanopore_readset_file
 from .. import common
-from ...utils.utils import strtobool
+from ...core.utils import strtobool
 
 
 log = logging.getLogger(__name__)
