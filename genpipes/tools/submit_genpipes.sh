@@ -16,8 +16,7 @@ echo "usage: $0 <CHUNK FOLDER>
   Control the number of jobs in scheduler queue, and resubmit jobs if then fail at submit time."
 echo
 echo "   <CHUNK FOLDER>          The output folder from the chunk_genpipes.sh script"
-echo "   -n <MAX QUEUE>          Maximum number of job in slurm queue"
-echo "                             default=$MAX_QUEUE"
+echo "   -n <MAX QUEUE>          Maximum number of job in slurm queue, default=$MAX_QUEUE"
 echo "   -s <SLEEP TIME>         Number of second to sleep when queue is full default=$SLEEP_TIME"
 echo "   -S <SCHEDULER>          Scheduler running on the cluster (slurm or pbs) default=$SCHEDULER"
 echo "   -l <N>                  Will retry N time to resubmit a chunk if error occurs default=$RETRY"

@@ -26,7 +26,7 @@ import tempfile
 import textwrap
 from uuid import uuid4
 
-from ..utils import utils
+from .utils import expandvars, time_to_datetime
 
 from .config import global_conf
 
@@ -151,7 +151,7 @@ class Scheduler:
             if not self._host_cvmfs_cache:
 
                 tmp_dir = global_conf.global_get("DEFAULT", 'tmp_dir', required=True)
-                tmp_dir = utils.expandvars(tmp_dir)
+                tmp_dir = expandvars(tmp_dir)
 
                 if not tmp_dir:
                     tmp_dir = None
@@ -337,7 +337,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
   -o \\"{jsonfiles}\\" \\
   -f {status} {command_separator}
 """.format(
-            job2json_script="job2json.py",
+            job2json_script="genpipes tools job2json",
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
             step=step,
             jsonfiles=json_file_list,
@@ -370,7 +370,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
 export PT_JSON_OUTFILE=\\"{json_outfile}\\" {command_separator}
 """.format(
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
-            job2json_project_tracking_script="job2json_project_tracking.py",
+            job2json_project_tracking_script="genpipes tools job2json_project_tracking",
             samples=",".join([sample.name for sample in job.samples]),
             readsets=",".join([readset.name for readset in job.readsets]),
             job_name=job.name,
@@ -395,7 +395,7 @@ class PBSScheduler(Scheduler):
     def walltime(self, job_name_prefix):
         walltime = global_conf.global_get(job_name_prefix, 'cluster_walltime')
         # force the DD-HH:MM[:00] format to HH:MM[:00]
-        time = utils.time_to_datetime(walltime)
+        time = time_to_datetime(walltime)
         sec = int(time.seconds % 60)
         minutes = int(((time.seconds - sec) / 60) % 60)
         hours = int((time.seconds - sec - 60 * minutes) / 3600 + time.days * 24)
@@ -583,7 +583,7 @@ module load {module_python}
   -f {status}
 module unload {module_python} {command_separator}
 """.format(
-            job2json_script="job2json.py",
+            job2json_script="genpipes tools job2json",
             module_python=global_conf.global_get('DEFAULT', 'module_python'),
             step=step,
             jsonfiles=json_file_list,
@@ -655,7 +655,7 @@ class SlurmScheduler(Scheduler):
     def walltime(self, job_name_prefix):
         walltime = global_conf.global_get(job_name_prefix, 'cluster_walltime')
         # force the DD-HH:MM[:00] format to HH:MM[:00]
-        time = utils.time_to_datetime(walltime)
+        time = time_to_datetime(walltime)
         sec = int(time.seconds % 60)
         minutes = int(((time.seconds - sec) / 60) % 60)
         hours = int((time.seconds - sec - 60 * minutes) / 3600 + time.days * 24)
