@@ -72,15 +72,29 @@ class GenPipesPipeline(Pipeline):
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-r", "--readsets", dest="readsets_file",
-                                    help="readset file", type=argparse.FileType('r'), required=True)
-        cls._argparser.add_argument("-d", "--design", dest="design_file", help="design file",
-                                    type=argparse.FileType('r'))
-
-        cls._argparser.description = "Version: " + cls.genpipes_version() + \
-                                     "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/"
-        cls._argparser.add_argument("-v", "--version", action="version",
-                                    version="genpipes " + cls.genpipes_version(), help="show the version information and exit")
+        cls._argparser.add_argument(
+            "-r",
+            "--readsets",
+            dest="readsets_file",
+            help="readset file",
+            type=argparse.FileType('r'),
+            required=True
+            )
+        cls._argparser.add_argument(
+            "-d",
+            "--design",
+            dest="design_file",
+            help="design file",
+            type=argparse.FileType('r')
+            )
+        cls._argparser.add_argument(
+            "-v",
+            "--version",
+            action="version",
+            version=f"genpipes {cls.genpipes_version()}",
+            help="show the version information and exit"
+            )
+        cls._argparser.description = f"Version: {cls.genpipes_version()}\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes"
         return cls._argparser
 
     @property

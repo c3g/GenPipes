@@ -40,14 +40,29 @@ from ..bfx import jsonator, jsonator_project_tracking
 
 log = logging.getLogger(__name__)
 
-class Pipeline(object):
+class Pipeline():
+    """
+    Base class for GenPipes pipelines.
+    """
     # Pipeline version
     version = None
     _argparser = None
 
-    def __init__(self, config_files, sanity_check=False,
-                 output_dir=None, job_scheduler=None, container=None, genpipes_file=None, no_json=False,
-                 json_pt=None, steps=None, clean=False, force=False, force_mem_per_cpu=None):
+    def __init__(
+        self,
+        config_files,
+        sanity_check=False,
+        output_dir=None,
+        job_scheduler=None,
+        container=None,
+        genpipes_file=None,
+        no_json=False,
+        json_pt=None,
+        steps=None,
+        clean=False,
+        force=False,
+        force_mem_per_cpu=None
+        ):
 
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H.%M.%S")
 
