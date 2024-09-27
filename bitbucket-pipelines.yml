@@ -1,0 +1,73 @@
+#  Template pypi-publish
+
+#  This template allows you to publish your python package, as defined in setup.py, to pypi.org.
+#  The workflow allows running tests, code linting and security scans on feature branches (as well as master).
+#  The python package will be validated and published after the code is merged to master.
+
+# Prerequisites: $PYPI_USERNAME and $PYPI_PASSWORD setup in the Deployment variables.
+# For advanced cases, please, follow examples from the pipe's README https://bitbucket.org/atlassian/pypi-publish/src/master/README.md
+
+image: python:3.11
+
+pipelines:
+  custom: # Pipelines that are triggered manually
+    readmes-regenerate: # The name that is displayed in the list in the Bitbucket Cloud GUI
+      - step:
+          script:
+            - echo "Manual triggers for Sonar are awesome!"
+  # branches:
+  #   dev:
+  #     - parallel:
+  #         - step:
+  #           name: Security Scan
+  #           script:
+  #             # Run a security scan for sensitive data.
+  #             # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
+  #             - pipe: atlassian/git-secrets-scan:2.0.1
+  #     - step:
+  #         name: Deploy to Test
+  #         deployment: Production
+  #         script:
+  #           # bump package version
+  #           # - echo "__version__ = '1.0.${BITBUCKET_BUILD_NUMBER}'" > demo_pkg/__version__.py
+  #           # Publish your python package to PyPI https://pypi.org/
+  #           # See more details https://bitbucket.org/atlassian/pypi-publish/src/master
+  #           - pipe: atlassian/pypi-publish:0.9.1
+  #             variables:
+  #               PYPI_USERNAME: $PYPI_USERNAME
+  #               PYPI_PASSWORD: $PYPI_PASSWORD
+  #               REPOSITORY: https://test.pypi.org/legacy/
+  #   master:
+  #     - parallel:
+  #         - step:
+  #           name: Security Scan
+  #           script:
+  #             # Run a security scan for sensitive data.
+  #             # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
+  #             - pipe: atlassian/git-secrets-scan:2.0.1
+  #     - step:
+  #         name: Deploy to Production
+  #         deployment: Production
+  #         script:
+  #           # bump package version
+  #           # - echo "__version__ = '1.0.${BITBUCKET_BUILD_NUMBER}'" > demo_pkg/__version__.py
+  #           # Publish your python package to PyPI https://pypi.org/
+  #           # See more details https://bitbucket.org/atlassian/pypi-publish/src/master
+  #           - pipe: atlassian/pypi-publish:0.9.1
+  #             variables:
+  #               PYPI_USERNAME: $PYPI_USERNAME
+  #               PYPI_PASSWORD: $PYPI_PASSWORD
+  # tags:
+  #   '5.0.0':
+  #     - step:
+  #         name: Deploy to Production
+  #         deployment: Production
+  #         script:
+  #           # bump package version
+  #           # - echo "__version__ = '1.0.${BITBUCKET_BUILD_NUMBER}'" > demo_pkg/__version__.py
+  #           # Publish your python package to PyPI https://pypi.org/
+  #           # See more details https://bitbucket.org/atlassian/pypi-publish/src/master
+  #           - pipe: atlassian/pypi-publish:0.9.1
+  #             variables:
+  #               PYPI_USERNAME: $PYPI_USERNAME
+  #               PYPI_PASSWORD: $PYPI_PASSWORD
