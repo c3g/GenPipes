@@ -15,8 +15,8 @@ pipelines:
       - step:
           script:
             - pip install pdm
-            - pdm install
-            - . $(pdm venv activate) # Activate the virtual environment
+            - pdm install  --prod --frozen-lockfile --no-editable
+            # - . $(pdm venv activate) # Activate the virtual environment
             - which genpipes
             - genpipes -h
   # branches:
