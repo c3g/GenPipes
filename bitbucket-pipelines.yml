@@ -18,6 +18,7 @@ pipelines:
             - pip install pdm
             - pdm use $(which python)
             - pdm install --prod --frozen-lockfile --no-editable
+            - pdm info --verbose
             - which genpipes
             - genpipes -h
   # branches:
