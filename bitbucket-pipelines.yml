@@ -16,6 +16,8 @@ pipelines:
           script:
             - pip install pdm
             - pdm install
+            - source $(pdm venv activate) # Activate the virtual environment
+            - which genpipes
             - genpipes -h
   # branches:
   #   dev:
