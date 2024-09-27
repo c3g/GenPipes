@@ -14,6 +14,7 @@ pipelines:
     readmes-regenerate: # The name that is displayed in the list in the Bitbucket Cloud GUI
       - step:
           script:
+            - python --version
             - pip install pdm
             - pdm install  --prod --frozen-lockfile --no-editable
             # - . $(pdm venv activate) # Activate the virtual environment
