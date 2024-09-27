@@ -13,8 +13,12 @@ pipelines:
   custom: # Pipelines that are triggered manually
     readmes-regenerate: # The name that is displayed in the list in the Bitbucket Cloud GUI
       - step:
-          script:
-            - genpipes -h
+        caches:
+          - pip
+        script:
+          - pip install pdm
+          - pdm install
+          - genpipes -h
   # branches:
   #   dev:
   #     - parallel:
