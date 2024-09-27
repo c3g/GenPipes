@@ -15,10 +15,7 @@ pipelines:
       - step:
           script:
             - python --version
-            - pip install pdm
-            - pdm use $(which python)
-            - pdm install --prod --frozen-lockfile --no-editable
-            - pdm info --verbose
+            - pip install .
             - which genpipes
             - genpipes -h
   # branches:
