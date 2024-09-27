@@ -39,21 +39,6 @@ Documentation = "https://genpipes.readthedocs.io"
 [tool.pdm]
 allow-direct-references = true
 
-[tool.pdm.build]
-includes = [
-  "genpipes/pipelines/*/*.ini",
-  "genpipes/resources/container",
-  "genpipes/tools/*.sh",
-  "genpipes/tools/*.R",
-  "genpipes/tools/cancel_running_pipeline.py",
-  "genpipes/tools/ignstats.py",
-  "genpipes/tools/job2json*.py",
-  "genpipes/tools/log_report.p*",
-  "genpipes/tools/mugqicValidator.py",
-  "genpipes/tools/nanuq2mugqic_pipelines.py",
-  "genpipes/tools/watch_portal_folder.py"
-]
-
 [tool.pdm.version]
 source = "scm"
 write_to = "genpipes/__version__.py"
