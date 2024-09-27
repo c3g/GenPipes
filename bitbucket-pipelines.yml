@@ -14,7 +14,7 @@ pipelines:
     readmes-regenerate: # The name that is displayed in the list in the Bitbucket Cloud GUI
       - step:
           script:
-            - echo "Manual triggers for Sonar are awesome!"
+            - genpipes -h
   # branches:
   #   dev:
   #     - parallel:
