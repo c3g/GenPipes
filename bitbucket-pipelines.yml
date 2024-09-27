@@ -7,7 +7,7 @@
 # Prerequisites: $PYPI_USERNAME and $PYPI_PASSWORD setup in the Deployment variables.
 # For advanced cases, please, follow examples from the pipe's README https://bitbucket.org/atlassian/pypi-publish/src/master/README.md
 
-# image: python:3.11
+image: python:3.11
 
 pipelines:
   custom: # Pipelines that are triggered manually
@@ -16,7 +16,7 @@ pipelines:
           script:
             - pip install pdm
             - pdm install
-            - source $(pdm venv activate) # Activate the virtual environment
+            - . $(pdm venv activate) # Activate the virtual environment
             - which genpipes
             - genpipes -h
   # branches:
