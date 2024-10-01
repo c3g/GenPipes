@@ -17,37 +17,37 @@ pipelines:
             - ls -larth
             - pip install .
       - parallel:
-        steps:
-          - step:
-            script:
-              - genpipes ampliconseq --help > genpipes/pipelines/ampliconseq/README.md
-          - step:
-            script:
-              - genpipes chipseq --help > genpipes/pipelines/chipseq/README.md
-          - step:
-            script:
-              - genpipes covseq --help > genpipes/pipelines/covseq/README.md
-          - step:
-            script:
-              - genpipes dnaseq --help > genpipes/pipelines/dnaseq/README.md
-          - step:
-            script:
-              - genpipes methylseq --help > genpipes/pipelines/methylseq/README.md
-          - step:
-            script:
-              - genpipes nanopore --help > genpipes/pipelines/nanopore/README.md
-          - step:
-            script:
-              - genpipes nanopore_covseq --help > genpipes/pipelines/nanopore_covseq/README.md
-          - step:
-            script:
-              - genpipes rnaseq --help > genpipes/pipelines/rnaseq/README.md
-          - step:
-            script:
-              - genpipes rnaseq_denovo_assembly --help > genpipes/pipelines/rnaseq_denovo_assembly/README.md
-          - step:
-            script:
-              - genpipes rnaseq_light --help > genpipes/pipelines/rnaseq_light/README.md
+          steps:
+            - step:
+                script:
+                  - genpipes ampliconseq --help > genpipes/pipelines/ampliconseq/README.md
+            - step:
+                script:
+                  - genpipes chipseq --help > genpipes/pipelines/chipseq/README.md
+            - step:
+                script:
+                  - genpipes covseq --help > genpipes/pipelines/covseq/README.md
+            - step:
+                script:
+                  - genpipes dnaseq --help > genpipes/pipelines/dnaseq/README.md
+            - step:
+                script:
+                  - genpipes methylseq --help > genpipes/pipelines/methylseq/README.md
+            - step:
+                script:
+                  - genpipes nanopore --help > genpipes/pipelines/nanopore/README.md
+            - step:
+                script:
+                  - genpipes nanopore_covseq --help > genpipes/pipelines/nanopore_covseq/README.md
+            - step:
+                script:
+                  - genpipes rnaseq --help > genpipes/pipelines/rnaseq/README.md
+            - step:
+                script:
+                  - genpipes rnaseq_denovo_assembly --help > genpipes/pipelines/rnaseq_denovo_assembly/README.md
+            - step:
+                script:
+                  - genpipes rnaseq_light --help > genpipes/pipelines/rnaseq_light/README.md
   # branches:
   #   dev:
   #     - parallel:
