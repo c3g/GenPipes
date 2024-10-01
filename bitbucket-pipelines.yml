@@ -14,26 +14,27 @@ pipelines:
     readmes-regenerate: # The name that is displayed in the list in the Bitbucket Cloud GUI
       - step:
           script:
-            # Get an oauth access token using the client credentials, parsing out the token with jq.
-            - apt-get update && apt-get install -y curl jq
-            - >
-              export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
-                https://bitbucket.org/site/oauth2/access_token \
-                -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
-            # Configure git to use the oauth token.
-            - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
-            # Installing the repo to generate READMEs
-            - pip install .
-            # Make changes ...
-            - for pipeline in ampliconseq chipseq covseq dnaseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light; do
-                SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/, /^Steps:/' | sed '$d' | sed '1d' | sed '/Attributes:/,$d')
-                HELPTEXT=`genpipes $f --help | sed -e '/Summary:/, /^Steps:/{/^Steps:/!d}' | sed -e '/Returns:/,+1d'`
-                echo -e "[TOC]\n${SUMMARY}\nUsage\n-----\n\n\`\`\`\n#!text\n${HELPTEXT}\n" > genpipes/pipelines/$pipeline/README.md
-              done
-            # ... and commit back.
-            - git add genpipes/pipelines/*/README.md
-            - git commit -m "READMEs update"
-            - git push
+            - echo $BITBUCKET_BUILD_NUMBER
+            # # Get an oauth access token using the client credentials, parsing out the token with jq.
+            # - apt-get update && apt-get install -y curl jq
+            # - >
+            #   export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+            #     https://bitbucket.org/site/oauth2/access_token \
+            #     -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
+            # # Configure git to use the oauth token.
+            # - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
+            # # Installing the repo to generate READMEs
+            # - pip install .
+            # # Make changes ...
+            # - for pipeline in ampliconseq chipseq covseq dnaseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light; do
+            #     SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/, /^Steps:/' | sed '$d' | sed '1d' | sed '/Attributes:/,$d')
+            #     HELPTEXT=`genpipes $f --help | sed -e '/Summary:/, /^Steps:/{/^Steps:/!d}' | sed -e '/Returns:/,+1d'`
+            #     echo -e "[TOC]\n${SUMMARY}\nUsage\n-----\n\n\`\`\`\n#!text\n${HELPTEXT}\n" > genpipes/pipelines/$pipeline/README.md
+            #   done
+            # # ... and commit back.
+            # - git add genpipes/pipelines/*/README.md
+            # - git commit -m "READMEs update"
+            # - git push
   # branches:
   #   dev:
   #     - parallel:
