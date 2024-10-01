@@ -14,7 +14,8 @@ pipelines:
     readmes-regenerate: # The name that is displayed in the list in the Bitbucket Cloud GUI
       - step:
           script:
-            - echo $BITBUCKET_BUILD_NUMBER
+            - echo $BITBUCKET_BRANCH
+            - echo $BITBUCKET_TAG
             # # Get an oauth access token using the client credentials, parsing out the token with jq.
             # - apt-get update && apt-get install -y curl jq
             # - >
