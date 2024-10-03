@@ -191,9 +191,9 @@ class Pipeline():
                 step_lst.append(f'{i} {step.__name__}')
                 steps_doc.append(f'{step.__name__} \n{"-" * len(step.__name__)}\n {textwrap.dedent(step.__doc__) if step.__doc__ else ""}')
         epilog = "\n".join(step_lst)
-        summary = cls.__doc__
+        summary = cls.__doc__.split("\nAttributes:", maxsplit=1)[0]
         if '--help' in argv:
-            epilog = "Summary:\n" + summary + "\nSteps:\n" + epilog + "\n```\n\n" + "\n".join(list(dict.fromkeys(steps_doc)))
+            epilog = "Summary:\n" + summary + "\nSteps:\n" + epilog + "\n```\n\n" + "\n\n".join(step_doc.split("\nReturns:", maxsplit=1)[0] for step_doc in list(dict.fromkeys(steps_doc)))
         return epilog
 
     @classmethod
