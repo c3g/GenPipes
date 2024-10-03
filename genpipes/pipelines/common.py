@@ -94,7 +94,7 @@ class GenPipesPipeline(Pipeline):
             version=f"genpipes {cls.genpipes_version()}",
             help="show the version information and exit"
             )
-        cls._argparser.description = f"Version: {cls.genpipes_version()}\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes"
+        cls._argparser.description = "For more documentation, visit our website: https://genpipes.readthedocs.io"
         return cls._argparser
 
     @property
@@ -106,8 +106,7 @@ class GenPipesPipeline(Pipeline):
     @property
     def design_file(self):
         if self._design_file is None:
-            raise MissingInputError("Design file is required for this pipeline/protocol. "
-                                    "Look at help for details")
+            raise MissingInputError("Design file is required for this pipeline/protocol. Look at help for details")
         return self._design_file
 
     @property
@@ -127,7 +126,7 @@ class GenPipesPipeline(Pipeline):
     def genpipes_log(self):
         if 'NO_GENPIPES_REPORT' in os.environ:
             return None
-        server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
+        server = "https://bigbrother.c3g-app.sd4h.ca/cgi-bin/pipeline.cgi"
         list_name = {}
         for readset in self.readsets:
             if readset.sample.name in list_name:
@@ -161,7 +160,7 @@ class GenPipesPipeline(Pipeline):
 {separator_line}
 LOG_MD5=$(echo $USER-'{unique_identifier}' | md5sum | awk '{{ print $1 }}')
 if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; fi; fi
-wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
+wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to https://bigbrother.c3g-app.sd4h.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, unique_identifier=unique_identifier))
         self.job_scheduler.flush()
         log.debug("Pipeline stats call home written")
