@@ -16,6 +16,8 @@ pipelines:
           script:
             - echo $BITBUCKET_BRANCH
             - echo $BITBUCKET_TAG
+            - echo $BITBUCKET_BUILD_NUMBER
+            - printenv
             # # Get an oauth access token using the client credentials, parsing out the token with jq.
             # - apt-get update && apt-get install -y curl jq
             # - >
@@ -36,15 +38,20 @@ pipelines:
             # - git add genpipes/pipelines/*/README.md
             # - git commit -m "READMEs update"
             # - git push
-  # branches:
-  #   dev:
-  #     - parallel:
-  #         - step:
-  #           name: Security Scan
-  #           script:
-  #             # Run a security scan for sensitive data.
-  #             # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
-  #             - pipe: atlassian/git-secrets-scan:2.0.1
+  branches:
+    dev:
+      - parallel:
+          - step:
+            name: Security Scan
+            script:
+              # Run a security scan for sensitive data.
+              # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
+              - pipe: atlassian/git-secrets-scan:2.0.1
+          - step:
+            name: Install
+            script:
+              # Run the pip installation to make it still installs
+              - pip install .
   #     - step:
   #         name: Deploy to Test
   #         deployment: Production
@@ -58,14 +65,14 @@ pipelines:
   #               PYPI_USERNAME: $PYPI_USERNAME
   #               PYPI_PASSWORD: $PYPI_PASSWORD
   #               REPOSITORY: https://test.pypi.org/legacy/
-  #   master:
-  #     - parallel:
-  #         - step:
-  #           name: Security Scan
-  #           script:
-  #             # Run a security scan for sensitive data.
-  #             # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
-  #             - pipe: atlassian/git-secrets-scan:2.0.1
+    master:
+      - parallel:
+          - step:
+            name: Security Scan
+            script:
+              # Run a security scan for sensitive data.
+              # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
+              - pipe: atlassian/git-secrets-scan:2.0.1
   #     - step:
   #         name: Deploy to Production
   #         deployment: Production
