@@ -1,1 +1,4 @@
-__version__ = "5.1.0"
+from pdm.backend.hooks.version import SCMVersion
+
+def format_version(version: SCMVersion) -> str:
+    return str(version.version)
