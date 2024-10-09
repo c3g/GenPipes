@@ -72,7 +72,7 @@ class MUGQICPipeline(Pipeline):
     def mugqic_log(self):
         if 'NO_MUGQIC_REPORT' in os.environ:
             return None
-        server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
+        server = "https://bigbrother.c3g-app.sd4h.ca/cgi-bin/pipeline.cgi"
         listName = {}
 
         # In case of run processing pipelines, self.readsets is actually a dict of list

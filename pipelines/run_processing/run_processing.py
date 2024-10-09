@@ -2789,8 +2789,7 @@ class RunProcessing(common.MUGQICPipeline):
                          "--exclude=\"",
                          os.path.join(self.output_dir,
                                       "job_output",
-                                      "copy",
-                                      "copy.*.o\"")]),
+                                      "copy")]),
                 file_list=True,
                 input_dependency=False)
         )
