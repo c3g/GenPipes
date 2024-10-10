@@ -1,101 +1,117 @@
-#  Template pypi-publish
-
-#  This template allows you to publish your python package, as defined in setup.py, to pypi.org.
-#  The workflow allows running tests, code linting and security scans on feature branches (as well as master).
-#  The python package will be validated and published after the code is merged to master.
-
-# Prerequisites: $PYPI_USERNAME and $PYPI_PASSWORD setup in the Deployment variables.
-# For advanced cases, please, follow examples from the pipe's README https://bitbucket.org/atlassian/pypi-publish/src/master/README.md
-
 image: python:3.11
 
 pipelines:
   custom: # Pipelines that are triggered manually
-    readmes-regenerate: # The name that is displayed in the list in the Bitbucket Cloud GUI
+    generate-readmes: # The name that is displayed in the list in the Bitbucket Cloud GUI
       - step:
+          name: Generate READMEs
           script:
-            - echo $BITBUCKET_BRANCH
-            - echo $BITBUCKET_TAG
-            - echo $BITBUCKET_BUILD_NUMBER
-            - printenv
-            # # Get an oauth access token using the client credentials, parsing out the token with jq.
-            # - apt-get update && apt-get install -y curl jq
-            # - >
-            #   export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
-            #     https://bitbucket.org/site/oauth2/access_token \
-            #     -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
-            # # Configure git to use the oauth token.
-            # - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
-            # # Installing the repo to generate READMEs
-            # - pip install .
-            # # Make changes ...
-            # - for pipeline in ampliconseq chipseq covseq dnaseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light; do
-            #     SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/, /^Steps:/' | sed '$d' | sed '1d' | sed '/Attributes:/,$d')
-            #     HELPTEXT=`genpipes $f --help | sed -e '/Summary:/, /^Steps:/{/^Steps:/!d}' | sed -e '/Returns:/,+1d'`
-            #     echo -e "[TOC]\n${SUMMARY}\nUsage\n-----\n\n\`\`\`\n#!text\n${HELPTEXT}\n" > genpipes/pipelines/$pipeline/README.md
-            #   done
-            # # ... and commit back.
-            # - git add genpipes/pipelines/*/README.md
-            # - git commit -m "READMEs update"
-            # - git push
+            # Get an oauth access token using the client credentials, parsing out the token with jq.
+            - apt-get update && apt-get install -y curl jq
+            - >
+              export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+                https://bitbucket.org/site/oauth2/access_token \
+                -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
+            # Configure git to use the oauth token.
+            - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
+            # Installing the repo to generate READMEs
+            - pip install pdm
+            - pdm install --prod --no-lock --no-editable
+            # Create READMEs
+            - for pipeline in ampliconseq chipseq covseq dnaseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light; do
+                SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/, /^Steps:/' | sed '$d' | sed '1d' | sed '/Attributes:/,$d')
+                HELPTEXT=`genpipes $f --help | sed -e '/Summary:/, /^Steps:/{/^Steps:/!d}' | sed -e '/Returns:/,+1d'`
+                echo -e "[TOC]\n${SUMMARY}\nUsage\n-----\n\n\`\`\`\n#!text\n${HELPTEXT}\n" > genpipes/pipelines/$pipeline/README.md
+              done
+            - git add genpipes/pipelines/*/README.md
+            - git commit -m "Manual READMEs generation"
+            # Pushing the changes
+            - git push
+    pre-release: # The name that is displayed in the list in the Bitbucket Cloud GUI
+      - parallel:
+          - step:
+            name: Security Scan
+            script:
+              # Run a security scan for sensitive data.
+              # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
+              - pipe: atlassian/git-secrets-scan:2.0.1
+          - step:
+            name: Generate READMEs & CHANGELOG for release
+            script:
+              # Get an oauth access token using the client credentials, parsing out the token with jq.
+              - apt-get update && apt-get install -y curl jq
+              - >
+                export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+                  https://bitbucket.org/site/oauth2/access_token \
+                  -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
+              # Configure git to use the oauth token.
+              - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
+              # Installing the repo to generate READMEs
+              - pip install pdm
+              - pdm install --prod --no-lock --no-editable
+              # Create READMEs
+              - for pipeline in ampliconseq chipseq covseq dnaseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light; do
+                  SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/, /^Steps:/' | sed '$d' | sed '1d' | sed '/Attributes:/,$d')
+                  HELPTEXT=`genpipes $f --help | sed -e '/Summary:/, /^Steps:/{/^Steps:/!d}' | sed -e '/Returns:/,+1d'`
+                  echo -e "[TOC]\n${SUMMARY}\nUsage\n-----\n\n\`\`\`\n#!text\n${HELPTEXT}\n" > genpipes/pipelines/$pipeline/README.md
+                done
+              - git add genpipes/pipelines/*/README.md
+              - git commit -m "Pre-Release READMEs generation"
+              # Create CHANGELOG
+              - curl -sL https://deb.nodesource.com/setup_14.x | bash -
+              - apt-get install -y nodejs
+              - npm install -g auto-changelog
+              - auto-changelog -v $(genpipes --version | cut -d ' ' -f 2)
+              - git add CHANGELOG.md
+              - git commit -m "Pre-Release CHANGELOG generation"
+              # Pushing the changes
+              - git push
+              - pdm build
+              # Publishing to testPyPi
+              - pdm publish --repository testpypi --username __token__ --password $TESTPYPI_PASSWORD
+  pull-requests:
+    master/*: # For each PR on master do the release to pypi, BB and create a new tag matching current version
+      - step:
+          name: Tagging release with __version__.py
+          script:
+            # Get an oauth access token using the client credentials, parsing out the token with jq.
+            - apt-get update && apt-get install -y curl jq
+            - >
+              export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+                https://bitbucket.org/site/oauth2/access_token \
+                -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
+            # Configure git to use the oauth token.
+            - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
+            # Installing the repo
+            - pip install pdm
+            - pdm install --prod --no-lock --no-editable
+            # Building dist
+            - pdm build
+            # Tagging the release
+            - git tag $(genpipes --version | cut -d ' ' -f 2)
+            # Pushing the tag
+            - git push --tags
+            # Create CHANGELOG
+            - curl -sL https://deb.nodesource.com/setup_14.x | bash -
+            - apt-get install -y nodejs
+            - npm install -g auto-changelog
+            - auto-changelog -v $(genpipes --version | cut -d ' ' -f 2)
+            - git add CHANGELOG.md
+            - git commit -m "Release CHANGELOG generation"
+            # Pushing the changes
+            - git push
   branches:
-    dev:
-      - parallel:
-          - step:
-            name: Security Scan
-            script:
-              # Run a security scan for sensitive data.
-              # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
-              - pipe: atlassian/git-secrets-scan:2.0.1
-          - step:
-            name: Install
-            script:
-              # Run the pip installation to make it still installs
-              - pip install .
-  #     - step:
-  #         name: Deploy to Test
-  #         deployment: Production
-  #         script:
-  #           # bump package version
-  #           # - echo "__version__ = '1.0.${BITBUCKET_BUILD_NUMBER}'" > demo_pkg/__version__.py
-  #           # Publish your python package to PyPI https://pypi.org/
-  #           # See more details https://bitbucket.org/atlassian/pypi-publish/src/master
-  #           - pipe: atlassian/pypi-publish:0.9.1
-  #             variables:
-  #               PYPI_USERNAME: $PYPI_USERNAME
-  #               PYPI_PASSWORD: $PYPI_PASSWORD
-  #               REPOSITORY: https://test.pypi.org/legacy/
     master:
-      - parallel:
-          - step:
-            name: Security Scan
-            script:
-              # Run a security scan for sensitive data.
-              # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
-              - pipe: atlassian/git-secrets-scan:2.0.1
-  #     - step:
-  #         name: Deploy to Production
-  #         deployment: Production
-  #         script:
-  #           # bump package version
-  #           # - echo "__version__ = '1.0.${BITBUCKET_BUILD_NUMBER}'" > demo_pkg/__version__.py
-  #           # Publish your python package to PyPI https://pypi.org/
-  #           # See more details https://bitbucket.org/atlassian/pypi-publish/src/master
-  #           - pipe: atlassian/pypi-publish:0.9.1
-  #             variables:
-  #               PYPI_USERNAME: $PYPI_USERNAME
-  #               PYPI_PASSWORD: $PYPI_PASSWORD
-  # tags:
-  #   '5.0.0':
-  #     - step:
-  #         name: Deploy to Production
-  #         deployment: Production
-  #         script:
-  #           # bump package version
-  #           # - echo "__version__ = '1.0.${BITBUCKET_BUILD_NUMBER}'" > demo_pkg/__version__.py
-  #           # Publish your python package to PyPI https://pypi.org/
-  #           # See more details https://bitbucket.org/atlassian/pypi-publish/src/master
-  #           - pipe: atlassian/pypi-publish:0.9.1
-  #             variables:
-  #               PYPI_USERNAME: $PYPI_USERNAME
-  #               PYPI_PASSWORD: $PYPI_PASSWORD
+      - step:
+          name: Release to PyPi and BitBucket downloads
+          script:
+            # Installing the repo
+            - pip install pdm
+            - pdm install --prod --no-lock --no-editable
+            # Building dist
+            - pdm build
+            # Publishing archive to Bitbucket Downloads
+            - curl -X POST \"https://${CLIENT_ID}:${CLIENT_SECRET}@api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" \
+              --form files=@"dist/*.tar.gz"
+            # Publishing to PyPi
+            - pdm publish --repository pypi --username __token__ --password $PYPI_PASSWORD
