@@ -8,6 +8,7 @@ resources/container/*
 tmp/
 venv
 .venv
-.pdm-build
+.pdm-*
+pdm.lock
 dist
 __pycache__
