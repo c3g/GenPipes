@@ -37,7 +37,7 @@ def report(input_vcf,
     else:
         call = 'pcgr.py'
     if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] >= "2":
-        return report2(input_vcf, output_dir, tumor_id, input_cna, ini_section=ini_section)
+        return report2(input_vcf, cpsr_report, output_dir, tumor_id, input_cna, ini_section=ini_section)
     else:
         tumor_id = tumor_id[:35]
 
