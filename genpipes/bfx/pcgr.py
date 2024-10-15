@@ -90,11 +90,16 @@ fi && \\
     )
 
 def report2(input_vcf,
+           cpsr_prefix,
            output_dir,
            tumor_id,
            input_cna,
            ini_section='report_pcgr'
            ):
+    
+    if cpsr_prefix:
+        cpsr_input = f"{cpsr_prefix}.classification.tsv.gz"
+        cpsr_yaml = f"{cpsr_prefix}.conf.yaml"
     # use tmp dir for pcgr to avoid disk quota issues caused by bcftools tmp dir settings
     return Job(
         [
@@ -121,6 +126,7 @@ pcgr {options} \\
     {tmb_options} \\
     {msi_options} \\
     --input_vcf {input_vcf} \\
+    {cpsr_report} {cpsr_yaml} \\
     $input_cna \\
     --refdata_dir $PCGR_DATA \\
     --vep_dir $PCGR_VEP_CACHE \\
@@ -137,6 +143,8 @@ cp -r {tmp_dir}/pcgr {output_dir}""".format(
             tmb_options=global_conf.global_get(ini_section, 'tmb_options'),
             msi_options=global_conf.global_get(ini_section, 'msi_options'),
             input_vcf=input_vcf,
+            cpsr_report="--input_cpsr " + cpsr_input if cpsr_input else "",
+            cpsr_yaml="--input_cpsr_yaml " + cpsr_yaml if cpsr_yaml else "", 
             input_cna=input_cna,
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
             output_dir=os.path.dirname(output_dir),

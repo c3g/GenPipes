@@ -1852,15 +1852,19 @@ pandoc \\
                             ]
                         )
             # output file name patterns have changed in pcgr versions >2.0.0
-            # cpsr input not accepted in pcgr 2.0.3, may change in future releases
+            # cpsr input changed in pcgr 2.1.0
             elif global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] > "2":
+                input_cpsr = os.path.join(
+                    cpsr_directory,
+                    sample.name + ".cpsr." + assembly
+                )
                 output = [
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".html"),
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".maf"),
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".snvs_indels_ann.tsv.gz")
                     ]
                 final_command = bash.ls(output[0])
-                input_dependencies = [input]
+                input_dependencies = [input, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml"]
             
             else:
                 output = [
