@@ -2966,7 +2966,7 @@ END
                 else:
                     input_cpsr = os.path.join(
                         cpsr_directory,
-                        f"{sample.name}.cpsr.{assembly}"
+                        f"{tumor_pair.name}.cpsr.{assembly}"
                     )
                     output = os.path.join(
                         pcgr_directory,
