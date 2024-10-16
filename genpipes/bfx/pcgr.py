@@ -116,7 +116,7 @@ if [ -e {input_cna}.pass ]; then
  else
     export input_cna=""
 fi && \\
-mkdir {tmp_dir}/pcgr && \\
+mkdir -p {tmp_dir}/pcgr && \\
 pcgr {options} \\
     {tumor_type} \\
     {assay} \\

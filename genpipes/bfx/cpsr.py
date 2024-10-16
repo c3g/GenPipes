@@ -90,7 +90,7 @@ def report2(
             [ini_section, 'module_pcgr'],
         ],
         command="""\
-mkdir {tmp_dir}/cpsr && \\
+mkdir -p {tmp_dir}/cpsr && \\
 cpsr {options} \\
     --input_vcf {input} \\
     --refdata_dir $PCGR_DATA \\
