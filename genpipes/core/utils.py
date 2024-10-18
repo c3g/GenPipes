@@ -108,7 +108,7 @@ def container_wrapper_argparse(script, argv):
             )
         parsed, argv = parser.parse_known_args(argv)
         if parsed.wrap is None:
-            genpipes_home = '/'.join(script_dir_current.split('/')[:-1])
+            genpipes_home = '/'.join(script_dir_current.split('/')[:-2])
             default_wrapper = f'{genpipes_home}/resources/container/bin/container_wrapper.sh'
             parsed.wrap = default_wrapper
 
