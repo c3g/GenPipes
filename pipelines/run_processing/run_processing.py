@@ -2775,21 +2775,34 @@ class RunProcessing(common.MUGQICPipeline):
         )
 
         jobs_to_concat.append(
+            bash.touch(os.path.join(self.output_dir,
+                                    "job_output",
+                                    "job_output.tar.gz"))
+        )
+
+        jobs_to_concat.append(
+            bash.touch(os.path.join(self.output_dir,
+                                    "job_output",
+                                    "job_output.list"))
+        )
+
+        jobs_to_concat.append(
             bash.tar(
                 [os.path.join(self.output_dir,
                               "job_output")],
                 os.path.join(self.output_dir,
                              "job_output",
                              "job_output.tar.gz"),
-                "".join(["-cpPz --acls ",
+                " ".join(["--exclude=\"",
+                         os.path.join(self.output_dir,
+                                      "job_output",
+                                      "job_output.*\""),
                          "--exclude=\"",
                          os.path.join(self.output_dir,
                                       "job_output",
-                                      "job_output.*\" "),
-                         "--exclude=\"",
-                         os.path.join(self.output_dir,
-                                      "job_output",
-                                      "copy")]),
+                                      "copy.*.o\""),
+                         "-cpPz --acls",
+                          ]),
                 file_list=True,
                 input_dependency=False)
         )
