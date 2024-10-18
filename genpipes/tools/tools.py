@@ -92,6 +92,10 @@ def add_subcommands(parser):
     parser_submit_genpipes.add_argument('chunk_folder', help="The output folder from the chunk_genpipes.sh script.")
     parser_submit_genpipes.set_defaults(func=run_submit_genpipes)
 
+    # Create the parser for the "get_wrapper" subcommand
+    parser_get_wrapper = tools_subparsers.add_parser('get_wrapper', help='Get Genpipes In A Container image.')
+    parser_get_wrapper.set_defaults(func=run_get_wrapper)
+
 def run_chunk_genpipes(args):
     """
     Run the chunk_genpipes.sh script with the given arguments.
@@ -162,4 +166,12 @@ def run_submit_genpipes(args):
     if args.l:
         cmd += ['-l', str(args.l)]
     cmd += args.chunk_folder
+    subprocess.run(cmd, check=False)
+
+def run_get_wrapper(args):
+    """
+    Run the get_wrapper.sh script with the given arguments.
+    """
+    get_wrapper = os.path.join(os.path.dirname(__file__), 'get_wrapper.sh')
+    cmd = [get_wrapper]
     subprocess.run(cmd, check=False)
