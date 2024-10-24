@@ -294,7 +294,7 @@ class Pipeline():
 
         cls._argparser.add_argument(
             '--wrap',
-            help="Path to the genpipes cvmfs wrapper script.\nDefault is genpipes/ressources/container/bin/container_wrapper.sh. This is a convenience options for using genpipes in a container",
+            help="Path to the genpipes cvmfs wrapper script.\nDefault is genpipes/ressources/container/bin/container_wrapper.sh. This is a convenience option for using genpipes in a container",
             nargs='?',
             type=str
             )
