@@ -2823,13 +2823,17 @@ END
                     )
                     input_dependencies = [input_file, input_cpsr, output_cna]
                 # output file name patterns have changed in pcgr versions >2.0.0
-                # cpsr not accepted as input in pcgr v.2.0.3, may change in future releases
+                # cpsr input files changed from v2.1.0
                 else:
+                    input_cpsr = os.path.join(
+                        cpsr_directory,
+                        f"{sample.name}.cpsr.{assembly}"
+                    )
                     output = os.path.join(
                         pcgr_directory,
                         f"{sample.name}.pcgr.{assembly}.html"
                     )
-                    input_dependencies = [input_file, output_cna]
+                    input_dependencies = [input_file, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", output_cna]
                 job_name = f"report_pcgr_tumor_only.{sample.name}"
 
                 pcgr_job = concat_jobs(
@@ -2958,13 +2962,17 @@ END
                     )
                     input_dependencies = [input_file, input_cpsr, output_cna]
                 # output file name patterns have changed in pcgr versions >2.0.0
-                # cpsr not accepted as input in pcgr v.2.0.3, may change in future releases
+                # cpsr input files changed from v2.1.0
                 else:
+                    input_cpsr = os.path.join(
+                        cpsr_directory,
+                        f"{tumor_pair.name}.cpsr.{assembly}"
+                    )
                     output = os.path.join(
                         pcgr_directory,
                         f"{tumor_pair.name}.pcgr.{assembly}.html"
                     )
-                    input_dependencies = [input_file, output_cna]
+                    input_dependencies = [input_file, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", output_cna]
 
                 pcgr_job = concat_jobs(
                     [

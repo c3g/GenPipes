@@ -46,8 +46,8 @@ def flash(
     if flash_stats_file:                        # If flash_stat_file is present, then it means this is the Flash 2nd pass
         inputs.append(flash_stats_file)         # Append it to inputs for dependencies matter
         pre_command="""\
-minFlashOverlap=$(grep {readset} {file} | cut -f 5)
-maxFlashOverlap=$(grep {readset} {file} | cut -f 6)""".format(
+minFlashOverlap=$(grep -w {readset} {file} | cut -f 5)
+maxFlashOverlap=$(grep -w {readset} {file} | cut -f 6)""".format(
             readset=readset_name,
             file=flash_stats_file
         )
