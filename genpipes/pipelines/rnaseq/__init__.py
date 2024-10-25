@@ -25,6 +25,7 @@ import logging
 import math
 import os
 import re
+import shtab
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
@@ -2792,10 +2793,20 @@ class RnaSeq(RnaSeqRaw):
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
-                                    choices=['stringtie', 'variants', 'cancer'], default="stringtie")
-        cls._argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction",
-                                    type=argparse.FileType('r'))
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="RNAseq analysis type",
+            dest='protocol',
+            choices=['stringtie', 'variants', 'cancer'],
+            default="stringtie"
+            )
+        cls._argparser.add_argument(
+            "-b",
+            "--batch",
+            help="batch file (to peform batch effect correction",
+            type=argparse.FileType('r')
+            ).complete = shtab.FILE
 
         return cls._argparser
 

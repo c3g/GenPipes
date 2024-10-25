@@ -26,6 +26,7 @@ classifiers = [
 ]
 dependencies = [
     "packaging>=20.9",
+    "shtab>=1.7.1"
 ]
 
 [project.scripts]
