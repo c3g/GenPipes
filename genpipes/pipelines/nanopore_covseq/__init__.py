@@ -68,9 +68,14 @@ For information on the structure and contents of the Nanopore readset file, plea
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-t", "--type",
-                                    help="Type of CoVSeQ analysis,basecalling on/off (default without basecalling)",
-                                    choices=["default", "basecalling"], default="default", dest='protocol')
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="Type of CoVSeQ analysis,basecalling on/off (default without basecalling)",
+            choices=["default", "basecalling"],
+            default="default",
+            dest='protocol'
+            )
 
         return cls._argparser
 
