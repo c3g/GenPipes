@@ -101,8 +101,14 @@ Parameters:
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)",
-                                    choices=["bismark", "gembs", "hybrid", "dragen"], default="bismark", dest='protocol')
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="Type of pipeline (default chipseq)",
+            choices=["bismark", "gembs", "hybrid", "dragen"],
+            default="bismark",
+            dest='protocol'
+            )
         return cls._argparser
     @property
     def readsets(self):

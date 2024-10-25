@@ -29,6 +29,7 @@ import logging
 import os
 import re
 import textwrap
+import shtab
 
 # GenPipes Modules
 from .config import _raise, SanitycheckError, global_conf
@@ -214,7 +215,7 @@ class Pipeline():
             nargs="+",
             type=argparse.FileType('r'),
             required=True
-            )
+            ).complete = shtab.FILE
 
         cls._argparser.add_argument(
             "--container",
@@ -278,7 +279,7 @@ class Pipeline():
             "--output-dir",
             help="output directory (default: current)",
             default=os.getcwd()
-            )
+            ).complete = shtab.DIRECTORY
 
         cls._argparser.add_argument(
             "--sanity-check",

@@ -23,6 +23,7 @@ import logging
 import os
 import argparse
 import re
+import shtab
 
 # GenPipes Modules
 from ...bfx import (
@@ -116,10 +117,20 @@ software suit from fastq files.
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
-                                    choices=["trinity", "seq2fun"], default="trinity")
-        cls._argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction",
-                                    type=argparse.FileType('r'))
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="RNAseq analysis type",
+            dest='protocol',
+            choices=["trinity", "seq2fun"],
+            default="trinity"
+            )
+        cls._argparser.add_argument(
+            "-b",
+            "--batch",
+            help="batch file (to peform batch effect correction",
+            type=argparse.FileType('r')
+            ).complete = shtab.FILE
 
     @property
     def output_dirs(self):
