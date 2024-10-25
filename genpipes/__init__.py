@@ -9,6 +9,7 @@ import sys
 import importlib
 from types import SimpleNamespace
 import textwrap
+import shtab
 
 from .tools import tools
 
@@ -61,6 +62,7 @@ def make_parser(argv=None):
     )
 
     parser.add_argument("-v", "--version", action="version", version=f'%(prog)s {__version__}')
+    shtab.add_argument_to(parser, ["-s", "--print-completion"])
 
     subparsers = parser.add_subparsers(dest='command')
 

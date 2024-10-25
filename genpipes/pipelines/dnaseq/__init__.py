@@ -24,6 +24,7 @@ import math
 import os
 import re
 import gzip
+import shtab
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
@@ -8342,10 +8343,25 @@ class DnaSeq(DnaSeqRaw):
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-p", "--pairs", help="pairs file", type=argparse.FileType('r'))
-        cls._argparser.add_argument("--profyle", help=("adjust deliverables to PROFYLE folder conventions (Default: False)"), action="store_true")
-        cls._argparser.add_argument("-t", "--type", help="DNAseq analysis type", dest='protocol',
-                                    choices=["germline_snv", "germline_sv", "germline_high_cov", "somatic_tumor_only", "somatic_fastpass", "somatic_ensemble", "somatic_sv"], default="germline_snv")
+        cls._argparser.add_argument(
+            "-p",
+            "--pairs",
+            help="pairs file",
+            type=argparse.FileType('r')
+            ).complete = shtab.FILE
+        cls._argparser.add_argument(
+            "--profyle",
+            help=("adjust deliverables to PROFYLE folder conventions (Default: False)"),
+            action="store_true"
+            )
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="DNAseq analysis type",
+            dest='protocol',
+            choices=["germline_snv", "germline_sv", "germline_high_cov", "somatic_tumor_only", "somatic_fastpass", "somatic_ensemble", "somatic_sv"],
+            default="germline_snv"
+            )
         return cls._argparser
 
 def main(parsed_args):
