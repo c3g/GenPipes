@@ -104,8 +104,8 @@ def run_chunk_genpipes(args):
     cmd = [chunk_genpipes]
     if args.n:
         cmd += ['-n', str(args.n)]
-    cmd += args.genpipes_script
-    cmd += args.output_folder
+    cmd += [args.genpipes_script]
+    cmd += [args.output_folder]
     subprocess.run(cmd, check=False)
 
 def run_csvtoreadset(args):
@@ -137,15 +137,15 @@ def run_log_report(args):
         log_report_pl = os.path.join(os.path.dirname(__file__), 'log_report.pl')
         cmd = [log_report_pl, args.job_list_path]
         if args.memtime:
-            cmd.append('--memtime')
+            cmd += ['--memtime']
         if args.success:
-            cmd.append('--success')
+            cmd += ['--success']
         if args.nosuccess:
-            cmd.append('--nosuccess')
+            cmd += ['--nosuccess']
         if args.tsv:
             cmd += ['--tsv', args.tsv]
         if args.quiet:
-            cmd.append('--quiet')
+            cmd += ['--quiet']
         subprocess.run(cmd, check=False)
     else:
         # Call the main function of log_report.py
@@ -162,15 +162,15 @@ def run_submit_genpipes(args):
     if args.s:
         cmd += ['-s', str(args.s)]
     if args.S:
-        cmd += ['-S', str(args.S)]
+        cmd += ['-S', args.S]
     if args.l:
         cmd += ['-l', str(args.l)]
-    cmd += args.chunk_folder
+    cmd += [args.chunk_folder]
     subprocess.run(cmd, check=False)
 
-def run_get_wrapper(args):
+def run_get_wrapper():
     """
-    Run the get_wrapper.sh script with the given arguments.
+    Run the get_wrapper.sh script.
     """
     get_wrapper = os.path.join(os.path.dirname(__file__), 'get_wrapper.sh')
     cmd = [get_wrapper]
