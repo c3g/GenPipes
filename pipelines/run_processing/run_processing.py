@@ -699,6 +699,18 @@ class RunProcessing(common.MUGQICPipeline):
         return self._date
 
     @property
+    def fzm_runname(self):
+        """
+        Get runname from Freezeman
+        """
+        if not hasattr(self, "_fzm_runname"):
+            if is_json(self.readset_file):
+                self._fzm_runname = json.load(open(self.readset_file, 'r'))['run_name']
+            else:
+                self._fzm_runname = None
+        return self._fzm_runname
+
+    @property
     def report_hash(self):
         if not hasattr(self, "_report_hash"):
             self._report_hash = {}
@@ -3765,7 +3777,10 @@ class RunProcessing(common.MUGQICPipeline):
         step_list = [step for step in self.step_list if step.jobs]
         self.report_hash[lane]["multiqc_inputs"] = list(set([report_file for step in step_list for job in step.jobs for report_file in job.report_files if f"ligned.{lane}" in report_file]))
         self.report_hash[lane]["multiqc_inputs"].append(os.path.join(self.output_dirs[lane]["report_directory"], f"{self.run_id}.{lane}.run_validation_report.json"))
-        self.report_hash[lane]["metrics_report_url"] = f"https://datahub-297-p25.p.genap.ca/Freezeman_validation/{self.year}/{self.run_id}.report.html"
+        if self.fzm_runname:
+            self.report_hash[lane]["metrics_report_url"] = f"https://datahub-297-p25.p.genap.ca/Freezeman_validation/{self.year}/{self.fzm_runname}.report.html"
+        else:
+            self.report_hash[lane]["metrics_report_url"] = f"https://datahub-297-p25.p.genap.ca/Freezeman_validation/{self.year}/{self.run_id}.report.html"
 
         if not os.path.exists(os.path.join(self.output_dir, os.path.dirname(self.run_validation_report_json[lane]))):
             os.makedirs(os.path.join(self.output_dir, os.path.dirname(self.run_validation_report_json[lane])))
