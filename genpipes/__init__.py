@@ -61,7 +61,7 @@ def make_parser(argv=None):
         description="GenPipes consists of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a PBS or a SLURM scheduler or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files."
     )
 
-    parser.add_argument("-v", "--version", action="version", version=f'%(prog)s {__version__}')
+    parser.add_argument("-v", "--version", action="version", version=f'{__version__}')
     shtab.add_argument_to(parser, ["-s", "--print-completion"])
 
     subparsers = parser.add_subparsers(dest='command')

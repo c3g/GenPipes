@@ -90,7 +90,7 @@ pipelines:
               - curl -sL https://deb.nodesource.com/setup_14.x | bash -
               - apt-get install -y nodejs
               - npm install -g auto-changelog
-              - auto-changelog -v $(genpipes --version | cut -d ' ' -f 2)
+              - auto-changelog -v $(genpipes --version)
               - git add CHANGELOG.md
               - git commit -m "BitBucketPipelines Pre-Release CHANGELOG generation"
               # Pushing the changes
@@ -117,14 +117,14 @@ pipelines:
             # Building dist
             - pdm build
             # Tagging the release
-            - git tag $(genpipes --version | cut -d ' ' -f 2)
+            - git tag $(genpipes --version)
             # Pushing the tag
             - git push --tags
             # Create CHANGELOG
             - curl -sL https://deb.nodesource.com/setup_14.x | bash -
             - apt-get install -y nodejs
             - npm install -g auto-changelog
-            - auto-changelog -v $(genpipes --version | cut -d ' ' -f 2)
+            - auto-changelog -v $(genpipes --version)
             - git add CHANGELOG.md
             - git commit -m "BitBucketPipelines Release CHANGELOG generation"
             # Pushing the changes
