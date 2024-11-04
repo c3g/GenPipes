@@ -2295,7 +2295,7 @@ pandoc \\
                         ),
                     bash.ln(
                         target_file=os.path.relpath(output_count, link_directory),
-                        link=os.path.join(link_directory, sample.name + ".tsv"),
+                        link=os.path.join(link_directory, sample.name + ".readcounts.tsv"),
                         input=output_count
                         )
                 ],
