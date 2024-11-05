@@ -35,13 +35,13 @@ def run(input_file, pipeline, samples, readsets, job_name, metrics):
         [],
         [],
         command="""\
-module load {module_python}
+module load {module_python} && \\
 {job2json_project_tracking_script} \\
   -s {samples} \\
   -r {readsets} \\
   -j {job_name} \\
   -o $PT_JSON_OUTFILE \\
-  -m {metrics}
+  -m {metrics} && \\
 module unload {module_python}""".format(
     module_python=config.param('DEFAULT', 'module_python'),
     job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking.py"),
