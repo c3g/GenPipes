@@ -4760,7 +4760,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                                     bash.cat(
                                         seqz_outputs,
                                         None,
-                                        zip=True
+                                        zipped=True
                                     ),
                                     bash.awk(
                                         None,
@@ -5483,7 +5483,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                         bash.cat(
                                             os.path.join(germline_dir, "results", "variants", "variants.vcf.gz"),
                                             None,
-                                            zip=True
+                                            zipped=True
                                         ),
                                         bash.sed(
                                             None,
@@ -7066,7 +7066,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                     bash.cat(
                                         output_tmp,
                                         None,
-                                        zip=True
+                                        zipped=True
                                     ),
                                     bash.awk(
                                         None,
