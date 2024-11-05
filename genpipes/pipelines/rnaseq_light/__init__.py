@@ -164,7 +164,7 @@ It is especially useful for quick Quality Control (QC) in gene sequencing studie
                         bash.ln(
                             os.path.relpath(os.path.join(output_dir, "kallisto_quant.log"), link_directory),
                             os.path.join(link_directory, sample.name + ".kallisto_quant.log"),
-                            input=os.path.join(output_dir, "kallisto_quant.log")
+                            input_file=os.path.join(output_dir, "kallisto_quant.log")
                         ),
                         bash.mv(
                             os.path.join(output_dir, "abundance.tsv"),
@@ -397,12 +397,12 @@ cat {kallisto_report_file} >> {kallisto_multiqc_file}""".format(
                     bash.ln(
                         os.path.relpath(heatmap, link_directory),
                         os.path.join(link_directory, f"Heatmap_{contrast.name}_mqc.png"),
-                        input = heatmap
+                        input_file = heatmap
                     ),
                     bash.ln(
                         os.path.relpath(pca, link_directory),
                         os.path.join(link_directory, f"PCA_{contrast.name}_mqc.png"),
-                        input = pca
+                        input_file = pca
                     )
                 ]
             )

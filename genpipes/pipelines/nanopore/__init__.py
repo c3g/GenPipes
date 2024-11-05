@@ -259,12 +259,12 @@ For information on the structure and contents of the Nanopore readset file, plea
                         bash.ln(
                             os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
                             sample_bam,
-                            input=readset_bam
+                            input_file=readset_bam
                         ),
                         bash.ln(
                             os.path.relpath(readset_index, os.path.dirname(sample_index)),
                             sample_index,
-                            input=readset_index
+                            input_file=readset_index
                         )
                     ],
                     name="symlink_readset_sample_bam." + sample.name,

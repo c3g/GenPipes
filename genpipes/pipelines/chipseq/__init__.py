@@ -334,7 +334,7 @@ END
                 bash.ln(
                     os.path.relpath(trim_log, link_directory),
                     os.path.join(link_directory, readset.name + ".trim.log"),
-                    input = trim_log
+                    input_file = trim_log
                 )
             ], name="trimmomatic." + readset.name, samples=[readset.sample]))
 
@@ -527,12 +527,12 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                                 bash.ln(
                                     os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
                                     sample_bam,
-                                    input=readset_bam
+                                    input_file=readset_bam
                                 ),
                                 bash.ln(
                                     os.path.relpath(readset_index, os.path.dirname(sample_index)),
                                     sample_index,
-                                    input=readset_index
+                                    input_file=readset_index
                                 )
                             ],
                             name=f"symlink_readset_sample_bam.{sample.name}.{mark_name}",
@@ -710,7 +710,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                             bash.ln(
                                 os.path.relpath(outfile, link_directory),
                                 os.path.join(link_directory, os.path.basename(outfile)),
-                                input=outfile
+                                input_file=outfile
                             )
                         ]
                     )
@@ -734,7 +734,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                             bash.ln(
                                 os.path.relpath(os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))), link_directory),
                                 os.path.join(link_directory, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))),
-                                input = os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file)))
+                                input_file = os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file)))
                             )
                         ],
                         name=f"metrics_flagstat.{sample.name}.{mark_name}",
@@ -788,7 +788,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                                 bash.ln(
                                     os.path.relpath(outfile, link_directory),
                                     os.path.join(link_directory, os.path.basename(outfile)),
-                                    input=outfile
+                                    input_file=outfile
                                     )
                                 ]
                             )
@@ -992,7 +992,7 @@ zip -r {report_dir}/tracks.zip {tracks_dir}/*/*/*.ucsc.bedGraph.gz""".format(
                             bash.ln(
                                 os.path.relpath(output[1], link_directory),
                                 os.path.join(link_directory, f"{sample.name}.{mark_name}_peaks.xls"),
-                                input = output[1]
+                                input_file = output[1]
                             )
                         ],
                             name=f"macs2_callpeak.{sample.name}.{mark_name}",
@@ -1092,7 +1092,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                             bash.ln(
                                 os.path.relpath(output[1], link_directory),
                                 os.path.join(link_directory, f"{sample.name}.{mark_name}_peaks.xls"),
-                                input = output[1]
+                                input_file = output[1]
                             )
                         ],
                             name=f"macs2_callpeak.{sample.name}.{mark_name}",
@@ -1858,12 +1858,12 @@ cat {metrics_merged_out} >> {ihec_multiqc_file}"""
                                 bash.ln(
                                     os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz", os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz")),
                                     f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
-                                    input=f"{haplotype_file_prefix}.hc.g.vcf.gz"
+                                    input_file=f"{haplotype_file_prefix}.hc.g.vcf.gz"
                                 ),
                                 bash.ln(
                                     os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi", os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi")),
                                     f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi",
-                                    input=f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi"
+                                    input_file=f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi"
                                 ),
                                 gatk4.genotype_gvcf(
                                     f"{output_haplotype_file_prefix}.hc.g.vcf.gz",

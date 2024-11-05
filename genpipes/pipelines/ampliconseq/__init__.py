@@ -195,7 +195,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(trim_log, link_directory),
                             os.path.join(link_directory, readset.name + ".trim.log"),
-                            input = trim_log
+                            input_file = trim_log
                         )
                     ],
                     name="trimmomatic16S." + readset.name
@@ -310,12 +310,12 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
                         bash.ln(
                             os.path.relpath(flash_log, link_directory),
                             os.path.join(link_directory, readset.name + ".flash.log"),
-                            input = flash_log
+                            input_file = flash_log
                         ),
                         bash.ln(
                             os.path.relpath(flash_hist, link_directory),
                             os.path.join(link_directory, readset.name + ".flash.hist"),
-                            input = flash_hist
+                            input_file = flash_hist
                         )
                     ]
                 )
@@ -543,12 +543,12 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                             bash.ln(
                                 os.path.relpath(trimmed_reads_r1, lnk_raw_reads_folder),
                                 left_or_single_reads,
-                                input=trimmed_reads_r1
+                                input_file=trimmed_reads_r1
                             ),
                             bash.ln(
                                 os.path.relpath(trimmed_reads_r2, lnk_raw_reads_folder),
                                 right_reads,
-                                input=trimmed_reads_r2
+                                input_file=trimmed_reads_r2
                             )
                         ],
                         samples=[readset.sample]
@@ -564,7 +564,7 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                             bash.ln(
                                 os.path.relpath(trimmed_reads_r1, lnk_raw_reads_folder),
                                 left_or_single_reads,
-                                input=trimmed_reads_r1
+                                input_file=trimmed_reads_r1
                             )
                         ],
                         samples=[readset.sample]
