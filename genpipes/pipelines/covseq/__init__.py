@@ -1131,7 +1131,7 @@ Parameters:
                                 bash.cat(
                                     output_consensus_norm,
                                     None,
-                                    zip=True
+                                    zipped=True
                                 ),
                                 bash.awk(
                                     None,
