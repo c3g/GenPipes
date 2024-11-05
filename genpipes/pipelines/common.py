@@ -236,24 +236,24 @@ class Illumina(GenPipesPipeline):
             # If readset FASTQ files are available, skip this step
             if not readset.fastq1:
                 if readset.bam:
-                    sortedBamDirectory = os.path.join(
+                    sorted_bam_directory = os.path.join(
                         self.output_dir,
                         "temporary_bams",
                         readset.sample.name
                     )
-                    sortedBamPrefix = os.path.join(
-                        sortedBamDirectory,
+                    sorted_bam_prefix = os.path.join(
+                        sorted_bam_directory,
                         readset.name + ".sorted"
                     )
 
-                    mkdir_job = bash.mkdir(sortedBamDirectory, remove=True)
+                    mkdir_job = bash.mkdir(sorted_bam_directory, remove=True)
 
                     sort_job = samtools.sort(
                         readset.bam,
-                        sortedBamPrefix,
+                        sorted_bam_prefix,
                         sort_by_name = True
                     )
-                    sort_job.removable_files = [sortedBamPrefix + ".bam"]
+                    sort_job.removable_files = [sorted_bam_prefix + ".bam"]
 
                     jobs.append(
                         concat_jobs([
@@ -272,47 +272,46 @@ class Illumina(GenPipesPipeline):
         if FASTQ files are not already specified in the readset file. Do nothing otherwise.
         """
         jobs = []
-        
+
         for readset in self.readsets:
             # If readset FASTQ files are available, skip this step
-            sym_link_job = []
             if not readset.fastq1:
                 if readset.bam:
                     ## check if bam file has been sorted:
-                    sortedBam = os.path.join(
+                    sorted_bam = os.path.join(
                         self.output_dir,
                         "temporary_bams",
                         readset.sample.name,
                         f"{readset.name}.sorted.bam"
                     )
                     candidate_input_files = [
-                        [sortedBam],
+                        [sorted_bam],
                         [readset.bam]
                     ]
                     [bam] = self.select_input_files(candidate_input_files)
 
-                    rawReadsDirectory = os.path.join(
+                    raw_reads_directory = os.path.join(
                         self.output_dirs['raw_reads_directory'],
                         readset.sample.name,
                     )
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.pair1.fastq.gz")
-                        fastq2 = os.path.join(rawReadsDirectory, f"{readset.name}.pair2.fastq.gz")
+                        fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.pair1.fastq.gz")
+                        fastq2 = os.path.join(raw_reads_directory, f"{readset.name}.pair2.fastq.gz")
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.single.fastq.gz")
+                        fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.single.fastq.gz")
                         fastq2 = None
                     else:
                         _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
-                    mkdir_job = bash.mkdir(rawReadsDirectory)
                     jobs.append(
                         concat_jobs([
-                            mkdir_job,
+                            bash.mkdir(raw_reads_directory),
                             picard.sam_to_fastq(
                                 bam,
                                 fastq1,
                                 fastq2
-                                )
+                                ),
+                            bash.md5sum([fastq1, fastq2])
                             ],
                             name=f"picard_sam_to_fastq.{readset.name}",
                             samples=[readset.sample],
@@ -338,32 +337,32 @@ class Illumina(GenPipesPipeline):
             if not readset.fastq1:
                 if readset.bam:
                     ## check if bam file has been sorted:
-                    sortedBam = os.path.join(
+                    sorted_bam = os.path.join(
                         self.output_dir,
                         "temporary_bams",
                         readset.sample.name,
                         f"{readset.name}.sorted.bam"
                     )
                     candidate_input_files = [
-                        [sortedBam],
+                        [sorted_bam],
                         [readset.bam]
                     ]
                     [bam] = self.select_input_files(candidate_input_files)
 
-                    rawReadsDirectory = os.path.join(
+                    raw_reads_directory = os.path.join(
                         self.output_dirs['raw_reads_directory'],
                         readset.sample.name,
                     )
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.pair1.fastq.gz")
-                        fastq2 = os.path.join(rawReadsDirectory, f"{readset.name}.pair2.fastq.gz")
+                        fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.pair1.fastq.gz")
+                        fastq2 = os.path.join(raw_reads_directory, f"{readset.name}.pair2.fastq.gz")
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.single.fastq.gz")
+                        fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.single.fastq.gz")
                         fastq2 = None
                     else:
                         _raise(SanitycheckError(f"Error: run type {readset.run_type} is invalid for readset {readset.name} (should be PAIRED_END or SINGLE_END)!"))
 
-                    mkdir_job = bash.mkdir(rawReadsDirectory)
+                    mkdir_job = bash.mkdir(raw_reads_directory)
                     jobs.append(
                         concat_jobs([
                             mkdir_job,
