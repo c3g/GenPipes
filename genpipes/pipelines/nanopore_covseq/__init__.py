@@ -477,29 +477,29 @@ For information on the structure and contents of the Nanopore readset file, plea
                         bash.ln(
                             consensus_link,
                             consensus,
-                            input=consensus_artic,
+                            input_file=consensus_artic,
                         ),
                         bash.mkdir(variant_directory),
                         bash.ln(
                             variant_link,
                             variant,
-                            input=variant_artic
+                            input_file=variant_artic
                         ),
                         bash.ln(
                             variant_index_link,
                             variant_index,
-                            input=variant_index_artic
+                            input_file=variant_index_artic
                         ),
                         bash.mkdir(alignment_directory),
                         bash.ln(
                             raw_bam_link,
                             raw_bam,
-                            input=raw_bam_artic
+                            input_file=raw_bam_artic
                         ),
                         bash.ln(
                             raw_bam_index_link,
                             raw_bam_index,
-                            input=raw_bam_index_artic
+                            input_file=raw_bam_index_artic
                         ),
                         pipe_jobs(
                             [

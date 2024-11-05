@@ -796,7 +796,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(output, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                             os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(output)),
-                            input=output
+                            input_file=output
                         )
                     ],
                     name=f"dna_sample_qualimap.{sample.name}",
@@ -914,7 +914,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(outfile, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                             os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(outfile)),
-                            input=outfile
+                            input_file=outfile
                         )
                     ]
                 )

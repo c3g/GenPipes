@@ -253,12 +253,12 @@ quality of the data.
                         bash.ln(
                             os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
                             trim_file_prefix + ".trim.pair1.fastq.gz",
-                            input=trim_file_prefix + "-trimmed-pair1.fastq.gz"
+                            input_file=trim_file_prefix + "-trimmed-pair1.fastq.gz"
                         ),
                         bash.ln(
                             os.path.relpath(trim_file_prefix + "-trimmed-pair2.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair2.fastq.gz")),
                             trim_file_prefix + ".trim.pair2.fastq.gz",
-                            input=trim_file_prefix + "-trimmed-pair2.fastq.gz"
+                            input_file=trim_file_prefix + "-trimmed-pair2.fastq.gz"
                         ),
                         bash.ln(
                             os.path.relpath(trim_file_prefix + "-trimmed.log", link_directory),
@@ -544,7 +544,7 @@ quality of the data.
                         bash.ln(
                             os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
                             sample_bam,
-                            input=readset_bam
+                            input_file=readset_bam
                         )
                     ],
                     removable_files=[sample_bam]
@@ -1045,7 +1045,7 @@ pandoc \\
                         bash.ln(
                             os.path.relpath(split_file_prefix + "sorted.mdup.split.bam", alignment_dir),
                             alignment_file_prefix + "sorted.mdup.split.bam",
-                            input=split_file_prefix + "sorted.mdup.split.bam"
+                            input_file=split_file_prefix + "sorted.mdup.split.bam"
                         )
                     ],
                     name="gatk_split_N_trim." + sample.name,
@@ -1180,7 +1180,7 @@ pandoc \\
                         bash.ln(
                             os.path.relpath(output_bam, alignment_directory),
                             sample_output_bam,
-                            input=output_bam
+                            input_file=output_bam
                         )
                     ],
                     name="gatk_indel_realigner." + sample.name,
@@ -1838,17 +1838,17 @@ pandoc \\
                             bash.ln(
                                 os.path.relpath(output[0], pcgr_directory),
                                 os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
-                                input=output[0]
+                                input_file=output[0]
                                 ),
                             bash.ln(
                                 os.path.relpath(output[1], pcgr_directory),
                                 os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".maf"),
-                                input=output[1]
+                                input_file=output[1]
                                 ),
                             bash.ln(
                                 os.path.relpath(output[2], pcgr_directory),
                                 os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
-                                input=output[2]
+                                input_file=output[2]
                                 )
                             ]
                         )
@@ -2160,7 +2160,7 @@ pandoc \\
                     bash.ln(
                         target_file=os.path.relpath(os.path.join(output_folder, readset.name+"rRNA.stats.tsv"), link_directory),
                         link=os.path.join(link_directory,  readset.name+"rRNA.stats.tsv"),
-                        input=os.path.join(output_folder, readset.name+"rRNA.stats.tsv")
+                        input_file=os.path.join(output_folder, readset.name+"rRNA.stats.tsv")
                     )
                 ],
                 name=f"bwa_mem_rRNA.{readset.name}",
@@ -2296,7 +2296,7 @@ pandoc \\
                     bash.ln(
                         target_file=os.path.relpath(output_count, link_directory),
                         link=os.path.join(link_directory, sample.name + ".readcounts.tsv"),
-                        input=output_count
+                        input_file=output_count
                         )
                 ],
                 name="htseq_count." + sample.name,
