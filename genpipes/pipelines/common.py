@@ -297,9 +297,14 @@ class Illumina(GenPipesPipeline):
                     if readset.run_type == "PAIRED_END":
                         fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.pair1.fastq.gz")
                         fastq2 = os.path.join(raw_reads_directory, f"{readset.name}.pair2.fastq.gz")
+                        md5sum_job = concat_jobs([
+                            bash.md5sum(fastq1),
+                            bash.md5sum(fastq2)
+                        ])
                     elif readset.run_type == "SINGLE_END":
                         fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.single.fastq.gz")
                         fastq2 = None
+                        md5sum_job = bash.md5sum(fastq1)
                     else:
                         _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
@@ -311,8 +316,7 @@ class Illumina(GenPipesPipeline):
                                 fastq1,
                                 fastq2
                                 ),
-                            bash.md5sum(fastq1),
-                            bash.md5sum(fastq2)
+                            md5sum_job
                             ],
                             name=f"picard_sam_to_fastq.{readset.name}",
                             samples=[readset.sample],
