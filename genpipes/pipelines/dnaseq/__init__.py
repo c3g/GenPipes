@@ -1843,12 +1843,12 @@ END
                             bash.ln(
                                 os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz", os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz")),
                                 f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
-                                input=f"{haplotype_file_prefix}.hc.g.vcf.gz"
+                                input_file=f"{haplotype_file_prefix}.hc.g.vcf.gz"
                             ),
                             bash.ln(
                                 os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi", os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi")),
                                 f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi",
-                                input=f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi"
+                                input_file=f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi"
                             ),
                             gatk4.genotype_gvcf(
                                 f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
@@ -3372,13 +3372,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         bash.ln(
                             os.path.relpath(manta_germline_output, os.path.dirname(f"{output_prefix}.manta.germline.vcf.gz")),
                             f"{output_prefix}.manta.germline.vcf.gz",
-                            input=manta_germline_output,
+                            input_file=manta_germline_output,
                             remove=False
                         ),
                         bash.ln(
                             os.path.relpath(manta_germline_output_tbi, os.path.dirname(f"{output_prefix}.manta.germline.vcf.gz.tbi")),
                             f"{output_prefix}.manta.germline.vcf.gz.tbi",
-                            input=manta_germline_output_tbi,
+                            input_file=manta_germline_output_tbi,
                             remove=False
                         )
                     ],
@@ -5215,22 +5215,22 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(manta_direc
                         bash.ln(
                             os.path.relpath(manta_somatic_output, os.path.dirname(output_prefix)),
                             f"{output_prefix}.manta.somatic.vcf.gz",
-                            input=manta_somatic_output,
+                            input_file=manta_somatic_output,
                         ),
                         bash.ln(
                             os.path.relpath(manta_somatic_output + ".tbi", os.path.dirname(output_prefix)),
                             f"{output_prefix}.manta.somatic.vcf.gz.tbi",
-                            input=f"{manta_somatic_output}.tbi"
+                            input_file=f"{manta_somatic_output}.tbi"
                         ),
                         bash.ln(
                             os.path.relpath(manta_germline_output, os.path.dirname(output_prefix)),
                             f"{output_prefix}.manta.germline.vcf.gz",
-                            input=manta_germline_output
+                            input_file=manta_germline_output
                         ),
                         bash.ln(
                             os.path.relpath(manta_germline_output + ".tbi", os.path.dirname(output_prefix)),
                             f"{output_prefix}.manta.germline.vcf.gz.tbi",
-                            input=f"{manta_germline_output}.tbi"
+                            input_file=f"{manta_germline_output}.tbi"
                         )
                     ],
                     name=f"manta_sv.{tumor_pair.name}",
@@ -5809,12 +5809,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                         bash.ln(
                             os.path.relpath(purple_purity_output.strip(), metrics_dir),
                             os.path.join(metrics_dir, os.path.basename(purple_purity_output)),
-                            input=purple_purity_output
+                            input_file=purple_purity_output
                         ),
                         bash.ln(
                             os.path.relpath(purple_qc_output.strip(), metrics_dir),
                             os.path.join(metrics_dir, os.path.basename(purple_qc_output)),
-                            input=purple_qc_output
+                            input_file=purple_qc_output
                         ),
                         job_project_tracking_metrics
                     ],
@@ -6670,7 +6670,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                 bash.ln(
                                     os.path.relpath(input_vcf, os.path.dirname(output_gz)),
                                     output_gz,
-                                    input=input_vcf
+                                    input_file=input_vcf
                                 ),
                                 pipe_jobs(
                                     [
@@ -7115,7 +7115,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                             bash.ln(
                                 os.path.relpath(input_file, os.path.dirname(output_tmp)),
                                 output_tmp,
-                                input=input_file
+                                input_file=input_file
                             ),
                             pipe_jobs(
                                 [

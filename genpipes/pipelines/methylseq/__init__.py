@@ -225,7 +225,7 @@ Parameters:
                     bash.ln(
                         os.path.relpath(re.sub(".bam", report_suffix, no_readgroup_bam), link_directory),
                         os.path.join(link_directory, readset.name + report_suffix),
-                        input=re.sub(".bam", report_suffix, no_readgroup_bam)
+                        input_file=re.sub(".bam", report_suffix, no_readgroup_bam)
                         )
                 ],
                 name=f"bismark_align.{readset.name}",
@@ -389,7 +389,7 @@ Parameters:
                             bash.ln(
                                 sample.name + ".bam",
                                 os.path.join(alignment_dir, sample.name + ".sorted.bam"),
-                                input = os.path.join(alignment_dir, sample.name + ".bam"))
+                                input_file = os.path.join(alignment_dir, sample.name + ".bam"))
                         ],
                         name = "gembs_map." + sample.name,
                         samples = [sample],
@@ -482,7 +482,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(metrics_file, link_directory),
                             os.path.join(link_directory, f"{sample.name}.sorted.dedup.metrics"),
-                            input=metrics_file
+                            input_file=metrics_file
                             )
                     ]
                 )
@@ -501,7 +501,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(flagstat_file, link_directory),
                             os.path.join(link_directory, f"{sample.name}.sorted.dedup_flagstat.txt"),
-                            input=flagstat_file
+                            input_file=flagstat_file
                             )
                     ]
                 )
@@ -571,7 +571,7 @@ Parameters:
                             bash.ln(
                                 os.path.relpath(outfile, link_directory),
                                 os.path.join(link_directory, os.path.basename(outfile)),
-                                input=outfile
+                                input_file=outfile
                             )
                         ]
                     )
@@ -804,12 +804,12 @@ Parameters:
                         bash.ln(
                             os.path.relpath(os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup_splitting_report.txt"), link_directory),
                             os.path.join(link_directory, f"{sample.name}.dedup_splitting_report.txt"),
-                            input=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup_splitting_report.txt")
+                            input_file=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup_splitting_report.txt")
                             ),
                         bash.ln(
                             os.path.relpath(os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.M-bias.txt"), link_directory),
                             os.path.join(link_directory, f"{sample.name}.dedup.M-bias.txt"),
-                            input=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.M-bias.txt")
+                            input_file=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.M-bias.txt")
                             )
                     ]
                 )
@@ -1633,7 +1633,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                                 bash.ln(
                                     os.path.relpath(os.path.join(alignment_directory, readset.name, outfile), link_directory),
                                     os.path.join(link_directory, outfile),
-                                    input=os.path.join(alignment_directory, readset.name, outfile)
+                                    input_file=os.path.join(alignment_directory, readset.name, outfile)
                                     )
                                 ]
                             )

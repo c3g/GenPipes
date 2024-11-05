@@ -435,7 +435,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
                             bash.ln(
                                 os.path.relpath(trinity_chunk, os.path.dirname(query_chunk)),
                                 query_chunk,
-                                input=trinity_chunk
+                                input_file=trinity_chunk
                             ),
                             blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db, cpu),
                         ],
@@ -667,7 +667,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
                     bash.ln(
                         os.path.relpath(transdecoder_fasta, blast_directory),
                         query,
-                        input=transdecoder_fasta
+                        input_file=transdecoder_fasta
                         ),
                     blast.parallel_blast(
                         transdecoder_fasta,
@@ -1227,7 +1227,7 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
                     bash.ln(
                         os.path.relpath(os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv"), link_directory),
                         os.path.join(link_directory, f"Gene_Ontology_{contrast.name}_{item}_mqc.txt"),
-                        input = os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv")
+                        input_file = os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv")
                     )
                 ]
             )

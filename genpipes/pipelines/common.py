@@ -981,12 +981,12 @@ END
                             bash.ln(
                                 bam_link,
                                 sample_bam,
-                                input=readset_bam
+                                input_file=readset_bam
                             ),
                             bash.ln(
                                 index_link,
                                 sample_index,
-                                input=readset_index
+                                input_file=readset_index
                             )
                         ],
                         name=f"symlink_readset_sample_bam.{sample.name}",
@@ -1072,12 +1072,12 @@ END
                             bash.ln(
                                 bam_link,
                                 sample_bam,
-                                input=readset_bam
+                                input_file=readset_bam
                             ),
                             bash.ln(
                                 index_link,
                                 sample_index,
-                                input=readset_index
+                                input_file=readset_index
                             )
                         ],
                         name=f"symlink_readset_sample_bam.{sample.name}",
