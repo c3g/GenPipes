@@ -311,7 +311,8 @@ class Illumina(GenPipesPipeline):
                                 fastq1,
                                 fastq2
                                 ),
-                            bash.md5sum([fastq1, fastq2])
+                            bash.md5sum(fastq1),
+                            bash.md5sum(fastq2)
                             ],
                             name=f"picard_sam_to_fastq.{readset.name}",
                             samples=[readset.sample],
