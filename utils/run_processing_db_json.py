@@ -96,7 +96,6 @@ def write_json(dictionary, filename=None):
 class database_json(object):
 
     def __init__(self, args, project):
-        print("Init", self)
         self._json_dict =  read_jsons(args.json)
         self._runinfo_dict = json.load(open(args.runinfofile, mode="r"))
         self._args = args
@@ -139,48 +138,48 @@ class database_json(object):
     @property
     def run_folder(self): #TODO complete here, validate against folder?
         if self.is_same_value_between_jsons("run"):
-            print([re.search("".join([
-                datetime.strftime(
-                    datetime.strptime(self._runinfo_dict["run_start_date"],
-                                      "%Y-%m-%d"), "%y%m%d"), "_",
-                self._json_dict[sorted(self._json_dict)[0]]["run"], "_.",
-                self._runinfo_dict["container_barcode"], "_.+-",
-                self._json_dict[sorted(self._json_dict)[0]]["seqtype"],
-                ]), a) for a in os.listdir(os.path.join(os.sep,
-                             "lb",
-                             "robot",
-                             "research",
-                             "freezeman-processing",
-                             (self._json_dict
-                              [sorted(self._json_dict)[0]]
-                              ["seqtype"]),
-                             datetime.strftime(
-                                 datetime.strptime(
-                                     self._runinfo_dict["run_start_date"],
-                                     "%Y-%m-%d"),
-                                     "%Y"),
-                             ))]
-                  )
-            print(os.path.join(os.sep,
-                             "lb",
-                             "robot",
-                             "research",
-                             "freezeman-processing",
-                             (self._json_dict
-                              [sorted(self._json_dict)[0]]
-                              ["seqtype"]),
-                             datetime.strftime(
-                                 datetime.strptime(
-                                     self._runinfo_dict["run_start_date"],
-                                     "%Y-%m-%d"),
-                                     "%Y"),
-                             ))
-            if True: #not os.path.exists():
-                LOGGER.warning("Missing run folder {constructed} from "
-                    "/lb/robot/. The run_folder value was constructed from "
-                    "available information found in the runinfofile and the "
-                    "run validation jsons. Validate the copy step towards "
-                    "/lb/robot/.".format(constructed="TOBEFIXED"))
+#            print([re.search("".join([
+#                datetime.strftime(
+#                    datetime.strptime(self._runinfo_dict["run_start_date"],
+#                                      "%Y-%m-%d"), "%y%m%d"), "_",
+#                self._json_dict[sorted(self._json_dict)[0]]["run"], "_.",
+#                self._runinfo_dict["container_barcode"], "_.+-",
+#                self._json_dict[sorted(self._json_dict)[0]]["seqtype"],
+#                ]), a) for a in os.listdir(os.path.join(os.sep,
+#                             "lb",
+#                             "robot",
+#                             "research",
+#                             "freezeman-processing",
+#                             (self._json_dict
+#                              [sorted(self._json_dict)[0]]
+#                              ["seqtype"]),
+#                             datetime.strftime(
+#                                 datetime.strptime(
+#                                     self._runinfo_dict["run_start_date"],
+#                                     "%Y-%m-%d"),
+#                                     "%Y"),
+#                             ))]
+#                  )
+#            print(os.path.join(os.sep,
+#                             "lb",
+#                             "robot",
+#                             "research",
+#                             "freezeman-processing",
+#                             (self._json_dict
+#                              [sorted(self._json_dict)[0]]
+#                              ["seqtype"]),
+#                             datetime.strftime(
+#                                 datetime.strptime(
+#                                     self._runinfo_dict["run_start_date"],
+#                                     "%Y-%m-%d"),
+#                                     "%Y"),
+#                             ))
+#            if True: #not os.path.exists():
+#                LOGGER.warning("Missing run folder {constructed} from "
+#                    "/lb/robot/. The run_folder value was constructed from "
+#                    "available information found in the runinfofile and the "
+#                    "run validation jsons. Validate the copy step towards "
+#                    "/lb/robot/.".format(constructed="TOBEFIXED"))
             return "_".join([
                 datetime.strftime(
                     datetime.strptime(self._runinfo_dict["run_start_date"],
@@ -427,7 +426,6 @@ def main():
                        )
         else:
             write_json(databases[project].properties())
-    print("End of main()")
 
 
 if __name__ == "__main__":
