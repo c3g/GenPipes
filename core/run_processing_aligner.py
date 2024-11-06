@@ -371,7 +371,7 @@ class RNARunProcessingAligner(RunProcessingAligner):
         input_bam_directory = os.path.dirname(input_bam)
         sample_file = input_bam + ".sample_file"
         sample_row = readset.sample.name + "\t" + input_bam + "\tRNAseq"
-        output_directory = os.path.join(input_bam_directory, "rnaseqc_" + readset.sample.name + "." + readset.library)
+        output_directory = os.path.join(input_bam_directory, "rnaseqc_" + readset.sample.name + "_" + readset.library)
         ribosomal_interval_file = os.path.join(output_directory, "empty.list")
 
         if readset.annotation_files['gtf'] and os.path.isfile(readset.annotation_files['gtf']):
@@ -397,11 +397,11 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
                 ),
                 bash.cp(
                     os.path.join(output_directory, "metrics.tsv"),
-                    os.path.join(input_bam_directory, readset.sample.name + "." + readset.library + ".rnaseqc.sorted.dup.metrics.tsv")
+                    os.path.join(input_bam_directory, readset.sample.name + "_" + readset.library + ".rnaseqc.sorted.dup.metrics.tsv")
                 )],
                 name="rnaseqc." + readset.name + ".rnaseqc" + "." + readset.run + "." + readset.lane,
                 samples=[readset.sample],
-                report_files=[os.path.join(input_bam_directory, readset.sample.name + "." + readset.library + ".rnaseqc.sorted.dup.metrics.tsv")]
+                report_files=[os.path.join(input_bam_directory, readset.sample.name + "_" + readset.library + ".rnaseqc.sorted.dup.metrics.tsv")]
             )
             jobs.append(job)
 
