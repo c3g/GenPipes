@@ -41,8 +41,6 @@ def create_scheduler(s_type, config_files, container=None, genpipes_file=None):
         return PBSScheduler(config_files, container=container, genpipes_file=genpipes_file)
     elif s_type == "batch":
         return BatchScheduler(config_files, container=container, genpipes_file=genpipes_file)
-    elif s_type == "daemon":
-        return DaemonScheduler(config_files, genpipes_file=genpipes_file)
     elif s_type == "slurm":
         return SlurmScheduler(config_files, container=container, genpipes_file=genpipes_file)
     else:
@@ -275,38 +273,6 @@ mkdir -p $OUTPUT_DIR
                     config_files=",".join([c.name for c in self._config_files])
                 )
             )
-        if pipeline.json:
-            json_files = []
-            for step in pipeline.step_to_execute:
-                for job in step.jobs:
-                    for sample in job.samples:
-                        json_files.append(os.path.join(pipeline.output_dir, "json", sample.json_file))
-            json_files = list(set(json_files))
-            for j_file in json_files:
-                self.genpipes_file.write("""
-                    sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}
-""".format(file=j_file))
-
-        ## Print a copy of sample JSONs for the genpipes dashboard
-        if pipeline.json and pipeline.portal_output_dir != "":
-            copy_commands = []
-            test_copy_commands = []
-            for i, sample in enumerate(pipeline.sample_list):
-                unique_uuid = str(uuid4())
-                input_file = pipeline.sample_paths[i]
-                output_file = os.path.join(pipeline.portal_output_dir, '$USER.' + sample.name + '.' + unique_uuid + '.json')
-                #test_output_file = os.path.join("/lb/project/mugqic/analyste_dev/portal_test_dir/", '$USER.' + sample.name + '.' + unique_uuid + '.json')
-                copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
-                    input_file=input_file, output_file=output_file))
-                #test_copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
-                    #input_file=input_file, output_file=test_output_file))
-            self.genpipes_file.write(textwrap.dedent("""
-                #------------------------------------------------------------------------------
-                # Print a copy of sample JSONs for the genpipes dashboard
-                #------------------------------------------------------------------------------
-                {copy_commands}
-            """).format(copy_commands='\n'.join(copy_commands)))
-
         if pipeline.jobs:
             self.genpipes_file.write("cd $OUTPUT_DIR")
 
@@ -320,31 +286,6 @@ STEP={step.name}
 mkdir -p $JOB_OUTPUT_DIR/$STEP
 """.format(separator_line=separator_line, step=step)
                                  )
-
-    def job2json(self, pipeline, step, job, job_status):
-        if not pipeline.json:
-            return ""
-
-        json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
-        return """\
-{job2json_script} \\
-  -u \\"$USER\\" \\
-  -c \\"{config_files}\\" \\
-  -s \\"{step.name}\\" \\
-  -j \\"$JOB_NAME\\" \\
-  -d \\"$JOB_DONE\\" \\
-  -l \\"$JOB_OUTPUT\\" \\
-  -o \\"{jsonfiles}\\" \\
-  -f {status} {command_separator}
-""".format(
-            job2json_script="genpipes tools job2json",
-            module_python=global_conf.global_get('DEFAULT', 'module_python'),
-            step=step,
-            jsonfiles=json_file_list,
-            config_files=",".join([ os.path.abspath(c.name) for c in self._config_files ]),
-            status=job_status,
-            command_separator="&&" if (job_status=='\\"running\\"') else ""
-        ) if json_file_list else ""
 
     def job2json_project_tracking(self, pipeline, job, job_status):
         if not pipeline.project_tracking_json:
@@ -500,10 +441,9 @@ chmod 755 $COMMAND
                     self.genpipes_file.flush()
 
                     cmd = """\
-echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
+echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
-{job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
 if [ \\$GenPipes_STATE -eq 0 ] ; then
@@ -514,8 +454,6 @@ exit \\$GenPipes_STATE" | \\
                         container_line=self.container_line,
                         job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
                         job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
-                        job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                        job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE'),
                         step_wrapper=config_step_wrapper,
                         fail_on_pattern0=self.fail_on_pattern(job_name_prefix)[0],
                         fail_on_pattern1=self.fail_on_pattern(job_name_prefix)[1]
@@ -565,33 +503,6 @@ class BatchScheduler(Scheduler):
         super(BatchScheduler, self).__init__(*args, **kwargs)
         self.name = 'Batch'
 
-    def job2json(self, pipeline, step, job, job_status):
-        if not pipeline.json:
-            return ""
-
-        json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
-        return """\
-module load {module_python}
-{job2json_script} \\
-  -u \"$USER\" \\
-  -c \"{config_files}\" \\
-  -s \"{step.name}\" \\
-  -j \"$JOB_NAME\" \\
-  -d \"$JOB_DONE\" \\
-  -l \"$JOB_OUTPUT\" \\
-  -o \"{jsonfiles}\" \\
-  -f {status}
-module unload {module_python} {command_separator}
-""".format(
-            job2json_script="genpipes tools job2json",
-            module_python=global_conf.global_get('DEFAULT', 'module_python'),
-            step=step,
-            jsonfiles=json_file_list,
-            config_files=",".join([ os.path.abspath(c.name) for c in self._config_files ]),
-            status=job_status,
-            command_separator="&&" if (job_status=='"running"') else ""
-        ) if json_file_list else ""
-
     def submit(self, pipeline):
         logger.info('\n\t To run the script use: \n\t"{}  ./<command>.sh"'.format(
             self.container_line))
@@ -622,11 +533,10 @@ set -eu -o pipefail
 chmod 755 $COMMAND
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin GenPipes Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
-rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} $COMMAND &> $JOB_OUTPUT
+rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} $COMMAND &> $JOB_OUTPUT
 GenPipes_STATE=$?
 echo "End GenPipes Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo GenPipesExitStatus:$GenPipes_STATE
-{job2json_end}
 {job2json_project_tracking_end}
 if [ $GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $GenPipes_STATE ; fi
 """.format(
@@ -635,8 +545,6 @@ if [ $GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $GenPipes_STATE 
                             separator_line=separator_line,
                             job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
                             job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
-                            job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                            job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE'),
                             step_wrapper=config_step_wrapper
                         )
                     )
@@ -749,10 +657,9 @@ date
 scontrol show job \\$SLURM_JOBID
 sstat -j \\$SLURM_JOBID.batch
 echo '#######################################'
-rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
+rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
-{job2json_end}
 {job2json_project_tracking_end}
 {fail_on_pattern1}
 if [ \\$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
@@ -767,8 +674,6 @@ exit \\$GenPipes_STATE" | \\
                         job=job,
                         job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
                         job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
-                        job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                        job2json_end=self.job2json(pipeline, step, job, '\\$GenPipes_STATE') ,
                         container_line=self.container_line,
                         step_wrapper=config_step_wrapper,
                         fail_on_pattern0=self.fail_on_pattern(job_name_prefix)[0],
@@ -815,62 +720,3 @@ exit \\$GenPipes_STATE" | \\
         cluster_max_jobs = global_conf.global_get('DEFAULT', 'cluster_max_jobs', param_type='posint', required=False)
         if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:
             logger.warning(f"Number of jobs: {str(len(pipeline.jobs))} > Cluster maximum number of jobs: {str(cluster_max_jobs)} !")
-
-
-class DaemonScheduler(Scheduler):
-
-    def __init__(self, *args, **kwargs):
-        super(DaemonScheduler, self).__init__(*args, **kwargs)
-        self.name = 'DAEMON'
-
-    def submit(self, pipeline):
-        self.genpipes_file.write(self.json(pipeline))
-
-    def json(self, pipeline):
-        #with open('sample.json', 'w') as json_file:
-        #json.dump(the_dump, json_file)
-        return json.dumps(
-            {'pipeline': {
-                'output_dir': pipeline.output_dir,
-                'samples': [{
-                    'name': sample.name,
-                    'readsets': [{
-                        "name": readset.name,
-                        "library": readset.library,
-                        "runType": readset.run_type,
-                        "run": readset.run,
-                        "lane": readset.lane,
-                        "adapter1": readset.adapter1,
-                        "adapter2": readset.adapter2,
-                        "qualityoffset": readset.quality_offset,
-                        "bed": [bed for bed in readset.beds],
-                        "fastq1": readset.fastq1,
-                        "fastq2": readset.fastq2,
-                        "bam": readset.bam,
-                     } for readset in pipeline.readsets if readset.sample.name == sample.name]
-                } for sample in pipeline.samples],
-                'steps': [{
-                    'name': step.name,
-                    'jobs': [{
-                        "job_name": job.name,
-                        "job_id": job.id,
-                        "job_command": job.command_with_modules,
-                        "job_input_files": job.input_files,
-                        "job_output_files": job.output_files,
-                        "job_dependencies": [dependency_job.id for dependency_job in job.dependency_jobs],
-                        "job_cluster_options": {
-                            # Cluster settings section must match job name prefix before first "."
-                            # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
-                            'cluster_submit_cmd': global_conf.global_get(job.name.split(".")[0], 'cluster_submit_cmd'),
-                            'cluster_other_arg': global_conf.global_get(job.name.split(".")[0], 'cluster_other_arg'),
-                            'cluster_work_dir_arg': global_conf.global_get(job.name.split(".")[0], 'cluster_work_dir_arg') + " " + pipeline.output_dir,
-                            'cluster_output_dir_arg': global_conf.global_get(job.name.split(".")[0], 'cluster_output_dir_arg') + " " + os.path.join(pipeline.output_dir, "job_output", step.name, job.name + ".o"),
-                            'cluster_job_name_arg': global_conf.global_get(job.name.split(".")[0], 'cluster_job_name_arg') + " " + job.name,
-                            'cluster_walltime': global_conf.global_get(job.name.split(".")[0], 'cluster_walltime'),
-                            'cluster_queue': global_conf.global_get(job.name.split(".")[0], 'cluster_queue'),
-                            'cluster_cpu': global_conf.global_get(job.name.split(".")[0], 'cluster_cpu')
-                        },
-                        "job_done": job.done
-                    } for job in step.jobs]
-                } for step in pipeline.step_to_execute]
-            }}, indent=4)

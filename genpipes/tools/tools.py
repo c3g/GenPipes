@@ -22,7 +22,6 @@ import subprocess
 import sys
 
 from . import log_report
-from . import job2json
 from . import job2json_project_tracking
 
 def add_subcommands(parser):
@@ -45,17 +44,6 @@ def add_subcommands(parser):
     parser_csvtoreadset.add_argument('input_type', help="Type of input. Either fastq for bam.")
     parser_csvtoreadset.add_argument('data_path', help="Relative path to the data from the project folder.")
     parser_csvtoreadset.set_defaults(func=run_csvtoreadset)
-
-    # Create the parser for the "job2json" subcommand
-    parser_job2json = tools_subparsers.add_parser('job2json', help='Appends a JSON section describing a pipeline job that has just finished to a JSON file which was pre-generated when the pipeline was launched. This script is usually launched automatically before and after each pipeline job. /!\\ This version is for project trasking database only.')
-    parser_job2json.add_argument('-s', '--step_name', required=True, help="name of the step of the current job")
-    parser_job2json.add_argument('-j','--job_name', required=True, help="name of the current job")
-    parser_job2json.add_argument('-l','--job_log', required=True, help="name of the log file for the current job")
-    parser_job2json.add_argument('-d','--job_done', required=True, help="name of the done file for the current job")
-    parser_job2json.add_argument('-o','--json_outfile', required=True, help="comma-separated list of names of json files which need to be appended by the current job")
-    parser_job2json.add_argument('-f','--status', required=True, help="job status comming from GenPipes. Either running when job starts or $GenPipes_STATE")
-    parser_job2json.add_argument('-u','--user', required=True, help="user to use GenPipes $USER")
-    parser_job2json.set_defaults(func=run_job2json)
 
     # Create the parser for the "job2json_project_tracking" subcommand
     parser_job2json_project_tracking = tools_subparsers.add_parser('job2json_project_tracking', help='Appends a JSON section describing a pipeline job that has just finished to a JSON file which was pre-generated when the pipeline was launched. This script is usually launched automatically before and after each pipeline job. /!\\ This version is for project tracking database only.')
@@ -115,12 +103,6 @@ def run_csvtoreadset(args):
     csvtoreadset = os.path.join(os.path.dirname(__file__), 'csvToreadset.R')
     cmd = ['Rscript', csvtoreadset, args.input_csv, args.output_name, args.input_type, args.data_path]
     subprocess.run(cmd, check=False)
-
-def run_job2json(args):
-    """
-    Run the job2json.py script with the given arguments.
-    """
-    job2json.main(args)
 
 def run_job2json_project_tracking(args):
     """
