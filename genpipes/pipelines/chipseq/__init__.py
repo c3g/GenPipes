@@ -723,6 +723,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                     concat_jobs(
                         [
                             bash.mkdir(os.path.join(metrics_output_directory, sample.name, mark_name)),
+                            bash.mkdir(link_directory),
                             sambamba.flagstat(
                                 raw_bam_file,
                                 os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file)))
