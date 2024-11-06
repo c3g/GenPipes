@@ -37,7 +37,7 @@ from .job import Job
 from .scheduler import create_scheduler
 from .step import Step
 
-from ..bfx import jsonator, jsonator_project_tracking
+from ..bfx import jsonator_project_tracking
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +57,6 @@ class Pipeline():
         job_scheduler=None,
         container=None,
         genpipes_file=None,
-        no_json=False,
         json_pt=None,
         steps=None,
         clean=False,
@@ -107,10 +106,12 @@ class Pipeline():
             self.config_parser._filepath = os.path.abspath(config_trace.name)
 
         if job_scheduler is not None:
-            self._job_scheduler = create_scheduler(job_scheduler, config_files,
-                                                   container=container, genpipes_file=genpipes_file)
-        # sorry about the double negative...
-        self._json = not no_json
+            self._job_scheduler = create_scheduler(
+                job_scheduler,
+                config_files,
+                container=container,
+                genpipes_file=genpipes_file
+                )
 
         self._project_tracking_json = False
         if json_pt:
@@ -269,12 +270,6 @@ class Pipeline():
             )
 
         cls._argparser.add_argument(
-            "--no-json",
-            help="do not create JSON file per analysed sample to track the analysis status (default: false i.e. JSON file will be created)",
-            action="store_true"
-            )
-
-        cls._argparser.add_argument(
             "-o",
             "--output-dir",
             help="output directory (default: current)",
@@ -367,10 +362,6 @@ class Pipeline():
         for step in self.step_to_execute:
             jobs.extend(step.jobs)
         return jobs
-
-    @property
-    def json(self):
-        return self._json
 
     @property
     def project_tracking_json(self):
@@ -483,22 +474,6 @@ class Pipeline():
             if not self.sanity_check:
                 log.info(f"Step {step.name}: {str(len(step.jobs))} job{('s' if len(step.jobs) > 1 else '')} created{('' if step.jobs else '... skipping')}\n")
 
-        # Now create the json dump for all the samples if not already done
-        if self.json:
-            # Check if portal_output_dir is set from a valid environment variable
-            self.portal_output_dir = global_conf.global_get('DEFAULT', 'portal_output_dir', required=False)
-            if self.portal_output_dir.startswith("$") and (os.environ.get(re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
-                if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
-                    self.portal_output_dir = ""
-                    log.info(" --> PORTAL_OUTPUT_DIR environment variable is not set... no JSON file will be generated during analysis...\n")
-                    self._json = False
-                else:
-                    _raise(SanitycheckError("Environment variable \"" + re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
-            elif not os.path.isdir(os.path.expandvars(self.portal_output_dir)):
-                _raise(SanitycheckError("Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
-            else:
-                for sample in self.sample_list:
-                    self.sample_paths.append(jsonator.create(self, sample))
         if self.project_tracking_json:
             for sample in self.sample_list:
                 self.sample_paths.append(jsonator_project_tracking.create(self, sample))
