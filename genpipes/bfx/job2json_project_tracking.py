@@ -19,13 +19,14 @@
 
 # Python Standard Modules
 import logging
+import os
 
 from ..core.job import Job
 from ..core.config import global_conf
 
 log = logging.getLogger(__name__)
 
-def run(input_file, pipeline, samples, readsets, job_name, metrics):
+def run(input_file, samples, readsets, job_name, metrics):
     """
     Calls job2json_project_tracking within jobs to update metrics
     """
@@ -38,15 +39,13 @@ def run(input_file, pipeline, samples, readsets, job_name, metrics):
         [],
         command="""\
 module purge && \\
-module load {module_genpipes} && \\
 {job2json_project_tracking_script} \\
   -s {samples} \\
   -r {readsets} \\
   -j {job_name} \\
   -o $PT_JSON_OUTFILE \\
   -m {metrics}""".format(
-    module_genpipes=global_conf.global_get('DEFAULT', 'module_genpipes'),
-    job2json_project_tracking_script="genpipes tools job2json_project_tracking",
+    job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "tools", "job2json_project_tracking.py"),
     samples=samples,
     readsets=readsets,
     job_name=job_name,
