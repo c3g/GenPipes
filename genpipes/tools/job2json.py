@@ -26,7 +26,7 @@ def main(args=None):
     Main function
     """
     if args is None:
-        parser = argparse.ArgumentParser(prog='job2json.py', description="Appends a JSON section describing a pipeline job that has just finished to a JSON file which was pre-generated when the pipeline was launched. This script is usually launched automatically before and after each pipeline job. /!\\ This version is for project trasking database only.")
+        parser = argparse.ArgumentParser(prog='job2json.py', description="Appends a JSON section describing a pipeline job that has just finished to a JSON file which was pre-generated when the pipeline was launched. This script is usually launched automatically before and after each pipeline job. /!\\ This version is for project tracking database only.")
         parser.add_argument('-s', '--step_name', required=True, help="name of the step of the current job")
         parser.add_argument('-j','--job_name', required=True, help="name of the current job")
         parser.add_argument('-l','--job_log', required=True, help="name of the log file for the current job")
