@@ -158,12 +158,12 @@ def md5sum(
     """
 
     if not output:
-        output = f"{os.path.abspath(input_file)}.md5"
+        output = f"{input_file}.md5"
 
     return Job(
         [input_file],
         [output],
-        command=f"md5sum {"-c " if check else ""}{os.path.abspath(input_file)} > {output}"
+        command=f"md5sum {"-c " if check else ""}{input_file} > {output}"
     )
 
 def cat(
