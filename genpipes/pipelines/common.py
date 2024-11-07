@@ -706,10 +706,10 @@ END
         for readset in self.readsets:
             output_dir = os.path.join(self.output_dirs['trim_directory'], readset.sample.name)
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'][readset.sample.name])
-            
+
             trim_json = os.path.join(metrics_directory, f"{readset.name}.trim.json")
             trim_html = os.path.join(metrics_directory, f"{readset.name}.trim.html")
-            
+
             adapter_file = global_conf.global_get('trim_fastp', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
@@ -725,7 +725,7 @@ END
             output1 = ""
             output2 = ""
             trim_file_prefix = os.path.join(output_dir, readset.name)
-            
+
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
@@ -845,7 +845,7 @@ END
             self.multiqc_inputs[readset.sample.name].append(
                 os.path.join(metrics_directory, f"{readset.name}.trim.json")
             )
-            
+
         return jobs
 
     def bwa_mem2_samtools_sort(self):
