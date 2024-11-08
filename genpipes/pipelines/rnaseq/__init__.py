@@ -671,7 +671,6 @@ quality of the data.
                     picard.parse_aligned_reads_ratio_metrics_pt(os.path.join(output_directory, f"{sample.name}.alignment_summary_metrics")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_directory, f"{sample.name}.alignment_summary_metrics"),
-                        pipeline=self,
                         samples=sample.name,
                         readsets=",".join([readset.name for readset in sample.readsets]),
                         job_name=job_name,
@@ -972,7 +971,6 @@ pandoc \\
                     rnaseqc2.parse_expression_profiling_efficiency_metrics_pt(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
-                        pipeline=self,
                         samples=sample.name,
                         readsets=",".join([readset.name for readset in sample.readsets]),
                         job_name=job_name,
@@ -981,7 +979,6 @@ pandoc \\
                     rnaseqc2.parse_rrna_rate_metrics_pt(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
-                        pipeline=self,
                         samples=sample.name,
                         readsets=",".join([readset.name for readset in sample.readsets]),
                         job_name=job_name,

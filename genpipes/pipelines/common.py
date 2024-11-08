@@ -770,7 +770,6 @@ END
                         fastp.parse_quality_thirty_metrics_pt(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -779,7 +778,6 @@ END
                         fastp.parse_pre_length_r1_metrics(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -788,7 +786,6 @@ END
                         fastp.parse_post_length_r1_metrics(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -797,7 +794,6 @@ END
                         fastp.parse_pre_length_r2_metrics(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -806,7 +802,6 @@ END
                         fastp.parse_post_length_r2_metrics(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -1149,7 +1144,6 @@ END
                             gatk4.parse_duplicate_rate_metrics_pt(metrics_file),
                             job2json_project_tracking.run(
                                 input_file=metrics_file,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
