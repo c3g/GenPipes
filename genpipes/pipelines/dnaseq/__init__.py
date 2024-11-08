@@ -830,7 +830,6 @@ END
                         conpair.parse_concordance_metrics_pt(concordance_out),
                         job2json_project_tracking.run(
                             input_file=concordance_out,
-                            pipeline=self,
                             samples=",".join([sample.name for sample in samples]),
                             readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                             job_name=job_name,
@@ -839,7 +838,6 @@ END
                         conpair.parse_contamination_normal_metrics_pt(contamination_out),
                         job2json_project_tracking.run(
                             input_file=contamination_out,
-                            pipeline=self,
                             samples=tumor_pair.normal.name,
                             readsets=",".join([readset.name for readset in tumor_pair.normal.readsets]),
                             job_name=job_name,
@@ -848,7 +846,6 @@ END
                         conpair.parse_contamination_tumor_metrics_pt(contamination_out),
                         job2json_project_tracking.run(
                             input_file=contamination_out,
-                            pipeline=self,
                             samples=tumor_pair.tumor.name,
                             readsets=",".join([readset.name for readset in tumor_pair.tumor.readsets]),
                             job_name=job_name,
@@ -948,7 +945,6 @@ END
                         gatk4.parse_bases_over_q30_percent_metrics_pt(f"{output_prefix}.quality_distribution_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.quality_distribution_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -957,7 +953,6 @@ END
                         gatk4.parse_mean_insert_metrics(f"{output_prefix}.insert_size_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.insert_size_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -966,7 +961,6 @@ END
                         gatk4.parse_stdev_insert_metrics(f"{output_prefix}.insert_size_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.insert_size_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -975,7 +969,6 @@ END
                         gatk4.parse_mode_insert_metrics(f"{output_prefix}.insert_size_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.insert_size_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -984,7 +977,6 @@ END
                         gatk4.parse_total_read_pairs_metrics(f"{output_prefix}.alignment_summary_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.alignment_summary_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -993,7 +985,6 @@ END
                         gatk4.parse_aligned_pairs_metrics_pt(f"{output_prefix}.alignment_summary_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.alignment_summary_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -1002,7 +993,6 @@ END
                         gatk4.parse_high_quality_read_pairs_metrics(f"{output_prefix}.alignment_summary_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.alignment_summary_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -1011,7 +1001,6 @@ END
                         gatk4.parse_chimeras_metrics_pt(f"{output_prefix}.alignment_summary_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.alignment_summary_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -1137,7 +1126,6 @@ END
                         mosdepth.parse_dedup_coverage_metrics_pt(f"{output_prefix}.mosdepth.summary.txt"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.mosdepth.summary.txt",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -1366,7 +1354,6 @@ END
                             gatk4.parse_bed_bait_set_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1375,7 +1362,6 @@ END
                             gatk4.parse_off_target_metrics_pt(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1384,7 +1370,6 @@ END
                             gatk4.parse_total_reads_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1393,7 +1378,6 @@ END
                             gatk4.parse_dedup_reads_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1402,7 +1386,6 @@ END
                             gatk4.parse_mean_target_coverage_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1411,7 +1394,6 @@ END
                             gatk4.parse_median_target_coverage_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1420,7 +1402,6 @@ END
                             gatk4.parse_dup_rate_metrics_pt(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1429,7 +1410,6 @@ END
                             gatk4.parse_low_mapping_rate_metrics_pt(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1438,7 +1418,6 @@ END
                             gatk4.parse_read_overlap_metrics_pt(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1642,7 +1621,6 @@ END
                         verify_bam_id.parse_contamination_freemix_metrics(output),
                         job2json_project_tracking.run(
                             input_file=output,
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -2849,7 +2827,6 @@ END
                                 pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
                                 job2json_project_tracking.run(
                                     input_file=pcgr_output_file,
-                                    pipeline=self,
                                     samples=",".join([sample.name for sample in samples]),
                                     readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                                     job_name=job_name,
@@ -2988,7 +2965,6 @@ END
                                 pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
                                 job2json_project_tracking.run(
                                     input_file=pcgr_output_file,
-                                    pipeline=self,
                                     samples=",".join([sample.name for sample in samples]),
                                     readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                                     job_name=job_name,
@@ -5734,7 +5710,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                     purple.parse_purity_metrics_pt(purple_purity_output),
                     job2json_project_tracking.run(
                         input_file=purple_purity_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in samples]),
                         readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                         job_name=job_name,
