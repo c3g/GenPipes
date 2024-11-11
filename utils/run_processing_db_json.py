@@ -193,7 +193,7 @@ class DatabaseJson():
         """
         Return the run date.
         """
-        return f"{datetime.strptime(self._runinfo_dict["run_start_date"], '%Y-%m-%d')}"
+        return f"{datetime.strptime(self._runinfo_dict['run_start_date'], '%Y-%m-%d')}"
 
     @property
     def specimen(self):
@@ -388,7 +388,7 @@ def main():
             if content["project_obj_id"] not in projects or content["project_name"] not in projects.values():
                 projects[content["project_obj_id"]] = content["project_name"]
                 LOGGER.info(
-                    f"Project ID:{content["project_obj_id"]} \"{content["project_name"]}\" identified."
+                    f"""Project ID:{content["project_obj_id"]} \"{content["project_name"]}\" identified."""
                     )
     databases = {}
     for project in projects.items():
