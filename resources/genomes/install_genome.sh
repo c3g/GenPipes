@@ -314,10 +314,10 @@ is_up2date() {
 
 cmd_or_job() {
   CMD=$1
-  CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
-  JOB_PREFIX=${3:-$CMD}  # Job prefix = 3rd param if defined else cmd name
+  CORES=${2:-1} # Nb cores = 2nd param if defined else 1
+  JOB_PREFIX=${3:-$CMD} # Job prefix = 3rd param if defined else cmd name
+  MEMORY=${4:-31G} # Memory = 4th param if defined else 31G
   JOB_NAME=$JOB_PREFIX
-  MEMORY=${4:-31G}
 
   # If genome is too big, run command in a separate job since login node memory is limited
   if is_genome_big
@@ -494,7 +494,7 @@ module load $module_bwa_mem2 && \
 LOG=$LOG_DIR/bwa_mem2$TIMESTAMP.log && \
 bwa-mem2 index $INDEX_DIR/$GENOME_FASTA > \$LOG 2>&1 && \
 chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
-    cmd_or_job BWA_MEM2_CMD 6
+    cmd_or_job BWA_MEM2_CMD 2 BWA_MEM2_CMD 80G
   else
     echo
     echo "Genome bwa-mem2 index up to date... skipping"
