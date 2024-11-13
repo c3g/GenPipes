@@ -66,7 +66,7 @@ def add_subcommands(parser):
             parser_log_report.add_argument('--success', '-s', help="Show successful jobs only", action='store_true', default=False)
             parser_log_report.add_argument('--nosuccess', '--nos', help="Show unsuccessful jobs only i.e. failed or uncompleted jobs", action='store_true', default=False)
         else:
-            parser_log_report.add_argument('--remote', '-r', help="HPC scheduler where the job was run. Default: slurm", choices=['beluga', 'narval', 'cedar'], default=None)
+            parser_log_report.add_argument('--remote', '-r', help="HPC remote cluster where the job was run. Default: slurm", choices=['beluga', 'narval', 'cedar'], default=None)
             parser_log_report.add_argument('--loglevel', help="Standard Python log level. Default: ERROR", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
             parser_log_report.add_argument('--tsv', help="Output to tsv file")
             parser_log_report.add_argument('--quiet', '-q', help="No report printed to terminal", action='store_true', default=False)
