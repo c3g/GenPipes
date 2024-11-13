@@ -60,12 +60,12 @@ def add_subcommands(parser):
     parser_log_report.add_argument('job_list_path', help="Path to a GenPipes job list")
     parser_log_report.add_argument('--job_scheduler', '-j', help="HPC scheduler where the job was run", choices=['slurm', 'pbs'], default='slurm')
     # As using sys.argv to check scheduler value making sure it's only in the context of a "genpipes tools log_report call"
-    if any((job_scheduler in sys.argv for job_scheduler in ['--job_scheduler', '-j'])) and "tools" in sys.argv and "log_report" in sys.argv:
+    if "tools" in sys.argv and "log_report" in sys.argv:
         if 'pbs' in sys.argv:
             parser_log_report.add_argument('--memtime', '-m', help="Output also memtime values if present in job output files", action='store_true', default=False)
             parser_log_report.add_argument('--success', '-s', help="Show successful jobs only", action='store_true', default=False)
             parser_log_report.add_argument('--nosuccess', '--nos', help="Show unsuccessful jobs only i.e. failed or uncompleted jobs", action='store_true', default=False)
-        elif 'slurm' in sys.argv:
+        else:
             parser_log_report.add_argument('--loglevel', help="Standard Python log level. Default: ERROR", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
             parser_log_report.add_argument('--tsv', help="Output to tsv file")
             parser_log_report.add_argument('--quiet', '-q', help="No report printed to terminal", action='store_true', default=False)
@@ -114,7 +114,7 @@ def run_log_report(args):
     """
     Run the log_report.pl script with the given arguments.
     """
-    if args.job_scheduler == 'abacus':
+    if args.job_scheduler == 'pbs':
         # Call log_report.pl
         log_report_pl = os.path.join(os.path.dirname(__file__), 'log_report.pl')
         cmd = [log_report_pl, args.job_list_path]
