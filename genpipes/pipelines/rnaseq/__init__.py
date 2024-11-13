@@ -339,6 +339,10 @@ quality of the data.
                 ],
                 name="sortmerna." + readset.name,
                 input_dependency = inputs,
+                output_dependency = [
+                    os.path.join(output_dir_sample, readset.name + ".aligned.log"),
+                    os.path.join(link_directory, readset.name + ".aligned.log")
+                    ],
                 samples=[readset.sample]
                 )
             )
@@ -1859,7 +1863,7 @@ pandoc \\
                 output = [
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".html"),
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".maf"),
-                        os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".snvs_indels_ann.tsv.gz")
+                        os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".snv_indel_ann.tsv.gz")
                     ]
                 final_command = bash.ls(output[0])
                 input_dependencies = [input, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml"]
