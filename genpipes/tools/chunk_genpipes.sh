@@ -90,7 +90,7 @@ echo "export GENPIPES_CHUNK_SIZE=${max_chunk}" >> ${header}
 chunk=1
 out_file=/dev/null
 # create chunks
-while read -r line ; do
+while IFS= read -r line ; do
     echo "$line" >> $out_file
 
     if [ "$line" == 'cd $OUTPUT_DIR' ]; then
