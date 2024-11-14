@@ -1041,6 +1041,9 @@ install_genome() {
   SOURCE="$5"
   VERSION="$6"
 
+  # Make sure no modules are loaded
+  module purge
+
   init_install
   set_urls
   download_urls
