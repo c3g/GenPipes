@@ -77,7 +77,7 @@ rm -rf ${out_dir}/chunk_* 2>/dev/null
 mkdir -p ${out_dir}
 header=${out_dir}/header.sh
 echo '# header for all chunks' > ${header}
-while read -r line ; do
+while IFS= read -r line ; do
     if [[ $line =~ ^STEP=.*$ ]]; then
       STEP=${line#STEP=}
       break
