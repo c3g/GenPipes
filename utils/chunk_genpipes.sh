@@ -77,7 +77,7 @@ rm -rf ${out_dir}/chunk_* 2>/dev/null
 mkdir -p ${out_dir}
 header=${out_dir}/header.sh
 echo '# header for all chunks' > ${header}
-while IFS= read -r line ; do
+while read -r line ; do
     if [[ $line =~ ^STEP=.*$ ]]; then
       STEP=${line#STEP=}
       break
@@ -93,7 +93,7 @@ chunk=1
 out_file=/dev/null
 n_job=0
 # create chunks
-while read -r line ; do
+while IFS= read -r line ; do
     echo "$line" >> $out_file
 
     if [ "$line" == 'cd $OUTPUT_DIR' ]; then
