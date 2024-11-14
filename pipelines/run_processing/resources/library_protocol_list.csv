@@ -11,17 +11,22 @@ ATACSeq,default DNA,,fastq,ATAC-Seq,dna-protein-interactions,Assay for Transposa
 GeoMx RNA Digital Spatial Profiler,default DNA no bwa,,fastq,Single Cell RNA,low-level-rna-detection,GeoMx RNA,1
 GeoMx Protein Digital Spatial Profiler,default DNA no bwa,,fastq,Single Cell Proteomics,low-level-protein-detection,GeoMx Protein,1
 10x Genomics Linked Reads gDNA,default DNA,,fastq,WGS Linked Reads,low-level-dna-detection,Linked reads (10x Genomics),1
+10x Genomics Single Cell ATAC Multiome,default DNA,,fastq,Single Cell DNA,dna-protein-interactions,single cell ATAC Multiome (10x Genomics),1
 10x Genomics Single Cell ATAC,default DNA,,fastq,Single Cell DNA,dna-protein-interactions,single cell ATAC (10x Genomics),1
 10x Genomics Single Cell CNV,default DNA,,fastq,Single Cell DNA,low-level-dna-detection,single cell DNA (10x Genomics),1
 10x Genomics Single Cell Feature Barcode,default RNA,FeatureBarcode,fastq,Single Cell RNA,low-level-rna-detection,single cell Feature Barcode (10x Genomics),1
+10x Genomics Single Cell RNA Multiome,default RNA,,fastq,Single Cell RNA,low-level-rna-detection,3 prime Multiome single cell RNASeq (10x Genomics),1
 10x Genomics Single Cell RNA,default RNA,,fastq,Single Cell RNA,low-level-rna-detection,3 prime or 5 prime single cell RNASeq (10x Genomics),1
 10x Genomics Single Cell V-D-J,default RNA,,fastq,Single Cell RNA,low-level-rna-detection,single cell v(D)J (10x Genomics),1
 10x Genomics Single Cell Visium Spatial RNA,default RNA,,fastq,Single Cell RNA,low-level-rna-detection,Single Cell spacial transcritomics (10x Genomics),1
+scRNA-Seq,default RNA no bwa,,fastq,scRNA-Seq,low-level-rna-detection,Single-Cell mRNA Sequencing,1
 16S Amplicon RNA,default RNA,,fastq,16S Amplicon RNA,low-level-rna-detection,16S Amplification,1
 18S Amplicon RNA,default RNA,,fastq,18S Amplicon RNA,low-level-rna-detection,18S Amplification,1
 Amplicon DNA,default DNA,,fastq,Amplicon DNA,low-level-dna-detection,Amplicon Panel from cDNA,1
 Amplicon RNA,default RNA,,fastq,Amplicon RNA,low-level-rna-detection,Amplicon Panel from DNA,1
 Panel,default DNA,,fastq,Panel,low-level-dna-detection,Generic Panel,1
+PIPseq,default DNA,PIPseq,fastq,PIP-Seq,low-level-rna-detection,Particle-templated instant partition sequencing (PIP-seq),1
+Nano CT,default DNA,,fastq,Single Cell DNA,dna-protein-interactions,Nano CUTandTAG,1
 VirusSeq,default RNA no bwa,,fastq,Amplicon RNA,,,0
 PCR-free MGI,default DNA,,bam,WGS,,,0
 Lucigen AmpFREE Low DNA 1.0,default DNA,,bam,WGS,,,0
@@ -166,7 +171,6 @@ PAIR,default RNA no bwa,,fastq,PAIR,low-level-rna-detection,Peptide Nucleic Acid
 Quartz-Seq,default RNA no bwa,,fastq,Quartz-Seq,low-level-rna-detection,Whole-Transcript Amplification for Single Cells,0
 scM&T-Seq,default RNA no bwa,,fastq,scM&T-Seq,low-level-rna-detection,Single-Cell Methylome and Transcriptome Sequencing,0
 SCRB-Seq,default RNA no bwa,,fastq,SCRB-Seq,low-level-rna-detection,Single-Cell RNA Barcoding and Sequencing,0
-scRNA-Seq,default RNA no bwa,,fastq,scRNA-Seq,low-level-rna-detection,Single-Cell mRNA Sequencing,0
 scTrio-seq,default RNA no bwa,,fastq,scTrio-seq,low-level-rna-detection,Single-Cell Triple Omics Sequencing,0
 SHARE-Seq_ATAC,default DNA no bwa,,fastq,SHARE-Seq_ATAC,low-level-rna-detection,Chromatin accessibility and gene expression in the same single cell,1
 SHARE-Seq_RNA,default RNA no bwa,,fastq,SHARE-Seq_RNA,low-level-rna-detection,Chromatin accessibility and gene expression in the same single cell,1
