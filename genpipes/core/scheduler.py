@@ -459,12 +459,14 @@ chmod 755 $COMMAND
 
                     cmd = """\
 echo "#!/bin/bash
+{prologue}
 rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
 {job2json_project_tracking_end}
 {fail_on_pattern1}
 if [ \\$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+{epilogue}
 exit \\$GenPipes_STATE" | \\
 """.format(
                         container_line=self.container_line,
@@ -472,7 +474,9 @@ exit \\$GenPipes_STATE" | \\
                         job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
                         step_wrapper=config_step_wrapper,
                         fail_on_pattern0=self.fail_on_pattern(job_name_prefix)[0],
-                        fail_on_pattern1=self.fail_on_pattern(job_name_prefix)[1]
+                        fail_on_pattern1=self.fail_on_pattern(job_name_prefix)[1],
+                        prologue=f"{os.path.dirname(os.path.abspath(__file__))}/prologue.py",
+                        epilogue=f"{os.path.dirname(os.path.abspath(__file__))}/epilogue.py"
                     )
                         #sleep_time=sleepTime
 
@@ -480,7 +484,7 @@ exit \\$GenPipes_STATE" | \\
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
                     job_name_prefix = job.name.split(".")[0]
                     cmd += \
-                        self.submit_cmd + f" -l prologue={os.path.dirname(os.path.abspath(__file__))}/prologue.py,epilogue={os.path.dirname(os.path.abspath(__file__))}/epilogue.py " + \
+                        self.submit_cmd + " " + \
                         global_conf.global_get(job_name_prefix, 'cluster_other_arg') + " " + \
                         global_conf.global_get(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
                         global_conf.global_get(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
