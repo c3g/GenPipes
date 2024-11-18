@@ -163,7 +163,7 @@ def md5sum(
     return Job(
         [input_file],
         [output],
-        command=f"md5sum {"-c " if check else ""}{input_file} > {output}"
+        command=f"""md5sum {"-c " if check else ""}{input_file} > {output}"""
     )
 
 def cat(
