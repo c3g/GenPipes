@@ -25,24 +25,24 @@ echo "   -l <N>                  Will retry N time to resubmit a chunk if error 
 
 get_n_jobs () {
   if [[ ${SCHEDULER} ==  'slurm' ]]; then
-    echo $(squeue -u $SHEDULER_USER -h -t pending,running | wc -l)
+    echo "$(squeue -u $SHEDULER_USER -h -t pending,running | wc -l)"
   elif [[ ${SCHEDULER} ==  'pbs' ]]; then
-    echo $(showq  -u $SHEDULER_USER  | grep $SHEDULER_USER  | wc -l )
+    echo "$(showq  -u $SHEDULER_USER  | grep $SHEDULER_USER  | wc -l )"
   fi
 }
 
 cancel_jobs () {
   echo ""
   job_list=$1
-  echo $job_list
-  echo cancel all jobs from ${job_list}
+  echo "$job_list"
+  echo "cancel all jobs from ${job_list}"
   if [[ ${SCHEDULER} ==  'slurm' ]]; then
     scancel $(cat ${job_list} | awk -F'=' '{print $2}')
   elif [[ ${SCHEDULER} ==  'pbs' ]]; then
     qdel $(cat ${job_list} | awk -F'=' '{print $2}')
   fi
   rm ${job_list}  2>/dev/null
-  echo canceled all jobs from ${job_list}
+  echo "canceled all jobs from ${job_list}"
 }
 
 cancel_trap () {
@@ -52,7 +52,7 @@ cancel_trap () {
 }
 
 submit () {
-  echo submitting $1
+  echo "submitting $1"
   job_script=${1}
   job_list=${job_script%.sh}.out
   for ((N=1;N<=RETRY;N++)); do
@@ -63,15 +63,15 @@ submit () {
     if [ ${ret_code} -eq 0 ]; then
       trap - SIGTERM
       touch ${job_list}
-      echo ${job_script} was sucessfully submitted
+      echo "${job_script} was sucessfully submitted"
       SUBMIT_RETCODE=0
       break
     else
       SUBMIT_RETCODE=1
-      echo error in submits
+      echo "error in submits"
       cancel_jobs ${job_list}
       sleep 1
-      echo resubmitting
+      echo "resubmitting"
     fi
   done
   if [[ ${SUBMIT_RETCODE} -eq 1 ]]; then
@@ -96,7 +96,7 @@ while getopts "hl:n:u:s:S:" opt; do
     S)
       SCHEDULER=${OPTARG}
       if [[ ${SCHEDULER} != 'slurm'  && ${SCHEDULER} != 'pbs' ]] ;then
-        echo only slurm and pbs scheduler are supported
+        echo "only slurm and pbs scheduler are supported"
         usage
         exit 1
       fi
@@ -128,7 +128,7 @@ fi
 chunk_folder=$(realpath "$1")
 
 if [ ! -d  ${chunk_folder} ]; then
-  echo ${chunk_folder} does not exist
+  echo "${chunk_folder} does not exist"
   exit 1
 fi
 # sourcing to get the value of GENPIPES_CHUNK_SIZE
@@ -138,9 +138,9 @@ set +e
 mkdir ${chunk_folder}/.lockdir 2>/dev/null
 ret_code=$?
 if [[ $ret_code -ne 0 ]] ; then
-  echo it seems that another $0 process is runnning
-  echo If you are sure that no other process in running, run "'rm -r ${chunk_folder}/.lockdir'"
-  echo and restart $0
+  echo "it seems that another $0 process is runnning"
+  echo "If you are sure that no other process in running, run 'rm -r ${chunk_folder}/.lockdir'"
+  echo "and restart $0"
   exit 1
 else
   trap "rm -rf $chunk_folder/.lockdir" EXIT
@@ -165,7 +165,7 @@ for sh_script in "${all_sh[@]}"; do
         touch ${done_script}
         break
       else
-          echo too many jobs, sleeping for $SLEEP_TIME sec
+          echo "too many jobs, sleeping for $SLEEP_TIME sec"
           sleep $SLEEP_TIME
       fi
     done
@@ -173,7 +173,7 @@ for sh_script in "${all_sh[@]}"; do
 done
 
 if [[ ${SUBMIT_RETCODE} -eq 0 ]]; then
-  echo All done, uploading usage statistics
+  echo "All done, uploading usage statistics"
   bash ${chunk_folder}/wget_call.sh
 else
   exit 1
