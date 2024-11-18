@@ -54,6 +54,7 @@ from bfx import (
     cpsr,
     deliverables,
     delly,
+    djerba,
     fastqc,
     gatk,
     gatk4,
@@ -7046,6 +7047,43 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 )
             )
         return jobs
+    
+    def report_djerba(self):
+        """
+        Produce Djerba report.
+        """
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            djerba_dir = os.path.join(self.output_dirs['report'], "djerba")
+            purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
+            purple_zip = os.path.join(djerba_dir, "purple.zip")
+            maf_input = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf") # may need maf output from a different pcgr version
+
+            config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
+            report_file = os.path.join(djerba_dir, tumor_pair.name + ".html")
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(djerba_dir),
+                        bash.zip(
+                            purple_dir,
+                            purple_zip,
+                            recursive=True
+                            ),
+                        djerba.make_config(config_file),
+                        djerba.report(
+                            config_file,
+                            djerba_dir,
+                            report_file
+                            )
+                        ]
+                    )
+                )
+
+
+        return jobs
 
     @property
     def steps(self):
@@ -7115,6 +7153,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.filter_ensemble_somatic, #35
                 self.report_cpsr,
                 self.report_pcgr,
+                self.report_djerba,
                 self.run_pair_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam, #40
