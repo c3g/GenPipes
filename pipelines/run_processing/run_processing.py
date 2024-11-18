@@ -1994,7 +1994,7 @@ class RunProcessing(common.MUGQICPipeline):
 
         jobs = []
         jobs.extend(self.checkmate_samplemixup_by_lane())
-        jobs.extend(self.checkmate_samplemixup_by_run())
+        #jobs.extend(self.checkmate_samplemixup_by_run())
         jobs.extend(self.split_N_trim())
         jobs.extend(self.sambamba_merge_splitNtrim_files())
         jobs.extend(self.bamixchecker_samplemixup_by_lane())
@@ -3760,6 +3760,7 @@ class RunProcessing(common.MUGQICPipeline):
                     },
                     "alignment": {
                         "chimeras": None,
+                        "median_aligned_insert_size": None,
                         "average_aligned_insert_size": None,
                         "pf_read_alignment_rate": None,
                         "freemix": None,
