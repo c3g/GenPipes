@@ -16,15 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-import json
+
 import logging
 import os
 import re
 import stat
 import sys
 import tempfile
-import textwrap
-from uuid import uuid4
 
 from .utils import expandvars, time_to_datetime
 
@@ -187,9 +185,9 @@ class Scheduler:
     def container_line(self):
         if self.container:
             if self.container.type == 'docker':
-                v_opt = ' -v {}:{}'.format(self.host_cvmfs_cache, self.cvmfs_cache)
+                v_opt = f' -v {self.host_cvmfs_cache}:{self.cvmfs_cache}'
                 for b in self.bind:
-                    v_opt += ' -v {0}:{0}'.format(b)
+                    v_opt += f' -v {b}:{b}'
                 network = " --network host"
                 user = " --user $UID:$GROUPS"
 
@@ -198,9 +196,9 @@ class Scheduler:
             elif self.container.type == 'singularity':
                 b_opt = f' -B {self.host_cvmfs_cache}:{self.cvmfs_cache}'
                 for b in self.bind:
-                    b_opt += ' -B {0}:{0}'.format(b)
+                    b_opt += f' -B {b}:{b}'
 
-                return (f"singularity run {b_opt} {self.container.name}   ")
+                return (f"singularity run {b_opt} {self.container.name} ")
 
             elif self.container.type == 'wrapper':
 
@@ -233,7 +231,13 @@ fi
 
 
 
-    def print_header(self, pipeline,shebang='/bin/bash'):
+    def print_header(self, pipeline, shebang='/bin/bash'):
+        """
+        Print the header of the GenPipes file
+        Args:
+            pipeline (Pipeline): Pipeline object
+            shebang (str): Shebang to use in the script
+        """
 
         self.genpipes_file.write("""#!{shebang}
 # Exit immediately on error
@@ -278,16 +282,30 @@ mkdir -p $OUTPUT_DIR
 
 
     def print_step(self, step):
-        self.genpipes_file.write("""
+        """
+        Print the step in the GenPipes file
+        Args:
+            step (Step): Step object
+        """
+        self.genpipes_file.write(f"""
 {separator_line}
 # STEP: {step.name}
 {separator_line}
 STEP={step.name}
 mkdir -p $JOB_OUTPUT_DIR/$STEP
-""".format(separator_line=separator_line, step=step)
+"""
                                  )
 
     def job2json_project_tracking(self, pipeline, job, job_status):
+        """
+        Generate the job2json_project_tracking command for the job
+        Args:
+            pipeline (Pipeline): Pipeline
+            job (Job): Job
+            job_status (str): Job status
+        Returns:
+            str: job2json_project_tracking command
+        """
         if not pipeline.project_tracking_json:
             return ""
 
@@ -310,7 +328,6 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
   -f {status}
 export PT_JSON_OUTFILE=\\"{json_outfile}\\" {command_separator}
 """.format(
-            module_python=global_conf.global_get('DEFAULT', 'module_python'),
             job2json_project_tracking_script="genpipes tools job2json_project_tracking",
             samples=",".join([sample.name for sample in job.samples]),
             readsets=",".join([readset.name for readset in job.readsets]),
@@ -340,7 +357,7 @@ class PBSScheduler(Scheduler):
         sec = int(time.seconds % 60)
         minutes = int(((time.seconds - sec) / 60) % 60)
         hours = int((time.seconds - sec - 60 * minutes) / 3600 + time.days * 24)
-        return '-l walltime={:02d}:{:02d}:{:02d}'.format(hours, minutes, sec)
+        return f'-l walltime={hours:02d}:{minutes:02d}:{sec:02d}'
 
     def dependency_arg(self, job_name_prefix):
         condition = super().dependency_arg(job_name_prefix)
@@ -441,14 +458,13 @@ chmod 755 $COMMAND
                     self.genpipes_file.flush()
 
                     cmd = """\
-echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
+echo "#!/bin/bash
+rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
 {job2json_project_tracking_end}
 {fail_on_pattern1}
-if [ \\$GenPipes_STATE -eq 0 ] ; then
-  touch $JOB_DONE ;
-fi
+if [ \\$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 exit \\$GenPipes_STATE" | \\
 """.format(
                         container_line=self.container_line,
@@ -464,7 +480,7 @@ exit \\$GenPipes_STATE" | \\
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
                     job_name_prefix = job.name.split(".")[0]
                     cmd += \
-                        self.submit_cmd + " " + \
+                        self.submit_cmd + f" -l prologue={os.path.dirname(os.path.abspath(__file__))}/prologue.py,epilogue={os.path.dirname(os.path.abspath(__file__))}/epilogue.py " + \
                         global_conf.global_get(job_name_prefix, 'cluster_other_arg') + " " + \
                         global_conf.global_get(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
                         global_conf.global_get(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
@@ -650,25 +666,13 @@ chmod 755 $COMMAND
                     self.genpipes_file.flush()
 
                     cmd = """\
-echo "#! /bin/bash
-echo '#######################################'
-echo 'SLURM FAKE PROLOGUE (GenPipes)'
-date
-scontrol show job \\$SLURM_JOBID
-sstat -j \\$SLURM_JOBID.batch
-echo '#######################################'
-rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
+echo "#!/bin/bash
+rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
 {job2json_project_tracking_end}
 {fail_on_pattern1}
 if [ \\$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
-echo '#######################################'
-echo 'SLURM FAKE EPILOGUE (GenPipes)'
-date
-scontrol show job \\$SLURM_JOBID
-sstat -j \\$SLURM_JOBID.batch
-echo '#######################################'
 exit \\$GenPipes_STATE" | \\
 """.format(
                         job=job,
@@ -684,7 +688,7 @@ exit \\$GenPipes_STATE" | \\
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
                     job_name_prefix = job.name.split(".")[0]
                     cmd += \
-                        self.submit_cmd + " " + \
+                        self.submit_cmd + f" --prolog={os.path.dirname(os.path.abspath(__file__))}/prologue.py --epilog={os.path.dirname(os.path.abspath(__file__))}/epilogue.py " + \
                         global_conf.global_get(job_name_prefix, 'cluster_other_arg') + " " + \
                         global_conf.global_get(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
                         global_conf.global_get(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
