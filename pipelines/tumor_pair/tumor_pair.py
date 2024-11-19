@@ -7053,11 +7053,17 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         Produce Djerba report.
         """
         jobs = []
-
+        ensemble_directory = os.path.join(
+            self.output_dirs['paired_variants_directory'],
+            "ensemble"
+            )
+        assembly = config.param('report_pcgr', 'assembly')
+        
         for tumor_pair in self.tumor_pairs.values():
-            djerba_dir = os.path.join(self.output_dirs['report'], "djerba")
+            djerba_dir = os.path.join(self.output_dirs['report'], "djerba", tumor_pair.name)
             purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
             purple_zip = os.path.join(djerba_dir, "purple.zip")
+            pcgr_directory = os.path.join(ensemble_directory, tumor_pair.name, "pcgr")
             maf_input = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf") # may need maf output from a different pcgr version
 
             config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
@@ -7072,7 +7078,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             purple_zip,
                             recursive=True
                             ),
-                        djerba.make_config(config_file),
+                        djerba.make_config(
+                            config_file,
+                            tumor_pair.name,
+                            tumor_pair.tumor.name,
+                            tumor_pair.normal.name,
+                            maf_input,
+                            purple_zip
+                            ),
                         djerba.report(
                             config_file,
                             djerba_dir,

@@ -24,7 +24,6 @@ from ..core.config import global_conf
 from ..core.job import Job
 
 def make_config(
-        djerba_dir, 
         output, 
         tumor_pair_name, 
         tumor_id, 
