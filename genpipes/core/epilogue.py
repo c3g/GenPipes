@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 import os
+import subprocess
+
+def get_slurm_job_info(job_id):
+    try:
+        result = subprocess.run(
+            ["sacct", "-j", job_id, "--format=JobID,JobName,Submit,Start,State,AllocCPUS,ReqMem,Elapsed,RestartCount"],
+            capture_output=True, text=True, check=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        print(f"Error retrieving job info: {e}")
+        return None
 
 def main():
     # Determine scheduler and set environment variables accordingly
@@ -17,18 +29,17 @@ def main():
     elif 'SLURM_JOB_ID' in os.environ:
         # SLURM Environment Variables
         job_id = os.getenv('SLURM_JOB_ID', 'Unknown')
-        job_state = os.getenv('SLURM_JOB_STATE', 'Unknown')
-        submit_time = os.getenv('SLURM_SUBMIT_TIME', 'Unknown')
-        start_time = os.getenv('SLURM_START_TIME', 'Unknown')
-        num_cpus = os.getenv('SLURM_CPUS_ON_NODE', 'Unknown')
-        mem = os.getenv('SLURM_MEM_PER_NODE', 'Unknown')
-        requeue = os.getenv('SLURM_REQUEUE', 'Unknown')
-        restarts = os.getenv('SLURM_RESTART_COUNT', 'Unknown')
-        runtime = os.getenv('SLURM_RUNTIME', 'Unknown')
+        job_info = get_slurm_job_info(job_id)
+        if job_info:
+            print("-" * 79)
+            print(f"Epilogue: Cleaning up environment for job {job_id}")
+            print(job_info)
+        return
     else:
         print("Unknown scheduler")
         return
 
+    print("-" * 79)
     print(f"Epilogue: Cleaning up environment for job {job_id}")
     print(f"Job State: {job_state}")
     print(f"Submit Time: {submit_time}")
