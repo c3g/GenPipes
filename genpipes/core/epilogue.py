@@ -5,7 +5,7 @@ import subprocess
 def get_slurm_job_info(job_id):
     try:
         result = subprocess.run(
-            ["sacct", "-j", job_id, "--format=JobID,JobName,Submit,Start,State,AllocCPUS,ReqMem,Elapsed,RestartCount"],
+            ["sacct", "-j", job_id, "--format=JobID,JobName,Submit,Start,State,AllocCPUS,ReqMem,Elapsed"],
             capture_output=True, text=True, check=True
         )
         return result.stdout
@@ -24,7 +24,6 @@ def main():
         num_cpus = os.getenv('PBS_NUM_PPN', 'Unknown')
         mem = os.getenv('PBS_MEM', 'Unknown')
         requeue = os.getenv('PBS_REQUEUE', 'Unknown')
-        restarts = os.getenv('PBS_RESTARTS', 'Unknown')
         runtime = os.getenv('PBS_RUNTIME', 'Unknown')
     elif 'SLURM_JOB_ID' in os.environ:
         # SLURM Environment Variables
@@ -47,7 +46,6 @@ def main():
     print(f"Number of CPUs: {num_cpus}")
     print(f"Memory: {mem}")
     print(f"Requeue: {requeue}")
-    print(f"Restarts: {restarts}")
     print(f"Runtime: {runtime}")
 
 if __name__ == "__main__":
