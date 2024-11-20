@@ -72,7 +72,7 @@ class Scheduler:
     @property
     def submit_cmd(self):
         if self._submit_cmd is None:
-            raise NotImplementedError('_submit_cmd needs to be implemented for {} class'.format(self.__class__))
+            raise NotImplementedError('submit_cmd needs to be implemented for {} class'.format(self.__class__))
         return self._submit_cmd
 
     def walltime(self, job_name_prefix):
@@ -432,8 +432,7 @@ class PBSScheduler(Scheduler):
                     job_name_prefix = job.name.split(".")[0]
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
-                    #sleepTime = random.randint(10, 100)
-                    self.genpipes_file.write("""
+                    self.genpipes_file.write(f"""\
 {separator_line}
 # JOB: {job.id}: {job.name}
 {separator_line}
@@ -442,69 +441,51 @@ JOB_NAME={job.name}
 JOB_DONE={job.done}
 JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
 JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
-COMMAND=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
-cat << '{limit_string}' > $COMMAND
-{job.command_with_modules}
-{limit_string}
-chmod 755 $COMMAND
-""".format(
-                            job=job,
-                            job_dependencies=job_dependencies,
-                            separator_line=separator_line,
-                            limit_string=os.path.basename(job.done)
-                        )
+SCIENTIFIC_FILE=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
+SUBMISSION_FILE=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.submit
+# Create the scientific file
+echo "{job.command_with_modules}" > $SCIENTIFIC_FILE
+chmod 755 $SCIENTIFIC_FILE
+"""
                     )
 
                     self.genpipes_file.flush()
 
-                    cmd = """\
+                    job_name_prefix = job.name.split(".")[0]
+                    if job.dependency_jobs:
+                        dependencies = f"#PBS {self.dependency_arg(job_name_prefix)} $JOB_DEPENDENCIES"
+                    else:
+                        dependencies = ""
+
+                    cmd = f"""\
+# Create the submission file
 echo "#!/bin/bash
-{prologue}
-rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
+#PBS {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
+#PBS -D $OUTPUT_DIR
+#PBS -o $JOB_OUTPUT
+#PBS -J $JOB_NAME
+#PBS {self.walltime(job_name_prefix)}
+#PBS {self.memory(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
+#PBS {self.cpu(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
+{dependencies}
+
+rm -f $JOB_DONE &&
+{self.job2json_project_tracking(pipeline, job, "RUNNING")}
+{config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
-{job2json_project_tracking_end}
-{fail_on_pattern1}
-if [ \\$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
-{epilogue}
-exit \\$GenPipes_STATE" | \\
-""".format(
-                        container_line=self.container_line,
-                        job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
-                        job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
-                        step_wrapper=config_step_wrapper,
-                        fail_on_pattern0=self.fail_on_pattern(job_name_prefix)[0],
-                        fail_on_pattern1=self.fail_on_pattern(job_name_prefix)[1],
-                        prologue=f"{os.path.dirname(os.path.abspath(__file__))}/prologue.py",
-                        epilogue=f"{os.path.dirname(os.path.abspath(__file__))}/epilogue.py"
-                    )
-                        #sleep_time=sleepTime
-
+{self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
+if [ \\$GenPipes_STATE -eq 0 ]; then
+    touch $JOB_DONE
+fi
+exit \\$GenPipes_STATE" > $SUBMISSION_FILE
+# Submit the job and get the job id
+{job.id}=$({self.submit_cmd} $SUBMISSION_FILE | awk '{{print $4}}')
+# Write job parameters in job list file
+echo "${job.id}\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST
+"""
                     # Cluster settings section must match job name prefix before first "."
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
-                    job_name_prefix = job.name.split(".")[0]
-                    cmd += \
-                        self.submit_cmd + " " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_other_arg') + " " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
-                        self.walltime(job_name_prefix) + " " + \
-                        self.memory(job_name_prefix, adapt=pipeline.force_mem_per_cpu) + " " + \
-                        self.cpu(job_name_prefix, adapt=pipeline.force_mem_per_cpu) + " " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_queue') + " "
-
-                    if job.dependency_jobs:
-                        cmd += " " + self.dependency_arg(job_name_prefix) + "$JOB_DEPENDENCIES"
-                    cmd += " " + global_conf.global_get(job_name_prefix, 'cluster_submit_cmd_suffix')
-
-                    if global_conf.global_get(job_name_prefix, 'cluster_cmd_produces_job_id'):
-                        cmd = job.id + "=$(" + cmd + ")"
-                    else:
-                        cmd += "\n" + job.id + "=" + job.name
-
-                    # Write job parameters in job list file
-                    cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
 
                     self.genpipes_file.write(cmd)
                     self.genpipes_file.flush()
@@ -594,10 +575,9 @@ class SlurmScheduler(Scheduler):
         gpu_type = self.gpu_type(job_name_prefix)
         if gpu_type and n_gpu:
             return f'--gres=gpu:{gpu_type}:{n_gpu}'
-        elif n_gpu:
+        if n_gpu:
             return f'--gres=gpu:{n_gpu}'
-        else:
-            return ''
+        return ''
 
     def dependency_arg(self, job_name_prefix):
         condition = super().dependency_arg(job_name_prefix)
@@ -646,7 +626,7 @@ class SlurmScheduler(Scheduler):
                     job_name_prefix = job.name.split(".")[0]
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
-                    self.genpipes_file.write("""
+                    self.genpipes_file.write(f"""\
 {separator_line}
 # JOB: {job.id}: {job.name}
 {separator_line}
@@ -655,74 +635,54 @@ JOB_NAME={job.name}
 JOB_DONE={job.done}
 JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
 JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
-COMMAND=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
-cat << '{limit_string}' > $COMMAND
-{job.command_with_modules}
-{limit_string}
-chmod 755 $COMMAND
-""".format(
-                            job=job,
-                            job_dependencies=job_dependencies,
-                            separator_line=separator_line,
-                            limit_string=os.path.basename(job.done)
+SCIENTIFIC_FILE=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
+SUBMISSION_FILE=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.submit
+# Create the scientific file
+echo "{job.command_with_modules}" > $SCIENTIFIC_FILE
+chmod 755 $SCIENTIFIC_FILE
+"""
                     )
-                        )
+
                     self.genpipes_file.flush()
 
-                    cmd = """\
+                    job_name_prefix = job.name.split(".")[0]
+                    if job.dependency_jobs:
+                        dependencies = f"#SBATCH {self.dependency_arg(job_name_prefix)} $JOB_DEPENDENCIES"
+                    else:
+                        dependencies = ""
+
+                    cmd = f"""\
+# Create the submission file
 echo "#!/bin/bash
-{prologue}
-rm -f $JOB_DONE && {job2json_project_tracking_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
+#SBATCH {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
+#SBATCH -D $OUTPUT_DIR
+#SBATCH -o $JOB_OUTPUT
+#SBATCH -J $JOB_NAME
+#SBATCH {self.walltime(job_name_prefix)}
+#SBATCH {self.memory(job_name_prefix)}
+#SBATCH {self.cpu(job_name_prefix)} {self.gpu(job_name_prefix)}
+{dependencies}
+
+rm -f $JOB_DONE &&
+{self.job2json_project_tracking(pipeline, job, "RUNNING")}
+srun --prolog={os.path.dirname(os.path.abspath(__file__))}/prologue.py --epilog={os.path.dirname(os.path.abspath(__file__))}/epilogue.py {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
-{job2json_project_tracking_end}
-{fail_on_pattern1}
-if [ \\$GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
-{epilogue}
-exit \\$GenPipes_STATE" | \\
-""".format(
-                        job=job,
-                        job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
-                        job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
-                        container_line=self.container_line,
-                        step_wrapper=config_step_wrapper,
-                        fail_on_pattern0=self.fail_on_pattern(job_name_prefix)[0],
-                        fail_on_pattern1=self.fail_on_pattern(job_name_prefix)[1],
-                        prologue=f"{os.path.dirname(os.path.abspath(__file__))}/prologue.py",
-                        epilogue=f"{os.path.dirname(os.path.abspath(__file__))}/epilogue.py"
-)
-
+{self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
+if [ \\$GenPipes_STATE -eq 0 ]; then
+    touch $JOB_DONE
+fi
+exit \\$GenPipes_STATE" > $SUBMISSION_FILE
+# Submit the job and get the job id
+{job.id}=$({self.submit_cmd} $SUBMISSION_FILE | awk '{{print $4}}')
+# Write job parameters in job list file
+echo "${job.id}\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST
+echo "Submitted job with ID: ${job.id}"
+# sleep to let the scheduler submiting the job correctly
+sleep 0.1
+"""
                     # Cluster settings section must match job name prefix before first "."
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
-                    job_name_prefix = job.name.split(".")[0]
-                    cmd += \
-                        self.submit_cmd + " " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_other_arg') + " " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
-                        self.walltime(job_name_prefix) + " " + \
-                        self.memory(job_name_prefix) + " " + \
-                        self.cpu(job_name_prefix) + " " + \
-                        self.node(job_name_prefix) + " " + \
-                        self.gpu(job_name_prefix) + " " + \
-                        global_conf.global_get(job_name_prefix, 'cluster_queue') + " "
-
-                    if job.dependency_jobs:
-                        cmd += " " + self.dependency_arg(job_name_prefix) + "$JOB_DEPENDENCIES"
-                    cmd += " " + global_conf.global_get(job_name_prefix, 'cluster_submit_cmd_suffix')
-
-                    if global_conf.global_get(job_name_prefix, 'cluster_cmd_produces_job_id'):
-                        cmd = job.id + "=$(" + cmd + ")"
-                    else:
-                        cmd += "\n" + job.id + "=" + job.name
-
-                    # Write job parameters in job list file
-                    cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
-
-                    cmd += "\necho \"$" + job.id + "\t$JOB_NAME submitted\""
-                    #add 0.2s sleep to let slurm submiting the job correctly
-                    cmd += "\nsleep 0.1\n"
 
                     self.genpipes_file.write(cmd)
                     self.genpipes_file.flush()
