@@ -18,7 +18,6 @@
 ################################################################################
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
@@ -176,8 +175,8 @@ export ONCOKB_TOKEN={oncokb_token} \\
         module_wkhtmltopdf=global_conf.global_get(ini_section, 'module_wkhtmltopdf'),
         oncokb_token=global_conf.global_get(ini_section, 'oncokb_token'),
         djerba_options=global_conf.global_get(ini_section, 'djerba_options', required=False),
-        config_file=os.path.abspath(config_file),
-        output_dir=os.path.abspath(output_dir),
+        config_file=config_file,
+        output_dir=output_dir,
         output_file=output_file
         )
     )
