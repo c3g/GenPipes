@@ -7062,34 +7062,54 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         for tumor_pair in self.tumor_pairs.values():
             djerba_dir = os.path.join(self.output_dirs['report'], "djerba", tumor_pair.name)
             purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
-            purple_zip = os.path.join(djerba_dir, "purple.zip")
-            pcgr_directory = os.path.join(ensemble_directory, tumor_pair.name, "pcgr")
-            maf_input = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf") # may need maf output from a different pcgr version
-
+            purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
+            
+            cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
+            input_cpsr = os.path.join(cpsr_directory, tumor_pair.name + ".cpsr." + assembly + ".json.gz")
+            input_vcf = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz")
+            pcgr_directory = os.path.join(djerba_dir, tumor_pair.name, "pcgr")
+            input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")
+            clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".clean.maf") # MAF from pcgr version 1.4.1 required, remove any empty t_depth lines, needs to be gzipped
+            
+            provenance_decoy = os.path.join(djerba_dir, "provenance_subset.tsv.gz")
             config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
-            report_file = os.path.join(djerba_dir, tumor_pair.name + ".html")
+            djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
 
             jobs.append(
                 concat_jobs(
                     [
                         bash.mkdir(djerba_dir),
+                        bash.mkdir(pcgr_directory),
+                        pcgr.report(
+                            input_vcf,
+                            input_cpsr,
+                            pcgr_directory,
+                            tumor_pair.name,
+                            ini_section='report_djerba'
+                            ),# add pcgr job to create MAF in correct format (1.4.1), remove chrM, gzip.
+                        djerba.clean_maf(
+                            input_maf,
+                            clean_maf
+                            ),
                         bash.zip(
                             purple_dir,
                             purple_zip,
                             recursive=True
                             ),
+                        bash.touch(provenance_decoy),
                         djerba.make_config(
                             config_file,
                             tumor_pair.name,
                             tumor_pair.tumor.name,
                             tumor_pair.normal.name,
-                            maf_input,
+                            clean_maf + ".gz",
                             purple_zip
                             ),
-                        djerba.report(
+                        # djerba report requires internet connection. Script is produced but must be executed locally.
+                        djerba.make_script(
                             config_file,
                             djerba_dir,
-                            report_file
+                            djerba_script
                             )
                         ]
                     )
@@ -7168,8 +7188,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.report_pcgr,
                 self.report_djerba,
                 self.run_pair_multiqc,
-                self.sym_link_fastq_pair,
-                self.sym_link_final_bam, #40
+                self.sym_link_fastq_pair, #40
+                self.sym_link_final_bam, 
                 self.sym_link_report,
                 self.sym_link_ensemble
             ],

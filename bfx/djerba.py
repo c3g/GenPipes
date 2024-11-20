@@ -18,20 +18,20 @@
 ################################################################################
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
 from ..core.job import Job
 
 def make_config(
-        output, 
-        tumor_pair_name, 
-        tumor_id, 
-        normal_id, 
-        maf_input, 
-        purple_input, 
-        assay="WGTS", 
-        cancer_type = None, 
+        output,
+        tumor_pair_name,
+        tumor_id,
+        normal_id,
+        maf_input,
+        purple_input,
+        assay="WGTS",
         ini_section = 'report_djerba'
         ):
 
@@ -60,15 +60,15 @@ sample_name_normal = None
 sample_name_aux = None
 project = {global_conf.global_get(ini_section, 'project_name')}
 donor = {tumor_pair_name}
-provenance_input_path = /lb/project/mugqic/projects/MoH_Djerba_development/mcj_test/MoHQ-GC-6-M009/test_provenance_input.tsv.gz
+provenance_input_path = provenance_input.tsv.gz
 
 [case_overview]
 assay = testing
 attributes = research
 assay_description = Whole Genome Sequencing - Tumor Pair Pipeline
-primary_cancer = {cancer_type if cancer_type else "Unknown"}
+primary_cancer = {global_conf.global_get(ini_section, 'cancer_type') if global_conf.global_get(ini_section, 'cancer_type') else "Unknown"}
 site_of_biopsy = Unknown
-study = MoH
+study = {global_conf.global_get(ini_section, 'project_name') if global_conf.global_get(ini_section, 'project_name') else "MoH"}
 patient_study_id = {tumor_pair_name}
 donor = {tumor_pair_name}
 tumour_id = {tumor_id}
@@ -82,30 +82,32 @@ depends_configure =
 render_priority = 50
 
 [wgts.snv_indel]
-apply cache = False
+apply cache = {global_conf.global_get(ini_section, 'apply_cache') if global_conf.global_get(ini_section, 'apply_cache') else "False"}
+update cache = {global_conf.global_get(ini_section, 'update_cache') if global_conf.global_get(ini_section, 'update_cache') else "False"}
+oncokb cache = {global_conf.global_get(ini_section, 'oncokb_cache') if global_conf.global_get(ini_section, 'oncokb_cache') else ""}
 attributes = research
 configure_priority = 700
 depends_configure = 
 depends_extract = 
 extract_priority = 800
-oncokb cache = /lb/project/mugqic/projects/MoH_Djerba_development/mcj_test/cache
 render_priority = 700
-update cache = False
 maf_path = {maf_input}
-oncotree_code = {cancer_type if cancer_type else ""}
+oncotree_code = {global_conf.global_get(ini_section, 'cancer_type') if global_conf.global_get(ini_section, 'cancer_type') else ""}
 tumour_id = {tumor_id}
 normal_id = {normal_id}
 whizbam_project = COL
 
 [wgts.cnv_purple]
+apply cache = {global_conf.global_get(ini_section, 'apply_cache') if global_conf.global_get(ini_section, 'apply_cache') else "False"}
+update cache = {global_conf.global_get(ini_section, 'update_cache') if global_conf.global_get(ini_section, 'update_cache') else "False"}
+oncokb cache = {global_conf.global_get(ini_section, 'oncokb_cache') if global_conf.global_get(ini_section, 'oncokb_cache') else ""}
 attributes = research
 configure_priority = 900
 tumour_id = {tumor_id}
-oncotree_code = {cancer_type if cancer_type else ""}
+oncotree_code = {global_conf.global_get(ini_section, 'cancer_type') if global_conf.global_get(ini_section, 'cancer_type') else ""}
 purple_zip = {purple_input}
 whizbam_project=OCTCAP
 assay = {assay}
-oncokb cache = /lb/project/mugqic/projects/MoH_Djerba_development/mcj_test/cache
 
 [gene_information_merger]
 attributes = research,supplementary
@@ -132,25 +134,50 @@ echo \"{config_content}\" > {config_file}""".format(
         )
     )
 
-def report(
+def clean_maf(
+        input_maf,
+        output_maf
+        ):
+    
+    output = [output_maf + ".gz"]
+    return Job(
+        [input_maf],
+        [output],
+        [],
+        command="""\
+col=\\$( awk -v RS='\t' '/t_depth/{{print NR; exit}}' {input_maf} ) && \\
+awk -F'\t' -v col=\\$col '! ( \\$col=="" )' {input_maf} > {output_maf} && \\
+gzip {output_maf}""".format(
+        input_maf=input_maf,
+        output_maf=output_maf
+        )
+    )
+
+def make_script(
         config_file,
         output_dir,
-        report_file,
+        output_file,
         ini_section = 'report_djerba'
         ):
     
     return Job(
         [config_file],
-        [report_file],
-        [
-            [ini_section, 'module_djerba']
-        ],
+        [output_file],
+        [],
         command="""\
-djerba.py -d report \\
+echo "module purge && module load {module_djerba} {module_wkhtmltopdf} && \\
+export ONCOKB_TOKEN={oncokb_token} \\
+
+\\${DJERBA_BIN}/djerba.py {djerba_options} report \\
     -i {config_file} \\
     -o {output_dir} \\
-    -p --no-archive""".format(
-        config_file=config_file,
-        output_dir=output_dir
+    -p --no-archive" > {output_file}""".format(
+        module_djerba=global_conf.global_get(ini_section, 'module_djerba'),
+        module_wkhtmltopdf=global_conf.global_get(ini_section, 'module_wkhtmltopdf'),
+        oncokb_token=global_conf.global_get(ini_section, 'oncokb_token'),
+        djerba_options=global_conf.global_get(ini_section, 'djerba_options', required=False),
+        config_file=os.path.abspath(config_file),
+        output_dir=os.path.abspath(output_dir),
+        output_file=output_file
         )
     )
