@@ -617,9 +617,9 @@ class SlurmScheduler(Scheduler):
                         # Chunk JOB_DEPENDENCIES on multiple lines to avoid lines too long
                         max_dependencies_per_line = 50
                         dependency_chunks = [job.dependency_jobs[i:i + max_dependencies_per_line] for i in range(0, len(job.dependency_jobs), max_dependencies_per_line)]
-                        job_dependencies = "JOB_DEPENDENCIES=" + ":".join(["$" + dependency_job.id for dependency_job in dependency_chunks[0]])
+                        job_dependencies = f"""JOB_DEPENDENCIES={":".join([f"${dependency_job.id}" for dependency_job in dependency_chunks[0]])}"""
                         for dependency_chunk in dependency_chunks[1:]:
-                            job_dependencies += "\nJOB_DEPENDENCIES=$JOB_DEPENDENCIES:" + ":".join(["$" + dependency_job.id for dependency_job in dependency_chunk])
+                            job_dependencies += f"""\nJOB_DEPENDENCIES=$JOB_DEPENDENCIES:{":".join([f"${dependency_job.id}" for dependency_job in dependency_chunks])}"""
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
@@ -649,7 +649,7 @@ chmod 755 $SCIENTIFIC_FILE
 
                     job_name_prefix = job.name.split(".")[0]
                     if job.dependency_jobs:
-                        dependencies = f"#SBATCH {self.dependency_arg(job_name_prefix)} $JOB_DEPENDENCIES"
+                        dependencies = f"#SBATCH {self.dependency_arg(job_name_prefix)}$JOB_DEPENDENCIES"
                     else:
                         dependencies = ""
 
