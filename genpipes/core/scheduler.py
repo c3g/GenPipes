@@ -638,7 +638,7 @@ JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
 SCIENTIFIC_FILE=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
 SUBMISSION_FILE=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.submit
 # Create the scientific file {os.path.basename(job.done)} is used as EOF marker to avoid issues with special characters like $ in the command
-cat << '{os.path.basename(job.done)}' > SCIENTIFIC_FILE
+cat << '{os.path.basename(job.done)}' > $SCIENTIFIC_FILE
 {job.command_with_modules}
 {os.path.basename(job.done)}
 chmod 755 $SCIENTIFIC_FILE
