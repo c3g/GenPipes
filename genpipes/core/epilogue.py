@@ -14,7 +14,6 @@ def get_slurm_job_info(job_id):
             ["sacct", "-j", job_id, "--format=JobID,JobName,Submit,Start,State,AllocCPUS,ReqMem,Elapsed", "--noheader"],
             capture_output=True, text=True, check=True
         )
-        logging.info("Job info fetched successfully")
         return result.stdout
     except subprocess.CalledProcessError as e:
         logging.error(f"Error retrieving job info: {e}")
@@ -36,19 +35,28 @@ def parse_job_info(job_info):
         job_details['Elapsed'] = details[7]
     return job_details
 
+def wait_for_job_completion(job_id):
+    while True:
+        job_info = get_slurm_job_info(job_id)
+        if job_info:
+            job_details = parse_job_info(job_info)
+            state = job_details.get('State', 'Unknown')
+            logging.info(f"Current Job State: {state}")
+            if state not in ['RUNNING', 'PENDING']:
+                break
+        time.sleep(5)  # Check every 5 seconds
+
 def main():
     if 'SLURM_JOB_ID' in os.environ:
         job_id = os.getenv('SLURM_JOB_ID', 'Unknown')
-        logging.info(f"SLURM_JOB_ID: {job_id}")
 
-        # Adding a delay to ensure job status is updated
-        time.sleep(5)
+        wait_for_job_completion(job_id)
 
         job_info = get_slurm_job_info(job_id)
         if job_info:
             job_details = parse_job_info(job_info)
-            logging.info("-" * 79)
-            logging.info(f"Epilogue: Cleaning up environment for job {job_id}")
+            print()
+            logging.info(f"GenPipes Epilogue job {job_id}")
             logging.info(f"Job State: {job_details.get('State', 'Unknown')}")
             logging.info(f"Submit Time: {job_details.get('Submit', 'Unknown')}")
             logging.info(f"Start Time: {job_details.get('Start', 'Unknown')}")
