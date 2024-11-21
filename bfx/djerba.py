@@ -67,7 +67,7 @@ attributes = research
 assay_description = Whole Genome Sequencing - Tumor Pair Pipeline
 primary_cancer = {config.param(ini_section, 'cancer_type') if config.param(ini_section, 'cancer_type') else "Unknown"}
 site_of_biopsy = Unknown
-study = {config.param(ini_section, 'project_name') if config.param(ini_section, 'project_name') else "MoH"}
+study = {config.param(ini_section, 'project_name', required = False) if config.param(ini_section, 'project_name') else "MoH"}
 patient_study_id = {tumor_pair_name}
 donor = {tumor_pair_name}
 tumour_id = {tumor_id}
