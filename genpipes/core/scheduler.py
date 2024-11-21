@@ -656,7 +656,6 @@ chmod 755 $SCIENTIFIC_FILE
                     cmd = f"""\
 # Create the submission file
 echo "#!/bin/bash
-#SBATCH --signal=B:SIGUSR1@60
 #SBATCH {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
 #SBATCH -D $OUTPUT_DIR
 #SBATCH -o $JOB_OUTPUT
@@ -666,16 +665,10 @@ echo "#!/bin/bash
 #SBATCH {self.cpu(job_name_prefix)} {self.gpu(job_name_prefix)}
 {dependencies}
 
-function handle_signal {{
-    {os.path.dirname(os.path.abspath(__file__))}/epilogue.py
-}}
-# Trap the signal
-trap 'handle_signal' SIGUSR1
-
-rm -f $JOB_DONE &&
+{os.path.dirname(os.path.abspath(__file__))}/prologue.py
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
-srun --prolog={os.path.dirname(os.path.abspath(__file__))}/prologue.py {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE &
-wait
+srun {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
+{os.path.dirname(os.path.abspath(__file__))}/epilogue.py
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
 {self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
