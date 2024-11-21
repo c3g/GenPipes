@@ -36,6 +36,7 @@ from bfx import cellranger
 from bfx import tools
 from bfx import bash_cmd as bash
 from bfx import samtools
+from bfx import sortmerna
 
 import logging
 log = logging.getLogger(__name__)
@@ -357,7 +358,7 @@ class RNARunProcessingAligner(RunProcessingAligner):
     def get_metrics_jobs(self, readset):
         jobs = []
         jobs += self.verify_bam_id(readset) + self._rnaseqc(readset) + self._picard_rna_metrics(readset) + \
-                self._estimate_ribosomal_rna(readset, self.platform)
+                self._estimate_ribosomal_rna(readset, self.platform) + self._sortmerna(readset)
         return jobs
 
     @staticmethod
@@ -492,6 +493,43 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
             )
 
             jobs.append(job)
+
+        return jobs
+    
+    @staticmethod
+    def _sortmerna(readset):
+        """
+        Calculation of ribosomal RNA per read based on known ribosomal sequences from archea, bacteria and eukaryotes.
+        Using [sortmeRNA] (https://github.com/sortmerna/sortmerna)
+
+        Taking trimmed fastqs and reporting on each read, either paired-end or single end.
+        """
+
+        jobs = []
+
+        lane_directory = os.path.dirname(os.path.dirname(os.path.dirname(readset.fastq1)))
+        output_directory = os.path.join(lane_directory, "Sortmerna")
+        sample_output_directory = os.path.join(output_directory, readset.sample.name + "_" + readset.library)
+        index_directory = os.path.join(output_directory, "idx-dir")
+
+        job = concat_jobs(
+            [
+                bash.mkdir(index_directory),
+                bash.rm(sample_output_directory),
+                bash.mkdir(sample_output_directory),
+                sortmerna.run(
+                    readset.fastq1,
+                    readset.fastq2,
+                    output_directory,
+                    sample_output_directory,
+                    readset.name
+                )
+            ],
+            name="sortmerna." + readset.name + ".sortmerna." + readset.run + "." + readset.lane,
+            samples=[readset.sample],
+            report_files=[os.path.join(sample_output_directory, readset.name + ".aligned.log")],
+        )
+        jobs.append(job)
 
         return jobs
 
