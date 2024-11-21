@@ -7060,7 +7060,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         assembly = config.param('report_pcgr', 'assembly')
         
         for tumor_pair in self.tumor_pairs.values():
-            djerba_dir = os.path.join(self.output_dirs['report'], "djerba", tumor_pair.name)
+            djerba_dir = os.path.join(self.output_dirs['report'][tumor_pair.name], "djerba")
             purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
             purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
             
