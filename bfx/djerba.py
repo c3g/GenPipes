@@ -167,7 +167,7 @@ def make_script(
 echo "module purge && module load {module_djerba} {module_wkhtmltopdf} && \\
 export ONCOKB_TOKEN={oncokb_token} \\
 
-\\${DJERBA_BIN}/djerba.py {djerba_options} report \\
+djerba.py {djerba_options} report \\
     -i {config_file} \\
     -o {output_dir} \\
     -p --no-archive" > {output_file}""".format(
