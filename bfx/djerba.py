@@ -57,7 +57,7 @@ normal_id = {normal_id}
 sample_name_tumour = None
 sample_name_normal = None
 sample_name_aux = None
-project = {config.param(ini_section, 'project_name')}
+project = {config.param(ini_section, 'project_name', required = False)}
 donor = {tumor_pair_name}
 provenance_input_path = provenance_input.tsv.gz
 
@@ -65,7 +65,7 @@ provenance_input_path = provenance_input.tsv.gz
 assay = testing
 attributes = research
 assay_description = Whole Genome Sequencing - Tumor Pair Pipeline
-primary_cancer = {config.param(ini_section, 'cancer_type') if config.param(ini_section, 'cancer_type') else "Unknown"}
+primary_cancer = {config.param(ini_section, 'cancer_type', required = False) if config.param(ini_section, 'cancer_type', required = False) else "Unknown"}
 site_of_biopsy = Unknown
 study = {config.param(ini_section, 'project_name', required = False) if config.param(ini_section, 'project_name', required = False) else "MoH"}
 patient_study_id = {tumor_pair_name}
@@ -81,9 +81,9 @@ depends_configure =
 render_priority = 50
 
 [wgts.snv_indel]
-apply cache = {config.param(ini_section, 'apply_cache') if config.param(ini_section, 'apply_cache') else "False"}
-update cache = {config.param(ini_section, 'update_cache') if config.param(ini_section, 'update_cache') else "False"}
-oncokb cache = {config.param(ini_section, 'oncokb_cache') if config.param(ini_section, 'oncokb_cache') else ""}
+apply cache = {config.param(ini_section, 'apply_cache', required = False) if config.param(ini_section, 'apply_cache', required = False) else "False"}
+update cache = {config.param(ini_section, 'update_cache', required = False) if config.param(ini_section, 'update_cache', required = False) else "False"}
+oncokb cache = {config.param(ini_section, 'oncokb_cache', required = False) if config.param(ini_section, 'oncokb_cache', required = False) else ""}
 attributes = research
 configure_priority = 700
 depends_configure = 
@@ -91,19 +91,19 @@ depends_extract =
 extract_priority = 800
 render_priority = 700
 maf_path = {maf_input}
-oncotree_code = {config.param(ini_section, 'cancer_type') if config.param(ini_section, 'cancer_type') else ""}
+oncotree_code = {config.param(ini_section, 'cancer_type', required = False) if config.param(ini_section, 'cancer_type', required = False) else ""}
 tumour_id = {tumor_id}
 normal_id = {normal_id}
 whizbam_project = COL
 
 [wgts.cnv_purple]
-apply cache = {config.param(ini_section, 'apply_cache') if config.param(ini_section, 'apply_cache') else "False"}
-update cache = {config.param(ini_section, 'update_cache') if config.param(ini_section, 'update_cache') else "False"}
-oncokb cache = {config.param(ini_section, 'oncokb_cache') if config.param(ini_section, 'oncokb_cache') else ""}
+apply cache = {config.param(ini_section, 'apply_cache', required = False) if config.param(ini_section, 'apply_cache', required = False) else "False"}
+update cache = {config.param(ini_section, 'update_cache', required = False) if config.param(ini_section, 'update_cache', required = False) else "False"}
+oncokb cache = {config.param(ini_section, 'oncokb_cache', required = False) if config.param(ini_section, 'oncokb_cache', required = False) else ""}
 attributes = research
 configure_priority = 900
 tumour_id = {tumor_id}
-oncotree_code = {config.param(ini_section, 'cancer_type') if config.param(ini_section, 'cancer_type') else ""}
+oncotree_code = {config.param(ini_section, 'cancer_type', required = False) if config.param(ini_section, 'cancer_type', required = False) else ""}
 purple_zip = {purple_input}
 whizbam_project=OCTCAP
 assay = {assay}
@@ -122,7 +122,7 @@ depends_extract =
 configure_priority = 1200
 extract_priority = 1200
 render_priority = 1200
-{"custom_template_dir = " + config.param(ini_section, 'custom_template_dir') if config.param(ini_section, 'custom_template_dir') else ""}
+{"custom_template_dir = " + config.param(ini_section, 'custom_template_dir', required = False) if config.param(ini_section, 'custom_template_dir', required = False) else ""}
 """
     return Job(
         output_files = [output],
