@@ -674,7 +674,7 @@ trap 'handle_signal' SIGUSR1
 
 rm -f $JOB_DONE &&
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
-srun $SCIENTIFIC_FILE &
+srun --prolog={os.path.dirname(os.path.abspath(__file__))}/prologue.py {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE &
 wait
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
