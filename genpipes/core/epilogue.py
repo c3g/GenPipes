@@ -20,6 +20,7 @@ def get_slurm_job_info(job_id):
         return None
 
 def parse_job_info(job_info):
+    print(job_info)
     lines = job_info.strip().split('\n')
     job_details = {}
     if lines:
