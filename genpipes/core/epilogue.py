@@ -5,7 +5,7 @@ import time
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - EPILOGUE - %(message)s')
 
 def get_slurm_job_info(job_id):
     try:
@@ -42,7 +42,7 @@ def main():
         job_info = get_slurm_job_info(job_id)
         if job_info:
             job_details = parse_job_info(job_info)
-            print()
+            print("\n")
             logging.info(f"GenPipes Epilogue job {job_id}")
             logging.info(f"Job State: {job_details.get('State', 'Unknown')}")
             logging.info(f"Submit Time: {job_details.get('Submit', 'Unknown')}")
