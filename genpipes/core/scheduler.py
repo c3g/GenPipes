@@ -667,7 +667,7 @@ echo "#!/bin/bash
 
 rm -f $JOB_DONE &&
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
-srun --prolog={os.path.dirname(os.path.abspath(__file__))}/prologue.py --epilog={os.path.dirname(os.path.abspath(__file__))}/epilogue.py {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
+srun --task-prolog={os.path.dirname(os.path.abspath(__file__))}/prologue.py --task-epilog={os.path.dirname(os.path.abspath(__file__))}/epilogue.py {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
 {self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
