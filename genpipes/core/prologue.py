@@ -72,7 +72,7 @@ def main():
     logging.info(f"Number of CPUs: {num_cpus}")
     logging.info(f"Memory: {mem}")
     logging.info(f"Runtime: {runtime}")
-    logging.info("-" * 79)
+    print()
 
 if __name__ == "__main__":
     main()
