@@ -4,7 +4,7 @@ import subprocess
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - PROLOGUE - %(message)s')
 
 def get_slurm_job_info(job_id):
     try:
@@ -72,7 +72,7 @@ def main():
     logging.info(f"Number of CPUs: {num_cpus}")
     logging.info(f"Memory: {mem}")
     logging.info(f"Runtime: {runtime}")
-    print()
+    print("\n")
 
 if __name__ == "__main__":
     main()
