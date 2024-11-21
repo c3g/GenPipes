@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 import os
 import subprocess
-import time
 import logging
+from datetime import datetime
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - EPILOGUE - %(message)s')
+logging.basicConfig(level=logging.INFO, format='EPILOGUE - %(message)s')
 
 def get_slurm_job_info(job_id):
     try:
         logging.info(f"Fetching job info for job ID: {job_id}")
         result = subprocess.run(
-            ["sacct", "-j", job_id, "--format=JobID,JobName,Submit,Start,State,AllocCPUS,ReqMem,Elapsed", "--noheader"],
+            ["sacct", "-j", f"{job_id}", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,AveCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite", "--noheader"],
             capture_output=True, text=True, check=True
         )
         return result.stdout
@@ -19,44 +19,191 @@ def get_slurm_job_info(job_id):
         logging.error(f"Error retrieving job info: {e}")
         return None
 
-def parse_job_info(job_info):
-    print(job_info)
+def parse_slurm_job_info(job_info, job_id):
     lines = job_info.strip().split('\n')
     job_details = {}
     if lines:
-        # Assuming the first line contains the job details
-        details = lines[0].split()
-        job_details['JobID'] = details[0]
-        job_details['JobName'] = details[1]
-        job_details['Submit'] = details[2]
-        job_details['Start'] = details[3]
-        job_details['State'] = details[4]
-        job_details['AllocCPUS'] = details[5]
-        job_details['ReqMem'] = details[6]
-        job_details['Elapsed'] = details[7]
+        # Extracting from the first line
+        first_line_details = lines[0].split()
+        job_details['JobID'] = first_line_details[0]
+        job_details['JobName'] = first_line_details[1]
+        job_details['User'] = first_line_details[2]
+        job_details['NodeList'] = first_line_details[3]
+        job_details['Priority'] = first_line_details[4]
+        job_details['Submit'] = first_line_details[5]
+        job_details['Eligible'] = first_line_details[6]
+        job_details['Timelimit'] = first_line_details[7]
+        job_details['ReqCPUS'] = first_line_details[8]
+        job_details['ReqMem'] = first_line_details[9]
+
+        # Extracting from the third line (line starting with ${JOBID}.0)
+        for line in lines:
+            if line.startswith(f"{job_id}.0"):
+                third_line_details = line.split()
+                job_details['State'] = third_line_details[10]
+                job_details['Start'] = third_line_details[11]
+                job_details['End'] = third_line_details[12]
+                job_details['Elapsed'] = third_line_details[13]
+                job_details['AveCPU'] = third_line_details[14]
+                job_details['AveMem'] = third_line_details[15]
+                job_details['MaxMem'] = third_line_details[16]
+                job_details['AveDiskRead'] = third_line_details[17]
+                job_details['MaxDiskRead'] = third_line_details[18]
+                job_details['AveDiskWrite'] = third_line_details[19]
+                job_details['MaxDiskWrite'] = third_line_details[20]
+                break
     return job_details
 
-def main():
-    if 'SLURM_JOB_ID' in os.environ:
-        job_id = os.getenv('SLURM_JOB_ID', 'Unknown')
+def get_pbs_job_info(job_id):
+    try:
+        logging.info(f"Fetching PBS job info for job ID: {job_id}")
+        result = subprocess.run(
+            ["qstat", "-f", f"{job_id}"],
+            capture_output=True, text=True, check=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error retrieving PBS job info: {e}")
+        return None
 
-        job_info = get_slurm_job_info(job_id)
-        if job_info:
-            job_details = parse_job_info(job_info)
-            print("\n")
-            logging.info(f"GenPipes Epilogue job {job_id}")
-            logging.info(f"Job State: {job_details.get('State', 'Unknown')}")
-            logging.info(f"Submit Time: {job_details.get('Submit', 'Unknown')}")
-            logging.info(f"Start Time: {job_details.get('Start', 'Unknown')}")
-            logging.info(f"Number of CPUs: {job_details.get('AllocCPUS', 'Unknown')}")
-            logging.info(f"Memory: {job_details.get('ReqMem', 'Unknown')}")
-            logging.info(f"Runtime: {job_details.get('Elapsed', 'Unknown')}")
-        else:
-            logging.error(f"Failed to retrieve job info for job {job_id}")
-        return
-    else:
+def parse_pbs_job_info(job_info):
+    job_details = {}
+    lines = job_info.strip().split('\n')
+    for line in lines:
+        if '=' in line:
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip()
+            if key == 'Job Id':
+                job_details['JobID'] = value
+            elif key == 'Job_Name':
+                job_details['JobName'] = value
+            elif key == 'Job_Owner':
+                job_details['User'] = value.split('@')[0]
+            elif key == 'exec_host':
+                job_details['NodeList'] = value
+            elif key == 'Priority':
+                job_details['Priority'] = value
+            elif key == 'qtime':
+                job_details['Submit'] = value
+            elif key == 'etime':
+                job_details['Eligible'] = value
+            elif key == 'Resource_List.walltime':
+                job_details['Timelimit'] = value
+            elif key == 'Resource_List.ncpus':
+                job_details['ReqCPUS'] = value
+            elif key == 'Resource_List.mem':
+                job_details['ReqMem'] = value
+            elif key == 'job_state':
+                job_details['State'] = value
+            elif key == 'start_time':
+                job_details['Start'] = value
+            elif key == 'comp_time':
+                job_details['End'] = value
+            elif key == 'resources_used.walltime':
+                job_details['Elapsed'] = value
+            elif key == 'resources_used.cput':
+                job_details['AveCPU'] = value
+            elif key == 'resources_used.mem':
+                job_details['AveMem'] = value
+            elif key == 'resources_used.vmem':
+                job_details['MaxMem'] = value
+            elif key == 'resources_used.read_bytes':
+                job_details['AveDiskRead'] = value
+            elif key == 'resources_used.write_bytes':
+                job_details['AveDiskWrite'] = value
+    return job_details
+
+def calculate_time_difference(start_time, end_time):
+    start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S")
+    end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S")
+    delta = end_dt - start_dt
+    days = delta.days
+    hours, remainder = divmod(delta.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{days:02}:{hours:02}:{minutes:02}:{seconds:02}"
+
+def calculate_time_efficency(elapsed, timelimit):
+    elapsed_seconds = sum(int(x) * 60 ** i for i, x in enumerate(reversed(elapsed.split(':'))))
+    timelimit_seconds = sum(int(x) * 60 ** i for i, x in enumerate(reversed(timelimit.split(':'))))
+    return 100 * elapsed_seconds / timelimit_seconds if timelimit_seconds > 0 else 0
+
+def calculate_percentage(used, requested):
+    return (used / requested * 100) if requested > 0 else 0
+
+def convert_memory_to_gb(memory_str):
+    if memory_str.endswith('K'):
+        return float(memory_str[:-1]) / (1024 ** 2)
+    elif memory_str.endswith('M'):
+        return float(memory_str[:-1]) / 1024
+    elif memory_str.endswith('G'):
+        return float(memory_str[:-1])
+    elif memory_str.endswith('T'):
+        return float(memory_str[:-1]) * 1024
+    return float(memory_str)
+
+def main():
+    job_id = os.getenv('SLURM_JOB_ID') or os.getenv('PBS_JOBID')
+    if not job_id:
         logging.error("Unknown scheduler")
         return
+
+    if 'SLURM_JOB_ID' in os.environ:
+        job_info = get_slurm_job_info(job_id)
+        if job_info:
+            job_details = parse_slurm_job_info(job_info, job_id)
+        else:
+            logging.error(f"Failed to retrieve job info for job {job_id}")
+            return
+    elif 'PBS_JOBID' in os.environ:
+        job_info = get_pbs_job_info(job_id)
+        if job_info:
+            job_details = parse_pbs_job_info(job_info)
+        else:
+            logging.error(f"Failed to retrieve job info for job {job_id}")
+            return
+
+    # Calculate time spent in queue format DD:HH:MM:SS
+    time_in_queue = calculate_time_difference(job_details['Submit'], job_details['Start'])
+    # Calculate time efficency between walltime and time used
+    time_efficency = calculate_time_efficency(job_details['Elapsed'], job_details['Timelimit'])
+    # Convert memory to GB
+    req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
+    ave_mem_gb = convert_memory_to_gb(job_details['AveMem'])
+    max_mem_gb = convert_memory_to_gb(job_details['MaxMem'])
+    # Calculate percentages for CPU and memory usage
+    req_cpus = float(job_details.get('ReqCPUS', 0))
+    ave_cpu = float(job_details.get('AveCPU', 0))
+    cpu_usage_percentage = calculate_percentage(ave_cpu, req_cpus)
+    mem_usage_percentage = calculate_percentage(ave_mem_gb, req_mem_gb)
+
+    print("-" * 90)
+    logging.info(f"GenPipes Epilogue for job {job_id}")
+    logging.info(f"Job name: {job_details.get('JobName', 'Unknown')}")
+    logging.info(f"User: {job_details.get('User', 'Unknown')}")
+    logging.info(f"Node(s): {job_details.get('NodeList', 'Unknown')}")
+    logging.info(f"Priority: {job_details.get('Priority', 'Unknown')}")
+    logging.info(f"Status: {job_details.get('State', 'Unknown')}")
+    logging.info(f"Submit Time: {job_details.get('Submit', 'Unknown')}")
+    logging.info(f"Eligible Time: {job_details.get('Eligible', 'Unknown')}")
+    logging.info(f"Start Time: {job_details.get('Start', 'Unknown')}")
+    logging.info(f"Time Spent in Queue (DD:HH:MM:SS): {time_in_queue}")
+    logging.info(f"End Time: {job_details.get('End', 'Unknown')}")
+    logging.info(f"Runtime: {job_details.get('Elapsed', 'Unknown')}")
+    logging.info(f"Time Limit: {job_details.get('Timelimit', 'Unknown')}")
+    logging.info(f"Time efficiency (Percentage of Walltime to Time used): {time_efficency:.1f}")
+    logging.info(f"Number of CPU(s) requested: {job_details.get('ReqCPUS', 'Unknown')}")
+    logging.info(f"Average CPU usage: {job_details.get('AveCPU', 'Unknown')}")
+    logging.info(f"CPU efficiency (Percentage of CPU requested to CPU used): {cpu_usage_percentage:.1f}")
+    logging.info(f"Memory Requested: {req_mem_gb:.2f} GB")
+    logging.info(f"Average memory usage: {ave_mem_gb:.2f} GB")
+    logging.info(f"Max memory usage: {max_mem_gb:.2f} GB")
+    logging.info(f"Memory efficiency (Percentage of Memory requested to Memory used in average): {mem_usage_percentage:.1f}")
+    logging.info(f"Average Disk Read: {job_details.get('AveDiskRead', 'Unknown')}")
+    logging.info(f"Max Disk Read: {job_details.get('MaxDiskRead', 'Unknown')}")
+    logging.info(f"Average Disk Write: {job_details.get('AveDiskWrite', 'Unknown')}")
+    logging.info(f"Max Disk Write: {job_details.get('MaxDiskWrite', 'Unknown')}")
+    print("-" * 90)
 
 if __name__ == "__main__":
     main()

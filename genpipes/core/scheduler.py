@@ -668,9 +668,9 @@ echo "#!/bin/bash
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 srun {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
-{os.path.dirname(os.path.abspath(__file__))}/epilogue.py
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
+{os.path.dirname(os.path.abspath(__file__))}/epilogue.py
 {self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
 if [ \\$GenPipes_STATE -eq 0 ]; then
     touch $JOB_DONE
