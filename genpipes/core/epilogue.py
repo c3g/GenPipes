@@ -35,22 +35,9 @@ def parse_job_info(job_info):
         job_details['Elapsed'] = details[7]
     return job_details
 
-def wait_for_job_completion(job_id):
-    while True:
-        job_info = get_slurm_job_info(job_id)
-        if job_info:
-            job_details = parse_job_info(job_info)
-            state = job_details.get('State', 'Unknown')
-            logging.info(f"Current Job State: {state}")
-            if state not in ['RUNNING', 'PENDING']:
-                break
-        time.sleep(5)  # Check every 5 seconds
-
 def main():
     if 'SLURM_JOB_ID' in os.environ:
         job_id = os.getenv('SLURM_JOB_ID', 'Unknown')
-
-        wait_for_job_completion(job_id)
 
         job_info = get_slurm_job_info(job_id)
         if job_info:
