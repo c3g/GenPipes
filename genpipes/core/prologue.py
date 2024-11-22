@@ -105,6 +105,14 @@ def parse_pbs_job_info(job_info):
                 job_details['ReqCPUS'] = value
             elif key == 'Resource_List.mem':
                 job_details['ReqMem'] = value
+
+    # Ensure all necessary fields are populated
+    required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Timelimit', 'ReqCPUS', 'ReqMem']
+    for field in required_fields:
+        if field not in job_details:
+            job_details[field] = None
+            logging.warning(f"Missing field: {field}")
+
     return job_details
 
 def convert_memory_to_gb(memory_str):

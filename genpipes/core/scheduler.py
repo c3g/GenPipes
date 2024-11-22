@@ -423,9 +423,9 @@ class PBSScheduler(Scheduler):
                         # Chunk JOB_DEPENDENCIES on multiple lines to avoid lines too long
                         max_dependencies_per_line = 50
                         dependency_chunks = [job.dependency_jobs[i:i + max_dependencies_per_line] for i in range(0, len(job.dependency_jobs), max_dependencies_per_line)]
-                        job_dependencies = "JOB_DEPENDENCIES=" + ":".join(["$" + dependency_job.id for dependency_job in dependency_chunks[0]])
+                        job_dependencies = f"""JOB_DEPENDENCIES={":".join([f"${dependency_job.id}" for dependency_job in dependency_chunks[0]])}"""
                         for dependency_chunk in dependency_chunks[1:]:
-                            job_dependencies += "\nJOB_DEPENDENCIES=$JOB_DEPENDENCIES:" + ":".join(["$" + dependency_job.id for dependency_job in dependency_chunk])
+                            job_dependencies += f"""\nJOB_DEPENDENCIES=$JOB_DEPENDENCIES:{":".join([f"${dependency_job.id}" for dependency_job in dependency_chunk])}"""
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
@@ -470,7 +470,6 @@ echo "#!/bin/bash
 #PBS -l prologue=
 #PBS -l epilogue=
 #PBS {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
-#PBS -A $RAP_ID
 #PBS -d $OUTPUT_DIR
 #PBS -j oe
 #PBS -o $JOB_OUTPUT
@@ -639,7 +638,7 @@ class SlurmScheduler(Scheduler):
                         dependency_chunks = [job.dependency_jobs[i:i + max_dependencies_per_line] for i in range(0, len(job.dependency_jobs), max_dependencies_per_line)]
                         job_dependencies = f"""JOB_DEPENDENCIES={":".join([f"${dependency_job.id}" for dependency_job in dependency_chunks[0]])}"""
                         for dependency_chunk in dependency_chunks[1:]:
-                            job_dependencies += f"""\nJOB_DEPENDENCIES=$JOB_DEPENDENCIES:{":".join([f"${dependency_job.id}" for dependency_job in dependency_chunks])}"""
+                            job_dependencies += f"""\nJOB_DEPENDENCIES=$JOB_DEPENDENCIES:{":".join([f"${dependency_job.id}" for dependency_job in dependency_chunk])}"""
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
