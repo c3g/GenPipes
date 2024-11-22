@@ -183,11 +183,11 @@ def convert_memory_to_gb(memory_str):
     """
     if memory_str.endswith('K'):
         return float(memory_str[:-1]) / (1024 ** 2)
-    elif memory_str.endswith('M'):
+    if memory_str.endswith('M'):
         return float(memory_str[:-1]) / 1024
-    elif memory_str.endswith('G'):
+    if memory_str.endswith('G'):
         return float(memory_str[:-1])
-    elif memory_str.endswith('T'):
+    if memory_str.endswith('T'):
         return float(memory_str[:-1]) * 1024
     return float(memory_str)
 
@@ -202,7 +202,7 @@ def main():
 
     if 'SLURM_JOB_ID' in os.environ:
         job_info = get_slurm_job_info(job_id)
-        logging.debug(f"Job info: {job_info}")
+        logging.info(f"Job info: {job_info}")
         if job_info:
             job_details = parse_slurm_job_info(job_info, job_id)
         else:
