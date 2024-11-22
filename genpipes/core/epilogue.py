@@ -11,8 +11,10 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO, format='EPILOGUE - %(message)s')
 
 def get_slurm_job_info(job_id):
+    """
+    Retrieve job information from SLURM using sacct command.
+    """
     try:
-        logging.info(f"Fetching job info for job ID: {job_id}")
         result = subprocess.run(
             ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,TotalCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
             capture_output=True, text=True, check=True
@@ -23,7 +25,9 @@ def get_slurm_job_info(job_id):
         return None
 
 def parse_slurm_job_info(job_info, job_id):
-    print(job_info)
+    """
+    Parse the job information retrieved from SLURM.
+    """
     job_details = {}
     reader = csv.DictReader(StringIO(job_info), delimiter='|')
     for row in reader:
@@ -57,6 +61,9 @@ def parse_slurm_job_info(job_info, job_id):
     return job_details
 
 def get_pbs_job_info(job_id):
+    """
+    Retrieve job information from PBS using qstat command
+    """
     try:
         logging.info(f"Fetching PBS job info for job ID: {job_id}")
         result = subprocess.run(
@@ -69,6 +76,9 @@ def get_pbs_job_info(job_id):
         return None
 
 def parse_pbs_job_info(job_info):
+    """
+    Parse the job information retrieved from PBS.
+    """
     job_details = {}
     lines = job_info.strip().split('\n')
     for line in lines:
@@ -117,6 +127,9 @@ def parse_pbs_job_info(job_info):
     return job_details
 
 def time_str_to_seconds(time_str):
+    """
+    Convert time string in HH:MM:SS format to total seconds.
+    """
     parts = time_str.split(':')
     if len(parts) == 3:
         h, m, s = parts
@@ -129,16 +142,19 @@ def time_str_to_seconds(time_str):
         s = parts[0]
     else:
         raise ValueError(f"Unexpected time format: {time_str}")
-    
+
     # Convert to float to handle decimal seconds
     h = int(h)
     m = int(m)
     s = float(s)
-    
+
     total_seconds = h * 3600 + m * 60 + s
     return round(total_seconds)
 
 def calculate_time_difference(start_time, end_time):
+    """
+    Calculate the time difference between two datetime strings.
+    """
     start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S")
     end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S")
     delta = end_dt - start_dt
@@ -148,14 +164,23 @@ def calculate_time_difference(start_time, end_time):
     return f"{days:02}:{hours:02}:{minutes:02}:{seconds:02}"
 
 def calculate_time_efficency(elapsed, timelimit):
+    """
+    Calculate the time efficiency of a job.
+    """
     elapsed_seconds = sum(int(x) * 60 ** i for i, x in enumerate(reversed(elapsed.split(':'))))
     timelimit_seconds = sum(int(x) * 60 ** i for i, x in enumerate(reversed(timelimit.split(':'))))
     return 100 * elapsed_seconds / timelimit_seconds if timelimit_seconds > 0 else 0
 
 def calculate_percentage(used, requested):
+    """
+    Calculate the percentage of used resources to requested resources.
+    """
     return (used / requested * 100) if requested > 0 else 0
 
 def convert_memory_to_gb(memory_str):
+    """
+    Convert memory string to GB.
+    """
     if memory_str.endswith('K'):
         return float(memory_str[:-1]) / (1024 ** 2)
     elif memory_str.endswith('M'):
@@ -167,6 +192,9 @@ def convert_memory_to_gb(memory_str):
     return float(memory_str)
 
 def main():
+    """
+    Main function to run the epilogue script.
+    """
     job_id = os.getenv('SLURM_JOB_ID') or os.getenv('PBS_JOBID')
     if not job_id:
         logging.error("Unknown scheduler")
@@ -201,33 +229,31 @@ def main():
     cpu_usage_percentage = calculate_percentage(total_cpu, elapsed)
     mem_usage_percentage = calculate_percentage(ave_mem_gb, req_mem_gb)
 
-    print("-" * 90)
     logging.info(f"GenPipes Epilogue for job {job_id}")
-    logging.info(f"Job name: {job_details.get('JobName', 'Unknown')}")
-    logging.info(f"User: {job_details.get('User', 'Unknown')}")
-    logging.info(f"Node(s): {job_details.get('NodeList', 'Unknown')}")
-    logging.info(f"Priority: {job_details.get('Priority', 'Unknown')}")
-    logging.info(f"Status: {job_details.get('State', 'Unknown')}")
-    logging.info(f"Submit time: {job_details.get('Submit', 'Unknown')}")
-    logging.info(f"Eligible time: {job_details.get('Eligible', 'Unknown')}")
-    logging.info(f"Start time: {job_details.get('Start', 'Unknown')}")
-    logging.info(f"Time spent in Queue (DD:HH:MM:SS): {time_in_queue}")
-    logging.info(f"End time: {job_details.get('End', 'Unknown')}")
-    logging.info(f"Total wall-clock time: {job_details.get('Elapsed', 'Unknown')}")
-    logging.info(f"Time Limit: {job_details.get('Timelimit', 'Unknown')}")
-    logging.info(f"Time efficiency (Percentage of Walltime to Time used): {time_efficency:.1f}")
-    logging.info(f"Number of CPU(s) requested: {job_details.get('ReqCPUS', 'Unknown')}")
-    logging.info(f"Total CPU time: {job_details.get('TotalCPU', 'Unknown')}")
-    logging.info(f"CPU efficiency (Percentage of CPU time to wall-clock time): {cpu_usage_percentage:.1f}")
-    logging.info(f"Memory Requested: {req_mem_gb:.2f} GB")
-    logging.info(f"Average memory usage: {ave_mem_gb:.2f} GB")
-    logging.info(f"Max memory usage: {max_mem_gb:.2f} GB")
-    logging.info(f"Memory efficiency (Percentage of Memory requested to Memory used in average): {mem_usage_percentage:.1f}")
-    logging.info(f"Average Disk Read: {job_details.get('AveDiskRead', 'Unknown')}")
-    logging.info(f"Max Disk Read: {job_details.get('MaxDiskRead', 'Unknown')}")
-    logging.info(f"Average Disk Write: {job_details.get('AveDiskWrite', 'Unknown')}")
-    logging.info(f"Max Disk Write: {job_details.get('MaxDiskWrite', 'Unknown')}")
-    print("-" * 90)
+    logging.info(f"Job name:                                                         {job_details.get('JobName', 'Unknown')}")
+    logging.info(f"User:                                                             {job_details.get('User', 'Unknown')}")
+    logging.info(f"Node(s):                                                          {job_details.get('NodeList', 'Unknown')}")
+    logging.info(f"Priority:                                                         {job_details.get('Priority', 'Unknown')}")
+    logging.info(f"Status:                                                           {job_details.get('State', 'Unknown')}")
+    logging.info(f"Submit time:                                                      {job_details.get('Submit', 'Unknown')}")
+    logging.info(f"Eligible time:                                                    {job_details.get('Eligible', 'Unknown')}")
+    logging.info(f"Start time:                                                       {job_details.get('Start', 'Unknown')}")
+    logging.info(f"Time spent in Queue (DD:HH:MM:SS):                                {time_in_queue}")
+    logging.info(f"End time:                                                         {job_details.get('End', 'Unknown')}")
+    logging.info(f"Total wall-clock time:                                            {job_details.get('Elapsed', 'Unknown')}")
+    logging.info(f"Time limit:                                                       {job_details.get('Timelimit', 'Unknown')}")
+    logging.info(f"Time efficiency (% of wall-clock time to Time limit):             {time_efficency:.1f}%")
+    logging.info(f"Number of CPU(s) requested:                                       {job_details.get('ReqCPUS', 'Unknown')}")
+    logging.info(f"Total CPU time:                                                   {job_details.get('TotalCPU', 'Unknown')}")
+    logging.info(f"CPU efficiency (% of CPU time to wall-clock time):                {cpu_usage_percentage:.1f}%")
+    logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
+    logging.info(f"Average memory usage:                                             {ave_mem_gb:.2f} GB")
+    logging.info(f"Max memory usage:                                                 {max_mem_gb:.2f} GB")
+    logging.info(f"Memory efficiency (% of Memory requested to Average memory used): {mem_usage_percentage:.1f}%")
+    logging.info(f"Average Disk Read:                                                {job_details.get('AveDiskRead', 'Unknown')}")
+    logging.info(f"Max Disk Read:                                                    {job_details.get('MaxDiskRead', 'Unknown')}")
+    logging.info(f"Average Disk Write:                                               {job_details.get('AveDiskWrite', 'Unknown')}")
+    logging.info(f"Max Disk Write:                                                   {job_details.get('MaxDiskWrite', 'Unknown')}")
 
 if __name__ == "__main__":
     main()
