@@ -117,8 +117,26 @@ def parse_pbs_job_info(job_info):
     return job_details
 
 def time_str_to_seconds(time_str):
-    h, m, s = map(float, time_str.split(':'))
-    return round(h * 3600 + m * 60 + s)
+    parts = time_str.split(':')
+    if len(parts) == 3:
+        h, m, s = parts
+    elif len(parts) == 2:
+        h = '0'
+        m, s = parts
+    elif len(parts) == 1:
+        h = '0'
+        m = '0'
+        s = parts[0]
+    else:
+        raise ValueError(f"Unexpected time format: {time_str}")
+    
+    # Convert to float to handle decimal seconds
+    h = int(h)
+    m = int(m)
+    s = float(s)
+    
+    total_seconds = h * 3600 + m * 60 + s
+    return round(total_seconds)
 
 def calculate_time_difference(start_time, end_time):
     start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S")
