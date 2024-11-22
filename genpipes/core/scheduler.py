@@ -667,7 +667,7 @@ echo "#!/bin/bash
 
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
-srun {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
+srun --wait {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
 {os.path.dirname(os.path.abspath(__file__))}/epilogue.py
