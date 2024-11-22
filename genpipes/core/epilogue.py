@@ -4,6 +4,7 @@ import csv
 import os
 import subprocess
 import logging
+from io import StringIO
 from datetime import datetime
 
 # Configure logging
@@ -13,7 +14,7 @@ def get_slurm_job_info(job_id):
     try:
         logging.info(f"Fetching job info for job ID: {job_id}")
         result = subprocess.run(
-            ["sacct", "-j", f"{job_id}", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,AveCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
+            ["sacct", "-j", f"{job_id}", "--delimiter=|", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,AveCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
             capture_output=True, text=True, check=True
         )
         return result.stdout
@@ -23,38 +24,36 @@ def get_slurm_job_info(job_id):
 
 def parse_slurm_job_info(job_info, job_id):
     print(job_info)
-    lines = job_info.strip().split('\n')
     job_details = {}
-    if lines:
-        # Extracting from the first line
-        first_line_details = next(csv.reader([lines[0]], delimiter='|'))
-        job_details['JobID'] = first_line_details[0]
-        job_details['JobName'] = first_line_details[1]
-        job_details['User'] = first_line_details[2]
-        job_details['NodeList'] = first_line_details[3]
-        job_details['Priority'] = first_line_details[4]
-        job_details['Submit'] = first_line_details[5]
-        job_details['Eligible'] = first_line_details[6]
-        job_details['Timelimit'] = first_line_details[7]
-        job_details['ReqCPUS'] = first_line_details[8]
-        job_details['ReqMem'] = first_line_details[9]
+    reader = csv.DictReader(StringIO(job_info), delimiter='|')
+    for row in reader:
+        if row['JobID'] == job_id:
+            # Extracting from the first line (line starting with JobID)
+            job_details['JobID'] = row['JobID']
+            job_details['JobName'] = row['JobName']
+            job_details['User'] = row['User']
+            job_details['NodeList'] = row['NodeList']
+            job_details['Priority'] = row['Priority']
+            job_details['Submit'] = row['Submit']
+            job_details['Eligible'] = row['Eligible']
+            job_details['Timelimit'] = row['Timelimit']
+            job_details['ReqCPUS'] = row['ReqCPUS']
+            job_details['ReqMem'] = row['ReqMem']
 
         # Extracting from the third line (line starting with ${JOBID}.0)
-        for line in lines:
-            if line.startswith(f"{job_id}.0"):
-                third_line_details = next(csv.reader([line], delimiter='|'))
-                job_details['State'] = third_line_details[10]
-                job_details['Start'] = third_line_details[11]
-                job_details['End'] = third_line_details[12]
-                job_details['Elapsed'] = third_line_details[13]
-                job_details['AveCPU'] = third_line_details[14]
-                job_details['AveMem'] = third_line_details[15]
-                job_details['MaxMem'] = third_line_details[16]
-                job_details['AveDiskRead'] = third_line_details[17]
-                job_details['MaxDiskRead'] = third_line_details[18]
-                job_details['AveDiskWrite'] = third_line_details[19]
-                job_details['MaxDiskWrite'] = third_line_details[20]
-                break
+        elif row['JobID'] == f"{job_id}.0":
+            job_details['State'] = row['State']
+            job_details['Start'] = row['Start']
+            job_details['End'] = row['End']
+            job_details['Elapsed'] = row['Elapsed']
+            job_details['AveCPU'] = row['AveCPU']
+            job_details['AveMem'] = row['AveRSS']
+            job_details['MaxMem'] = row['MaxRSS']
+            job_details['AveDiskRead'] = row['AveDiskRead']
+            job_details['MaxDiskRead'] = row['MaxDiskRead']
+            job_details['AveDiskWrite'] = row['AveDiskWrite']
+            job_details['MaxDiskWrite'] = row['MaxDiskWrite']
+            break
     return job_details
 
 def get_pbs_job_info(job_id):
