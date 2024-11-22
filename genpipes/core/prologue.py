@@ -24,8 +24,7 @@ def get_slurm_job_info(job_id, retries=10, delay=5):
                 job_info = result.stdout
                 job_details = parse_slurm_job_info(job_info, job_id)
                 if job_details:
-                    if job_details['AveRSS']:
-                        return job_details
+                    return job_details
                 time.sleep(delay)
             else:
                 time.sleep(delay)
