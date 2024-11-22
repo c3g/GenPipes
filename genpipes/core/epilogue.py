@@ -11,7 +11,7 @@ from datetime import datetime
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='EPILOGUE - %(message)s')
 
-def get_slurm_job_info(job_id, retries=3, delay=5):
+def get_slurm_job_info(job_id, retries=10, delay=5):
     """
     Retrieve job information from SLURM using sacct command with retries.
     """
