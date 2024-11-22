@@ -32,6 +32,7 @@ def get_slurm_job_info(job_id, retries=10, delay=5):
         except subprocess.CalledProcessError as e:
             logging.error(f"Error retrieving job info: {e}")
             return None
+    logging.error(f"{job_info}")
     logging.error(f"Failed to retrieve complete job info for job {job_id} after {retries} attempts")
     return None
 
