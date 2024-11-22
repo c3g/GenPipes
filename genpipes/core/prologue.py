@@ -22,10 +22,10 @@ def get_slurm_job_info(job_id, retries=10, delay=5):
             )
             if result.stdout.strip():
                 job_info = result.stdout
-                logging.error(f"{job_info}")
                 job_details = parse_slurm_job_info(job_info, job_id)
                 if job_details:
-                    return job_details
+                    if job_details['Timelimit']:
+                        return job_details
                 time.sleep(delay)
             else:
                 time.sleep(delay)
