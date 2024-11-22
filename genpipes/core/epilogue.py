@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+import csv
 import os
 import subprocess
 import logging
@@ -25,7 +27,7 @@ def parse_slurm_job_info(job_info, job_id):
     job_details = {}
     if lines:
         # Extracting from the first line
-        first_line_details = lines[0].split()
+        first_line_details = next(csv.reader([lines[0]], delimiter='|'))
         job_details['JobID'] = first_line_details[0]
         job_details['JobName'] = first_line_details[1]
         job_details['User'] = first_line_details[2]
@@ -40,7 +42,7 @@ def parse_slurm_job_info(job_info, job_id):
         # Extracting from the third line (line starting with ${JOBID}.0)
         for line in lines:
             if line.startswith(f"{job_id}.0"):
-                third_line_details = line.split()
+                third_line_details = next(csv.reader([line], delimiter='|'))
                 job_details['State'] = third_line_details[10]
                 job_details['Start'] = third_line_details[11]
                 job_details['End'] = third_line_details[12]
