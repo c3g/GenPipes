@@ -11,7 +11,7 @@ def get_slurm_job_info(job_id):
     try:
         logging.info(f"Fetching job info for job ID: {job_id}")
         result = subprocess.run(
-            ["sacct", "-j", f"{job_id}", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,AveCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite", "--noheader"],
+            ["sacct", "-j", f"{job_id}", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,AveCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
             capture_output=True, text=True, check=True
         )
         return result.stdout
@@ -20,6 +20,7 @@ def get_slurm_job_info(job_id):
         return None
 
 def parse_slurm_job_info(job_info, job_id):
+    print(job_info)
     lines = job_info.strip().split('\n')
     job_details = {}
     if lines:
@@ -40,7 +41,6 @@ def parse_slurm_job_info(job_info, job_id):
         for line in lines:
             if line.startswith(f"{job_id}.0"):
                 third_line_details = line.split()
-                print(third_line_details)
                 job_details['State'] = third_line_details[10]
                 job_details['Start'] = third_line_details[11]
                 job_details['End'] = third_line_details[12]
