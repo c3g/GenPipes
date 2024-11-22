@@ -479,22 +479,25 @@ echo "#!/bin/bash
 #PBS {self.cpu(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
 {memory}
 {dependencies}
-
+module load mugqic/python/3.12.2
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
+module unload mugqic/python/3.12.2
 echo "{"-" * 90}"
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
 echo "{"-" * 90}"
+module load mugqic/python/3.12.2
 {os.path.dirname(os.path.abspath(__file__))}/epilogue.py
+module unload mugqic/python/3.12.2
 {self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
 if [ \\$GenPipes_STATE -eq 0 ]; then
     touch $JOB_DONE
 fi
 exit \\$GenPipes_STATE" > $SUBMISSION_FILE
 # Submit the job and get the job id
-{job.id}=$({self.submit_cmd} $SUBMISSION_FILE | awk '{{print $4}}')
+{job.id}=$({self.submit_cmd} $SUBMISSION_FILE | awk '{{print $1}}')
 # Write job parameters in job list file
 echo "${job.id}\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST
 echo "Submitted job with ID: ${job.id}"
@@ -681,15 +684,18 @@ echo "#!/bin/bash
 #SBATCH {self.memory(job_name_prefix)}
 #SBATCH {self.cpu(job_name_prefix)} {self.gpu(job_name_prefix)}
 {dependencies}
-
+module load mugqic/python/3.12.2
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
+module unload mugqic/python/3.12.2
 echo "{"-" * 90}"
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 srun --wait=0 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
 echo "{"-" * 90}"
+module load mugqic/python/3.12.2
 {os.path.dirname(os.path.abspath(__file__))}/epilogue.py
+module unload mugqic/python/3.12.2
 {self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
 if [ \\$GenPipes_STATE -eq 0 ]; then
     touch $JOB_DONE
