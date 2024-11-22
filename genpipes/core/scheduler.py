@@ -458,17 +458,24 @@ chmod 755 $SCIENTIFIC_FILE
                         dependencies = f"#PBS {self.dependency_arg(job_name_prefix)} $JOB_DEPENDENCIES"
                     else:
                         dependencies = ""
+                    memory = self.memory(job_name_prefix, adapt=pipeline.force_mem_per_cpu)
+                    if memory:
+                        memory = f"#PBS {memory}"
+                    else:
+                        memory = ""
 
                     cmd = f"""\
 # Create the submission file
 echo "#!/bin/bash
 #PBS {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
-#PBS -D $OUTPUT_DIR
+#PBS -A $RAP_ID
+#PBS -d $OUTPUT_DIR
+#PBS -j oe
 #PBS -o $JOB_OUTPUT
-#PBS -J $JOB_NAME
+#PBS -N $JOB_NAME
 #PBS {self.walltime(job_name_prefix)}
-#PBS {self.memory(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
 #PBS {self.cpu(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
+{memory}
 {dependencies}
 
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
@@ -485,7 +492,7 @@ if [ \\$GenPipes_STATE -eq 0 ]; then
 fi
 exit \\$GenPipes_STATE" > $SUBMISSION_FILE
 # Submit the job and get the job id
-{job.id}=$({self.submit_cmd} $SUBMISSION_FILE | awk '{{print $4}}')
+{job.id}=$({self.submit_cmd} -l prologue= epilogue= $SUBMISSION_FILE | awk '{{print $4}}')
 # Write job parameters in job list file
 echo "${job.id}\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST
 echo "Submitted job with ID: ${job.id}"
