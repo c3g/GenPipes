@@ -33,14 +33,14 @@ def run(input1, input2, output_directory, output_directory_sample, sample, ini_s
         ],
         command="""\
 sortmerna --threads {threads} {other_options} \\
-	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5.8s-database-id98.fasta \\
-	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5s-database-id98.fasta \\
-	--ref $SORTMERNA_DATA/rRNA_databases/silva-arc-16s-id95.fasta \\
-	--ref $SORTMERNA_DATA/rRNA_databases/silva-arc-23s-id98.fasta \\
-	--ref $SORTMERNA_DATA/rRNA_databases/silva-bac-16s-id90.fasta \\
-	--ref $SORTMERNA_DATA/rRNA_databases/silva-bac-23s-id98.fasta \\
-	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-18s-id95.fasta \\
-	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-28s-id98.fasta \\
+	{ref_rfam_58s} \\
+	{ref_rfam_5s} \\
+	{ref_silva_arc_16s} \\
+	{ref_silva_arc_23s} \\
+	{ref_silva_bac_16s} \\
+	{ref_silva_bac_23s} \\
+	{ref_silva_euk_18s} \\
+	{ref_silva_euk_28s} \\
 	--reads {input1} \\
 	{input2} \\
     --aligned {output_directory_sample}/{sample}.aligned \\
@@ -49,7 +49,15 @@ sortmerna --threads {threads} {other_options} \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
 			input2="--reads " + input2 if input2 else "",
-        	threads=config.param(ini_section, 'threads', required=True), 
+        	ref_rfam_58s="--ref " + config.param(ini_section, 'rfam_5.8s', required=False) if config.param(ini_section, 'rfam_5.8s', required=False) else "",
+			ref_rfam_5s="--ref " + config.param(ini_section, 'rfam_5s', required=False) if config.param(ini_section, 'rfam_5s', required=False) else "",
+			ref_silva_arc_16s="--ref " + config.param(ini_section, 'silva_arc_16s', required=False) if config.param(ini_section, 'silva_arc_16s', required=False) else "",
+			ref_silva_arc_23s="--ref " + config.param(ini_section, 'silva_arc_23s', required=False) if config.param(ini_section, 'silva_arc_23s', required=False) else "",
+			ref_silva_bac_16s="--ref " + config.param(ini_section, 'silva_bac_16s', required=False) if config.param(ini_section, 'silva_bac_16s', required=False) else "",
+			ref_silva_bac_23s="--ref " + config.param(ini_section, 'silva_bac_23s', required=False) if config.param(ini_section, 'silva_bac_23s', required=False) else "",
+			ref_silva_euk_18s="--ref " + config.param(ini_section, 'silva_euk_18s', required=False) if config.param(ini_section, 'silva_euk_18s', required=False) else "",
+			ref_silva_euk_28s="--ref " + config.param(ini_section, 'silva_euk_28s', required=False) if config.param(ini_section, 'silva_euk_28s', required=False) else "",
+			threads=config.param(ini_section, 'threads', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
