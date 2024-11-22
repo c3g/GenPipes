@@ -443,8 +443,10 @@ JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
 JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
 SCIENTIFIC_FILE=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
 SUBMISSION_FILE=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.submit
-# Create the scientific file
-echo "{job.command_with_modules}" > $SCIENTIFIC_FILE
+# Create the scientific file {os.path.basename(job.done)} is used as EOF marker to avoid issues with special characters like $ in the command
+cat << '{os.path.basename(job.done)}' > $SCIENTIFIC_FILE
+{job.command_with_modules}
+{os.path.basename(job.done)}
 chmod 755 $SCIENTIFIC_FILE
 """
                     )
@@ -469,11 +471,14 @@ echo "#!/bin/bash
 #PBS {self.cpu(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
 {dependencies}
 
-rm -f $JOB_DONE &&
+{os.path.dirname(os.path.abspath(__file__))}/prologue.py
+echo "{"-" * 90}"
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
+echo "{"-" * 90}"
+{os.path.dirname(os.path.abspath(__file__))}/epilogue.py
 {self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
 if [ \\$GenPipes_STATE -eq 0 ]; then
     touch $JOB_DONE
@@ -483,6 +488,9 @@ exit \\$GenPipes_STATE" > $SUBMISSION_FILE
 {job.id}=$({self.submit_cmd} $SUBMISSION_FILE | awk '{{print $4}}')
 # Write job parameters in job list file
 echo "${job.id}\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST
+echo "Submitted job with ID: ${job.id}"
+# sleep to let the scheduler submiting the job correctly
+sleep 0.1
 """
                     # Cluster settings section must match job name prefix before first "."
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
