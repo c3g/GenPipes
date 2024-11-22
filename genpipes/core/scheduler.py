@@ -467,6 +467,8 @@ chmod 755 $SCIENTIFIC_FILE
                     cmd = f"""\
 # Create the submission file
 echo "#!/bin/bash
+#PBS -l prologue=
+#PBS -l epilogue=
 #PBS {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
 #PBS -A $RAP_ID
 #PBS -d $OUTPUT_DIR
@@ -492,7 +494,7 @@ if [ \\$GenPipes_STATE -eq 0 ]; then
 fi
 exit \\$GenPipes_STATE" > $SUBMISSION_FILE
 # Submit the job and get the job id
-{job.id}=$({self.submit_cmd} -l prologue= epilogue= $SUBMISSION_FILE | awk '{{print $4}}')
+{job.id}=$({self.submit_cmd} $SUBMISSION_FILE | awk '{{print $4}}')
 # Write job parameters in job list file
 echo "${job.id}\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST
 echo "Submitted job with ID: ${job.id}"
