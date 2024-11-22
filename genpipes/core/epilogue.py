@@ -116,6 +116,10 @@ def parse_pbs_job_info(job_info):
                 job_details['AveDiskWrite'] = value
     return job_details
 
+def time_str_to_seconds(time_str):
+    h, m, s = map(int, time_str.split(':'))
+    return h * 3600 + m * 60 + s
+
 def calculate_time_difference(start_time, end_time):
     start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S")
     end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S")
@@ -174,8 +178,8 @@ def main():
     ave_mem_gb = convert_memory_to_gb(job_details['AveMem'])
     max_mem_gb = convert_memory_to_gb(job_details['MaxMem'])
     # Calculate percentages for CPU and memory usage
-    req_cpus = float(job_details.get('ReqCPUS', 0))
-    ave_cpu = float(job_details.get('AveCPU', 0))
+    req_cpus = time_str_to_seconds(job_details.get('ReqCPUS', '00:00:00'))
+    ave_cpu = time_str_to_seconds(job_details.get('AveCPU', '00:00:00'))
     cpu_usage_percentage = calculate_percentage(ave_cpu, req_cpus)
     mem_usage_percentage = calculate_percentage(ave_mem_gb, req_mem_gb)
 
