@@ -84,7 +84,7 @@ def parse_slurm_job_info(job_info, job_id):
             job_details['MaxDiskWrite'] = row['MaxDiskWrite']
             break
     # Check if all necessary fields are populated
-    required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Eligible', 'Timelimit', 'ReqCPUS', 'ReqMem', 'State', 'Start', 'End', 'Elapsed', 'AveCPU', 'AveMem', 'MaxMem', 'AveDiskRead', 'MaxDiskRead', 'AveDiskWrite', 'MaxDiskWrite']
+    required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Eligible', 'Timelimit', 'ReqCPUS', 'ReqMem', 'State', 'Start', 'End', 'Elapsed', 'TotalCPU', 'AveMem', 'MaxMem', 'AveDiskRead', 'MaxDiskRead', 'AveDiskWrite', 'MaxDiskWrite']
     missing_fields = [field for field in required_fields if field not in job_details]
     if missing_fields:
         logging.warning(f"Missing fields: {', '.join(missing_fields)}")
