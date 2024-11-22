@@ -85,9 +85,11 @@ def parse_slurm_job_info(job_info, job_id):
             break
     # Check if all necessary fields are populated
     required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Eligible', 'Timelimit', 'ReqCPUS', 'ReqMem', 'State', 'Start', 'End', 'Elapsed', 'AveCPU', 'AveMem', 'MaxMem', 'AveDiskRead', 'MaxDiskRead', 'AveDiskWrite', 'MaxDiskWrite']
-    if all(field in job_details for field in required_fields):
-        return job_details
-    return None
+    missing_fields = [field for field in required_fields if field not in job_details]
+    if missing_fields:
+        logging.warning(f"Missing fields: {', '.join(missing_fields)}")
+        return None
+    return job_details
 
 def get_pbs_job_info(job_id):
     """
