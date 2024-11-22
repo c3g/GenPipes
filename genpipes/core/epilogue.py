@@ -4,25 +4,50 @@ import csv
 import os
 import subprocess
 import logging
+import time
 from io import StringIO
 from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='EPILOGUE - %(message)s')
 
-def get_slurm_job_info(job_id):
+def get_slurm_job_info(job_id, retries=3, delay=5):
     """
-    Retrieve job information from SLURM using sacct command.
+    Retrieve job information from SLURM using sacct command with retries.
     """
-    try:
-        result = subprocess.run(
-            ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,TotalCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
-            capture_output=True, text=True, check=True
-        )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Error retrieving job info: {e}")
-        return None
+    for _ in range(retries):
+        try:
+            result = subprocess.run(
+                ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,AveCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
+                capture_output=True, text=True, check=True
+            )
+            if result.stdout.strip():
+                job_info = result.stdout
+                job_details = parse_slurm_job_info(job_info, job_id)
+                if job_details:
+                    return job_details
+                time.sleep(delay)
+            else:
+                time.sleep(delay)
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error retrieving job info: {e}")
+            return None
+    logging.error(f"Failed to retrieve complete job info for job {job_id} after {retries} attempts")
+    return None
+
+# def get_slurm_job_info(job_id):
+#     """
+#     Retrieve job information from SLURM using sacct command.
+#     """
+#     try:
+#         result = subprocess.run(
+#             ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,TotalCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
+#             capture_output=True, text=True, check=True
+#         )
+#         return result.stdout
+#     except subprocess.CalledProcessError as e:
+#         logging.error(f"Error retrieving job info: {e}")
+#         return None
 
 def parse_slurm_job_info(job_info, job_id):
     """
@@ -44,7 +69,7 @@ def parse_slurm_job_info(job_info, job_id):
             job_details['ReqCPUS'] = row['ReqCPUS']
             job_details['ReqMem'] = row['ReqMem']
 
-        # Extracting from the third line (line starting with ${JOBID}.0)
+        # Extracting from the third line (line starting with ${JobID}.0)
         elif row['JobID'] == f"{job_id}.0":
             job_details['State'] = row['State']
             job_details['Start'] = row['Start']
@@ -58,7 +83,11 @@ def parse_slurm_job_info(job_info, job_id):
             job_details['AveDiskWrite'] = row['AveDiskWrite']
             job_details['MaxDiskWrite'] = row['MaxDiskWrite']
             break
-    return job_details
+    # Check if all necessary fields are populated
+    required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Eligible', 'Timelimit', 'ReqCPUS', 'ReqMem', 'State', 'Start', 'End', 'Elapsed', 'AveCPU', 'AveMem', 'MaxMem', 'AveDiskRead', 'MaxDiskRead', 'AveDiskWrite', 'MaxDiskWrite']
+    if all(field in job_details for field in required_fields):
+        return job_details
+    return None
 
 def get_pbs_job_info(job_id):
     """
@@ -201,11 +230,8 @@ def main():
         return
 
     if 'SLURM_JOB_ID' in os.environ:
-        job_info = get_slurm_job_info(job_id)
-        logging.info(f"Job info: {job_info}")
-        if job_info:
-            job_details = parse_slurm_job_info(job_info, job_id)
-        else:
+        job_details = get_slurm_job_info(job_id)
+        if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
             return
     elif 'PBS_JOBID' in os.environ:
