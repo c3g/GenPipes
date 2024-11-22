@@ -14,7 +14,7 @@ def get_slurm_job_info(job_id):
     try:
         logging.info(f"Fetching job info for job ID: {job_id}")
         result = subprocess.run(
-            ["sacct", "-j", f"{job_id}", "--delimiter=|", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,AveCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
+            ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,AveCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
             capture_output=True, text=True, check=True
         )
         return result.stdout
