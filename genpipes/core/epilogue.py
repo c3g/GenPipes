@@ -76,15 +76,15 @@ def parse_slurm_job_info(job_info, job_id):
             job_details['End'] = row['End']
             job_details['Elapsed'] = row['Elapsed']
             job_details['TotalCPU'] = row['TotalCPU']
-            job_details['AveMem'] = row['AveRSS']
-            job_details['MaxMem'] = row['MaxRSS']
+            job_details['AveRSS'] = row['AveRSS']
+            job_details['MaxRSS'] = row['MaxRSS']
             job_details['AveDiskRead'] = row['AveDiskRead']
             job_details['MaxDiskRead'] = row['MaxDiskRead']
             job_details['AveDiskWrite'] = row['AveDiskWrite']
             job_details['MaxDiskWrite'] = row['MaxDiskWrite']
             break
     # Check if all necessary fields are populated
-    required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Eligible', 'Timelimit', 'ReqCPUS', 'ReqMem', 'State', 'Start', 'End', 'Elapsed', 'TotalCPU', 'AveMem', 'MaxMem', 'AveDiskRead', 'MaxDiskRead', 'AveDiskWrite', 'MaxDiskWrite']
+    required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Eligible', 'Timelimit', 'ReqCPUS', 'ReqMem', 'State', 'Start', 'End', 'Elapsed', 'TotalCPU', 'AveRSS', 'MaxRSS', 'AveDiskRead', 'MaxDiskRead', 'AveDiskWrite', 'MaxDiskWrite']
     missing_fields = [field for field in required_fields if field not in job_details]
     if missing_fields:
         logging.warning(f"Missing fields: {', '.join(missing_fields)}")
@@ -148,9 +148,9 @@ def parse_pbs_job_info(job_info):
             elif key == 'resources_used.cput':
                 job_details['TotalCPU'] = value
             elif key == 'resources_used.mem':
-                job_details['AveMem'] = value
+                job_details['AveRSS'] = value
             elif key == 'resources_used.vmem':
-                job_details['MaxMem'] = value
+                job_details['MaxRSS'] = value
             elif key == 'resources_used.read_bytes':
                 job_details['AveDiskRead'] = value
             elif key == 'resources_used.write_bytes':
@@ -220,6 +220,7 @@ def convert_memory_to_gb(memory_str):
         return float(memory_str[:-1])
     if memory_str.endswith('T'):
         return float(memory_str[:-1]) * 1024
+    logging.warning(f"Unknown memory format: {memory_str}")
     return float(memory_str)
 
 def main():
@@ -250,8 +251,8 @@ def main():
     time_efficency = calculate_time_efficency(job_details['Elapsed'], job_details['Timelimit'])
     # Convert memory to GB
     req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
-    ave_mem_gb = convert_memory_to_gb(job_details['AveMem'])
-    max_mem_gb = convert_memory_to_gb(job_details['MaxMem'])
+    ave_mem_gb = convert_memory_to_gb(job_details['AveRSS'])
+    max_mem_gb = convert_memory_to_gb(job_details['MaxRSS'])
     # Calculate percentages for CPU and memory usage
     elapsed = time_str_to_seconds(job_details.get('Elapsed', '00:00:00'))
     total_cpu = time_str_to_seconds(job_details.get('TotalCPU', '00:00:00'))
