@@ -25,7 +25,9 @@ def get_slurm_job_info(job_id, retries=3, delay=5):
                 job_info = result.stdout
                 job_details = parse_slurm_job_info(job_info, job_id)
                 if job_details:
-                    return job_details
+                    if job_details['AveRSS']:
+                        return job_details
+                logging.warning(f"{job_info}")
                 time.sleep(delay)
             else:
                 time.sleep(delay)
@@ -220,7 +222,6 @@ def convert_memory_to_gb(memory_str):
         return float(memory_str[:-1])
     if memory_str.endswith('T'):
         return float(memory_str[:-1]) * 1024
-    logging.warning(f"Unknown memory format: {memory_str}")
     return float(memory_str)
 
 def main():
