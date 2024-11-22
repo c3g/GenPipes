@@ -27,7 +27,6 @@ def get_slurm_job_info(job_id, retries=10, delay=5):
                 if job_details:
                     if job_details['AveRSS']:
                         return job_details
-                logging.warning(f"{job_info}")
                 time.sleep(delay)
             else:
                 time.sleep(delay)
@@ -36,20 +35,6 @@ def get_slurm_job_info(job_id, retries=10, delay=5):
             return None
     logging.error(f"Failed to retrieve complete job info for job {job_id} after {retries} attempts")
     return None
-
-# def get_slurm_job_info(job_id):
-#     """
-#     Retrieve job information from SLURM using sacct command.
-#     """
-#     try:
-#         result = subprocess.run(
-#             ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,TotalCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
-#             capture_output=True, text=True, check=True
-#         )
-#         return result.stdout
-#     except subprocess.CalledProcessError as e:
-#         logging.error(f"Error retrieving job info: {e}")
-#         return None
 
 def parse_slurm_job_info(job_info, job_id):
     """
