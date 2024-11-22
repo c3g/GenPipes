@@ -117,8 +117,8 @@ def parse_pbs_job_info(job_info):
     return job_details
 
 def time_str_to_seconds(time_str):
-    h, m, s = map(int, time_str.split(':'))
-    return h * 3600 + m * 60 + s
+    h, m, s = map(float, time_str.split(':'))
+    return round(h * 3600 + m * 60 + s)
 
 def calculate_time_difference(start_time, end_time):
     start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S")
