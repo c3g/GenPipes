@@ -14,7 +14,7 @@ def get_slurm_job_info(job_id):
     try:
         logging.info(f"Fetching job info for job ID: {job_id}")
         result = subprocess.run(
-            ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,AveCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
+            ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,TotalCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
             capture_output=True, text=True, check=True
         )
         return result.stdout
@@ -46,7 +46,7 @@ def parse_slurm_job_info(job_info, job_id):
             job_details['Start'] = row['Start']
             job_details['End'] = row['End']
             job_details['Elapsed'] = row['Elapsed']
-            job_details['AveCPU'] = row['AveCPU']
+            job_details['TotalCPU'] = row['TotalCPU']
             job_details['AveMem'] = row['AveRSS']
             job_details['MaxMem'] = row['MaxRSS']
             job_details['AveDiskRead'] = row['AveDiskRead']
@@ -105,7 +105,7 @@ def parse_pbs_job_info(job_info):
             elif key == 'resources_used.walltime':
                 job_details['Elapsed'] = value
             elif key == 'resources_used.cput':
-                job_details['AveCPU'] = value
+                job_details['TotalCPU'] = value
             elif key == 'resources_used.mem':
                 job_details['AveMem'] = value
             elif key == 'resources_used.vmem':
@@ -178,9 +178,9 @@ def main():
     ave_mem_gb = convert_memory_to_gb(job_details['AveMem'])
     max_mem_gb = convert_memory_to_gb(job_details['MaxMem'])
     # Calculate percentages for CPU and memory usage
-    req_cpus = time_str_to_seconds(job_details.get('ReqCPUS', '00:00:00'))
-    ave_cpu = time_str_to_seconds(job_details.get('AveCPU', '00:00:00'))
-    cpu_usage_percentage = calculate_percentage(ave_cpu, req_cpus)
+    elapsed = time_str_to_seconds(job_details.get('Elapsed', '00:00:00'))
+    total_cpu = time_str_to_seconds(job_details.get('TotalCPU', '00:00:00'))
+    cpu_usage_percentage = calculate_percentage(total_cpu, elapsed)
     mem_usage_percentage = calculate_percentage(ave_mem_gb, req_mem_gb)
 
     print("-" * 90)
@@ -190,17 +190,17 @@ def main():
     logging.info(f"Node(s): {job_details.get('NodeList', 'Unknown')}")
     logging.info(f"Priority: {job_details.get('Priority', 'Unknown')}")
     logging.info(f"Status: {job_details.get('State', 'Unknown')}")
-    logging.info(f"Submit Time: {job_details.get('Submit', 'Unknown')}")
-    logging.info(f"Eligible Time: {job_details.get('Eligible', 'Unknown')}")
-    logging.info(f"Start Time: {job_details.get('Start', 'Unknown')}")
-    logging.info(f"Time Spent in Queue (DD:HH:MM:SS): {time_in_queue}")
-    logging.info(f"End Time: {job_details.get('End', 'Unknown')}")
-    logging.info(f"Runtime: {job_details.get('Elapsed', 'Unknown')}")
+    logging.info(f"Submit time: {job_details.get('Submit', 'Unknown')}")
+    logging.info(f"Eligible time: {job_details.get('Eligible', 'Unknown')}")
+    logging.info(f"Start time: {job_details.get('Start', 'Unknown')}")
+    logging.info(f"Time spent in Queue (DD:HH:MM:SS): {time_in_queue}")
+    logging.info(f"End time: {job_details.get('End', 'Unknown')}")
+    logging.info(f"Total wall-clock time: {job_details.get('Elapsed', 'Unknown')}")
     logging.info(f"Time Limit: {job_details.get('Timelimit', 'Unknown')}")
     logging.info(f"Time efficiency (Percentage of Walltime to Time used): {time_efficency:.1f}")
     logging.info(f"Number of CPU(s) requested: {job_details.get('ReqCPUS', 'Unknown')}")
-    logging.info(f"Average CPU usage: {job_details.get('AveCPU', 'Unknown')}")
-    logging.info(f"CPU efficiency (Percentage of CPU requested to CPU used): {cpu_usage_percentage:.1f}")
+    logging.info(f"Total CPU time: {job_details.get('TotalCPU', 'Unknown')}")
+    logging.info(f"CPU efficiency (Percentage of CPU time to wall-clock time): {cpu_usage_percentage:.1f}")
     logging.info(f"Memory Requested: {req_mem_gb:.2f} GB")
     logging.info(f"Average memory usage: {ave_mem_gb:.2f} GB")
     logging.info(f"Max memory usage: {max_mem_gb:.2f} GB")
