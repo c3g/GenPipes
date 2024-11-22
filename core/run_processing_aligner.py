@@ -515,7 +515,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         job = concat_jobs(
             [
                 bash.mkdir(index_directory),
-                bash.rm(sample_output_directory),
+                bash.rm(sample_output_directory, recursive=True, force=True),
                 bash.mkdir(sample_output_directory),
                 sortmerna.run(
                     readset.fastq1,
