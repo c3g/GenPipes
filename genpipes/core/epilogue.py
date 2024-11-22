@@ -202,6 +202,7 @@ def main():
 
     if 'SLURM_JOB_ID' in os.environ:
         job_info = get_slurm_job_info(job_id)
+        logging.debug(f"Job info: {job_info}")
         if job_info:
             job_details = parse_slurm_job_info(job_info, job_id)
         else:
