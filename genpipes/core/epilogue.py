@@ -40,6 +40,7 @@ def parse_slurm_job_info(job_info, job_id):
         for line in lines:
             if line.startswith(f"{job_id}.0"):
                 third_line_details = line.split()
+                print(third_line_details)
                 job_details['State'] = third_line_details[10]
                 job_details['Start'] = third_line_details[11]
                 job_details['End'] = third_line_details[12]
