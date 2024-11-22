@@ -455,7 +455,7 @@ chmod 755 $SCIENTIFIC_FILE
 
                     job_name_prefix = job.name.split(".")[0]
                     if job.dependency_jobs:
-                        dependencies = f"#PBS {self.dependency_arg(job_name_prefix)} $JOB_DEPENDENCIES"
+                        dependencies = f"#PBS {self.dependency_arg(job_name_prefix)}$JOB_DEPENDENCIES"
                     else:
                         dependencies = ""
                     memory = self.memory(job_name_prefix, adapt=pipeline.force_mem_per_cpu)
