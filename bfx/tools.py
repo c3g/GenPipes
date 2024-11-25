@@ -1220,6 +1220,7 @@ fastqPickRandom.pl {other_options} \\
     {output2} \\
     {compressed} \\
     --threshold {threshold}""".format(
+        other_options=config.param(ini_section, 'other_options', required=False),
         fastq1=fastq1,
         fastq2="--input2 " + fastq2 if fastq2 else "",
         output1=output[0],
