@@ -40,10 +40,13 @@ class JobStat():
     REQUEUE = 'Requeue'
     RESTARTS = 'Restarts'
     RUNTIME = 'RunTime'
-    REMOTE_LIST = {'narval': 'narval.calculcanada.ca',
-              'beluga': 'beluga.calculcanada.ca',
-              'cedar': 'cedar.calculcanada.ca',
-              'graham': 'graham.calculcanada.ca'}
+    REMOTE_LIST = {
+        'narval': 'narval.calculcanada.ca',
+        'beluga': 'beluga.calculcanada.ca',
+        'cedar': 'cedar.calculcanada.ca',
+        'graham': 'graham.calculcanada.ca',
+        'abacus': 'abacus.genome.mcgill.ca'
+        }
 
     # Fields extracted from sacct
     SJOBID = 'JobID'
@@ -54,12 +57,12 @@ class JobStat():
 
     registery = {}
     _REMOTE = None
+    _REMOTE_USER = None
 
-    def __init__(self, step_output_file, jobid=None, dependency=None, name=None,
-                 parsed_after_header=50, remote_hpc=None):
+    def __init__(self, step_output_file, jobid=None, dependency=None, name=None, parsed_after_header=50, remote_hpc=None, remote_user=None):
         self.completed = None
         self._path = step_output_file
-        self.jobid = int(jobid)
+        self.jobid = jobid
         self._dependency = dependency
         self._name = name
         self._prologue = {}
@@ -76,6 +79,7 @@ class JobStat():
         self._parsed_after_header = parsed_after_header
         self._genpipes_exit_status = None
         self.set_remote(remote_hpc)
+        self.set_remote_user(remote_user)
         self._slurm_state = None
         self._sub_id = None
         self.log_missing = None
@@ -104,21 +108,48 @@ class JobStat():
     def set_remote(cls, remote_hpc):
         cls._REMOTE = remote_hpc
 
+    @classmethod
+    def get_remote_user(cls):
+        return cls._REMOTE_USER
+
+    @classmethod
+    def set_remote_user(cls, remote_user):
+        cls._REMOTE_USER = remote_user
+
     @property
     def path(self):
         return os.path.realpath(self._path)
 
     @classmethod
     def sacct(cls, jobid):
-        cmd = ["sacct", "--format=ALL", "-P", "--delimiter", "^", "-j", str(jobid)]
+        cmd = ["sacct", "--format=ALL", "-P", "--delimiter", "^", "-j", jobid]
         if cls.get_remote() is not None:
-            cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()]] + cmd
+            if cls.get_remote_user() is not None:
+                cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()], '-l', cls.get_remote_user()] + cmd
+            else:
+                cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()]] + cmd
+        return subprocess.check_output(cmd).decode("utf-8")
+
+    @classmethod
+    def qstat(cls, jobid):
+        cmd = ["qstat", "-f", jobid]
+        if cls.get_remote() is not None:
+            if cls.get_remote_user() is not None:
+                cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()], '-l', cls.get_remote_user()] + cmd
+            else:
+                cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()]] + cmd
+        print(" ".join(cmd))
+        exit()
         return subprocess.check_output(cmd).decode("utf-8")
 
     @classmethod
     def set_all_status(cls):
         ids = ','.join([str(i) for i in cls.registery.keys()])
-        raw_output = cls.sacct(ids)
+        # if remote hpc is abacus, use qstat
+        if cls.get_remote() == 'abacus':
+            raw_output = cls.qstat(ids)
+        else:
+            raw_output = cls.sacct(ids)
         lines = raw_output.rstrip().splitlines()
         keys = lines[0].strip().split("^")
         job_i = [i for i, k in enumerate(keys) if k == cls.SJOBID][0]
@@ -129,7 +160,8 @@ class JobStat():
             bidon[job_id].append(slurm_steps)
         for job_id, steps in bidon.items():
             acct = dict(zip(keys, zip(*steps)))
-            cls.registery[int(job_id)].set_job_status(acct)
+            print(job_id, acct)
+            cls.registery[job_id].set_job_status(acct)
 
     def set_job_status(self, sacct_val):
         self._sacct_val = sacct_val
@@ -180,7 +212,7 @@ class JobStat():
 
             try:
                 fake_pro_epi = [i for i, x in enumerate(all_value[self.JOBID])
-                                if self.jobid == int(x)]
+                                if self.jobid == x]
             except KeyError:
                 logger.warning('{} has no jobID log'.format(log_file_path))
                 fake_pro_epi = []
@@ -305,7 +337,7 @@ class JobStat():
         return self._name
 
 
-def get_report(job_list_tsv=None, remote_hpc=None):
+def get_report(job_list_tsv=None, remote_hpc=None, remote_user=None):
     job_output_path = os.path.dirname(job_list_tsv)
 
     with open(job_list_tsv) as tsvin:
@@ -316,9 +348,16 @@ def get_report(job_list_tsv=None, remote_hpc=None):
         i = 0
         for job in jobs:
             logger.info('loading {}'.format(job))
-            report.append(JobStat(step_output_file=os.path.join(job_output_path, job[3]),
-                                  name=job[1], jobid=job[0], dependency=job[2],
-                                  remote_hpc=remote_hpc))
+            report.append(
+                JobStat(
+                    step_output_file=os.path.join(job_output_path, job[3]),
+                    name=job[1],
+                    jobid=job[0],
+                    dependency=job[2],
+                    remote_hpc=remote_hpc,
+                    remote_user=remote_user
+                    )
+                )
         JobStat.set_all_status()
     return report
 
@@ -449,7 +488,8 @@ def main(args=None):
     if args is None:
         parser = argparse.ArgumentParser()
         parser.add_argument('job_list_path', help="Path to a GenPipes job list")
-        parser.add_argument('--remote', '-r', help="Remote HPC where the job was ran", choices=['beluga', 'cedar', 'narval'], default=None)
+        parser.add_argument('--remote', '-r', help="Remote HPC where the job was ran", choices=['beluga', 'cedar', 'narval', 'abacus'], default=None)
+        parser.add_argument('--user', '-u', help="Remote HPC username to be used for ssh. Default: local username", default=None)
         parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
         parser.add_argument('--tsv', help="output to tsv file")
         parser.add_argument('--quiet', '-q', help="No report printed to terminal", action='store_true', default=False)
@@ -461,10 +501,11 @@ def main(args=None):
 
     path = args.job_list_path
     remote = args.remote
+    username = args.user
     to_tsv = args.tsv
     to_stdout = not args.quiet
 
-    stats = get_report(path, remote_hpc=remote)
+    stats = get_report(path, remote_hpc=remote, remote_user=username)
     print_report(stats, to_tsv=to_tsv, to_stdout=to_stdout)
 
 
