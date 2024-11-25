@@ -61,20 +61,31 @@ def parse_slurm_job_info(job_info, job_id):
         return None
     return job_details
 
-def get_pbs_job_info(job_id):
+def get_pbs_job_info(job_id, retries=10, delay=5):
     """
-    Retrieve job information from PBS using qstat command
+    Retrieve job information from PBS using qstat command with retries.
     """
-    try:
-        logging.info(f"Fetching PBS job info for job ID: {job_id}")
-        result = subprocess.run(
-            ["qstat", "-f", f"{job_id}"],
-            capture_output=True, text=True, check=True
-        )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Error retrieving PBS job info: {e}")
-        return None
+    for _ in range(retries):
+        try:
+            result = subprocess.run(
+                ["qstat", "-f", f"{job_id}"],
+                capture_output=True, text=True, check=True
+            )
+            if result.stdout.strip():
+                job_info = result.stdout
+                logging.info(f"Job info: {job_info}")
+                job_details = parse_pbs_job_info(job_info)
+                if job_details:
+                    if job_details.get('Resource_List.walltime'):
+                        return job_details
+                time.sleep(delay)
+            else:
+                time.sleep(delay)
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error retrieving job info: {e}")
+            return None
+    logging.error(f"Failed to retrieve complete job info for job {job_id} after {retries} attempts")
+    return None
 
 def parse_pbs_job_info(job_info):
     """
