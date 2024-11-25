@@ -54,6 +54,7 @@ def parse_slurm_job_info(job_info, job_id):
             job_details['Timelimit'] = row['Timelimit']
             job_details['ReqCPUS'] = row['ReqCPUS']
             job_details['ReqMem'] = row['ReqMem']
+
     # Check if all necessary fields are populated
     required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Timelimit', 'ReqCPUS', 'ReqMem',]
     missing_fields = [field for field in required_fields if field not in job_details]
@@ -62,54 +63,22 @@ def parse_slurm_job_info(job_info, job_id):
         return None
     return job_details
 
-def parse_pbs_job_info(job_id):
+def parse_pbs_job_info():
     """
     Parse the job information retrieved from PBS.
     """
     job_details = {}
 
-    # ARGV[7] is in the form of : cput=00:00:00,energy_used=0,mem=3476kb,vmem=336764kb,walltime=00:01:01
-
-    mytokens = sys.argv[7].split(",")
-    logging.info(f"mytokens: {mytokens}")
-
-    job_details['TotalCPU'] = mytokens[0].split("=")[1]
-
-    job_details['Memory'] = mytokens[2].split("=")[1]
-
-    job_details['VirtualMemory'] = mytokens[3].split("=")[1]
-
-    job_details['WallClockTime'] = mytokens[4].split("=")[1]
-
-    # lines = job_info.strip().split('\n')
-    # for line in lines:
-    #     if '=' in line:
-    #         key, value = line.split('=', 1)
-    #         key = key.strip()
-    #         value = value.strip()
-    #         if key == 'Job_Name':
-    #             job_details['JobName'] = value
-    #         elif key == 'Job_Owner':
-    #             job_details['User'] = value.split('@')[0]
-    #         elif key == 'exec_host':
-    #             job_details['NodeList'] = value
-    #         elif key == 'Priority':
-    #             job_details['Priority'] = value
-    #         elif key == 'qtime':
-    #             job_details['Submit'] = value
-    #         elif key == 'Resource_List.walltime':
-    #             job_details['Timelimit'] = value
-    #         elif key == 'Resource_List.ncpus':
-    #             job_details['ReqCPUS'] = value
-    #         elif key == 'Resource_List.mem':
-    #             job_details['ReqMem'] = value
-
-    # Ensure all necessary fields are populated
-    required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Timelimit', 'ReqCPUS', 'ReqMem']
-    for field in required_fields:
-        if field not in job_details:
-            job_details[field] = None
-            logging.warning(f"Missing field: {field}")
+    requested_resource_limits = sys.argv[5].split(",")
+    job_details['JobID'] = sys.argv[1]
+    job_details['JobName'] = sys.argv[4]
+    job_details['User'] = sys.argv[2]
+    job_details['NodeList'] = "Unknown"
+    job_details['Priority'] = "Unknown"
+    job_details['Submit'] = "Unknown"
+    job_details['Timelimit'] = requested_resource_limits[3].split("=")[1]
+    job_details['ReqCPUS'] = requested_resource_limits[1].split("=")[2]
+    job_details['ReqMem'] = "Unknown"
 
     return job_details
 
@@ -132,21 +101,27 @@ def main():
     Main function to run the epilogue script.
     """
     print("Running GenPipes Prologue")
-    job_id = os.getenv('SLURM_JOB_ID') or os.getenv('PBS_JOBID')
-    if not job_id:
-        logging.error("Unknown scheduler")
-        return
+    job_id = os.getenv('SLURM_JOB_ID')
 
     if 'SLURM_JOB_ID' in os.environ:
         job_details = get_slurm_job_info(job_id)
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
             return
-    elif 'PBS_JOBID' in os.environ:
-        job_details = parse_pbs_job_info(job_id)
+    # Built-in support for PBS
+    elif len(sys.argv) > 5 and sys.argv[5].startswith('neednodes'):
+        job_details = parse_pbs_job_info()
+        if not job_details:
+            logging.error(f"Failed to retrieve job info for job {job_id}")
+            return
+    else:
+        logging.error("Unsupported scheduler")
+        return
 
     # Convert memory to GB
-    req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
+    req_mem_gb = None
+    if job_details['ReqMem']:
+        req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
 
     logging.info(f"GenPipes Prologue for job {job_id}")
     logging.info(f"Job name:                                                         {job_details.get('JobName', 'Unknown')}")
@@ -156,7 +131,10 @@ def main():
     logging.info(f"Submit time:                                                      {job_details.get('Submit', 'Unknown')}")
     logging.info(f"Time limit:                                                       {job_details.get('Timelimit', 'Unknown')}")
     logging.info(f"Number of CPU(s) requested:                                       {job_details.get('ReqCPUS', 'Unknown')}")
-    logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
+    if req_mem_gb:
+        logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
+    else:
+        logging.info(f"Memory Requested:                                                 Unknown")
 
 if __name__ == "__main__":
     main()
