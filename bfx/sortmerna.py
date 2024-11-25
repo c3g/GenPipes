@@ -45,8 +45,7 @@ sortmerna --threads {threads} {other_options} \\
 	{input2} \\
     --aligned {output_directory_sample}/{sample}.aligned \\
     --kvdb {output_directory_sample}/kvdb \\
-    --readb {output_directory_sample}/readb \\
-    --idx-dir {output_directory}/idx-dir""".format(
+    --readb {output_directory_sample}/readb""".format(
 			input1=input1,
 			input2="--reads " + input2 if input2 else "",
         	ref_rfam_58s="--ref " + config.param(ini_section, 'rfam_5.8s', required=False) if config.param(ini_section, 'rfam_5.8s', required=False) else "",

@@ -510,16 +510,29 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         lane_directory = os.path.dirname(os.path.dirname(os.path.dirname(readset.fastq1)))
         output_directory = os.path.join(lane_directory, "Sortmerna")
         sample_output_directory = os.path.join(output_directory, readset.sample.name + "_" + readset.library)
-        index_directory = os.path.join(output_directory, "idx-dir")
-
+        read_directory = os.path.join(sample_output_directory, "kvdb") # must be empty prior to running
+        subsample_prefix = os.path.join(sample_output_directory, readset.name)
+        if readset.fastq2:
+            subsample_fastq1 = os.path.join(sample_output_directory, readset.name + ".pair1.fq")
+            subsample_fastq2 = os.path.join(sample_output_directory, readset.name + ".pair2.fq")
+        else:
+            subsample_fastq1 = os.path.join(sample_output_directory, readset.name + ".single.fq")
+            subsample_fastq2=None
+        
         job = concat_jobs(
             [
-                bash.mkdir(index_directory),
-                bash.rm(sample_output_directory, recursive=True, force=True),
+                bash.rm(read_directory, recursive=True, force=True),
                 bash.mkdir(sample_output_directory),
-                sortmerna.run(
+                tools.subsample(
+                    subsample_prefix,
                     readset.fastq1,
                     readset.fastq2,
+                    compressed=True,
+                    threshold=0.1
+                ),
+                sortmerna.run(
+                    subsample_fastq1,
+                    subsample_fastq2,
                     output_directory,
                     sample_output_directory,
                     readset.name
