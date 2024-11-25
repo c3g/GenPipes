@@ -468,7 +468,6 @@ chmod 755 $SCIENTIFIC_FILE
 # Create the submission file
 echo "#!/bin/bash
 #PBS -l prologue={os.path.dirname(os.path.abspath(__file__))}/prologue.py
-#PBS -l epilogue={os.path.dirname(os.path.abspath(__file__))}/epilogue.py
 #PBS -T none
 #PBS {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
 #PBS -d $OUTPUT_DIR
