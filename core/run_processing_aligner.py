@@ -511,6 +511,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         output_directory = os.path.join(lane_directory, "Sortmerna")
         sample_output_directory = os.path.join(output_directory, readset.sample.name + "_" + readset.library)
         read_directory = os.path.join(sample_output_directory, "kvdb") # must be empty prior to running
+        index_directory = os.path.join(sample_output_directory, "idx")
         subsample_prefix = os.path.join(sample_output_directory, readset.name)
         if readset.fastq2:
             subsample_fastq1 = os.path.join(sample_output_directory, readset.name + ".pair1.fq")
@@ -523,6 +524,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
             [
                 bash.rm(read_directory, recursive=True, force=True),
                 bash.mkdir(sample_output_directory),
+                bash.mkdir(index_directory),
                 tools.subsample(
                     subsample_prefix,
                     readset.fastq1,
