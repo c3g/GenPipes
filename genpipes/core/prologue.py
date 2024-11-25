@@ -5,6 +5,7 @@ import os
 import subprocess
 import logging
 import time
+import sys
 from io import StringIO
 
 # Configure logging
@@ -79,7 +80,7 @@ def parse_pbs_job_info(job_id):
     job_details['VirtualMemory'] = mytokens[3].split("=")[1]
 
     job_details['WallClockTime'] = mytokens[4].split("=")[1]
-    
+
     # lines = job_info.strip().split('\n')
     # for line in lines:
     #     if '=' in line:
