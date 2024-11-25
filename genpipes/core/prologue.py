@@ -61,61 +61,47 @@ def parse_slurm_job_info(job_info, job_id):
         return None
     return job_details
 
-def get_pbs_job_info(job_id, retries=10, delay=5):
-    """
-    Retrieve job information from PBS using qstat command with retries.
-    """
-    for _ in range(retries):
-        try:
-            result = subprocess.run(
-                ["qstat", "-f", f"{job_id}"],
-                capture_output=True, text=True, check=True
-            )
-            if result.stdout.strip():
-                job_info = result.stdout
-                logging.info(f"Job info: {job_info}")
-                job_details = parse_pbs_job_info(job_info)
-                if job_details:
-                    if job_details.get('Resource_List.walltime'):
-                        return job_details
-                time.sleep(delay)
-            else:
-                time.sleep(delay)
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Error retrieving job info: {e}")
-            return None
-    logging.error(f"Failed to retrieve complete job info for job {job_id} after {retries} attempts")
-    return None
-
-def parse_pbs_job_info(job_info):
+def parse_pbs_job_info(job_id):
     """
     Parse the job information retrieved from PBS.
     """
     job_details = {}
-    lines = job_info.strip().split('\n')
-    for line in lines:
-        if '=' in line:
-            key, value = line.split('=', 1)
-            key = key.strip()
-            value = value.strip()
-            if key == 'Job Id':
-                job_details['JobID'] = value
-            elif key == 'Job_Name':
-                job_details['JobName'] = value
-            elif key == 'Job_Owner':
-                job_details['User'] = value.split('@')[0]
-            elif key == 'exec_host':
-                job_details['NodeList'] = value
-            elif key == 'Priority':
-                job_details['Priority'] = value
-            elif key == 'qtime':
-                job_details['Submit'] = value
-            elif key == 'Resource_List.walltime':
-                job_details['Timelimit'] = value
-            elif key == 'Resource_List.ncpus':
-                job_details['ReqCPUS'] = value
-            elif key == 'Resource_List.mem':
-                job_details['ReqMem'] = value
+
+    # ARGV[7] is in the form of : cput=00:00:00,energy_used=0,mem=3476kb,vmem=336764kb,walltime=00:01:01
+
+    mytokens = sys.argv[7].split(",")
+    logging.info(f"mytokens: {mytokens}")
+
+    job_details['TotalCPU'] = mytokens[0].split("=")[1]
+
+    job_details['Memory'] = mytokens[2].split("=")[1]
+
+    job_details['VirtualMemory'] = mytokens[3].split("=")[1]
+
+    job_details['WallClockTime'] = mytokens[4].split("=")[1]
+    
+    # lines = job_info.strip().split('\n')
+    # for line in lines:
+    #     if '=' in line:
+    #         key, value = line.split('=', 1)
+    #         key = key.strip()
+    #         value = value.strip()
+    #         if key == 'Job_Name':
+    #             job_details['JobName'] = value
+    #         elif key == 'Job_Owner':
+    #             job_details['User'] = value.split('@')[0]
+    #         elif key == 'exec_host':
+    #             job_details['NodeList'] = value
+    #         elif key == 'Priority':
+    #             job_details['Priority'] = value
+    #         elif key == 'qtime':
+    #             job_details['Submit'] = value
+    #         elif key == 'Resource_List.walltime':
+    #             job_details['Timelimit'] = value
+    #         elif key == 'Resource_List.ncpus':
+    #             job_details['ReqCPUS'] = value
+    #         elif key == 'Resource_List.mem':
+    #             job_details['ReqMem'] = value
 
     # Ensure all necessary fields are populated
     required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Timelimit', 'ReqCPUS', 'ReqMem']
@@ -155,12 +141,7 @@ def main():
             logging.error(f"Failed to retrieve job info for job {job_id}")
             return
     elif 'PBS_JOBID' in os.environ:
-        job_info = get_pbs_job_info(job_id)
-        if job_info:
-            job_details = parse_pbs_job_info(job_info)
-        else:
-            logging.error(f"Failed to retrieve job info for job {job_id}")
-            return
+        job_details = parse_pbs_job_info(job_id)
 
     # Convert memory to GB
     req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
