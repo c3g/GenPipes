@@ -130,6 +130,7 @@ def main():
     """
     Main function to run the epilogue script.
     """
+    logging.info("Running GenPipes Prologue")
     job_id = os.getenv('SLURM_JOB_ID') or os.getenv('PBS_JOBID')
     if not job_id:
         logging.error("Unknown scheduler")
