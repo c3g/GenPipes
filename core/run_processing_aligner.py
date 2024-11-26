@@ -543,6 +543,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
             ],
             name="sortmerna." + readset.name + ".sortmerna." + readset.run + "." + readset.lane,
             samples=[readset.sample],
+            input_dependency=[readset.fastq1, readset.fastq2],
             report_files=[os.path.join(sample_output_directory, readset.name + ".aligned.log")],
         )
         jobs.append(job)
