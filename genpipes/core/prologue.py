@@ -4,6 +4,7 @@ import csv
 import os
 import subprocess
 import logging
+import re
 import time
 import sys
 from io import StringIO
@@ -69,16 +70,26 @@ def parse_pbs_job_info():
     """
     job_details = {}
 
-    requested_resource_limits = sys.argv[5].split(",")
+    requested_resource_limits = sys.argv[5]
     job_details['JobID'] = sys.argv[1]
     job_details['JobName'] = sys.argv[4]
     job_details['User'] = sys.argv[2]
     job_details['NodeList'] = "Unknown"
     job_details['Priority'] = "Unknown"
     job_details['Submit'] = "Unknown"
-    job_details['Timelimit'] = requested_resource_limits[3].split("=")[1]
-    job_details['ReqCPUS'] = requested_resource_limits[1].split("=")[2]
-    job_details['ReqMem'] = "Unknown"
+    walltime_match = re.search(r'walltime=([\d:]+)', requested_resource_limits)
+    job_details['Timelimit'] = walltime_match.group(1) if walltime_match else "Unknown"
+    ppn_match = re.search(r'nodes=\d+:ppn=(\d+)', requested_resource_limits)
+    job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
+    if sys.argv[6] == "lm":
+        job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 15}G"
+    else:
+        job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 5}G"
+
+    node_file = os.path.join("/var/spool/pbs/aux", job_details['JobID'])
+
+    with open(node_file, 'r') as infile:
+        job_details['NodeList']=infile.readline().strip()
 
     return job_details
 
@@ -88,19 +99,26 @@ def convert_memory_to_gb(memory_str):
     """
     if memory_str.endswith('K'):
         return float(memory_str[:-1]) / (1024 ** 2)
+    if memory_str.endswith('kb'):
+        return float(memory_str[:-2]) / (1024 ** 2)
     if memory_str.endswith('M'):
         return float(memory_str[:-1]) / 1024
+    if memory_str.endswith('mb'):
+        return float(memory_str[:-2]) / 1024
     if memory_str.endswith('G'):
         return float(memory_str[:-1])
+    if memory_str.endswith('gb'):
+        return float(memory_str[:-2])
     if memory_str.endswith('T'):
         return float(memory_str[:-1]) * 1024
+    if memory_str.endswith('tb'):
+        return float(memory_str[:-2]) * 1024
     return float(memory_str)
 
 def main():
     """
     Main function to run the epilogue script.
     """
-    print("Running GenPipes Prologue")
     job_id = os.getenv('SLURM_JOB_ID')
 
     if 'SLURM_JOB_ID' in os.environ:
@@ -109,7 +127,8 @@ def main():
             logging.error(f"Failed to retrieve job info for job {job_id}")
             return
     # Built-in support for PBS
-    elif len(sys.argv) > 5 and sys.argv[5].startswith('neednodes'):
+    elif len(sys.argv) > 8:
+        job_id = sys.argv[1]
         job_details = parse_pbs_job_info()
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
@@ -120,7 +139,7 @@ def main():
 
     # Convert memory to GB
     req_mem_gb = None
-    if job_details['ReqMem']:
+    if job_details['ReqMem'] != "Unknown":
         req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
 
     logging.info(f"GenPipes Prologue for job {job_id}")
@@ -131,7 +150,7 @@ def main():
     logging.info(f"Submit time:                                                      {job_details.get('Submit', 'Unknown')}")
     logging.info(f"Time limit:                                                       {job_details.get('Timelimit', 'Unknown')}")
     logging.info(f"Number of CPU(s) requested:                                       {job_details.get('ReqCPUS', 'Unknown')}")
-    if req_mem_gb:
+    if req_mem_gb is not None:
         logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
     else:
         logging.info(f"Memory Requested:                                                 Unknown")
