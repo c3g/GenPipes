@@ -4,6 +4,7 @@ import csv
 import os
 import subprocess
 import logging
+import re
 import time
 import sys
 from io import StringIO
@@ -85,8 +86,8 @@ def parse_pbs_job_info():
     Parse the job information retrieved from PBS.
     """
     job_details = {}
-    requested_resource_limits = sys.argv[6].split(",")
-    used_resource = sys.argv[7].split(",")
+    requested_resource_limits = sys.argv[6]
+    used_resource = sys.argv[7]
     job_details['JobID'] = sys.argv[1]
     job_details['JobName'] = sys.argv[4]
     job_details['User'] = sys.argv[2]
@@ -94,21 +95,30 @@ def parse_pbs_job_info():
     job_details['Priority'] = "Unknown"
     job_details['Submit'] = "Unknown"
     job_details['Eligible'] = "Unknown"
-    job_details['Timelimit'] = requested_resource_limits[3].split("=")[1]
-    job_details['ReqCPUS'] = requested_resource_limits[1].split("=")[2]
-    job_details['ReqMem'] = "Unknown"
+    walltime_match = re.search(r'walltime=([\d:]+)', requested_resource_limits)
+    job_details['Timelimit'] = walltime_match.group(1) if walltime_match else "Unknown"
+    ppn_match = re.search(r'nodes=\d+:ppn=(\d+)', requested_resource_limits)
+    job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
     job_details['State'] = sys.argv[10]
     job_details['Start'] = "Unknown"
     job_details['End'] = "Unknown"
-    job_details['Elapsed'] = used_resource[4].split("=")[1]
-    job_details['TotalCPU'] = used_resource[0].split("=")[1]
-    job_details['TotalMem'] = used_resource[2].split("=")[1]
+    walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
+    job_details['Elapsed'] = walltime_match_used.group(1) if walltime_match_used else "Unknown"
+    cput_match = re.search(r'cput=([\d:]+)', used_resource)
+    job_details['TotalCPU'] = cput_match.group(1) if cput_match else "Unknown"
+    mem_match = re.search(r',mem=([\d]+\w\w)', used_resource)
+    job_details['TotalMem'] = mem_match.group(1) if mem_match else "Unknown"
     job_details['AveRSS'] = "Unknown"
     job_details['MaxRSS'] = "Unknown"
     job_details['AveDiskRead'] = "Unknown"
     job_details['MaxDiskRead'] = "Unknown"
     job_details['AveDiskWrite'] = "Unknown"
     job_details['MaxDiskWrite'] = "Unknown"
+
+    if sys.argv[6] == "lm":
+        job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 15}G"
+    else:
+        job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 5}G"
 
     return job_details
 
@@ -169,22 +179,27 @@ def convert_memory_to_gb(memory_str):
     """
     if memory_str.endswith('K'):
         return float(memory_str[:-1]) / (1024 ** 2)
+    if memory_str.endswith('kb'):
+        return float(memory_str[:-2]) / (1024 ** 2)
     if memory_str.endswith('M'):
         return float(memory_str[:-1]) / 1024
+    if memory_str.endswith('mb'):
+        return float(memory_str[:-2]) / 1024
     if memory_str.endswith('G'):
         return float(memory_str[:-1])
+    if memory_str.endswith('gb'):
+        return float(memory_str[:-2])
     if memory_str.endswith('T'):
         return float(memory_str[:-1]) * 1024
+    if memory_str.endswith('tb'):
+        return float(memory_str[:-2]) * 1024
     return float(memory_str)
 
 def main():
     """
     Main function to run the epilogue script.
     """
-    job_id = os.getenv('SLURM_JOB_ID') or os.getenv('PBS_JOBID')
-    if not job_id:
-        logging.error("Unknown scheduler")
-        return
+    job_id = os.getenv('SLURM_JOB_ID')
 
     if 'SLURM_JOB_ID' in os.environ:
         job_details = get_slurm_job_info(job_id)
@@ -192,7 +207,8 @@ def main():
             logging.error(f"Failed to retrieve job info for job {job_id}")
             return
     # Built-in support for PBS
-    elif len(sys.argv) > 5 and sys.argv[5].startswith('neednodes'):
+    elif len(sys.argv) == 12:
+        job_id = sys.argv[1]
         job_details = parse_pbs_job_info()
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
@@ -203,26 +219,29 @@ def main():
 
     # Calculate time spent in queue format DD:HH:MM:SS
     time_in_queue = None
-    if job_details['Submit']:
+    if job_details['Submit'] != "Unknown":
         time_in_queue = calculate_time_difference(job_details['Submit'], job_details['Start'])
     # Calculate time efficency between walltime and time used
     time_efficency = calculate_time_efficency(job_details['Elapsed'], job_details['Timelimit'])
     # Convert memory to GB
     req_mem_gb = None
-    if job_details['ReqMem']:
+    if job_details['ReqMem'] != "Unknown":
         req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
     ave_mem_gb = None
-    if job_details['AveRSS']:
+    if job_details['AveRSS'] != "Unknown":
         ave_mem_gb = convert_memory_to_gb(job_details['AveRSS'])
     max_mem_gb = None
-    if job_details['MaxRSS']:
+    if job_details['MaxRSS'] != "Unknown":
         max_mem_gb = convert_memory_to_gb(job_details['MaxRSS'])
+    total_mem_gb = None
+    if job_details['TotalMem'] != "Unknown":
+        total_mem_gb = convert_memory_to_gb(job_details['TotalMem'])
     # Calculate percentages for CPU and memory usage
     elapsed = time_str_to_seconds(job_details.get('Elapsed', '00:00:00'))
     total_cpu = time_str_to_seconds(job_details.get('TotalCPU', '00:00:00'))
     cpu_usage_percentage = calculate_percentage(total_cpu, elapsed)
     mem_usage_percentage = None
-    if req_mem_gb:
+    if req_mem_gb and ave_mem_gb:
         mem_usage_percentage = calculate_percentage(ave_mem_gb, req_mem_gb)
 
     logging.info(f"GenPipes Epilogue for job {job_id}")
@@ -246,12 +265,15 @@ def main():
     logging.info(f"Total CPU time:                                                   {job_details.get('TotalCPU', 'Unknown')}")
     logging.info(f"CPU efficiency (% of CPU time to wall-clock time):                {cpu_usage_percentage:.1f}%")
     logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
-    logging.info(f"Total Memory:                                                     {job_details.get('TotalMem', 'Unknown')} GB")
-    if ave_mem_gb:
+    if total_mem_gb is not None:
+        logging.info(f"Total Memory:                                                     {total_mem_gb:.2f} GB")
+    else:
+        logging.info(f"Total Memory:                                                     Unknown")
+    if ave_mem_gb is not None:
         logging.info(f"Average memory usage:                                             {ave_mem_gb:.2f} GB")
     else:
         logging.info(f"Average memory usage:                                             Unknown")
-    if max_mem_gb:
+    if max_mem_gb is not None:
         logging.info(f"Max memory usage:                                                 {max_mem_gb:.2f} GB")
     else:
         logging.info(f"Max memory usage:                                                 Unknown")
