@@ -512,6 +512,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         sample_output_directory = os.path.join(output_directory, readset.sample.name + "_" + readset.library)
         read_directory = os.path.join(sample_output_directory, "kvdb") # must be empty prior to running
         index_directory = os.path.join(sample_output_directory, "idx")
+        subsample_threshold = config.param('sortmerna', 'subsample_threshold')
         subsample_prefix = os.path.join(sample_output_directory, readset.name)
         if readset.fastq2:
             subsample_fastq1 = os.path.join(sample_output_directory, readset.name + ".pair1.fq")
@@ -530,7 +531,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
                     readset.fastq1,
                     readset.fastq2,
                     compressed=True,
-                    threshold=0.05
+                    threshold=subsample_threshold
                 ),
                 sortmerna.run(
                     subsample_fastq1,
