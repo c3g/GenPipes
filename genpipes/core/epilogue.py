@@ -73,6 +73,7 @@ def parse_slurm_job_info(job_info, job_id):
             job_details['AveDiskWrite'] = row['AveDiskWrite']
             job_details['MaxDiskWrite'] = row['MaxDiskWrite']
             break
+    job_details['TotalMem'] = 'Unknown'
 
     # Check if all necessary fields are populated
     required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Eligible', 'Timelimit', 'ReqCPUS', 'ReqMem', 'State', 'Start', 'End', 'Elapsed', 'TotalCPU', 'AveRSS', 'MaxRSS', 'AveDiskRead', 'MaxDiskRead', 'AveDiskWrite', 'MaxDiskWrite']
