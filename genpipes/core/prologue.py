@@ -143,13 +143,13 @@ def main():
         req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
 
     logging.info(f"GenPipes Prologue for job {job_id}")
-    logging.info(f"Job name:                                                         {job_details.get('JobName', 'Unknown')}")
+    logging.info(f"Job Name:                                                         {job_details.get('JobName', 'Unknown')}")
     logging.info(f"User:                                                             {job_details.get('User', 'Unknown')}")
     logging.info(f"Node(s):                                                          {job_details.get('NodeList', 'Unknown')}")
     logging.info(f"Priority:                                                         {job_details.get('Priority', 'Unknown')}")
-    logging.info(f"Submit time:                                                      {job_details.get('Submit', 'Unknown')}")
-    logging.info(f"Time limit:                                                       {job_details.get('Timelimit', 'Unknown')}")
-    logging.info(f"Number of CPU(s) requested:                                       {job_details.get('ReqCPUS', 'Unknown')}")
+    logging.info(f"Submit Time:                                                      {job_details.get('Submit', 'Unknown')}")
+    logging.info(f"Time Limit:                                                       {job_details.get('Timelimit', 'Unknown')}")
+    logging.info(f"Number of CPU(s) Requested:                                       {job_details.get('ReqCPUS', 'Unknown')}")
     if req_mem_gb is not None:
         logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
     else:
