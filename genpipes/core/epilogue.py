@@ -6,6 +6,7 @@ import subprocess
 import logging
 import re
 import time
+import signal
 import sys
 from io import StringIO
 from datetime import datetime
@@ -81,6 +82,16 @@ def parse_slurm_job_info(job_info, job_id):
         return None
     return job_details
 
+def pbs_exit_code_to_string(exit_code):
+    if exit_code == 0:
+        return "COMPLETED"
+    if 1 <= exit_code <= 127:
+        return f"ERROR ({os.strerror(exit_code)})"
+    if exit_code >= 128:
+        signal_number = exit_code - 128
+        return f"TERMINATED ({signal.Signals(signal_number).name})"
+    return "Unknown"
+
 def parse_pbs_job_info():
     """
     Parse the job information retrieved from PBS.
@@ -99,7 +110,7 @@ def parse_pbs_job_info():
     job_details['Timelimit'] = walltime_match.group(1) if walltime_match else "Unknown"
     ppn_match = re.search(r'nodes=\d+:ppn=(\d+)', requested_resource_limits)
     job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
-    job_details['State'] = sys.argv[10]
+    job_details['State'] = pbs_exit_code_to_string(int(sys.argv[10]))
     job_details['Start'] = "Unknown"
     job_details['End'] = "Unknown"
     walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
