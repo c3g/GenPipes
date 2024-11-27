@@ -754,16 +754,16 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                     ]
                 )
 
-            trim_metrics_file = os.path.join(metrics_output_directory, "trimSampleTable.tsv")
-            metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
-            report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
-            if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
-                bam_ext = "sorted.dup.filtered.cleaned.bam"
-            else:
-                bam_ext = "sorted.dup.filtered.bam"
-            flagstat_ext = re.sub(r"\.bam", "", bam_ext)
+        trim_metrics_file = os.path.join(metrics_output_directory, "trimSampleTable.tsv")
+        metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
+        report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
+        if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+            bam_ext = "sorted.dup.filtered.cleaned.bam"
+        else:
+            bam_ext = "sorted.dup.filtered.bam"
+        flagstat_ext = re.sub(r"\.bam", "", bam_ext)
 
-            jobs.append(
+        jobs.append(
             Job(
                 inputs_report,
                 [report_metrics_file],
