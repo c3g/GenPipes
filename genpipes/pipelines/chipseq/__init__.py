@@ -676,10 +676,14 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
 
         jobs = []
 
+        samples_associative_array = []
+        inputs_report = []
+
         metrics_output_directory = self.output_dirs['metrics_directory']
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
         for sample in self.samples:
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 raw_bam_file = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.bam")
@@ -732,16 +736,98 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                                 os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file)))
                             ),
                             bash.ln(
-                                os.path.relpath(os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))), link_directory),
-                                os.path.join(link_directory, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))),
-                                input = os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file)))
+                                os.path.relpath(os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file))), link_directory),
+                                os.path.join(link_directory, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
+                                input = os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file)))
                             )
                         ],
                         name=f"metrics_flagstat.{sample.name}.{mark_name}",
                         samples=[sample]
                     )
                 )
-                self.multiqc_inputs.append(os.path.join(link_directory,  re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))))
+                self.multiqc_inputs.append(os.path.join(link_directory,  re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file))))
+                inputs_report.extend(
+                    [
+                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
+                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file))),
+                        bam_file
+                    ]
+                )
+
+            trim_metrics_file = os.path.join(metrics_output_directory, "trimSampleTable.tsv")
+            metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
+            report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
+            if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+                bam_ext = "sorted.dup.filtered.cleaned.bam"
+            else:
+                bam_ext = "sorted.dup.filtered.bam"
+            flagstat_ext = re.sub(r"\.bam", "", bam_ext)
+
+            jobs.append(
+            Job(
+                inputs_report,
+                [report_metrics_file],
+                [['metrics', 'module_sambamba']],
+                # Retrieve number of aligned and duplicate reads from sample flagstat files
+                # Merge trimming stats per sample with aligned and duplicate stats using ugly awk
+                command="""\
+mkdir -p {metrics_dir}
+cp /dev/null {metrics_file} && \\
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
+do
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    raw_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.flagstat
+    filtered_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.{flagstat_ext}.flagstat
+    bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.{bam_ext}
+    raw_supplementarysecondary_reads=`bc <<< $(grep "secondary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
+    mapped_reads=`bc <<< $(grep "mapped (" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$raw_supplementarysecondary_reads`
+    filtered_supplementarysecondary_reads=`bc <<< $(grep "secondary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
+    filtered_reads=`bc <<< $(grep "in total" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$filtered_supplementarysecondary_reads`
+    filtered_mapped_reads=`bc <<< $(grep "mapped (" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$filtered_supplementarysecondary_reads`
+    filtered_mapped_rate=`echo "scale=4; 100*$filtered_mapped_reads/$filtered_reads" | bc -l`
+    filtered_dup_reads=`grep "duplicates" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
+    filtered_dup_rate=`echo "scale=4; 100*$filtered_dup_reads/$filtered_mapped_reads" | bc -l`
+    filtered_dedup_reads=`echo "$filtered_mapped_reads-$filtered_dup_reads" | bc -l`
+    if [[ -s {trim_metrics_file} ]]
+      then
+        raw_reads=$(grep -P "${{sample}}\\t${{mark_name}}" {trim_metrics_file} | cut -f 3)
+        raw_trimmed_reads=`bc <<< $(grep "in total" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$raw_supplementarysecondary_reads`
+        mapped_reads_rate=`echo "scale=4; 100*$mapped_reads/$raw_trimmed_reads" | bc -l`
+        raw_trimmed_rate=`echo "scale=4; 100*$raw_trimmed_reads/$raw_reads" | bc -l`
+        filtered_rate=`echo "scale=4; 100*$filtered_reads/$raw_trimmed_reads" | bc -l`
+      else
+        raw_reads=`bc <<< $(grep "in total" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$raw_supplementarysecondary_reads`
+        raw_trimmed_reads="NULL"
+        mapped_reads_rate=`echo "scale=4; 100*$mapped_reads/$raw_reads" | bc -l`
+        raw_trimmed_rate="NULL"
+        filtered_rate=`echo "scale=4; 100*$filtered_reads/$raw_reads" | bc -l`
+    fi
+    filtered_mito_reads=$(sambamba view -F "not duplicate" -c $bam_file chrM)
+    filtered_mito_rate=$(echo "scale=4; 100*$filtered_mito_reads/$filtered_mapped_reads" | bc -l)
+    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_mapped_reads\\t$filtered_mapped_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate" >> {metrics_file}
+  done
+done && \\
+sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tRemaining Reads after Trimming #\\tRemaining Reads after Trimming %\\tAligned Trimmed Reads #\\tAligned Trimmed Reads %\\tRemaining Reads after Filtering #\\tRemaining Reads after Filtering %\\tAligned Filtered Reads #\\tAligned Filtered Reads %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads # without Duplicates\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
+mkdir -p {report_dir} && \\
+cp {metrics_file} {report_metrics_file}""".format(
+                    sambamba=global_conf.global_get('DEFAULT', 'module_sambamba'),
+                    metrics_dir=metrics_output_directory,
+                    metrics_file=metrics_file,
+                    samples_associative_array=" ".join(samples_associative_array),
+                    alignment_dir=self.output_dirs['alignment_output_directory'],
+                    flagstat_ext=flagstat_ext,
+                    bam_ext=bam_ext,
+                    report_dir=self.output_dirs['report_output_directory'],
+                    trim_metrics_file=trim_metrics_file,
+                    report_metrics_file=report_metrics_file
+                ),
+                name="metrics_report",
+                samples=self.samples,
+                removable_files=[report_metrics_file]
+            )
+        )
 
         return jobs
 
