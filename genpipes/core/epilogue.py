@@ -45,6 +45,7 @@ def parse_slurm_job_info(job_info, job_id):
     """
     job_details = {}
     reader = csv.DictReader(StringIO(job_info), delimiter='|')
+    logging.info(f"Job info: {job_info}")
     for row in reader:
         if row['JobID'] == job_id:
             # Extracting from the first line (line starting with JobID)
