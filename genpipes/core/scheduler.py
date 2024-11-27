@@ -669,8 +669,7 @@ chmod 755 $SCIENTIFIC_FILE
 
                     cmd = f"""\
 # Create the submission file
-cat << '{os.path.basename(job.done)}' > $SUBMISSION_FILE
-#!/bin/bash
+echo "#!/bin/bash
 #SBATCH {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
 #SBATCH -D $OUTPUT_DIR
 #SBATCH -o $JOB_OUTPUT
@@ -680,20 +679,19 @@ cat << '{os.path.basename(job.done)}' > $SUBMISSION_FILE
 #SBATCH {self.cpu(job_name_prefix)} {self.gpu(job_name_prefix)}
 {dependencies}
 EPILOGUE_SCRIPT="{os.path.dirname(os.path.abspath(__file__))}/epilogue.py"
-trap "$EPILOGUE_SCRIPT" EXIT
+trap "\\$EPILOGUE_SCRIPT" EXIT
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
 echo "{"-" * 90}"
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 srun --wait=0 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
-GenPipes_STATE=$PIPESTATUS
-echo GenPipesExitStatus:$GenPipes_STATE
-{self.job2json_project_tracking(pipeline, job, '$GenPipes_STATE')}
-if [ $GenPipes_STATE -eq 0 ]; then
+GenPipes_STATE=\\$PIPESTATUS
+echo GenPipesExitStatus:\\$GenPipes_STATE
+{self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
+if [ \\$GenPipes_STATE -eq 0 ]; then
     touch $JOB_DONE
 fi
 echo "{"-" * 90}"
-exit $GenPipes_STATE
-{os.path.basename(job.done)}
+exit \\$GenPipes_STATE" > $SUBMISSION_FILE
 # Submit the job and get the job id
 {job.id}=$({self.submit_cmd} $SUBMISSION_FILE | awk '{{print $4}}')
 # Write job parameters in job list file
