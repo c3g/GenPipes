@@ -1786,6 +1786,7 @@ class RunProcessing(common.MUGQICPipeline):
                         inputs,
                         [output],
                         [
+                            ["blast", "module_perl"],
                             ["blast", "module_mugqic_tools"],
                             ["blast", "module_blast"]
                         ],
