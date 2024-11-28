@@ -814,7 +814,7 @@ do
           chip_bed_file={macs_directory}/$sample/$mark_name/$sample.${{mark_name}}_peaks.*Peak.bed
           nmb_peaks=$(wc -l $chip_bed_file | cut -f 1 -d " ")
           reads_under_peaks=$(samtools view -c -L $chip_bed_file $bam_file)
-          frip=$(echo "scale=4; $reads_under_peaks/$filtered_reads_chip" | bc -l)
+          frip=$(echo "scale=4; $reads_under_peaks/$filtered_mapped_reads" | bc -l)
         else
           nmb_peaks="NA"
           reads_under_peaks="NA"
