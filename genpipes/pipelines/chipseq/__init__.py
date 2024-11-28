@@ -762,12 +762,15 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
         else:
             bam_ext = "sorted.dup.filtered.bam"
         flagstat_ext = re.sub(r"\.bam", "", bam_ext)
-
+        
         jobs.append(
             Job(
                 inputs_report,
                 [report_metrics_file],
-                [['metrics', 'module_sambamba']],
+                [
+                    ['metrics', 'module_sambamba'],
+                    ['metrics', 'module_samtools']
+                ],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
                 # Merge trimming stats per sample with aligned and duplicate stats using ugly awk
                 command="""\
@@ -806,6 +809,17 @@ do
     fi
     filtered_mito_reads=$(sambamba view -F "not duplicate" -c $bam_file chrM)
     filtered_mito_rate=$(echo "scale=4; 100*$filtered_mito_reads/$filtered_mapped_reads" | bc -l)
+    if [[ $mark_name != "Input" ]]
+        then
+          chip_bed_file={macs_directory}/$sample/$mark_name/$sample.${{mark_name}}_peaks.*Peak.bed
+          nmb_peaks=$(wc -l $chip_bed_file | cut -f 1 -d " ")
+          reads_under_peaks=`samtools view -@ $n -c -L $chip_bed_file $bam_file`
+          frip=`echo "scale=4; $reads_under_peaks/$filtered_reads_chip" | bc -l`
+        else
+          nmb_peaks="NA"
+          reads_under_peaks="NA"
+          frip="NA"
+    fi
     echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_mapped_reads\\t$filtered_mapped_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate" >> {metrics_file}
   done
 done && \\
@@ -814,6 +828,7 @@ mkdir -p {report_dir} && \\
 cp {metrics_file} {report_metrics_file}""".format(
                     sambamba=global_conf.global_get('DEFAULT', 'module_sambamba'),
                     metrics_dir=metrics_output_directory,
+                    macs_directory=self.output_dirs['macs_output_directory'],
                     metrics_file=metrics_file,
                     samples_associative_array=" ".join(samples_associative_array),
                     alignment_dir=self.output_dirs['alignment_output_directory'],
