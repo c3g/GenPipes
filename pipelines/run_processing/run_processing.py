@@ -2734,6 +2734,7 @@ class RunProcessing(common.MUGQICPipeline):
                     )
 
             # loop over readsets and add file sizes of fastqs and bams to json
+            size_jobs = []
             for readset in self.readsets[lane]:
 
                 if self.is_paired_end[lane]:
@@ -2750,7 +2751,9 @@ class RunProcessing(common.MUGQICPipeline):
                 )
                 size_job.name = f"report.file_sizes." + readset.name + "." + self.run_id + "." + lane
                 size_job.samples = self.samples[lane]
-                lane_jobs.append(size_job)
+                size_jobs.append(size_job)
+            
+            lane_jobs.extend(self.throttle_jobs(size_jobs, f"file_sizes.{lane}"))
 
             self.add_copy_job_inputs(lane_jobs, lane)
 
