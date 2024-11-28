@@ -1669,14 +1669,14 @@ do
         first_time=false
     fi
     tail -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- >> {metrics_merged_out}
-    sample_name=`tail -n 1 $sample | cut -f 1` && \\
-    input_name=`tail -n 1 $sample | cut -f 4` && \\
-    input_chip_type="NA" && \\
-    genome_assembly=`tail -n 1 $sample | cut -f 5` && \\
-    input_core=`tail -n 1 $sample | cut -f 18-29` && \\
-    input_nsc=`tail -n 1 $sample | cut -f 34` && \\
-    input_rsc=`tail -n 1 $sample | cut -f 36` && \\
-    input_quality=`tail -n 1 $sample | cut -f 38` && \\
+    sample_name=`tail -n 1 $sample | cut -f 1`
+    input_name=`tail -n 1 $sample | cut -f 4`
+    input_chip_type="NA"
+    genome_assembly=`tail -n 1 $sample | cut -f 5`
+    input_core=`tail -n 1 $sample | cut -f 18-29`
+    input_nsc=`tail -n 1 $sample | cut -f 34`
+    input_rsc=`tail -n 1 $sample | cut -f 36`
+    input_quality=`tail -n 1 $sample | cut -f 38`
     if [[ $input_name != "no_input" ]]
     then
         echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\tNA\\tNA\\tNA\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\tNA\\tNA" >> {metrics_merged_out}
