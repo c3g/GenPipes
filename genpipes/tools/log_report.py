@@ -20,400 +20,287 @@
 ################################################################################
 
 import argparse
-import collections
 import csv
 import datetime
 import logging
 import os
 import re
-import subprocess
 
+# Configure logging at the module level
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class JobStat():
-    JOBID = 'JobId'
-    JOBSTATE = 'JobState'
-    SUBMITTIME = 'SubmitTime'
-    STARTTIME = 'StartTime'
-    NUMCPUS = 'NumCPUs'
-    MEM = 'mem'
-    REQUEUE = 'Requeue'
-    RESTARTS = 'Restarts'
-    RUNTIME = 'RunTime'
-    REMOTE_LIST = {
-        'narval': 'narval.calculcanada.ca',
-        'beluga': 'beluga.calculcanada.ca',
-        'cedar': 'cedar.calculcanada.ca',
-        'graham': 'graham.calculcanada.ca',
-        'abacus': 'abacus.genome.mcgill.ca'
-        }
-
-    # Fields extracted from sacct
-    SJOBID = 'JobID'
-    SSTATE = 'State'
-    SELAPSEDRAW = 'ElapsedRaw'
-
-    COMPLETED = 'COMPLETED'
-
-    registery = {}
-    _REMOTE = None
-    _REMOTE_USER = None
-
-    def __init__(self, step_output_file, jobid=None, dependency=None, name=None, parsed_after_header=50, remote_hpc=None, remote_user=None):
-        self.completed = None
-        self._path = step_output_file
-        self.jobid = jobid
-        self._dependency = dependency
-        self._name = name
-        self._prologue = {}
-        self._epilogue = {}
-        self._delta = None
-        self._delta_with_overhead = None
-        # Real slurm job number, if not none. There is a problem with
-        # the pipeline output path
-        self.output_log_id = []
-        self._start = None
-        self._stop = None
-        self._sacct_start = None
-        self._sacct_stop = None
-        self._parsed_after_header = parsed_after_header
-        self._genpipes_exit_status = None
-        self.set_remote(remote_hpc)
-        self.set_remote_user(remote_user)
-        self._slurm_state = None
-        self._sub_id = None
-        self.log_missing = None
-        self._elapsed_sec = None
-        self._sacct_val = None
-        if os.path.isfile(self._path):
-            self.log_missing = False
-            self.fill_from_file(self._path)
+    """
+    Class to store the job information
+    """
+    def __init__(self, output_file, job_id=None, dependency=None, job_name=None):
+        self.output_file = output_file
+        self.job_id = job_id
+        self.dependency = dependency
+        self.job_name = job_name
+        self.user = None
+        self.node = None
+        self.priority = None
+        self.status = None
+        self.submit_time = None
+        self.eligible_time = None
+        self.start_time = None
+        self.queue_time = None
+        self.end_time = None
+        self.total_time = None
+        self.time_limit = None
+        self.time_efficiency = None
+        self.n_cpu = None
+        self.cpu_time = None
+        self.cpu_efficiency = None
+        self.mem = None
+        self.total_mem = None
+        self.ave_mem = None
+        self.max_mem = None
+        self.mem_efficiency = None
+        self.ave_diskr = None
+        self.max_diskr = None
+        self.ave_diskw = None
+        self.max_diskw = None
+        if os.path.isfile(self.output_file):
+            self.fill_from_file(self.output_file)
         else:
-            self.log_missing = True
-            logger.warning(f'{self._path} output path is missing')
+            logger.warning(f'Job Name {self.job_name} with ID {self.job_id} has no log file {self.output_file}. Skipping this job in report...')
 
-        self.registery[self.jobid] = self
-        # self.get_job_status()
-
-
-    def __str__(self):
-
-        return f'{self.jobid} {self.output_log_id} {self.name} {self.n_cpu} {self.mem} {self.runtime_job} {self.log_file_exit_status}'
-
-    @classmethod
-    def get_remote(cls):
-        return cls._REMOTE
-
-    @classmethod
-    def set_remote(cls, remote_hpc):
-        cls._REMOTE = remote_hpc
-
-    @classmethod
-    def get_remote_user(cls):
-        return cls._REMOTE_USER
-
-    @classmethod
-    def set_remote_user(cls, remote_user):
-        cls._REMOTE_USER = remote_user
+    def __repr__(self):
+        return f'<JobStat {self.job_id} {self.job_name}>'
 
     @property
     def path(self):
-        return os.path.realpath(self._path)
-
-    @classmethod
-    def sacct(cls, jobid):
-        cmd = ["sacct", "--format=ALL", "-P", "--delimiter", "^", "-j", jobid]
-        if cls.get_remote() is not None:
-            if cls.get_remote_user() is not None:
-                cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()], '-l', cls.get_remote_user()] + cmd
-            else:
-                cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()]] + cmd
-        return subprocess.check_output(cmd).decode("utf-8")
-
-    @classmethod
-    def qstat(cls, jobid):
-        cmd = ["qstat", "-f", jobid]
-        if cls.get_remote() is not None:
-            if cls.get_remote_user() is not None:
-                cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()], '-l', cls.get_remote_user()] + cmd
-            else:
-                cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()]] + cmd
-        print(" ".join(cmd))
-        exit()
-        return subprocess.check_output(cmd).decode("utf-8")
-
-    @classmethod
-    def set_all_status(cls):
-        ids = ','.join([str(i) for i in cls.registery.keys()])
-        # if remote hpc is abacus, use qstat
-        if cls.get_remote() == 'abacus':
-            raw_output = cls.qstat(ids)
-        else:
-            raw_output = cls.sacct(ids)
-        lines = raw_output.rstrip().splitlines()
-        keys = lines[0].strip().split("^")
-        job_i = [i for i, k in enumerate(keys) if k == cls.SJOBID][0]
-        bidon = collections.defaultdict(list)
-        for line in lines[1:]:
-            slurm_steps = line.strip().split("^")
-            job_id = slurm_steps[job_i].split('.')[0]
-            bidon[job_id].append(slurm_steps)
-        for job_id, steps in bidon.items():
-            acct = dict(zip(keys, zip(*steps)))
-            print(job_id, acct)
-            cls.registery[job_id].set_job_status(acct)
-
-    def set_job_status(self, sacct_val):
-        self._sacct_val = sacct_val
-        self._slurm_state = sacct_val[self.SSTATE]
-        self._sub_id = sacct_val[self.SJOBID]
-
-        if all([s == self.COMPLETED for s in self._slurm_state]):
-            self.completed = True
-        else:
-            self.completed = False
-            logger.error('The job {} has a {} slurm state '.format(self.jobid, self._slurm_state))
-
-        self._elapsed_sec = [int(t) if t is not None else 0 for t in sacct_val[self.SELAPSEDRAW]]
-
-    @property
-    def slurm_state(self):
-        return dict(zip(self._sub_id, self._slurm_state))
+        """
+        Return the full path to the output file
+        """
+        return os.path.realpath(self.output_file)
 
     def fill_from_file(self, log_file_path):
-        # parse stdout and get all the prologue and epilogues values
-        to_parse = False
-        n = 0
-        lines_to_parse = []
-        if os.path.isfile(log_file_path):  # Make sure the file exists
-            for line in open(log_file_path, encoding='utf-8', errors='ignore'):
+        """
+        Fill the object with information from the EPILOGUE of the .o file
+        Args:
+            log_file_path: path to the output file
+        """
+        with open(log_file_path) as log_file:
+            for line in log_file:
+                if line.startswith('EPILOGUE - '):
+                    user = re.search(r'User:\s+(.+$)', line)
+                    if user:
+                        self.user = user.group(1)
+                    node = re.search(r'Node\(s\):\s+(.+$)', line)
+                    if node:
+                        self.node = node.group(1)
+                    priority = re.search(r'Priority:\s+(.+$)', line)
+                    if priority:
+                        self.priority = priority.group(1)
+                    status = re.search(r'Status:\s+(.+$)', line)
+                    if status:
+                        self.status = status.group(1)
+                    submit_time = re.search(r'Submit Time:\s+(.+$)', line)
+                    if submit_time:
+                        self.submit_time = submit_time.group(1)
+                    eligible_time = re.search(r'Eligible Time:\s+(.+$)', line)
+                    if eligible_time:
+                        self.eligible_time = eligible_time.group(1)
+                    start_time = re.search(r'Start Time:\s+(.+$)', line)
+                    if start_time:
+                        self.start_time = start_time.group(1)
+                    queue_time = re.search(r'Time Spent in Queue \(DD:HH:MM:SS\):\s+(.+$)', line)
+                    if queue_time:
+                        self.queue_time = queue_time.group(1)
+                    end_time = re.search(r'End Time:\s+(.+$)', line)
+                    if end_time:
+                        self.end_time = end_time.group(1)
+                    total_time = re.search(r'Total Wall-clock Time:\s+(.+$)', line)
+                    if total_time:
+                        self.total_time = total_time.group(1)
+                    time_limit = re.search(r'Time Limit:\s+(.+$)', line)
+                    if time_limit:
+                        self.time_limit = time_limit.group(1)
+                    time_efficiency = re.search(r'Time Efficiency \(% of Wall-clock Time to Time Limit\):\s+(.+$)', line)
+                    if time_efficiency:
+                        self.time_efficiency = time_efficiency.group(1)
+                    n_cpu = re.search(r'Number of CPU\(s\) Requested:\s+(.+$)', line)
+                    if n_cpu:
+                        self.n_cpu = int(n_cpu.group(1))
+                    cpu_time = re.search(r'Total CPU Time:\s+(.+$)', line)
+                    if cpu_time:
+                        self.cpu_time = cpu_time.group(1)
+                    cpu_efficiency = re.search(r'CPU Efficiency \(% of CPU Time to Wall-clock Time\):\s+(.+$)', line)
+                    if cpu_efficiency:
+                        self.cpu_efficiency = cpu_efficiency.group(1)
+                    mem = re.search(r'Memory Requested:\s+(.+$)', line)
+                    if mem:
+                        self.mem = mem.group(1)
+                    total_mem = re.search(r'Total Memory:\s+(.+$)', line)
+                    if total_mem:
+                        self.total_mem = total_mem.group(1)
+                    ave_mem = re.search(r'Average Memory Usage:\s+(.+$)', line)
+                    if ave_mem:
+                        self.ave_mem = ave_mem.group(1)
+                    max_mem = re.search(r'Maximum Memory Usage:\s+(.+$)', line)
+                    if max_mem:
+                        self.max_mem = max_mem.group(1)
+                    mem_efficiency = re.search(r'Memory Efficiency \(% of Memory Requested to Average Memory Used\):\s+(.+$)', line)
+                    if mem_efficiency:
+                        self.mem_efficiency = mem_efficiency.group(1)
+                    ave_diskr = re.search(r'Average Disk Read:\s+(.+$)', line)
+                    if ave_diskr:
+                        self.ave_diskr = ave_diskr.group(1)
+                    max_diskr = re.search(r'Maximum Disk Read:\s+(.+$)', line)
+                    if max_diskr:
+                        self.max_diskr = max_diskr.group(1)
+                    ave_diskw = re.search(r'Average Disk Write:\s+(.+$)', line)
+                    if ave_diskw:
+                        self.ave_diskw = ave_diskw.group(1)
+                    max_diskw = re.search(r'Maximum Disk Write:\s+(.+$)', line)
+                    if max_diskw:
+                        self.max_diskw = max_diskw.group(1)
 
-                if "SLURM FAKE PROLOGUE" in line:
-                    n = 0
-                    to_parse = True
-                elif "SLURM FAKE EPILOGUE" in line:
-                    n = 0
-                    to_parse = True
-                elif "GenPipesExitStatus" in line:
-                    self._genpipes_exit_status = line.strip('\n')
-
-                if n >= self._parsed_after_header:
-                    to_parse = False
-
-                if to_parse:
-                    lines_to_parse.append(line)
-                    n += 1
-
-            to_parse = ' '.join(lines_to_parse)
-            bidon = re.findall(r"(\w+)=(\S+)\s", to_parse)
-            all_value = {}
-            for k, v in bidon:
-                all_value.setdefault(k, []).append(v)
-
-            try:
-                fake_pro_epi = [i for i, x in enumerate(all_value[self.JOBID])
-                                if self.jobid == x]
-            except KeyError:
-                logger.warning('{} has no jobID log'.format(log_file_path))
-                fake_pro_epi = []
-
-            if len(fake_pro_epi) == 2:
-                self.output_log_id = list(set(all_value[self.JOBID]))
-                pro, epi = fake_pro_epi
-            elif len(fake_pro_epi) >= 2:
-
-                logger.error(f'{self.jobid} log is not in {self._path}, there is a mismatch between the job number and the output')
-
-                # Get the closest number
-                diff = [abs(int(v) - self.jobid) for v in all_value[self.JOBID]]
-                self.output_log_id = list(set(all_value[self.JOBID]))
-
-                pro, epi = [i for i, x in enumerate(all_value[self.JOBID])
-                            if int(all_value[self.JOBID][diff.index(min(diff))]) == int(x)]
-
-            elif len(fake_pro_epi) == 1:
-                # no epilogue!
-                # Just put prologue in it
-                pro = fake_pro_epi[0]
-                epi = pro
-                logger.error('No epilogue in log file {}'.format(log_file_path))
-            else:
-                pro = None
-                epi = None
-
-            for k, v in all_value.items():
-                try:
-                    self._prologue[k] = v[pro]
-                    self._epilogue[k] = v[epi]
-                except (IndexError, TypeError):
-                    logger.warning(f'{k} = {v} is not a slurm prologue/epilogue value or is ambiguous')
-
-            tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\.?\d*\w)", to_parse)
-            try:
-                self._prologue[self.NUMCPUS] = tres[pro][0]
-                self._epilogue[self.NUMCPUS] = tres[epi][0]
-                self._prologue[self.MEM] = tres[pro][1]
-                self._epilogue[self.MEM] = tres[epi][1]
-            except (IndexError, TypeError):
-                logger.warning('epilogue and or prologue is not in the log')
-
-    @property
-    def log_file_exit_status(self):
-        try:
-            return self._genpipes_exit_status.split(':')[1]
-        except AttributeError:
-            return None
-
-    @property
-    def runtime_job(self):
-        try:
-            if self._delta is None:
-                self._delta = self.stop - self.start
-
-            return self._delta
-        except (KeyError, ValueError):
-            return datetime.timedelta(0)
-
-    @property
-    def runtime_with_overhead(self):
-
-        try:
-            return datetime.timedelta(seconds=max(self._elapsed_sec))
-        except ValueError:
-            return datetime.timedelta(0)
-
-    @property
-    def start(self):
-        if self._start is None:
-            start = [int(s) for s in self._prologue[self.RUNTIME].split(':')]
-            self._start = datetime.timedelta(hours=start[0],
-                                             minutes=start[1], seconds=start[2])
-        return self._start
-
-    @property
-    def stop(self):
-        if self._stop is None:
-            stop = [int(s) for s in self._epilogue[self.RUNTIME].split(':')]
-            self._stop = datetime.timedelta(hours=stop[0], minutes=stop[1], seconds=stop[2])
-        return self._stop
-
-    @property
-    def prologue_time(self):
-        try:
-            return self.start_time + self.start
-        except (TypeError, KeyError, ValueError):
-            return None
-
-    @property
-    def epilogue_time(self):
-        try:
-            return self.start_time + self.stop
-        except (TypeError, KeyError, ValueError):
-            return None
-
-    @property
-    def start_time(self):
-        try:
-            return datetime.datetime.strptime(self._prologue[self.STARTTIME], '%Y-%m-%dT%H:%M:%S')
-        except KeyError:
-            return None
-
-    @property
-    def n_cpu(self):
-        try:
-            return int(self._prologue[self.NUMCPUS])
-        except KeyError:
-            return 0
-
-    @property
-    def mem(self):
-        try:
-            return self._prologue[self.MEM]
-        except KeyError:
-            return None
-
-    @property
-    def name(self):
-        return self._name
-
-
-def get_report(job_list_tsv=None, remote_hpc=None, remote_user=None):
+def get_report(job_list_tsv=None):
+    """
+    Get the job report from the job list
+    Args:
+        job_list_tsv: path to the job list tsv file
+    Returns:
+        list of JobStat objects
+    """
     job_output_path = os.path.dirname(job_list_tsv)
 
     with open(job_list_tsv) as tsvin:
         jobs = csv.reader(tsvin, delimiter='\t')
-        jobs = csv.reader(tsvin, delimiter='\t')
-
         report = []
-        i = 0
         for job in jobs:
-            logger.info('loading {}'.format(job))
+            logger.info(f'Loading {job} ...')
             report.append(
                 JobStat(
-                    step_output_file=os.path.join(job_output_path, job[3]),
-                    name=job[1],
-                    jobid=job[0],
-                    dependency=job[2],
-                    remote_hpc=remote_hpc,
-                    remote_user=remote_user
+                    output_file=os.path.join(job_output_path, job[3]),
+                    job_name=job[1],
+                    job_id=job[0],
+                    dependency=job[2]
                     )
                 )
-        JobStat.set_all_status()
     return report
+
+def parse_time(time_str):
+    parts = time_str.split(':')
+    if len(parts) == 3:
+        h, m, s = parts
+    elif len(parts) == 2:
+        h = '0'
+        m, s = parts
+    elif len(parts) == 1:
+        h = '0'
+        m = '0'
+        s = parts[0]
+    else:
+        raise ValueError(f"Unexpected time format: {time_str}")
+
+    # Convert to float to handle decimal seconds
+    h = int(h)
+    m = int(m)
+    s = float(s)
+
+    # Separate seconds and milliseconds
+    seconds = int(s)
+    milliseconds = (s - seconds) * 1000
+
+    return datetime.timedelta(hours=h, minutes=m, seconds=seconds, milliseconds=milliseconds)
 
 
 def print_report(report, to_stdout=True, to_tsv=None):
+    """
+    Print the report to the terminal and/or to a tsv file
+    Args:
+        report: list of JobStat objects
+        to_stdout: print to terminal
+        to_tsv: path to tsv file
+    """
     min_start = []
     max_stop = []
     total_machine = datetime.timedelta(0)
     total_machine_core = datetime.timedelta(0)
-    ok_message = []
-    bad_message = []
 
-    header = ('id', 'log_from_job', 'same_id', 'name', 'slurm_prologue', 'slurm_main', 'slurm_epilogue',
-              'custom_exit',
-              'output_file_path', 'outpout_file_exist', 'runtime', 'runtime_with_overhead')
+    header = (
+        'id',
+        'name',
+        'status',
+        'user',
+        'node',
+        'priority',
+        'submit_time',
+        'eligible_time',
+        'start_time',
+        'queue_time',
+        'end_time',
+        'total_time',
+        'time_limit',
+        'time_efficiency',
+        'n_cpu',
+        'cpu_time',
+        'cpu_efficiency',
+        'mem',
+        'total_mem',
+        'ave_mem',
+        'max_mem',
+        'mem_efficiency',
+        'ave_diskr',
+        'max_diskr',
+        'ave_diskw',
+        'max_diskw',
+        'output_file_path'
+        )
     data_table = []
 
-    for j in report:
-        pro, batch, epi = None, None, None
-        for k, v in j.slurm_state.items():
-            if 'batch' in k:
-                batch = v
-            elif 'extern' in k:
-                epi = v
-            else:
-                pro = v
-        same = True
-        if len(j.output_log_id) != 1:
-            same = False
-        elif j.jobid != int(j.output_log_id[0]):
-            same = False
-
-        data_table.append((j.jobid, j.output_log_id, same, j.name, pro, batch, epi, j.log_file_exit_status,
-                           j.path, not j.log_missing, j.runtime_job, j.runtime_with_overhead))
-
-        if to_stdout:
-            if not j.completed:
-                if j.log_missing:
-                    bad_message.append(f"Job Name {j.name}, jobid {j.jobid} has no log file {j.path}. May not be started.")
-                else:
-                    bad_message.append(f"Job Name {j.name}, jobid {j.jobid} has not completed with status {j.slurm_state.keys()}, log file status {j.log_file_exit_status}")
-            elif (j.output_log_id and j.jobid != int(j.output_log_id[0])) or len(j.output_log_id) > 1:
-                bad_message.append(f"Job Name {j.name}, jobid {j.jobid} has log from job {j.output_log_id} in its log file {j.path}")
-            else:
-                ok_message.append(f"Job Name {j.name}, jobid {j.jobid} is all good!")
-
-            if j.log_missing:
-                total_machine = datetime.timedelta(0)
-                total_machine_core = datetime.timedelta(0)
-            else:
-                if j.prologue_time is not None:
-                    min_start.append(j.prologue_time)
-                if j.epilogue_time is not None:
-                    max_stop.append(j.epilogue_time)
-                total_machine += j.runtime_job
-                total_machine_core += j.runtime_job * j.n_cpu
+    for job in report:
+        data_table.append(
+            (
+                job.job_id,
+                job.job_name,
+                job.status,
+                job.user,
+                job.node,
+                job.priority,
+                job.submit_time,
+                job.eligible_time,
+                job.start_time,
+                job.queue_time,
+                job.end_time,
+                job.total_time,
+                job.time_limit,
+                job.time_efficiency,
+                job.n_cpu,
+                job.cpu_time,
+                job.cpu_efficiency,
+                job.mem,
+                job.total_mem,
+                job.ave_mem,
+                job.max_mem,
+                job.mem_efficiency,
+                job.ave_diskr,
+                job.max_diskr,
+                job.ave_diskw,
+                job.max_diskw,
+                job.path
+                )
+            )
+        if job.start_time:
+            min_start.append(datetime.datetime.strptime(job.start_time, '%Y-%m-%dT%H:%M:%S'))
+        else:
+            logger.warning(f'Job {job.job_id} has no Start Time.')
+        if job.end_time:
+            max_stop.append(datetime.datetime.strptime(job.end_time, '%Y-%m-%dT%H:%M:%S'))
+        else:
+            logger.warning(f'Job {job.job_id} has no End Time.')
+        if job.total_time:
+            total_time = parse_time(job.total_time)
+            total_machine += total_time
+        if job.cpu_time:
+            cpu_time = parse_time(job.cpu_time)
+            total_machine_core += cpu_time * job.n_cpu
 
     if to_stdout:
         try:
@@ -422,15 +309,14 @@ def print_report(report, to_stdout=True, to_tsv=None):
             # total on node
             total_human = max_stop - min_start
         except ValueError:
-            logger.error('No time recorded on that job')
+            logger.error('Missing start or stop time in the report.')
             total_human = None
 
-        print("""
-    Cumulative time spent on compute nodes: {1}
-    Cumulative core time: {2}
-    Human time from beginning of pipeline to its end: {0}"
-    """
-              .format(total_human, total_machine, total_machine_core))
+        print(f"""
+    Cumulative time spent on compute nodes: {total_machine}
+    Cumulative core time: {total_machine_core}
+    Human time from beginning of pipeline to its end: {total_human}
+    """)
 
     if to_tsv:
         if not isinstance(to_tsv, str):
@@ -441,46 +327,6 @@ def print_report(report, to_stdout=True, to_tsv=None):
             for row in data_table:
                 writer.writerow(row)
 
-
-def fine_grain(stats):
-    total = datetime.timedelta(0)
-    max_r = datetime.timedelta(0)
-    max_h = datetime.timedelta(0)
-    for job in stats:
-        if "NA12878_PCRFRee_gatk4" in job.name:
-            if 'realigner' in job.name:
-                mar_r = max(max_r, job.runtime_job)
-            if 'haplotype_caller' in job.name:
-                mar_h = max(max_h, job.runtime_job)
-            else:
-                total = total + job.runtime_job
-
-        elif job.jobid in [336, 338]:
-            total = total + job.runtime_job
-
-    total = total + max_h + max_r
-
-    print(total.total_seconds() / 3600.)
-
-    total = datetime.timedelta(0)
-    max_r = datetime.timedelta(0)
-    max_h = datetime.timedelta(0)
-    for job in stats:
-        if "NA12878_PCRFRee_20170509" in job.name:
-            if 'realigner' in job.name:
-                mar_r = max(max_r, job.runtime_job)
-            if 'haplotype_caller' in job.name:
-                mar_h = max(max_h, job.runtime_job)
-            elif job.jobid in [336, 338]:
-                pass
-            else:
-                total = total + job.runtime_job
-
-    total = total + max_h + max_r
-
-    print(total.total_seconds() / 3600.)
-
-
 def main(args=None):
     """
     Main function to run the log_report script
@@ -488,24 +334,20 @@ def main(args=None):
     if args is None:
         parser = argparse.ArgumentParser()
         parser.add_argument('job_list_path', help="Path to a GenPipes job list")
-        parser.add_argument('--remote', '-r', help="Remote HPC where the job was ran", choices=['beluga', 'cedar', 'narval', 'abacus'], default=None)
-        parser.add_argument('--user', '-u', help="Remote HPC username to be used for ssh. Default: local username", default=None)
-        parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
+        parser.add_argument('--loglevel', help="Standard Python log level", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', "CRITICAL"], default='WARNING')
         parser.add_argument('--tsv', help="output to tsv file")
         parser.add_argument('--quiet', '-q', help="No report printed to terminal", action='store_true', default=False)
 
         args = parser.parse_args()
 
-    log_level = args.loglevel
-    logging.basicConfig(level=log_level)
+    # Update logging level based on the argument
+    logger.setLevel(getattr(logging, args.loglevel))
 
     path = args.job_list_path
-    remote = args.remote
-    username = args.user
     to_tsv = args.tsv
     to_stdout = not args.quiet
 
-    stats = get_report(path, remote_hpc=remote, remote_user=username)
+    stats = get_report(path)
     print_report(stats, to_tsv=to_tsv, to_stdout=to_stdout)
 
 
