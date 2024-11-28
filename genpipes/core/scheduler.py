@@ -678,12 +678,10 @@ echo "#!/bin/bash
 #SBATCH {self.memory(job_name_prefix)}
 #SBATCH {self.cpu(job_name_prefix)} {self.gpu(job_name_prefix)}
 {dependencies}
-EPILOGUE_SCRIPT="{os.path.dirname(os.path.abspath(__file__))}/epilogue.py"
-trap "\\$EPILOGUE_SCRIPT" EXIT
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
 echo "{"-" * 90}"
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
-{config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
+srun --wait=0 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
 echo GenPipesExitStatus:\\$GenPipes_STATE
 {self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE')}
@@ -691,6 +689,7 @@ if [ \\$GenPipes_STATE -eq 0 ]; then
     touch $JOB_DONE
 fi
 echo "{"-" * 90}"
+{os.path.dirname(os.path.abspath(__file__))}/epilogue.py
 exit \\$GenPipes_STATE" > $SUBMISSION_FILE
 # Submit the job and get the job id
 {job.id}=$({self.submit_cmd} $SUBMISSION_FILE | awk '{{print $4}}')
