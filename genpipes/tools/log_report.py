@@ -25,6 +25,7 @@ import datetime
 import logging
 import os
 import re
+from collections import OrderedDict
 
 # Configure logging at the module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -224,69 +225,42 @@ def print_report(report, to_stdout=True, to_tsv=None):
     total_machine = datetime.timedelta(0)
     total_machine_core = datetime.timedelta(0)
 
-    header = (
-        'id',
-        'name',
-        'status',
-        'user',
-        'node',
-        'priority',
-        'submit_time',
-        'eligible_time',
-        'start_time',
-        'queue_time',
-        'end_time',
-        'total_time',
-        'time_limit',
-        'time_efficiency',
-        'n_cpu',
-        'cpu_time',
-        'cpu_efficiency',
-        'mem',
-        'total_mem',
-        'ave_mem',
-        'max_mem',
-        'mem_efficiency',
-        'ave_diskr',
-        'max_diskr',
-        'ave_diskw',
-        'max_diskw',
-        'output_file_path'
-        )
+    header = OrderedDict([
+        ('id', 'job_id'),
+        ('name', 'job_name'),
+        ('status', 'status'),
+        ('user', 'user'),
+        ('node', 'node'),
+        ('priority', 'priority'),
+        ('submit_time', 'submit_time'),
+        ('eligible_time', 'eligible_time'),
+        ('start_time', 'start_time'),
+        ('queue_time', 'queue_time'),
+        ('end_time', 'end_time'),
+        ('total_time', 'total_time'),
+        ('time_limit', 'time_limit'),
+        ('time_efficiency', 'time_efficiency'),
+        ('n_cpu', 'n_cpu'),
+        ('cpu_time', 'cpu_time'),
+        ('cpu_efficiency', 'cpu_efficiency'),
+        ('mem', 'mem'),
+        ('total_mem', 'total_mem'),
+        ('ave_mem', 'ave_mem'),
+        ('max_mem', 'max_mem'),
+        ('mem_efficiency', 'mem_efficiency'),
+        ('ave_diskr', 'ave_diskr'),
+        ('max_diskr', 'max_diskr'),
+        ('ave_diskw', 'ave_diskw'),
+        ('max_diskw', 'max_diskw'),
+        ('output_file_path', 'path')
+    ])
     data_table = []
 
     for job in report:
-        data_table.append(
-            (
-                job.job_id,
-                job.job_name,
-                job.status,
-                job.user,
-                job.node,
-                job.priority,
-                job.submit_time,
-                job.eligible_time,
-                job.start_time,
-                job.queue_time,
-                job.end_time,
-                job.total_time,
-                job.time_limit,
-                job.time_efficiency,
-                job.n_cpu,
-                job.cpu_time,
-                job.cpu_efficiency,
-                job.mem,
-                job.total_mem,
-                job.ave_mem,
-                job.max_mem,
-                job.mem_efficiency,
-                job.ave_diskr,
-                job.max_diskr,
-                job.ave_diskw,
-                job.max_diskw,
-                job.path
-                )
-            )
+        line = []
+        for _, value in header.items():
+            line.append(getattr(job, value))
+        data_table.append(line)
         if job.start_time:
             min_start.append(datetime.datetime.strptime(job.start_time, '%Y-%m-%dT%H:%M:%S'))
         else:
@@ -323,7 +297,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
             to_tsv = "./log_report.tsv"
         with open(to_tsv, 'w') as output_file:
             writer = csv.writer(output_file, delimiter='\t')
-            writer.writerow(header)
+            writer.writerow(header.keys())
             for row in data_table:
                 writer.writerow(row)
 
