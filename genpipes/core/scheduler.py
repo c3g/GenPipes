@@ -463,13 +463,12 @@ chmod 755 $SCIENTIFIC_FILE
                         memory = f"#PBS {memory}"
                     else:
                         memory = ""
-
+                    # Prologue and epilogue scripts have to be updated by IT for Abacus because having them anywhere else than HOME fails
+                    # /!\ Make sure anytime prologue and epilogue scripts are updated IT is informed so they update the scripts on Abacus/!\
                     cmd = f"""\
 # Create the submission file
 echo "#!/bin/bash
-#PBS -l prologue={os.path.dirname(os.path.abspath(__file__))}/prologue.py
-#PBS -l epilogue={os.path.dirname(os.path.abspath(__file__))}/epilogue.py
-#PBS -T none
+#PBS -T GenPipes
 #PBS {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
 #PBS -d $OUTPUT_DIR
 #PBS -j oe
