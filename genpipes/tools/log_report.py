@@ -28,7 +28,6 @@ import re
 from collections import OrderedDict
 
 # Configure logging at the module level
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class JobStat():
@@ -175,7 +174,7 @@ def get_report(job_list_tsv=None):
         jobs = csv.reader(tsvin, delimiter='\t')
         report = []
         for job in jobs:
-            logger.info(f'Loading {job} ...')
+            logger.info(f'Loading {job}')
             report.append(
                 JobStat(
                     output_file=os.path.join(job_output_path, job[3]),
@@ -314,6 +313,8 @@ def main(args=None):
 
         args = parser.parse_args()
 
+    # Configure logging at the module level
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     # Update logging level based on the argument
     logger.setLevel(getattr(logging, args.loglevel))
 
