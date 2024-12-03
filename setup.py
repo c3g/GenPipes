@@ -22,6 +22,7 @@ setuptools.setup(
         'genpipes/utils/log_report.py',
         'genpipes/utils/mugqicValidator.py',
         'genpipes/utils/nanuq2mugqic_pipelines.py',
+        'genpipes/utils/csvToreadset.R',
         'genpipes/utils/utils.py',
         'genpipes/utils/watch_portal_folder.py',
         'genpipes/utils/log_report.pl',
