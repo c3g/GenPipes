@@ -17,6 +17,12 @@ logging.basicConfig(level=logging.INFO, format='EPILOGUE - %(message)s')
 def get_slurm_job_info(job_id, retries=20, delay=10):
     """
     Retrieve job information from SLURM using sacct command with retries.
+    Args:
+        job_id (str): Job ID.
+        retries (int): Number of retries.
+        delay (int): Delay in seconds between retries.
+    Returns:
+        dict: Job details if found, otherwise None.
     """
     for _ in range(retries):
         try:
@@ -42,6 +48,11 @@ def get_slurm_job_info(job_id, retries=20, delay=10):
 def parse_slurm_job_info(job_info, job_id):
     """
     Parse the job information retrieved from SLURM.
+    Args:
+        job_info (str): Job information.
+        job_id (str): Job ID.
+    Returns:
+        dict: Job details if found, otherwise None.
     """
     job_details = {}
     reader = csv.DictReader(StringIO(job_info), delimiter='|')
@@ -84,7 +95,47 @@ def parse_slurm_job_info(job_info, job_id):
         return None
     return job_details
 
+def get_pbs_job_info(job_id):
+    """
+    Retrieve job information from PBS using qstat command.
+    Args:
+        job_id (str): Job ID.
+    Returns:
+        dict: Job details if found, otherwise None.
+    """
+    result = subprocess.run(
+        ["/opt/torque/x86_64/bin/qstat", "-f", "-1", f"{job_id}"],
+        capture_output=True, text=True, check=True
+    )
+    job_info = result.stdout
+    job_details = parse_pbs_job_info(job_id, job_info)
+    if not result.stdout.strip():
+        logging.warning("Error retrieving job info. The prologue will be incomplete.")
+    return job_details
+
+def parse_datetime(job_details, field_name):
+    """
+    Parse datetime field from job details.
+    Args:
+        job_details (str): Job details string.
+        field_name (str): Field name to search for.
+    Returns:
+        str: Datetime string in ISO format if found, otherwise "Unknown".
+    """
+    pattern = rf"{field_name} = (.+)"
+    match = re.search(pattern, job_details)
+    if match:
+        return datetime.strptime(match.group(1), "%a %b %d %H:%M:%S %Y").strftime("%Y-%m-%dT%H:%M:%S")
+    return "Unknown"
+
 def pbs_exit_code_to_string(exit_code):
+    """
+    Convert PBS exit code to string.
+    Args:
+        exit_code (int): Exit code.
+    Returns:
+        str: Exit code string if recognized, otherwise "Unknown".
+    """
     if exit_code == 0:
         return "COMPLETED"
     if 1 <= exit_code <= 127:
@@ -94,27 +145,33 @@ def pbs_exit_code_to_string(exit_code):
         return f"TERMINATED ({signal.Signals(signal_number).name})"
     return "Unknown"
 
-def parse_pbs_job_info():
+def parse_pbs_job_info(job_id, job_info):
     """
     Parse the job information retrieved from PBS.
+    Args:
+        job_id (str): Job ID.
+        job_info (str): Job information.
+    Returns:
+        dict: Job details if found, otherwise None.
     """
     job_details = {}
     requested_resource_limits = sys.argv[6]
     used_resource = sys.argv[7]
-    job_details['JobID'] = sys.argv[1]
+    job_details['JobID'] = job_id
     job_details['JobName'] = sys.argv[4]
     job_details['User'] = sys.argv[2]
-    job_details['NodeList'] = "Unknown"
+    exec_host_match = re.search(r"exec_host\s*=\s*(.+)\/", job_info)
+    job_details['NodeList'] = exec_host_match.group(1) if exec_host_match else "Unknown"
     job_details['Priority'] = "Unknown"
-    job_details['Submit'] = "Unknown"
-    job_details['Eligible'] = "Unknown"
+    job_details['Submit'] = parse_datetime(job_info, "qtime")
+    job_details['Eligible'] = parse_datetime(job_info, "etime")
     walltime_match = re.search(r'walltime=([\d:]+)', requested_resource_limits)
     job_details['Timelimit'] = walltime_match.group(1) if walltime_match else "Unknown"
     ppn_match = re.search(r'nodes=\d+:ppn=(\d+)', requested_resource_limits)
     job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
     job_details['State'] = pbs_exit_code_to_string(int(sys.argv[10]))
-    job_details['Start'] = "Unknown"
-    job_details['End'] = "Unknown"
+    job_details['Start'] = parse_datetime(job_info, "start_time")
+    job_details['End'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
     job_details['Elapsed'] = walltime_match_used.group(1) if walltime_match_used else "Unknown"
     cput_match = re.search(r'cput=([\d:]+)', used_resource)
@@ -138,6 +195,10 @@ def parse_pbs_job_info():
 def time_str_to_seconds(time_str):
     """
     Convert time string in HH:MM:SS format to total seconds.
+    Args:
+        time_str (str): Time string.
+    Returns:
+        int: Total seconds.
     """
     parts = time_str.split(':')
     if len(parts) == 3:
@@ -163,6 +224,11 @@ def time_str_to_seconds(time_str):
 def calculate_time_difference(start_time, end_time):
     """
     Calculate the time difference between two datetime strings.
+    Args:
+        start_time (str): Start time in ISO format.
+        end_time (str): End time in ISO format.
+    Returns:
+        str: Time difference in DD:HH:MM:SS format.
     """
     start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S")
     end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S")
@@ -175,6 +241,11 @@ def calculate_time_difference(start_time, end_time):
 def calculate_time_efficency(elapsed, timelimit):
     """
     Calculate the time efficiency of a job.
+    Args:
+        elapsed (str): Elapsed time.
+        timelimit (str): Time limit.
+    Returns:
+        float: Time efficiency percentage.
     """
     elapsed_seconds = sum(int(x) * 60 ** i for i, x in enumerate(reversed(elapsed.split(':'))))
     timelimit_seconds = sum(int(x) * 60 ** i for i, x in enumerate(reversed(timelimit.split(':'))))
@@ -183,12 +254,21 @@ def calculate_time_efficency(elapsed, timelimit):
 def calculate_percentage(used, requested):
     """
     Calculate the percentage of used resources to requested resources.
+    Args:
+        used (float): Used resources.
+        requested (float): Requested resources.
+    Returns:
+        float: Percentage.
     """
     return (used / requested * 100) if requested > 0 else 0
 
 def convert_memory_to_gb(memory_str):
     """
     Convert memory string to GB.
+    Args:
+        memory_str (str): Memory string.
+    Returns:
+        float: Memory in GB.
     """
     if memory_str.endswith('K'):
         return float(memory_str[:-1]) / (1024 ** 2)
@@ -222,7 +302,7 @@ def main():
     # Built-in support for PBS
     elif len(sys.argv) == 12:
         job_id = sys.argv[1]
-        job_details = parse_pbs_job_info()
+        job_details = get_pbs_job_info(job_id)
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
             return
