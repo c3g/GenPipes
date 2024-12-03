@@ -468,7 +468,7 @@ chmod 755 $SCIENTIFIC_FILE
                     cmd = f"""\
 # Create the submission file
 echo "#!/bin/bash
-#PBS -T GenPipes
+#PBS -T none
 #PBS {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
 #PBS -d $OUTPUT_DIR
 #PBS -j oe
@@ -478,6 +478,9 @@ echo "#!/bin/bash
 #PBS {self.cpu(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
 {memory}
 {dependencies}
+EPILOGUE_SCRIPT="{os.path.dirname(os.path.abspath(__file__))}/epilogue.py"
+trap "\\$EPILOGUE_SCRIPT" EXIT
+{os.path.dirname(os.path.abspath(__file__))}/prologue.py
 echo "{"-" * 90}"
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
