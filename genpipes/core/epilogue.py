@@ -113,6 +113,61 @@ def get_pbs_job_info(job_id):
         logging.warning("Error retrieving job info. The prologue will be incomplete.")
     return job_details
 
+def get_resource_usage(pid):
+    result = subprocess.run(
+        ['ps', '--ppid', pid, '-o', 'etime=', '-o', 'cputime=', '-o', 'pmem=', '-o', 'rss=', '-o', 'io='],
+        stdout=subprocess.PIPE,
+        text=True
+    )
+    output = result.stdout.strip().split('\n')
+
+    # Initialize total CPU time in seconds, memory usage, and disk I/O
+    total_cpu_seconds = 0
+    total_rss = 0
+    max_rss = 0
+    total_disk_read = 0
+    max_disk_read = 0
+    total_disk_write = 0
+    max_disk_write = 0
+    process_count = 0
+
+    # Parse each line of the output
+    for line in output:
+        etime, cputime, pmem, rss, io = line.split()
+        total_cpu_seconds += time_str_to_seconds(cputime)
+        rss_kb = int(rss)
+        total_rss += rss_kb
+        if rss_kb > max_rss:
+            max_rss = rss_kb
+        disk_read, disk_write = map(int, io.split('/'))
+        total_disk_read += disk_read
+        total_disk_write += disk_write
+        if disk_read > max_disk_read:
+            max_disk_read = disk_read
+        if disk_write > max_disk_write:
+            max_disk_write = disk_write
+        process_count += 1
+
+    # Calculate average RSS and disk I/O
+    ave_rss = total_rss // process_count if process_count > 0 else 0
+    ave_disk_read = total_disk_read // process_count if process_count > 0 else 0
+    ave_disk_write = total_disk_write // process_count if process_count > 0 else 0
+
+    # Convert total CPU time back to HH:MM:SS format
+    total_cpu_time = f"{total_cpu_seconds // 3600:02}:{(total_cpu_seconds % 3600) // 60:02}:{total_cpu_seconds % 60:02}"
+
+    return {
+        'etime': etime,
+        'total_cpu_time': total_cpu_time,
+        'pmem': pmem,
+        'ave_rss': ave_rss,
+        'max_rss': max_rss,
+        'ave_disk_read': ave_disk_read,
+        'max_disk_read': max_disk_read,
+        'ave_disk_write': ave_disk_write,
+        'max_disk_write': max_disk_write
+    }
+
 def parse_datetime(job_details, field_name):
     """
     Parse datetime field from job details.
@@ -156,13 +211,15 @@ def parse_pbs_job_info(job_id, job_info):
     """
     job_details = {}
     logging.info(f"Job info: {job_info}")
+    session_id_match = re.search(r"session_id_match\s*=\s*(.+)", job_info)
+    resource_usage = get_resource_usage(session_id_match.group(1))
 
     job_details['JobID'] = job_id
     job_name_match = re.search(r"Job_Name\s*=\s*(.+)", job_info)
     job_details['JobName'] = job_name_match.group(1) if job_name_match else "Unknown"
     job_owner_match = re.search(r"Job_Owner\s*=\s*(.+)@", job_info)
     job_details['User'] = job_owner_match.group(1) if job_owner_match else "Unknown"
-    exec_host_match = re.search(r"exec_host\s*=\s*(.+)", job_info)
+    exec_host_match = re.search(r"exec_host\s*=\s*(.+).*", job_info)
     job_details['NodeList'] = exec_host_match.group(1) if exec_host_match else "Unknown"
     priority_match = re.search(r"Priority\s*=\s*(.+)", job_info)
     job_details['Priority'] = priority_match.group(1) if priority_match else "Unknown"
@@ -178,19 +235,22 @@ def parse_pbs_job_info(job_id, job_info):
     job_details['End'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     # walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
     # job_details['Elapsed'] = walltime_match_used.group(1) if walltime_match_used else "Unknown"
-    job_details['Elapsed'] = parse_datetime(job_info, "resources_used.walltime")
+    # convert Elapsed time to HH:MM:SS format
+    job_details['Elapsed'] = resource_usage['etime']
     # cput_match = re.search(r'cput=([\d:]+)', used_resource)
-    cput_match = re.search(r'resources_used\.cput=([\d:]+)', job_info)
-    job_details['TotalCPU'] = cput_match.group(1) if cput_match else "Unknown"
+    # cput_match = re.search(r'resources_used\.cput=([\d:]+)', job_info)
+    # job_details['TotalCPU'] = cput_match.group(1) if cput_match else "Unknown"
+    job_details['TotalCPU'] = resource_usage['total_cpu_time']
     # mem_match = re.search(r',mem=([\d]+\w\w)', used_resource)
-    mem_match = re.search(r'resources_used\.mem=([\d]+\w\w)', job_info)
-    job_details['TotalMem'] = mem_match.group(1) if mem_match else "Unknown"
-    job_details['AveRSS'] = "Unknown"
-    job_details['MaxRSS'] = "Unknown"
-    job_details['AveDiskRead'] = "Unknown"
-    job_details['MaxDiskRead'] = "Unknown"
-    job_details['AveDiskWrite'] = "Unknown"
-    job_details['MaxDiskWrite'] = "Unknown"
+    # mem_match = re.search(r'resources_used\.mem=([\d]+\w\w)', job_info)
+    # job_details['TotalMem'] = mem_match.group(1) if mem_match else "Unknown"
+    job_details['TotalMem'] = "Unknown"
+    job_details['AveRSS'] = resource_usage['ave_rss']
+    job_details['MaxRSS'] = resource_usage['max_rss']
+    job_details['AveDiskRead'] = resource_usage['ave_disk_read']
+    job_details['MaxDiskRead'] = resource_usage['max_disk_read']
+    job_details['AveDiskWrite'] = resource_usage['ave_disk_write']
+    job_details['MaxDiskWrite'] = resource_usage['max_disk_write']
 
     queue_match = re.search(r"queue\s*=\s*(.+)", job_info)
     if queue_match.group(1) == "lm":
@@ -236,15 +296,14 @@ def calculate_time_difference(start_time, end_time):
         start_time (str): Start time in ISO format.
         end_time (str): End time in ISO format.
     Returns:
-        str: Time difference in DD:HH:MM:SS format.
+        str: Time difference in HH:MM:SS format.
     """
     start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S")
     end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S")
     delta = end_dt - start_dt
-    days = delta.days
     hours, remainder = divmod(delta.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
-    return f"{days:02}:{hours:02}:{minutes:02}:{seconds:02}"
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 def calculate_time_efficency(elapsed, timelimit):
     """
@@ -353,7 +412,7 @@ def main():
     logging.info(f"Eligible Time:                                                    {job_details.get('Eligible', 'Unknown')}")
     logging.info(f"Start Time:                                                       {job_details.get('Start', 'Unknown')}")
     if time_in_queue:
-        logging.info(f"Time Spent in Queue (DD:HH:MM:SS):                                {time_in_queue}")
+        logging.info(f"Time Spent in Queue:                                              {time_in_queue}")
     else:
         logging.info(f"Time Spent in Queue:                                              Unknown")
     logging.info(f"End Time:                                                         {job_details.get('End', 'Unknown')}")
