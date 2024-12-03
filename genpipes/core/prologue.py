@@ -126,7 +126,7 @@ def parse_pbs_job_info(job_id, job_info):
     job_details['JobName'] = job_name_match.group(1) if job_name_match else "Unknown"
     job_owner_match = re.search(r"Job_Owner\s*=\s*(.+)@", job_info)
     job_details['User'] = job_owner_match.group(1) if job_owner_match else "Unknown"
-    exec_host_match = re.search(r"exec_host\s*=\s*(.+)", job_info)
+    exec_host_match = re.search(r"exec_host\s*=\s*(.+).*", job_info)
     job_details['NodeList'] = exec_host_match.group(1) if exec_host_match else "Unknown"
     priority_match = re.search(r"Priority\s*=\s*(.+)", job_info)
     job_details['Priority'] = priority_match.group(1) if priority_match else "Unknown"
