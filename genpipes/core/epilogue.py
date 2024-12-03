@@ -211,7 +211,7 @@ def parse_pbs_job_info(job_id, job_info):
     """
     job_details = {}
     logging.info(f"Job info: {job_info}")
-    session_id_match = re.search(r"session_id_match\s*=\s*(.+)", job_info)
+    session_id_match = re.search(r"session_id\s*=\s*(.+)", job_info)
     resource_usage = get_resource_usage(session_id_match.group(1))
 
     job_details['JobID'] = job_id
