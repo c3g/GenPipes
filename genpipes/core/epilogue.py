@@ -155,28 +155,34 @@ def parse_pbs_job_info(job_id, job_info):
         dict: Job details if found, otherwise None.
     """
     job_details = {}
-    requested_resource_limits = sys.argv[6]
-    used_resource = sys.argv[7]
+    logging.info(f"Job info: {job_info}")
     job_details['JobID'] = job_id
-    job_details['JobName'] = sys.argv[4]
-    job_details['User'] = sys.argv[2]
-    exec_host_match = re.search(r"exec_host\s*=\s*(.+)\/", job_info)
+    job_name_match = re.search(r"Job_Name\s*=\s*(.+)", job_info)
+    job_details['JobName'] = job_name_match.group(1) if job_name_match else "Unknown"
+    job_owner_match = re.search(r"Job_Owner\s*=\s*(.+)@", job_info)
+    job_details['User'] = job_owner_match.group(1) if job_owner_match else "Unknown"
+    exec_host_match = re.search(r"exec_host\s*=\s*(.+)", job_info)
     job_details['NodeList'] = exec_host_match.group(1) if exec_host_match else "Unknown"
-    job_details['Priority'] = "Unknown"
+    priority_match = re.search(r"Priority\s*=\s*(.+)", job_info)
+    job_details['Priority'] = priority_match.group(1) if priority_match else "Unknown"
     job_details['Submit'] = parse_datetime(job_info, "qtime")
     job_details['Eligible'] = parse_datetime(job_info, "etime")
-    walltime_match = re.search(r'walltime=([\d:]+)', requested_resource_limits)
+    walltime_match = re.search(r'Resource_List\.walltime\s*=\s*(.+)', job_info)
     job_details['Timelimit'] = walltime_match.group(1) if walltime_match else "Unknown"
-    ppn_match = re.search(r'nodes=\d+:ppn=(\d+)', requested_resource_limits)
+    ppn_match = re.search(r'Resource_List.nodes\s*=\s*nodes=\d+:ppn=(\d+)', job_info)
     job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
-    job_details['State'] = pbs_exit_code_to_string(int(sys.argv[10]))
+    # job_details['State'] = pbs_exit_code_to_string(int(sys.argv[10]))
+    job_details['State'] = "Unknown"
     job_details['Start'] = parse_datetime(job_info, "start_time")
     job_details['End'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
-    job_details['Elapsed'] = walltime_match_used.group(1) if walltime_match_used else "Unknown"
-    cput_match = re.search(r'cput=([\d:]+)', used_resource)
+    # walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
+    # job_details['Elapsed'] = walltime_match_used.group(1) if walltime_match_used else "Unknown"
+    job_details['Elapsed'] = parse_datetime(job_info, "resources_used.walltime")
+    # cput_match = re.search(r'cput=([\d:]+)', used_resource)
+    cput_match = re.search(r'resources_used\.cput=([\d:]+)', job_info)
     job_details['TotalCPU'] = cput_match.group(1) if cput_match else "Unknown"
-    mem_match = re.search(r',mem=([\d]+\w\w)', used_resource)
+    # mem_match = re.search(r',mem=([\d]+\w\w)', used_resource)
+    mem_match = re.search(r'resources_used\.mem=([\d]+\w\w)', job_info)
     job_details['TotalMem'] = mem_match.group(1) if mem_match else "Unknown"
     job_details['AveRSS'] = "Unknown"
     job_details['MaxRSS'] = "Unknown"
@@ -185,7 +191,8 @@ def parse_pbs_job_info(job_id, job_info):
     job_details['AveDiskWrite'] = "Unknown"
     job_details['MaxDiskWrite'] = "Unknown"
 
-    if sys.argv[6] == "lm":
+    queue_match = re.search(r"queue\s*=\s*(.+)", job_info)
+    if queue_match.group(1) == "lm":
         job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 15}G"
     else:
         job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 5}G"
