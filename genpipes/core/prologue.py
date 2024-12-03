@@ -134,6 +134,7 @@ def parse_pbs_job_info(job_id, job_info):
     job_details['Timelimit'] = walltime_match.group(1) if walltime_match else "Unknown"
     ppn_match = re.search(r'Resource_List.nodes\s*=\s*nodes=\d+:ppn=(\d+)', job_info)
     job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
+    
     queue_match = re.search(r"queue\s*=\s*(.+)", job_info)
     if queue_match.group(1) == "lm":
         job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 15}G"
@@ -172,16 +173,14 @@ def main():
     """
     Main function to run the epilogue script.
     """
-    job_id = os.getenv('SLURM_JOB_ID')
+    job_id = os.getenv('SLURM_JOB_ID') or os.getenv('PBS_JOBID')
 
     if 'SLURM_JOB_ID' in os.environ:
         job_details = get_slurm_job_info(job_id)
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
             return
-    # Built-in support for PBS
-    elif len(sys.argv) > 8:
-        job_id = sys.argv[1]
+    elif 'PBS_JOBID' in os.environ:
         job_details = get_pbs_job_info(job_id)
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
