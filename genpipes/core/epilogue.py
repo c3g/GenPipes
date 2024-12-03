@@ -121,7 +121,7 @@ def get_resource_usage(pid):
     )
     output = result.stdout.strip().split('\n')
 
-    # Initialize total CPU time in seconds, memory usage, and disk I/O
+    # Initialize total CPU time in seconds and memory usage
     total_cpu_seconds = 0
     total_rss = 0
     max_rss = 0
@@ -136,7 +136,7 @@ def get_resource_usage(pid):
         max_rss = max(max_rss, rss_kb)
         process_count += 1
 
-    # Calculate average RSS and disk I/O
+    # Calculate average RSS
     ave_rss = total_rss // process_count if process_count > 0 else 0
 
     # Convert total CPU time back to HH:MM:SS format
@@ -227,8 +227,8 @@ def parse_pbs_job_info(job_id, job_info):
     # mem_match = re.search(r'resources_used\.mem=([\d]+\w\w)', job_info)
     # job_details['TotalMem'] = mem_match.group(1) if mem_match else "Unknown"
     job_details['TotalMem'] = "Unknown"
-    job_details['AveRSS'] = resource_usage['ave_rss']
-    job_details['MaxRSS'] = resource_usage['max_rss']
+    job_details['AveRSS'] = f"{resource_usage['ave_rss']}kb"
+    job_details['MaxRSS'] = f"{resource_usage['max_rss']}kb"
     job_details['AveDiskRead'] = "Unknown"
     job_details['MaxDiskRead'] = "Unknown"
     job_details['AveDiskWrite'] = "Unknown"
