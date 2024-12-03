@@ -212,7 +212,7 @@ def parse_pbs_job_info(job_id, job_info):
     ppn_match = re.search(r'Resource_List\.nodes\s*=\s*\d+:ppn=(\d+)', job_info)
     job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
     # job_details['State'] = pbs_exit_code_to_string(int(sys.argv[10]))
-    job_details['State'] = "Unknown"
+    job_details['State'] = os.getenv('PBS_JOB_STATE', 'Unknown')
     job_details['Start'] = parse_datetime(job_info, "start_time")
     job_details['End'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     # walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
