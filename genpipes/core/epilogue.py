@@ -120,6 +120,7 @@ def get_resource_usage(pid):
         text=True
     )
     output = result.stdout.strip().split('\n')
+    logging.info(f"Resource usage: {output}")
 
     # Initialize total CPU time in seconds and memory usage
     total_cpu_seconds = 0
@@ -130,6 +131,7 @@ def get_resource_usage(pid):
     # Parse each line of the output
     for line in output:
         etime, cputime, pmem, rss = line.split()
+        logging.info(f"etime: {etime}, cputime: {cputime}, pmem: {pmem}, rss: {rss}")
         total_cpu_seconds += time_str_to_seconds(cputime)
         rss_kb = int(rss)
         total_rss += rss_kb
