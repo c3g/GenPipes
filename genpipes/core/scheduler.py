@@ -478,8 +478,10 @@ echo "#!/bin/bash
 #PBS {self.cpu(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
 {memory}
 {dependencies}
+# Set the job state to COMPLETED by default
+export PBS_JOB_STATE="COMPLETED"
 EPILOGUE_SCRIPT="{os.path.dirname(os.path.abspath(__file__))}/epilogue.py"
-trap "\\$EPILOGUE_SCRIPT" EXIT
+trap 'if [ $? -ne 0 ]; then export PBS_JOB_STATE="FAILED"; fi; \\$EPILOGUE_SCRIPT' EXIT
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
 echo "{"-" * 90}"
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
