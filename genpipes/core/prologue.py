@@ -85,7 +85,7 @@ def get_pbs_job_info(job_id):
         dict: Job details if found, otherwise None.
     """
     result = subprocess.run(
-        ["qstat", "-f", "-1", f"{job_id}"],
+        ["qstat", "-f", f"{job_id}"],
         capture_output=True, text=True, check=True
     )
     job_info = result.stdout
@@ -119,6 +119,7 @@ def parse_pbs_job_info(job_id, job_info):
         dict: Job details if found, otherwise None.
     """
     job_details = {}
+    logging.info(f"Job info: {job_info}")
 
     job_details['JobID'] = job_id
     job_name_match = re.search(r"Job_Name\s*=\s*(.+)", job_info)
@@ -132,9 +133,9 @@ def parse_pbs_job_info(job_id, job_info):
     job_details['Submit'] = parse_datetime(job_info, "qtime")
     walltime_match = re.search(r'Resource_List\.walltime\s*=\s*(.+)', job_info)
     job_details['Timelimit'] = walltime_match.group(1) if walltime_match else "Unknown"
-    ppn_match = re.search(r'Resource_List.nodes\s*=\s*nodes=\d+:ppn=(\d+)', job_info)
+    ppn_match = re.search(r'Resource_List\.nodes\s*=\s*\d+:ppn=(\d+)', job_info)
     job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
-    
+
     queue_match = re.search(r"queue\s*=\s*(.+)", job_info)
     if queue_match.group(1) == "lm":
         job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 15}G"
