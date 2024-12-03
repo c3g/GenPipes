@@ -85,7 +85,7 @@ def get_pbs_job_info(job_id):
         dict: Job details if found, otherwise None.
     """
     result = subprocess.run(
-        ["/opt/torque/x86_64/bin/qstat", "-f", "-1", f"{job_id}"],
+        ["qstat", "-f", "-1", f"{job_id}"],
         capture_output=True, text=True, check=True
     )
     job_info = result.stdout
@@ -120,27 +120,25 @@ def parse_pbs_job_info(job_id, job_info):
     """
     job_details = {}
 
-    requested_resource_limits = sys.argv[5]
     job_details['JobID'] = job_id
-    job_details['JobName'] = sys.argv[4]
-    job_details['User'] = sys.argv[2]
-    exec_host_match = re.search(r"exec_host\\s*=\\s*(.+)", job_info)
+    job_name_match = re.search(r"Job_Name\s*=\s*(.+)", job_info)
+    job_details['JobName'] = job_name_match.group(1) if job_name_match else "Unknown"
+    job_owner_match = re.search(r"Job_Owner\s*=\s*(.+)@", job_info)
+    job_details['User'] = job_owner_match.group(1) if job_owner_match else "Unknown"
+    exec_host_match = re.search(r"exec_host\s*=\s*(.+)", job_info)
     job_details['NodeList'] = exec_host_match.group(1) if exec_host_match else "Unknown"
-    job_details['Priority'] = "Unknown"
+    priority_match = re.search(r"Priority\s*=\s*(.+)", job_info)
+    job_details['Priority'] = priority_match.group(1) if priority_match else "Unknown"
     job_details['Submit'] = parse_datetime(job_info, "qtime")
-    walltime_match = re.search(r'walltime=([\d:]+)', requested_resource_limits)
+    walltime_match = re.search(r'Resource_List\.walltime\s*=\s*(.+)', job_info)
     job_details['Timelimit'] = walltime_match.group(1) if walltime_match else "Unknown"
-    ppn_match = re.search(r'nodes=\d+:ppn=(\d+)', requested_resource_limits)
+    ppn_match = re.search(r'Resource_List.nodes\s*=\s*nodes=\d+:ppn=(\d+)', job_info)
     job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
-    if sys.argv[6] == "lm":
+    queue_match = re.search(r"queue\s*=\s*(.+)", job_info)
+    if queue_match.group(1) == "lm":
         job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 15}G"
     else:
         job_details['ReqMem'] = f"{int(job_details['ReqCPUS']) * 5}G"
-
-    node_file = os.path.join("/var/spool/pbs/aux", job_details['JobID'])
-
-    with open(node_file, 'r') as infile:
-        job_details['NodeList']=infile.readline().strip()
 
     return job_details
 
