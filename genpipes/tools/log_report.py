@@ -170,19 +170,23 @@ def get_report(job_list_tsv=None):
     """
     job_output_path = os.path.dirname(job_list_tsv)
 
-    with open(job_list_tsv) as tsvin:
-        jobs = csv.reader(tsvin, delimiter='\t')
-        report = []
-        for job in jobs:
-            logger.info(f'Loading {job}')
-            report.append(
-                JobStat(
-                    output_file=os.path.join(job_output_path, job[3]),
-                    job_name=job[1],
-                    job_id=job[0],
-                    dependency=job[2]
+    try:
+        with open(job_list_tsv) as tsvin:
+            jobs = csv.reader(tsvin, delimiter='\t')
+            report = []
+            for job in jobs:
+                logger.info(f'Loading {job}')
+                report.append(
+                    JobStat(
+                        output_file=os.path.join(job_output_path, job[3]),
+                        job_name=job[1],
+                        job_id=job[0],
+                        dependency=job[2]
+                        )
                     )
-                )
+    except FileNotFoundError:
+        logger.error(f'File {job_list_tsv} not found.')
+        report = []
     return report
 
 def parse_time(time_str):
@@ -219,6 +223,9 @@ def print_report(report, to_stdout=True, to_tsv=None):
         to_stdout: print to terminal
         to_tsv: path to tsv file
     """
+    if not report:
+        logger.error('No job report to print.')
+        return
     min_start = []
     max_stop = []
     total_machine = datetime.timedelta(0)
