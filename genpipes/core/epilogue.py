@@ -292,16 +292,14 @@ def main():
     """
     Main function to run the epilogue script.
     """
-    job_id = os.getenv('SLURM_JOB_ID')
+    job_id = os.getenv('SLURM_JOB_ID') or os.getenv('PBS_JOBID')
 
     if 'SLURM_JOB_ID' in os.environ:
         job_details = get_slurm_job_info(job_id)
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
             return
-    # Built-in support for PBS
-    elif len(sys.argv) == 12:
-        job_id = sys.argv[1]
+    elif 'PBS_JOBID' in os.environ:
         job_details = get_pbs_job_info(job_id)
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
