@@ -296,6 +296,19 @@ def convert_memory_to_gb(memory_str):
         return float(memory_str[:-2]) * 1024
     return float(memory_str)
 
+def custom_get(dictionary, key, default="Unknown"):
+    """
+    Custom get method for dictionaries.
+    Args:
+        dictionary (dict): Dictionary.
+        key (str): Key to search for.
+        default (str): Default value if key is not found.
+    Returns:
+        str: Value if found, otherwise default value.
+    """
+    value = dictionary.get(key, default)
+    return value if value is not None else default
+
 def main():
     """
     Main function to run the epilogue script.
@@ -347,45 +360,30 @@ def main():
         mem_usage_percentage = calculate_percentage(ave_mem_gb, req_mem_gb)
 
     logging.info(f"GenPipes Epilogue for job {job_id}")
-    logging.info(f"Job Name:                                                         {job_details.get('JobName', 'Unknown')}")
-    logging.info(f"User:                                                             {job_details.get('User', 'Unknown')}")
-    logging.info(f"Node(s):                                                          {job_details.get('NodeList', 'Unknown')}")
-    logging.info(f"Priority:                                                         {job_details.get('Priority', 'Unknown')}")
-    logging.info(f"Status:                                                           {job_details.get('State', 'Unknown')}")
-    logging.info(f"Submit Time:                                                      {job_details.get('Submit', 'Unknown')}")
-    logging.info(f"Eligible Time:                                                    {job_details.get('Eligible', 'Unknown')}")
-    logging.info(f"Start Time:                                                       {job_details.get('Start', 'Unknown')}")
-    if time_in_queue:
-        logging.info(f"Time Spent in Queue:                                              {time_in_queue}")
-    else:
-        logging.info(f"Time Spent in Queue:                                              Unknown")
-    logging.info(f"End Time:                                                         {job_details.get('End', 'Unknown')}")
-    logging.info(f"Total Wall-clock Time:                                            {job_details.get('Elapsed', 'Unknown')}")
-    logging.info(f"Time Limit:                                                       {job_details.get('Timelimit', 'Unknown')}")
+    logging.info(f"Job Name:                                                         {custom_get(job_details, 'JobName')}")
+    logging.info(f"User:                                                             {custom_get(job_details, 'User')}")
+    logging.info(f"Node(s):                                                          {custom_get(job_details, 'NodeList')}")
+    logging.info(f"Priority:                                                         {custom_get(job_details, 'Priority')}")
+    logging.info(f"Status:                                                           {custom_get(job_details, 'State')}")
+    logging.info(f"Submit Time:                                                      {custom_get(job_details, 'Submit')}")
+    logging.info(f"Eligible Time:                                                    {custom_get(job_details, 'Eligible')}")
+    logging.info(f"Start Time:                                                       {custom_get(job_details, 'Start')}")
+    logging.info(f"Time Spent in Queue:                                              {time_in_queue if time_in_queue else 'Unknown'}")
+    logging.info(f"End Time:                                                         {custom_get(job_details, 'End')}")
+    logging.info(f"Total Wall-clock Time:                                            {custom_get(job_details, 'Elapsed')}")
+    logging.info(f"Time Limit:                                                       {custom_get(job_details, 'Timelimit')}")
     logging.info(f"Time Efficiency (% of Wall-clock Time to Time Limit):             {time_efficency:.1f}%")
-    logging.info(f"Number of CPU(s) Requested:                                       {job_details.get('ReqCPUS', 'Unknown')}")
-    logging.info(f"Total CPU Time:                                                   {job_details.get('TotalCPU', 'Unknown')}")
-    if cpu_usage_percentage:
-        logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                {cpu_usage_percentage:.1f}%")
-    else:
-        logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                Unknown")
-    logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
-    if ave_mem_gb is not None:
-        logging.info(f"Average Memory Usage:                                             {ave_mem_gb:.2f} GB")
-    else:
-        logging.info(f"Average Memory Usage:                                             Unknown")
-    if max_mem_gb is not None:
-        logging.info(f"Maximum Memory Usage:                                             {max_mem_gb:.2f} GB")
-    else:
-        logging.info(f"Maximum Memory Usage:                                             Unknown")
-    if mem_usage_percentage:
-        logging.info(f"Memory Efficiency (% of Memory Requested to Average Memory Used): {mem_usage_percentage:.1f}%")
-    else:
-        logging.info(f"Memory Efficiency (% of Memory Requested to Average Memory Used): Unknown")
-    logging.info(f"Average Disk Read:                                                {job_details.get('AveDiskRead', 'Unknown')}")
-    logging.info(f"Maximum Disk Read:                                                {job_details.get('MaxDiskRead', 'Unknown')}")
-    logging.info(f"Average Disk Write:                                               {job_details.get('AveDiskWrite', 'Unknown')}")
-    logging.info(f"Maximum Disk Write:                                               {job_details.get('MaxDiskWrite', 'Unknown')}")
+    logging.info(f"Number of CPU(s) Requested:                                       {custom_get(job_details, 'ReqCPUS')}")
+    logging.info(f"Total CPU Time:                                                   {custom_get(job_details, 'TotalCPU')}")
+    logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                {f'{cpu_usage_percentage:.1f}%' if cpu_usage_percentage else 'Unknown'}")
+    logging.info(f"Memory Requested:                                                 {f'{req_mem_gb:.2f} GB' if req_mem_gb is not None else 'Unknown'}")
+    logging.info(f"Average Memory Usage:                                             {f'{ave_mem_gb:.2f} GB' if ave_mem_gb is not None else 'Unknown'}")
+    logging.info(f"Maximum Memory Usage:                                             {f'{max_mem_gb:.2f} GB' if max_mem_gb is not None else 'Unknown'}")
+    logging.info(f"Memory Efficiency (% of Memory Requested to Average Memory Used): {f'{mem_usage_percentage:.1f}%' if mem_usage_percentage else 'Unknown'}")
+    logging.info(f"Average Disk Read:                                                {custom_get(job_details, 'AveDiskRead')}")
+    logging.info(f"Maximum Disk Read:                                                {custom_get(job_details, 'MaxDiskRead')}")
+    logging.info(f"Average Disk Write:                                               {custom_get(job_details, 'AveDiskWrite')}")
+    logging.info(f"Maximum Disk Write:                                               {custom_get(job_details, 'MaxDiskWrite')}")
 
 if __name__ == "__main__":
     main()
