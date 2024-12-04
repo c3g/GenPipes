@@ -140,8 +140,11 @@ def pbs_exit_code_to_string(exit_code):
     if 1 <= exit_code <= 127:
         return f"ERROR ({os.strerror(exit_code)})"
     if exit_code >= 128:
-        signal_number = exit_code - 128
-        return f"TERMINATED ({signal.Signals(signal_number).name})"
+        signal_number = exit_code - 256
+        if signal_number in signal.Signals.__members__.values():
+            signal_name = signal.Signals(signal_number).name
+            return f"TERMINATED ({signal_name})"
+        return f"TERMINATED (Unknown signal {signal_number})"
     return None
 
 def parse_pbs_job_info(job_id, job_info):
@@ -154,8 +157,6 @@ def parse_pbs_job_info(job_id, job_info):
         dict: Job details if found, otherwise None.
     """
     job_details = {}
-
-    logging.info(f"Job info: {job_info}")
 
     used_resource = sys.argv[7]
 
@@ -175,7 +176,6 @@ def parse_pbs_job_info(job_id, job_info):
     ppn_match = re.search(r'Resource_List\.nodes\s*=\s*\d+:ppn=(\d+)', job_info)
     job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else None
     job_details['State'] = pbs_exit_code_to_string(int(sys.argv[10]))
-    job_details['State'] = os.getenv('PBS_JOB_STATE', None)
     job_details['Start'] = parse_datetime(job_info, "start_time")
     job_details['End'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
@@ -267,6 +267,8 @@ def calculate_percentage(used, requested):
     Returns:
         float: Percentage.
     """
+    if used is None or requested is None:
+        return None
     return (used / requested * 100) if requested > 0 else 0
 
 def convert_memory_to_gb(memory_str):
@@ -352,12 +354,8 @@ def main():
     elapsed = None
     if job_details['Elapsed'] is not None:
         elapsed = time_str_to_seconds(job_details.get('Elapsed'))
-    cpu_usage_percentage = None
-    if total_cpu and elapsed:
-        cpu_usage_percentage = calculate_percentage(total_cpu, elapsed)
-    mem_usage_percentage = None
-    if req_mem_gb and ave_mem_gb:
-        mem_usage_percentage = calculate_percentage(ave_mem_gb, req_mem_gb)
+    cpu_usage_percentage = calculate_percentage(total_cpu, elapsed)
+    mem_usage_percentage = calculate_percentage(max_mem_gb, req_mem_gb)
 
     logging.info(f"GenPipes Epilogue for job {job_id}")
     logging.info(f"Job Name:                                                         {custom_get(job_details, 'JobName')}")
@@ -368,18 +366,18 @@ def main():
     logging.info(f"Submit Time:                                                      {custom_get(job_details, 'Submit')}")
     logging.info(f"Eligible Time:                                                    {custom_get(job_details, 'Eligible')}")
     logging.info(f"Start Time:                                                       {custom_get(job_details, 'Start')}")
-    logging.info(f"Time Spent in Queue:                                              {time_in_queue if time_in_queue else 'Unknown'}")
+    logging.info(f"Time Spent in Queue:                                              {time_in_queue if time_in_queue is not None else 'Unknown'}")
     logging.info(f"End Time:                                                         {custom_get(job_details, 'End')}")
     logging.info(f"Total Wall-clock Time:                                            {custom_get(job_details, 'Elapsed')}")
     logging.info(f"Time Limit:                                                       {custom_get(job_details, 'Timelimit')}")
     logging.info(f"Time Efficiency (% of Wall-clock Time to Time Limit):             {time_efficency:.1f}%")
     logging.info(f"Number of CPU(s) Requested:                                       {custom_get(job_details, 'ReqCPUS')}")
     logging.info(f"Total CPU Time:                                                   {custom_get(job_details, 'TotalCPU')}")
-    logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                {f'{cpu_usage_percentage:.1f}%' if cpu_usage_percentage else 'Unknown'}")
+    logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                {f'{cpu_usage_percentage:.1f}%' if cpu_usage_percentage is not None else 'Unknown'}")
     logging.info(f"Memory Requested:                                                 {f'{req_mem_gb:.2f} GB' if req_mem_gb is not None else 'Unknown'}")
     logging.info(f"Average Memory Usage:                                             {f'{ave_mem_gb:.2f} GB' if ave_mem_gb is not None else 'Unknown'}")
     logging.info(f"Maximum Memory Usage:                                             {f'{max_mem_gb:.2f} GB' if max_mem_gb is not None else 'Unknown'}")
-    logging.info(f"Memory Efficiency (% of Memory Requested to Average Memory Used): {f'{mem_usage_percentage:.1f}%' if mem_usage_percentage else 'Unknown'}")
+    logging.info(f"Memory Efficiency (% of Memory Requested to Maximum Memory Used): {f'{mem_usage_percentage:.1f}%' if mem_usage_percentage is not None else 'Unknown'}")
     logging.info(f"Average Disk Read:                                                {custom_get(job_details, 'AveDiskRead')}")
     logging.info(f"Maximum Disk Read:                                                {custom_get(job_details, 'MaxDiskRead')}")
     logging.info(f"Average Disk Write:                                               {custom_get(job_details, 'AveDiskWrite')}")
