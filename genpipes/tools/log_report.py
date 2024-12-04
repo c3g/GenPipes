@@ -55,7 +55,6 @@ class JobStat():
         self.cpu_time = None
         self.cpu_efficiency = None
         self.mem = None
-        self.total_mem = None
         self.ave_mem = None
         self.max_mem = None
         self.mem_efficiency = None
@@ -135,9 +134,6 @@ class JobStat():
                     mem = re.search(r'Memory Requested:\s+(.+$)', line)
                     if mem:
                         self.mem = mem.group(1)
-                    total_mem = re.search(r'Total Memory:\s+(.+$)', line)
-                    if total_mem:
-                        self.total_mem = total_mem.group(1)
                     ave_mem = re.search(r'Average Memory Usage:\s+(.+$)', line)
                     if ave_mem:
                         self.ave_mem = ave_mem.group(1)
@@ -250,7 +246,6 @@ def print_report(report, to_stdout=True, to_tsv=None):
         ('cpu_time', 'cpu_time'),
         ('cpu_efficiency', 'cpu_efficiency'),
         ('mem', 'mem'),
-        ('total_mem', 'total_mem'),
         ('ave_mem', 'ave_mem'),
         ('max_mem', 'max_mem'),
         ('mem_efficiency', 'mem_efficiency'),
