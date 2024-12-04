@@ -11,8 +11,24 @@ import sys
 from io import StringIO
 from datetime import datetime
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='EPILOGUE - %(message)s')
+# Create a custom logger
+logger = logging.getLogger('logging')
+logger.setLevel(logging.INFO)
+
+# Create a console handler and set the format
+console_handler = logging.StreamHandler()
+formatter = logging.Formatter('EPILOGUE - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(console_handler)
+
+def log_separator():
+    """
+    Use the handler's stream to print the separator without the prefix.
+    """
+    console_handler.stream.write('\n' + '-' * 90 + '\n')
+    console_handler.flush()
 
 def get_slurm_job_info(job_id, retries=20, delay=10):
     """
@@ -40,9 +56,9 @@ def get_slurm_job_info(job_id, retries=20, delay=10):
             else:
                 time.sleep(delay)
         except subprocess.CalledProcessError as e:
-            logging.error(f"Error retrieving job info: {e}")
+            logger.error(f"Error retrieving job info: {e}")
             return None
-    logging.error(f"Failed to retrieve complete job info for job {job_id} after {retries} attempts")
+    logger.error(f"Failed to retrieve complete job info for job {job_id} after {retries} attempts")
     return None
 
 def parse_slurm_job_info(job_info, job_id):
@@ -56,7 +72,7 @@ def parse_slurm_job_info(job_info, job_id):
     """
     job_details = {}
     reader = csv.DictReader(StringIO(job_info), delimiter='|')
-    # logging.info(f"Job info: {job_info}")
+    # logger.info(f"Job info: {job_info}")
     for row in reader:
         if row['JobID'] == job_id:
             # Extracting from the first line (line starting with JobID)
@@ -90,7 +106,7 @@ def parse_slurm_job_info(job_info, job_id):
     required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Eligible', 'Timelimit', 'ReqCPUS', 'ReqMem', 'State', 'Start', 'End', 'Elapsed', 'TotalCPU', 'AveRSS', 'MaxRSS', 'AveDiskRead', 'MaxDiskRead', 'AveDiskWrite', 'MaxDiskWrite']
     missing_fields = [field for field in required_fields if field not in job_details]
     if missing_fields:
-        logging.warning(f"Missing fields: {', '.join(missing_fields)}")
+        logger.warning(f"Missing fields: {', '.join(missing_fields)}")
         return None
     return job_details
 
@@ -109,7 +125,7 @@ def get_pbs_job_info(job_id):
     job_info = result.stdout
     job_details = parse_pbs_job_info(job_id, job_info)
     if not result.stdout.strip():
-        logging.warning("Error retrieving job info. The prologue will be incomplete.")
+        logger.warning("Error retrieving job info. The prologue will be incomplete.")
     return job_details
 
 def parse_datetime(job_details, field_name):
@@ -318,17 +334,17 @@ def main():
         job_id = os.getenv('SLURM_JOB_ID')
         job_details = get_slurm_job_info(job_id)
         if not job_details:
-            logging.error(f"Failed to retrieve job info for job {job_id}")
+            logger.error(f"Failed to retrieve job info for job {job_id}")
             return
     # Built-in support for PBS
     elif len(sys.argv) > 8:
         job_id = sys.argv[1]
         job_details = get_pbs_job_info(job_id)
         if not job_details:
-            logging.error(f"Failed to retrieve job info for job {job_id}")
+            logger.error(f"Failed to retrieve job info for job {job_id}")
             return
     else:
-        logging.error("Unsupported scheduler")
+        logger.error("Unsupported scheduler")
         return
 
     # Calculate time spent in queue format DD:HH:MM:SS
@@ -357,31 +373,32 @@ def main():
     cpu_usage_percentage = calculate_percentage(total_cpu, elapsed)
     mem_usage_percentage = calculate_percentage(max_mem_gb, req_mem_gb)
 
-    logging.info(f"GenPipes Epilogue for job {job_id}")
-    logging.info(f"Job Name:                                                         {custom_get(job_details, 'JobName')}")
-    logging.info(f"User:                                                             {custom_get(job_details, 'User')}")
-    logging.info(f"Node(s):                                                          {custom_get(job_details, 'NodeList')}")
-    logging.info(f"Priority:                                                         {custom_get(job_details, 'Priority')}")
-    logging.info(f"Status:                                                           {custom_get(job_details, 'State')}")
-    logging.info(f"Submit Time:                                                      {custom_get(job_details, 'Submit')}")
-    logging.info(f"Eligible Time:                                                    {custom_get(job_details, 'Eligible')}")
-    logging.info(f"Start Time:                                                       {custom_get(job_details, 'Start')}")
-    logging.info(f"Time Spent in Queue:                                              {time_in_queue if time_in_queue is not None else 'Unknown'}")
-    logging.info(f"End Time:                                                         {custom_get(job_details, 'End')}")
-    logging.info(f"Total Wall-clock Time:                                            {custom_get(job_details, 'Elapsed')}")
-    logging.info(f"Time Limit:                                                       {custom_get(job_details, 'Timelimit')}")
-    logging.info(f"Time Efficiency (% of Wall-clock Time to Time Limit):             {time_efficency:.1f}%")
-    logging.info(f"Number of CPU(s) Requested:                                       {custom_get(job_details, 'ReqCPUS')}")
-    logging.info(f"Total CPU Time:                                                   {custom_get(job_details, 'TotalCPU')}")
-    logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                {f'{cpu_usage_percentage:.1f}%' if cpu_usage_percentage is not None else 'Unknown'}")
-    logging.info(f"Memory Requested:                                                 {f'{req_mem_gb:.2f} GB' if req_mem_gb is not None else 'Unknown'}")
-    logging.info(f"Average Memory Usage:                                             {f'{ave_mem_gb:.2f} GB' if ave_mem_gb is not None else 'Unknown'}")
-    logging.info(f"Maximum Memory Usage:                                             {f'{max_mem_gb:.2f} GB' if max_mem_gb is not None else 'Unknown'}")
-    logging.info(f"Memory Efficiency (% of Memory Requested to Maximum Memory Used): {f'{mem_usage_percentage:.1f}%' if mem_usage_percentage is not None else 'Unknown'}")
-    logging.info(f"Average Disk Read:                                                {custom_get(job_details, 'AveDiskRead')}")
-    logging.info(f"Maximum Disk Read:                                                {custom_get(job_details, 'MaxDiskRead')}")
-    logging.info(f"Average Disk Write:                                               {custom_get(job_details, 'AveDiskWrite')}")
-    logging.info(f"Maximum Disk Write:                                               {custom_get(job_details, 'MaxDiskWrite')}")
+    log_separator()
+    logger.info(f"GenPipes Epilogue for job {job_id}")
+    logger.info(f"Job Name:                                                         {custom_get(job_details, 'JobName')}")
+    logger.info(f"User:                                                             {custom_get(job_details, 'User')}")
+    logger.info(f"Node(s):                                                          {custom_get(job_details, 'NodeList')}")
+    logger.info(f"Priority:                                                         {custom_get(job_details, 'Priority')}")
+    logger.info(f"Status:                                                           {custom_get(job_details, 'State')}")
+    logger.info(f"Submit Time:                                                      {custom_get(job_details, 'Submit')}")
+    logger.info(f"Eligible Time:                                                    {custom_get(job_details, 'Eligible')}")
+    logger.info(f"Start Time:                                                       {custom_get(job_details, 'Start')}")
+    logger.info(f"Time Spent in Queue:                                              {time_in_queue if time_in_queue is not None else 'Unknown'}")
+    logger.info(f"End Time:                                                         {custom_get(job_details, 'End')}")
+    logger.info(f"Total Wall-clock Time:                                            {custom_get(job_details, 'Elapsed')}")
+    logger.info(f"Time Limit:                                                       {custom_get(job_details, 'Timelimit')}")
+    logger.info(f"Time Efficiency (% of Wall-clock Time to Time Limit):             {time_efficency:.1f}%")
+    logger.info(f"Number of CPU(s) Requested:                                       {custom_get(job_details, 'ReqCPUS')}")
+    logger.info(f"Total CPU Time:                                                   {custom_get(job_details, 'TotalCPU')}")
+    logger.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                {f'{cpu_usage_percentage:.1f}%' if cpu_usage_percentage is not None else 'Unknown'}")
+    logger.info(f"Memory Requested:                                                 {f'{req_mem_gb:.2f} GB' if req_mem_gb is not None else 'Unknown'}")
+    logger.info(f"Average Memory Usage:                                             {f'{ave_mem_gb:.2f} GB' if ave_mem_gb is not None else 'Unknown'}")
+    logger.info(f"Maximum Memory Usage:                                             {f'{max_mem_gb:.2f} GB' if max_mem_gb is not None else 'Unknown'}")
+    logger.info(f"Memory Efficiency (% of Memory Requested to Maximum Memory Used): {f'{mem_usage_percentage:.1f}%' if mem_usage_percentage is not None else 'Unknown'}")
+    logger.info(f"Average Disk Read:                                                {custom_get(job_details, 'AveDiskRead')}")
+    logger.info(f"Maximum Disk Read:                                                {custom_get(job_details, 'MaxDiskRead')}")
+    logger.info(f"Average Disk Write:                                               {custom_get(job_details, 'AveDiskWrite')}")
+    logger.info(f"Maximum Disk Write:                                               {custom_get(job_details, 'MaxDiskWrite')}")
 
 if __name__ == "__main__":
     main()
