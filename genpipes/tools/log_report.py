@@ -186,6 +186,8 @@ def get_report(job_list_tsv=None):
     return report
 
 def parse_time(time_str):
+    if time_str == 'Unknown':
+        return None
     parts = time_str.split(':')
     if len(parts) == 3:
         h, m, s = parts
@@ -272,10 +274,12 @@ def print_report(report, to_stdout=True, to_tsv=None):
             logger.warning(f'Job {job.job_id} has no End Time.')
         if job.total_time:
             total_time = parse_time(job.total_time)
-            total_machine += total_time
+            if total_time:
+                total_machine += total_time
         if job.cpu_time:
             cpu_time = parse_time(job.cpu_time)
-            total_machine_core += cpu_time * job.n_cpu
+            if cpu_time:
+                total_machine_core += cpu_time * job.n_cpu
 
     if to_stdout:
         try:

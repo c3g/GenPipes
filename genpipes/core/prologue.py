@@ -215,7 +215,7 @@ def main():
     logging.info(f"Submit Time:                                                      {custom_get(job_details, 'Submit')}")
     logging.info(f"Time Limit:                                                       {custom_get(job_details, 'Timelimit')}")
     logging.info(f"Number of CPU(s) Requested:                                       {custom_get(job_details, 'ReqCPUS')}")
-    logging.info(f"Memory Requested:                                                 {f'{req_mem_gb:.2f} GB' if req_mem_gb is not None else 'Unknown'} GB")
+    logging.info(f"Memory Requested:                                                 {f'{req_mem_gb:.2f} GB' if req_mem_gb is not None else 'Unknown'}")
 
 if __name__ == "__main__":
     main()
