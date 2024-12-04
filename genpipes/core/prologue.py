@@ -169,6 +169,19 @@ def convert_memory_to_gb(memory_str):
         return float(memory_str[:-2]) * 1024
     return float(memory_str)
 
+def custom_get(dictionary, key, default="Unknown"):
+    """
+    Custom get method for dictionaries.
+    Args:
+        dictionary (dict): Dictionary.
+        key (str): Key to search for.
+        default (str): Default value if key is not found.
+    Returns:
+        str: Value if found, otherwise default value.
+    """
+    value = dictionary.get(key, default)
+    return value if value is not None else default
+
 def main():
     """
     Main function to run the epilogue script.
@@ -195,17 +208,14 @@ def main():
         req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
 
     logging.info(f"GenPipes Prologue for job {job_id}")
-    logging.info(f"Job Name:                                                         {job_details.get('JobName', 'Unknown')}")
-    logging.info(f"User:                                                             {job_details.get('User', 'Unknown')}")
-    logging.info(f"Node(s):                                                          {job_details.get('NodeList', 'Unknown')}")
-    logging.info(f"Priority:                                                         {job_details.get('Priority', 'Unknown')}")
-    logging.info(f"Submit Time:                                                      {job_details.get('Submit', 'Unknown')}")
-    logging.info(f"Time Limit:                                                       {job_details.get('Timelimit', 'Unknown')}")
-    logging.info(f"Number of CPU(s) Requested:                                       {job_details.get('ReqCPUS', 'Unknown')}")
-    if req_mem_gb is not None:
-        logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
-    else:
-        logging.info(f"Memory Requested:                                                 Unknown")
+    logging.info(f"Job Name:                                                         {custom_get(job_details, 'JobName')}")
+    logging.info(f"User:                                                             {custom_get(job_details, 'User')}")
+    logging.info(f"Node(s):                                                          {custom_get(job_details, 'NodeList')}")
+    logging.info(f"Priority:                                                         {custom_get(job_details, 'Priority')}")
+    logging.info(f"Submit Time:                                                      {custom_get(job_details, 'Submit')}")
+    logging.info(f"Time Limit:                                                       {custom_get(job_details, 'Timelimit')}")
+    logging.info(f"Number of CPU(s) Requested:                                       {custom_get(job_details, 'ReqCPUS')}")
+    logging.info(f"Memory Requested:                                                 {f'{req_mem_gb:.2f} GB' if req_mem_gb is not None else 'Unknown'} GB")
 
 if __name__ == "__main__":
     main()
