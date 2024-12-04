@@ -85,7 +85,6 @@ def parse_slurm_job_info(job_info, job_id):
             job_details['AveDiskWrite'] = row['AveDiskWrite']
             job_details['MaxDiskWrite'] = row['MaxDiskWrite']
             break
-    job_details['TotalMem'] = 'Unknown'
 
     # Check if all necessary fields are populated
     required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Eligible', 'Timelimit', 'ReqCPUS', 'ReqMem', 'State', 'Start', 'End', 'Elapsed', 'TotalCPU', 'AveRSS', 'MaxRSS', 'AveDiskRead', 'MaxDiskRead', 'AveDiskWrite', 'MaxDiskWrite']
@@ -112,45 +111,6 @@ def get_pbs_job_info(job_id):
     if not result.stdout.strip():
         logging.warning("Error retrieving job info. The prologue will be incomplete.")
     return job_details
-
-def get_resource_usage(pid):
-    result = subprocess.run(
-        ['ps', '--ppid', pid, '-o', 'etime=', '-o', 'cputime=', '-o', 'pmem=', '-o', 'rss='],
-        stdout=subprocess.PIPE,
-        text=True
-    )
-    output = result.stdout.strip().split('\n')
-    logging.info(f"Resource usage: {output}")
-
-    # Initialize total CPU time in seconds and memory usage
-    total_cpu_seconds = 0
-    total_rss = 0
-    max_rss = 0
-    process_count = 0
-
-    # Parse each line of the output
-    for line in output:
-        etime, cputime, pmem, rss = line.split()
-        logging.info(f"etime: {etime}, cputime: {cputime}, pmem: {pmem}, rss: {rss}")
-        total_cpu_seconds += time_str_to_seconds(cputime)
-        rss_kb = int(rss)
-        total_rss += rss_kb
-        max_rss = max(max_rss, rss_kb)
-        process_count += 1
-
-    # Calculate average RSS
-    ave_rss = total_rss // process_count if process_count > 0 else 0
-
-    # Convert total CPU time back to HH:MM:SS format
-    total_cpu_time = f"{total_cpu_seconds // 3600:02}:{(total_cpu_seconds % 3600) // 60:02}:{total_cpu_seconds % 60:02}"
-
-    return {
-        'etime': etime,
-        'total_cpu_time': total_cpu_time,
-        'pmem': pmem,
-        'ave_rss': ave_rss,
-        'max_rss': max_rss
-    }
 
 def parse_datetime(job_details, field_name):
     """
@@ -195,8 +155,6 @@ def parse_pbs_job_info(job_id, job_info):
     """
     job_details = {}
     logging.info(f"Job info: {job_info}")
-    session_id_match = re.search(r"session_id\s*=\s*(.+)", job_info)
-    resource_usage = get_resource_usage(session_id_match.group(1))
 
     job_details['JobID'] = job_id
     job_name_match = re.search(r"Job_Name\s*=\s*(.+)", job_info)
@@ -219,18 +177,16 @@ def parse_pbs_job_info(job_id, job_info):
     job_details['End'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     # walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
     # job_details['Elapsed'] = walltime_match_used.group(1) if walltime_match_used else "Unknown"
-    # convert Elapsed time to HH:MM:SS format
-    job_details['Elapsed'] = resource_usage['etime']
+    job_details['Elapsed'] = calculate_time_difference(job_details['Start'], job_details['End'])
     # cput_match = re.search(r'cput=([\d:]+)', used_resource)
     # cput_match = re.search(r'resources_used\.cput=([\d:]+)', job_info)
     # job_details['TotalCPU'] = cput_match.group(1) if cput_match else "Unknown"
-    job_details['TotalCPU'] = resource_usage['total_cpu_time']
+    job_details['TotalCPU'] = "Unknown"
     # mem_match = re.search(r',mem=([\d]+\w\w)', used_resource)
     # mem_match = re.search(r'resources_used\.mem=([\d]+\w\w)', job_info)
     # job_details['TotalMem'] = mem_match.group(1) if mem_match else "Unknown"
-    job_details['TotalMem'] = "Unknown"
-    job_details['AveRSS'] = f"{resource_usage['ave_rss']}kb"
-    job_details['MaxRSS'] = f"{resource_usage['max_rss']}kb"
+    job_details['AveRSS'] = "Unknown"
+    job_details['MaxRSS'] = "Unknown"
     job_details['AveDiskRead'] = "Unknown"
     job_details['MaxDiskRead'] = "Unknown"
     job_details['AveDiskWrite'] = "Unknown"
@@ -375,9 +331,6 @@ def main():
     max_mem_gb = None
     if job_details['MaxRSS'] != "Unknown":
         max_mem_gb = convert_memory_to_gb(job_details['MaxRSS'])
-    total_mem_gb = None
-    if job_details['TotalMem'] != "Unknown":
-        total_mem_gb = convert_memory_to_gb(job_details['TotalMem'])
     # Calculate percentages for CPU and memory usage
     elapsed = time_str_to_seconds(job_details.get('Elapsed', '00:00:00'))
     total_cpu = time_str_to_seconds(job_details.get('TotalCPU', '00:00:00'))
@@ -407,10 +360,6 @@ def main():
     logging.info(f"Total CPU Time:                                                   {job_details.get('TotalCPU', 'Unknown')}")
     logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                {cpu_usage_percentage:.1f}%")
     logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
-    if total_mem_gb is not None:
-        logging.info(f"Total Memory:                                                     {total_mem_gb:.2f} GB")
-    else:
-        logging.info(f"Total Memory:                                                     Unknown")
     if ave_mem_gb is not None:
         logging.info(f"Average Memory Usage:                                             {ave_mem_gb:.2f} GB")
     else:
