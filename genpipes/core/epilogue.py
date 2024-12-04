@@ -119,13 +119,13 @@ def parse_datetime(job_details, field_name):
         job_details (str): Job details string.
         field_name (str): Field name to search for.
     Returns:
-        str: Datetime string in ISO format if found, otherwise "Unknown".
+        str: Datetime string in ISO format if found, otherwise None.
     """
     pattern = rf"{field_name} = (.+)"
     match = re.search(pattern, job_details)
     if match:
         return datetime.strptime(match.group(1), "%a %b %d %H:%M:%S %Y").strftime("%Y-%m-%dT%H:%M:%S")
-    return "Unknown"
+    return None
 
 def pbs_exit_code_to_string(exit_code):
     """
@@ -133,7 +133,7 @@ def pbs_exit_code_to_string(exit_code):
     Args:
         exit_code (int): Exit code.
     Returns:
-        str: Exit code string if recognized, otherwise "Unknown".
+        str: Exit code string if recognized, otherwise None.
     """
     if exit_code == 0:
         return "COMPLETED"
@@ -142,7 +142,7 @@ def pbs_exit_code_to_string(exit_code):
     if exit_code >= 128:
         signal_number = exit_code - 128
         return f"TERMINATED ({signal.Signals(signal_number).name})"
-    return "Unknown"
+    return None
 
 def parse_pbs_job_info(job_id, job_info):
     """
@@ -154,25 +154,24 @@ def parse_pbs_job_info(job_id, job_info):
         dict: Job details if found, otherwise None.
     """
     job_details = {}
-    logging.info(f"Job info: {job_info}")
 
     job_details['JobID'] = job_id
     job_name_match = re.search(r"Job_Name\s*=\s*(.+)", job_info)
-    job_details['JobName'] = job_name_match.group(1) if job_name_match else "Unknown"
+    job_details['JobName'] = job_name_match.group(1) if job_name_match else None
     job_owner_match = re.search(r"Job_Owner\s*=\s*(.+)@", job_info)
-    job_details['User'] = job_owner_match.group(1) if job_owner_match else "Unknown"
+    job_details['User'] = job_owner_match.group(1) if job_owner_match else None
     exec_host_match = re.search(r"exec_host\s*=\s*(.+)/", job_info)
-    job_details['NodeList'] = exec_host_match.group(1) if exec_host_match else "Unknown"
+    job_details['NodeList'] = exec_host_match.group(1) if exec_host_match else None
     priority_match = re.search(r"Priority\s*=\s*(.+)", job_info)
-    job_details['Priority'] = priority_match.group(1) if priority_match else "Unknown"
+    job_details['Priority'] = priority_match.group(1) if priority_match else None
     job_details['Submit'] = parse_datetime(job_info, "qtime")
     job_details['Eligible'] = parse_datetime(job_info, "etime")
     walltime_match = re.search(r'Resource_List\.walltime\s*=\s*(.+)', job_info)
-    job_details['Timelimit'] = walltime_match.group(1) if walltime_match else "Unknown"
+    job_details['Timelimit'] = walltime_match.group(1) if walltime_match else None
     ppn_match = re.search(r'Resource_List\.nodes\s*=\s*\d+:ppn=(\d+)', job_info)
-    job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else "Unknown"
+    job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else None
     # job_details['State'] = pbs_exit_code_to_string(int(sys.argv[10]))
-    job_details['State'] = os.getenv('PBS_JOB_STATE', 'Unknown')
+    job_details['State'] = os.getenv('PBS_JOB_STATE', None)
     job_details['Start'] = parse_datetime(job_info, "start_time")
     job_details['End'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     # walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
@@ -181,16 +180,16 @@ def parse_pbs_job_info(job_id, job_info):
     # cput_match = re.search(r'cput=([\d:]+)', used_resource)
     # cput_match = re.search(r'resources_used\.cput=([\d:]+)', job_info)
     # job_details['TotalCPU'] = cput_match.group(1) if cput_match else "Unknown"
-    job_details['TotalCPU'] = "Unknown"
+    job_details['TotalCPU'] = None
     # mem_match = re.search(r',mem=([\d]+\w\w)', used_resource)
     # mem_match = re.search(r'resources_used\.mem=([\d]+\w\w)', job_info)
     # job_details['TotalMem'] = mem_match.group(1) if mem_match else "Unknown"
-    job_details['AveRSS'] = "Unknown"
-    job_details['MaxRSS'] = "Unknown"
-    job_details['AveDiskRead'] = "Unknown"
-    job_details['MaxDiskRead'] = "Unknown"
-    job_details['AveDiskWrite'] = "Unknown"
-    job_details['MaxDiskWrite'] = "Unknown"
+    job_details['AveRSS'] = None
+    job_details['MaxRSS'] = None
+    job_details['AveDiskRead'] = None
+    job_details['MaxDiskRead'] = None
+    job_details['AveDiskWrite'] = None
+    job_details['MaxDiskWrite'] = None
 
     queue_match = re.search(r"queue\s*=\s*(.+)", job_info)
     if queue_match.group(1) == "lm":
@@ -208,6 +207,8 @@ def time_str_to_seconds(time_str):
     Returns:
         int: Total seconds.
     """
+    if not time_str:
+        return 0
     parts = time_str.split(':')
     if len(parts) == 3:
         h, m, s = parts
@@ -317,24 +318,30 @@ def main():
 
     # Calculate time spent in queue format DD:HH:MM:SS
     time_in_queue = None
-    if job_details['Submit'] != "Unknown":
+    if job_details['Submit'] is not None:
         time_in_queue = calculate_time_difference(job_details['Submit'], job_details['Start'])
     # Calculate time efficency between walltime and time used
     time_efficency = calculate_time_efficency(job_details['Elapsed'], job_details['Timelimit'])
     # Convert memory to GB
     req_mem_gb = None
-    if job_details['ReqMem'] != "Unknown":
+    if job_details['ReqMem'] is not None:
         req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
     ave_mem_gb = None
-    if job_details['AveRSS'] != "Unknown":
+    if job_details['AveRSS'] is not None:
         ave_mem_gb = convert_memory_to_gb(job_details['AveRSS'])
     max_mem_gb = None
-    if job_details['MaxRSS'] != "Unknown":
+    if job_details['MaxRSS'] is not None:
         max_mem_gb = convert_memory_to_gb(job_details['MaxRSS'])
     # Calculate percentages for CPU and memory usage
-    elapsed = time_str_to_seconds(job_details.get('Elapsed', '00:00:00'))
-    total_cpu = time_str_to_seconds(job_details.get('TotalCPU', '00:00:00'))
-    cpu_usage_percentage = calculate_percentage(total_cpu, elapsed)
+    total_cpu = None
+    if job_details['TotalCPU'] is not None:
+        total_cpu = time_str_to_seconds(job_details.get('TotalCPU'))
+    elapsed = None
+    if job_details['Elapsed'] is not None:
+        elapsed = time_str_to_seconds(job_details.get('Elapsed'))
+    cpu_usage_percentage = None
+    if total_cpu and elapsed:
+        cpu_usage_percentage = calculate_percentage(total_cpu, elapsed)
     mem_usage_percentage = None
     if req_mem_gb and ave_mem_gb:
         mem_usage_percentage = calculate_percentage(ave_mem_gb, req_mem_gb)
