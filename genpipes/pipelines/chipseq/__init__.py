@@ -1406,16 +1406,10 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
 
         jobs = []
 
-        counter = 0
-
-        samples_associative_array = []
-
         for sample in self.samples:
-            mark_list = []
             for mark_name, mark_type in sample.marks.items():
                 # Don't find motifs for broad peaks
                 if mark_type == "N":
-                    mark_list.append(mark_name)
 
                     peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}_peaks.{self.mark_type_conversion[mark_type]}Peak")
                     output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
@@ -1436,33 +1430,8 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                             removable_files=[os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)]
                         )
                     )
-                    counter = counter + 1
                 else:
                     log.warning(f"Mark {mark_name} for Sample {sample.name}is not Narrow; homer_find_motifs_genome is run on narrow peaks... skipping")
-            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
-
-        if counter > 0:
-            report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_find_motifs_genome.md")
-            jobs.append(
-                Job(
-                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, "homerResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"] +
-                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, "knownResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"],
-                    [report_file],
-                    command=f"""\
-mkdir -p {self.output_dirs['report_output_directory']}/annotation/ && \\
-declare -A samples_associative_array=({" ".join(samples_associative_array)}) && \\
-for sample in ${{!samples_associative_array[@]}}
-do
-  for mark_name in ${{samples_associative_array[$sample]}}
-  do
-    rsync -rvP annotation/$sample {self.output_dirs['report_output_directory']}/annotation/ && \\
-    echo -e "* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/homerResults.html)\\n* [HOMER Known Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/knownResults.html)" >> {report_file}
-  done
-done""",
-                    report_files=[report_file],
-                    name="homer_find_motifs_genome_report"
-                )
-            )
 
         return jobs
 
