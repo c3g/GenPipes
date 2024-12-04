@@ -6,12 +6,27 @@ import subprocess
 import logging
 import re
 import time
-import sys
 from io import StringIO
 from datetime import datetime
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='PROLOGUE - %(message)s')
+# Create a custom logger
+logger = logging.getLogger('logging')
+logger.setLevel(logging.INFO)
+
+# Create a console handler and set the format
+console_handler = logging.StreamHandler()
+formatter = logging.Formatter('EPILOGUE - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(console_handler)
+
+def log_separator():
+    """
+    Use the handler's stream to print the separator without the prefix.
+    """
+    console_handler.stream.write('\n' + '-' * 90 + '\n')
+    console_handler.flush()
 
 def get_slurm_job_info(job_id, retries=10, delay=5):
     """
@@ -39,9 +54,9 @@ def get_slurm_job_info(job_id, retries=10, delay=5):
             else:
                 time.sleep(delay)
         except subprocess.CalledProcessError as e:
-            logging.error(f"Error retrieving job info: {e}")
+            logger.error(f"Error retrieving job info: {e}")
             return None
-    logging.error(f"Failed to retrieve complete job info for job {job_id} after {retries} attempts")
+    logger.error(f"Failed to retrieve complete job info for job {job_id} after {retries} attempts")
     return None
 
 def parse_slurm_job_info(job_info, job_id):
@@ -72,7 +87,7 @@ def parse_slurm_job_info(job_info, job_id):
     required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Timelimit', 'ReqCPUS', 'ReqMem',]
     missing_fields = [field for field in required_fields if field not in job_details]
     if missing_fields:
-        logging.warning(f"Missing fields: {', '.join(missing_fields)}")
+        logger.warning(f"Missing fields: {', '.join(missing_fields)}")
         return None
     return job_details
 
@@ -91,7 +106,7 @@ def get_pbs_job_info(job_id):
     job_info = result.stdout
     job_details = parse_pbs_job_info(job_id, job_info)
     if not result.stdout.strip():
-        logging.warning("Error retrieving job info. The prologue will be incomplete.")
+        logger.warning("Error retrieving job info. The prologue will be incomplete.")
     return job_details
 
 def parse_datetime(job_details, field_name):
@@ -191,15 +206,15 @@ def main():
     if 'SLURM_JOB_ID' in os.environ:
         job_details = get_slurm_job_info(job_id)
         if not job_details:
-            logging.error(f"Failed to retrieve job info for job {job_id}")
+            logger.error(f"Failed to retrieve job info for job {job_id}")
             return
     elif 'PBS_JOBID' in os.environ:
         job_details = get_pbs_job_info(job_id)
         if not job_details:
-            logging.error(f"Failed to retrieve job info for job {job_id}")
+            logger.error(f"Failed to retrieve job info for job {job_id}")
             return
     else:
-        logging.error("Unsupported scheduler")
+        logger.error("Unsupported scheduler")
         return
 
     # Convert memory to GB
@@ -207,15 +222,16 @@ def main():
     if job_details['ReqMem'] != "Unknown":
         req_mem_gb = convert_memory_to_gb(job_details['ReqMem'])
 
-    logging.info(f"GenPipes Prologue for job {job_id}")
-    logging.info(f"Job Name:                                                         {custom_get(job_details, 'JobName')}")
-    logging.info(f"User:                                                             {custom_get(job_details, 'User')}")
-    logging.info(f"Node(s):                                                          {custom_get(job_details, 'NodeList')}")
-    logging.info(f"Priority:                                                         {custom_get(job_details, 'Priority')}")
-    logging.info(f"Submit Time:                                                      {custom_get(job_details, 'Submit')}")
-    logging.info(f"Time Limit:                                                       {custom_get(job_details, 'Timelimit')}")
-    logging.info(f"Number of CPU(s) Requested:                                       {custom_get(job_details, 'ReqCPUS')}")
-    logging.info(f"Memory Requested:                                                 {f'{req_mem_gb:.2f} GB' if req_mem_gb is not None else 'Unknown'}")
+    logger.info(f"GenPipes Prologue for job {job_id}")
+    logger.info(f"Job Name:                                                         {custom_get(job_details, 'JobName')}")
+    logger.info(f"User:                                                             {custom_get(job_details, 'User')}")
+    logger.info(f"Node(s):                                                          {custom_get(job_details, 'NodeList')}")
+    logger.info(f"Priority:                                                         {custom_get(job_details, 'Priority')}")
+    logger.info(f"Submit Time:                                                      {custom_get(job_details, 'Submit')}")
+    logger.info(f"Time Limit:                                                       {custom_get(job_details, 'Timelimit')}")
+    logger.info(f"Number of CPU(s) Requested:                                       {custom_get(job_details, 'ReqCPUS')}")
+    logger.info(f"Memory Requested:                                                 {f'{req_mem_gb:.2f} GB' if req_mem_gb is not None else 'Unknown'}")
+    log_separator()
 
 if __name__ == "__main__":
     main()
