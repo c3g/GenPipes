@@ -140,7 +140,7 @@ class JobStat():
                     max_mem = re.search(r'Maximum Memory Usage:\s+(.+$)', line)
                     if max_mem:
                         self.max_mem = max_mem.group(1)
-                    mem_efficiency = re.search(r'Memory Efficiency \(% of Memory Requested to Average Memory Used\):\s+(.+$)', line)
+                    mem_efficiency = re.search(r'Memory Efficiency \(% of Memory Requested to Maximum Memory Used\):\s+(.+$)', line)
                     if mem_efficiency:
                         self.mem_efficiency = mem_efficiency.group(1)
                     ave_diskr = re.search(r'Average Disk Read:\s+(.+$)', line)
