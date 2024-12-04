@@ -365,7 +365,10 @@ def main():
     logging.info(f"Time Efficiency (% of Wall-clock Time to Time Limit):             {time_efficency:.1f}%")
     logging.info(f"Number of CPU(s) Requested:                                       {job_details.get('ReqCPUS', 'Unknown')}")
     logging.info(f"Total CPU Time:                                                   {job_details.get('TotalCPU', 'Unknown')}")
-    logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                {cpu_usage_percentage:.1f}%")
+    if cpu_usage_percentage:
+        logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                {cpu_usage_percentage:.1f}%")
+    else:
+        logging.info(f"CPU Efficiency (% of CPU Time to Wall-clock Time):                Unknown")
     logging.info(f"Memory Requested:                                                 {req_mem_gb:.2f} GB")
     if ave_mem_gb is not None:
         logging.info(f"Average Memory Usage:                                             {ave_mem_gb:.2f} GB")
