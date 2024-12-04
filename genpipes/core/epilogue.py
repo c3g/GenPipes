@@ -103,7 +103,7 @@ def get_pbs_job_info(job_id):
         dict: Job details if found, otherwise None.
     """
     result = subprocess.run(
-        ["qstat", "-f", f"{job_id}"],
+        ["/opt/torque/x86_64/bin/qstat", "-f", f"{job_id}"],
         capture_output=True, text=True, check=True
     )
     job_info = result.stdout
@@ -155,6 +155,10 @@ def parse_pbs_job_info(job_id, job_info):
     """
     job_details = {}
 
+    logging.info(f"Job info: {job_info}")
+
+    used_resource = sys.argv[7]
+
     job_details['JobID'] = job_id
     job_name_match = re.search(r"Job_Name\s*=\s*(.+)", job_info)
     job_details['JobName'] = job_name_match.group(1) if job_name_match else None
@@ -170,22 +174,17 @@ def parse_pbs_job_info(job_id, job_info):
     job_details['Timelimit'] = walltime_match.group(1) if walltime_match else None
     ppn_match = re.search(r'Resource_List\.nodes\s*=\s*\d+:ppn=(\d+)', job_info)
     job_details['ReqCPUS'] = ppn_match.group(1) if ppn_match else None
-    # job_details['State'] = pbs_exit_code_to_string(int(sys.argv[10]))
+    job_details['State'] = pbs_exit_code_to_string(int(sys.argv[10]))
     job_details['State'] = os.getenv('PBS_JOB_STATE', None)
     job_details['Start'] = parse_datetime(job_info, "start_time")
     job_details['End'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    # walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
-    # job_details['Elapsed'] = walltime_match_used.group(1) if walltime_match_used else "Unknown"
-    job_details['Elapsed'] = calculate_time_difference(job_details['Start'], job_details['End'])
-    # cput_match = re.search(r'cput=([\d:]+)', used_resource)
-    # cput_match = re.search(r'resources_used\.cput=([\d:]+)', job_info)
-    # job_details['TotalCPU'] = cput_match.group(1) if cput_match else "Unknown"
-    job_details['TotalCPU'] = None
-    # mem_match = re.search(r',mem=([\d]+\w\w)', used_resource)
-    # mem_match = re.search(r'resources_used\.mem=([\d]+\w\w)', job_info)
-    # job_details['TotalMem'] = mem_match.group(1) if mem_match else "Unknown"
+    walltime_match_used = re.search(r'walltime=([\d:]+)', used_resource)
+    job_details['Elapsed'] = walltime_match_used.group(1) if walltime_match_used else None
+    cput_match = re.search(r'cput=([\d:]+)', used_resource)
+    job_details['TotalCPU'] = cput_match.group(1) if cput_match else None
+    mem_match = re.search(r',mem=([\d]+\w\w)', used_resource)
     job_details['AveRSS'] = None
-    job_details['MaxRSS'] = None
+    job_details['MaxRSS'] = mem_match.group(1) if mem_match else None
     job_details['AveDiskRead'] = None
     job_details['MaxDiskRead'] = None
     job_details['AveDiskWrite'] = None
@@ -313,14 +312,15 @@ def main():
     """
     Main function to run the epilogue script.
     """
-    job_id = os.getenv('SLURM_JOB_ID') or os.getenv('PBS_JOBID')
-
     if 'SLURM_JOB_ID' in os.environ:
+        job_id = os.getenv('SLURM_JOB_ID')
         job_details = get_slurm_job_info(job_id)
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
             return
-    elif 'PBS_JOBID' in os.environ:
+    # Built-in support for PBS
+    elif len(sys.argv) > 8:
+        job_id = sys.argv[1]
         job_details = get_pbs_job_info(job_id)
         if not job_details:
             logging.error(f"Failed to retrieve job info for job {job_id}")
