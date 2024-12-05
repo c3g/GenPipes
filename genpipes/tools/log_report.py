@@ -85,7 +85,8 @@ class JobStat():
         """
         with open(log_file_path) as log_file:
             for line in log_file:
-                if line.startswith('EPILOGUE - '):
+                # Prologue section
+                if line.startswith('PROLOGUE - '):
                     user = re.search(r'User:\s+(.+$)', line)
                     if user:
                         self.user = user.group(1)
@@ -95,19 +96,31 @@ class JobStat():
                     priority = re.search(r'Priority:\s+(.+$)', line)
                     if priority:
                         self.priority = priority.group(1)
-                    status = re.search(r'Status:\s+(.+$)', line)
-                    if status:
-                        self.status = status.group(1)
+                    self.status = "RUNNING"
                     submit_time = re.search(r'Submit Time:\s+(.+$)', line)
                     if submit_time:
                         self.submit_time = submit_time.group(1)
+                    time_limit = re.search(r'Time Limit:\s+(.+$)', line)
+                    if time_limit:
+                        self.time_limit = time_limit.group(1)
+                    n_cpu = re.search(r'Number of CPU\(s\) Requested:\s+(.+$)', line)
+                    if n_cpu:
+                        self.n_cpu = int(n_cpu.group(1))
+                    mem = re.search(r'Memory Requested:\s+(.+$)', line)
+                    if mem:
+                        self.mem = mem.group(1)
+                # Epilogue section
+                if line.startswith('EPILOGUE - '):
+                    status = re.search(r'Status:\s+(.+$)', line)
+                    if status:
+                        self.status = status.group(1)
                     eligible_time = re.search(r'Eligible Time:\s+(.+$)', line)
                     if eligible_time:
                         self.eligible_time = eligible_time.group(1)
                     start_time = re.search(r'Start Time:\s+(.+$)', line)
                     if start_time:
                         self.start_time = start_time.group(1)
-                    queue_time = re.search(r'Time Spent in Queue \(DD:HH:MM:SS\):\s+(.+$)', line)
+                    queue_time = re.search(r'Time Spent in Queue:\s+(.+$)', line)
                     if queue_time:
                         self.queue_time = queue_time.group(1)
                     end_time = re.search(r'End Time:\s+(.+$)', line)
@@ -116,24 +129,15 @@ class JobStat():
                     total_time = re.search(r'Total Wall-clock Time:\s+(.+$)', line)
                     if total_time:
                         self.total_time = total_time.group(1)
-                    time_limit = re.search(r'Time Limit:\s+(.+$)', line)
-                    if time_limit:
-                        self.time_limit = time_limit.group(1)
                     time_efficiency = re.search(r'Time Efficiency \(% of Wall-clock Time to Time Limit\):\s+(.+$)', line)
                     if time_efficiency:
                         self.time_efficiency = time_efficiency.group(1)
-                    n_cpu = re.search(r'Number of CPU\(s\) Requested:\s+(.+$)', line)
-                    if n_cpu:
-                        self.n_cpu = int(n_cpu.group(1))
                     cpu_time = re.search(r'Total CPU Time:\s+(.+$)', line)
                     if cpu_time:
                         self.cpu_time = cpu_time.group(1)
                     cpu_efficiency = re.search(r'CPU Efficiency \(% of CPU Time to Wall-clock Time\):\s+(.+$)', line)
                     if cpu_efficiency:
                         self.cpu_efficiency = cpu_efficiency.group(1)
-                    mem = re.search(r'Memory Requested:\s+(.+$)', line)
-                    if mem:
-                        self.mem = mem.group(1)
                     ave_mem = re.search(r'Average Memory Usage:\s+(.+$)', line)
                     if ave_mem:
                         self.ave_mem = ave_mem.group(1)
@@ -278,7 +282,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
                 total_machine += total_time
         if job.cpu_time:
             cpu_time = parse_time(job.cpu_time)
-            if cpu_time:
+            if cpu_time and job.n_cpu:
                 total_machine_core += cpu_time * job.n_cpu
 
     if to_stdout:

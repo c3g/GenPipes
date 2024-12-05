@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 
 # Create a console handler and set the format
 console_handler = logging.StreamHandler()
-formatter = logging.Formatter('EPILOGUE - %(message)s')
+formatter = logging.Formatter('PROLOGUE - %(message)s')
 console_handler.setFormatter(formatter)
 
 # Add the handler to the logger
@@ -25,7 +25,7 @@ def log_separator():
     """
     Use the handler's stream to print the separator without the prefix.
     """
-    console_handler.stream.write('\n' + '-' * 90 + '\n')
+    console_handler.stream.write('\n' + '-' * 90)
     console_handler.flush()
 
 def get_slurm_job_info(job_id, retries=10, delay=5):
