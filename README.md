@@ -81,7 +81,7 @@ GenPipes pipelines and compatible Python version are already installed as module
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/genpipes/<latest_version>
+module load genpipes/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
 
