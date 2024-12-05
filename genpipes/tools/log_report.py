@@ -271,11 +271,11 @@ def print_report(report, to_stdout=True, to_tsv=None):
         if job.start_time:
             min_start.append(datetime.datetime.strptime(job.start_time, '%Y-%m-%dT%H:%M:%S'))
         else:
-            logger.warning(f'Job {job.job_id} has no Start Time.')
+            logger.warning(f'Job Name {job.job_name} with ID {job.job_id} has no Start Time.')
         if job.end_time:
             max_stop.append(datetime.datetime.strptime(job.end_time, '%Y-%m-%dT%H:%M:%S'))
         else:
-            logger.warning(f'Job {job.job_id} has no End Time.')
+            logger.warning(f'Job Name {job.job_name} with ID {job.job_id} has no End Time.')
         if job.total_time:
             total_time = parse_time(job.total_time)
             if total_time:
