@@ -488,7 +488,7 @@ def parse_freezeman_readset_file(
             _raise(SanitycheckError("Unknow sequencing platform in info file : " + readset_json['platform'] + ". Aborting..."))
         readset._quality_offset = 33
         readset._index_name = rdst['index_name']
-        readset._description = rdst['index_set_name']
+        readset._description = rdst['index_sets'][0]['name'] if rdst['index_sets'] else rdst['index_set_name']
         readset._index = [{'INDEX1':index1, 'INDEX2':index2} for index1, index2 in zip_longest(rdst['index_sequence_3_prime'], rdst['index_sequence_3_prime'])]
         readset._library = library
         readset._gender = rdst['expected_sex']
