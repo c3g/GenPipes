@@ -1188,3 +1188,44 @@ Rscript $R_TOOLS/somaticSignatureAlexandrov.R \\
         output=output
         ),removable_files=remove_file
     )
+
+def subsample(
+    output_prefix,
+    fastq1,
+    fastq2=None,
+    compressed=True,
+    threshold=0.5,
+    ini_section='mugqic_subsample'
+    ):
+    
+    if fastq2:
+        output = [
+            output_prefix + ".pair1.fq",
+            output_prefix + ".pair2.fq"
+            ]
+    else:
+        output = [output_prefix + ".single.fq"]
+
+    return Job(
+        [fastq1, fastq2],
+        output,
+        [
+            [ini_section, 'module_mugqic_tools']
+        ],
+        command="""\
+fastqPickRandom.pl {other_options} \\
+    --input1 {fastq1} \\
+    {fastq2} \\
+    --out1 {output1} \\
+    {output2} \\
+    {compressed} \\
+    --threshold {threshold}""".format(
+        other_options=config.param(ini_section, 'other_options', required=False),
+        fastq1=fastq1,
+        fastq2="--input2 " + fastq2 if fastq2 else "",
+        output1=output[0],
+        output2="--out2 " + output[1] if fastq2 else "",
+        compressed="--compressed" if compressed else "",
+        threshold=threshold
+        )
+    )
