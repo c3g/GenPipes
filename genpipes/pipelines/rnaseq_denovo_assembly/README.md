@@ -79,7 +79,7 @@ usage: genpipes rnaseq_denovo_assembly [-h] [--clean] -c CONFIG [CONFIG ...]
                                        [-d DESIGN_FILE] [-v]
                                        [-t {trinity,seq2fun}] [-b BATCH]
 
-Version: 5.0.1
+Version: 5.0.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

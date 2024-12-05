@@ -78,7 +78,9 @@ def report2(
     assembly = global_conf.global_get(ini_section, 'assembly')
     output = [
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".vcf.gz"),
-        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html")
+        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html"),
+        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".classification.tsv.gz"),
+        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".conf.yaml")
     ]
     # use tmp dir for cpsr to avoid disk quota issues caused by bcftools tmp dir settings
     return Job(
@@ -88,7 +90,7 @@ def report2(
             [ini_section, 'module_pcgr'],
         ],
         command="""\
-mkdir {tmp_dir}/cpsr && \\
+mkdir -p {tmp_dir}/cpsr && \\
 cpsr {options} \\
     --input_vcf {input} \\
     --refdata_dir $PCGR_DATA \\

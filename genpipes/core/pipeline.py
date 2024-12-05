@@ -219,7 +219,7 @@ class Pipeline(object):
         cls._argparser.add_argument(
             "--force_mem_per_cpu",
             help="Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default: None)",
-            default=None
+            default="5G"
             )
 
         cls._argparser.add_argument(

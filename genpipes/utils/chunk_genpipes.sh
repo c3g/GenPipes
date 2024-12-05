@@ -10,8 +10,7 @@ echo "usage: $0 <GENPIPES SCRIPT> <OUTPUT FOLDER>
 echo
 echo "   <GENPIPES SCRIPT>       A Genpipes output script"
 echo "   <OUTPUT FOLDER>         Folder where to store chunks"
-echo "   -n <chunk size>         Maximum number of job in chunk,"
-echo "                             default=20"
+echo "   -n <chunk size>         Maximum number of job in chunk, default=20"
 
 }
 
@@ -65,14 +64,12 @@ done
 
 shift $((OPTIND-1))
 
-
 if [ $# -lt 2 ]; then
   usage
   exit 1
 fi
 genpipes_in=$1
 out_dir=$2
-
 
 rm -rf ${out_dir}/chunk_* 2>/dev/null
 mkdir -p ${out_dir}
@@ -92,9 +89,8 @@ echo "export GENPIPES_CHUNK_SIZE=${max_chunk}" >> ${header}
 
 chunk=1
 out_file=/dev/null
-n_job=0
 # create chunks
-while read -r line ; do
+while IFS= read -r line ; do
     echo "$line" >> $out_file
 
     if [ "$line" == 'cd $OUTPUT_DIR' ]; then
@@ -125,11 +121,10 @@ while read -r line ; do
 done < ${genpipes_in}
 
 # exclude the wget call from chunks
-echo removing wget call from $out_file
+echo "removing wget call from $out_file"
 split_on="Call home with pipeline statistics"
 csplit -sf ${out_dir}/wget_call -n 1 $out_file /"${split_on}"/-1
 mv ${out_dir}/wget_call0 ${out_file}
 mv ${out_dir}/wget_call1 ${out_dir}/wget_call.sh
-
 
 # Submit and
