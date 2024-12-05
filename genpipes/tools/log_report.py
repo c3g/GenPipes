@@ -79,7 +79,7 @@ class JobStat():
 
     def fill_from_file(self, log_file_path):
         """
-        Fill the object with information from the EPILOGUE of the .o file
+        Fill the object with information from the PROLOGUE and EPILOGUE of the .o file
         Args:
             log_file_path: path to the output file
         """
