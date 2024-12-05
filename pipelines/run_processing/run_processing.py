@@ -2854,22 +2854,35 @@ class RunProcessing(common.MUGQICPipeline):
                 "reportTransferCompleted." + lane + ".out"
             )
 
-            exclude_bam = config.param('copy', 'exclude_bam', required=False, param_type='boolean')
-            exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, param_type='boolean')
-            if exclude_bam and exclude_fastq_with_bam:
-                log.warn("Excluding both BAM and fastq files")
-
             excluded_files = []
 
-            if exclude_bam or exclude_fastq_with_bam:
-                for readset in [readset for readset in self.readsets[lane] if readset.bam]:
-                    if exclude_bam:
-                        excluded_files.append(readset.bam + ".bam*")
-                        excluded_files.append(readset.bam + ".bai*")
-                    if exclude_fastq_with_bam and not exclude_bam:
-                        excluded_files.append(readset.fastq1)
-                        if readset.fastq2:
-                            excluded_files.append(readset.fastq2)
+            for readset in [readset for readset in self.readsets[lane]]:
+                # Forces the exclusion of the fastq if bam exists
+                if readset.bam:
+                    excluded_files.append(readset.fastq1)
+                    excluded_files.append(readset.index_fastq1)
+                    if readset.index_type == "DUALINDEX":
+                        excluded_files.append(readset.index_fastq2)
+                    if readset.fastq2:
+                        excluded_files.append(readset.fastq2)
+
+#            exclude_bam = config.param('copy', 'exclude_bam', required=False, param_type='boolean')
+#            exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, param_type='boolean')
+#            if exclude_bam and exclude_fastq_with_bam:
+#                log.warn("Excluding both BAM and fastq files")
+#
+#            excluded_files = []
+#
+#            if exclude_bam or exclude_fastq_with_bam:
+#                for readset in [readset for readset in self.readsets[lane] if readset.bam]:
+#                for readset in [readset for readset in self.readsets[lane] if readset.bam]:
+#                    if exclude_bam:
+#                        excluded_files.append(readset.bam + ".bam*")
+#                        excluded_files.append(readset.bam + ".bai*")
+#                    if exclude_fastq_with_bam and not exclude_bam:
+#                        excluded_files.append(readset.fastq1)
+#                        if readset.fastq2:
+#                            excluded_files.append(readset.fastq2)
 
             copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
                 exclusion_clauses="\\\n".join(
