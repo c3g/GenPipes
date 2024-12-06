@@ -76,7 +76,8 @@ class JobStat():
         """
         Return the full path to the output file
         """
-        return os.path.realpath(self.output_file)
+        if self.output_file:
+            return os.path.realpath(self.output_file)
 
     def fill_from_file(self, log_file_path):
         """
