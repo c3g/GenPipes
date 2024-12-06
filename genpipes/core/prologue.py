@@ -48,7 +48,7 @@ def get_slurm_job_info(job_id, retries=10, delay=5):
                 job_info = result.stdout
                 job_details = parse_slurm_job_info(job_info, job_id)
                 if job_details:
-                    if job_details['Timelimit']:
+                    if job_details['Timelimit'] and job_details['NodeList'] != "None assigned":
                         return job_details
                 time.sleep(delay)
             else:
