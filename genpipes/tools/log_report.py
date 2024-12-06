@@ -67,6 +67,7 @@ class JobStat():
         else:
             logger.warning(f'Job Name {self.job_name} with ID {self.job_id} has no log file {self.output_file}. Skipping this job in report...')
             self.output_file = None
+            self.status = 'PENDING'
 
     def __repr__(self):
         return f'<JobStat {self.job_id} {self.job_name}>'
@@ -266,6 +267,9 @@ def print_report(report, to_stdout=True, to_tsv=None):
     data_table = []
 
     for job in report:
+        for dep in job.dependency.split(':'):
+            if any(d.status != 'COMPLETED' for d in report if d.job_id == dep):
+                job.status = 'CANCELLED'
         line = []
         for _, value in header.items():
             line.append(getattr(job, value))
