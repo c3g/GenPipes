@@ -268,7 +268,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
 
     for job in report:
         for dep in job.dependency.split(':'):
-            if any(d.status != 'COMPLETED' for d in report if d.job_id == dep):
+            if any(d.status not in ['COMPLETED', 'RUNNING', 'PENDING'] for d in report if d.job_id == dep):
                 job.status = 'CANCELLED'
         line = []
         for _, value in header.items():
