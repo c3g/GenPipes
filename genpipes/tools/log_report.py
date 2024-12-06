@@ -66,6 +66,7 @@ class JobStat():
             self.fill_from_file(self.output_file)
         else:
             logger.warning(f'Job Name {self.job_name} with ID {self.job_id} has no log file {self.output_file}. Skipping this job in report...')
+            self.output_file = None
 
     def __repr__(self):
         return f'<JobStat {self.job_id} {self.job_name}>'
