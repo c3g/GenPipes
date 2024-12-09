@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='c3g-genpipes',
-    version='5.0.3-beta',
+    version='5.0.3',
     packages=setuptools.find_packages(),
     url='https://bitbucket.org/mugqic/genpipes/',
     license='GNU Lesser General Public License',
