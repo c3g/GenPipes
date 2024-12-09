@@ -69,7 +69,7 @@ rm -f {output} && \\
 python $CONPAIR_SCRIPTS/verify_concordance.py {options} \\
   --markers {markers} \\
   --normal_pileup {input_normal} \\
-  --tumor_pileup {input_tumor} \\ 
+  --tumor_pileup {input_tumor} \\
   --outfile {output}""".format(
         options=global_conf.global_get('conpair_concordance_contamination', 'concord_options', required=False),
         markers=global_conf.global_get('conpair_concordance_contamination', 'markers_txt'),
