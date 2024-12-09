@@ -25,7 +25,7 @@ def log_separator():
     """
     Use the handler's stream to print the separator without the prefix.
     """
-    console_handler.stream.write('\n' + '-' * 90)
+    console_handler.stream.write('\n' + '-' * 90 + '\n')
     console_handler.flush()
 
 def get_slurm_job_info(job_id, retries=20, delay=10):
