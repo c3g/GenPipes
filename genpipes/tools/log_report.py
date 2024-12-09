@@ -193,6 +193,13 @@ def get_report(job_list_tsv=None):
     return report
 
 def parse_time(time_str):
+    """
+    Parse a time string in the format HH:MM:SS or MM:SS or SS
+    Args:
+        time_str: time string
+    Returns:
+        datetime.timedelta object
+    """
     if time_str == 'Unknown':
         return None
     parts = time_str.split(':')
@@ -215,9 +222,8 @@ def parse_time(time_str):
 
     # Separate seconds and milliseconds
     seconds = int(s)
-    milliseconds = (s - seconds) * 1000
 
-    return datetime.timedelta(hours=h, minutes=m, seconds=seconds, milliseconds=milliseconds)
+    return datetime.timedelta(hours=h, minutes=m, seconds=seconds)
 
 
 def print_report(report, to_stdout=True, to_tsv=None):
