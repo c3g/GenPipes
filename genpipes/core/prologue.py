@@ -87,7 +87,7 @@ def parse_slurm_job_info(job_info, job_id):
     required_fields = ['JobID', 'JobName', 'User', 'NodeList', 'Priority', 'Submit', 'Timelimit', 'ReqCPUS', 'ReqMem',]
     missing_fields = [field for field in required_fields if field not in job_details]
     if missing_fields:
-        logger.warning(f"Missing fields: {', '.join(missing_fields)}")
+        # logger.warning(f"Missing fields: {', '.join(missing_fields)}")
         return None
     return job_details
 
