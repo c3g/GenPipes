@@ -18,13 +18,15 @@ usage: genpipes dnaseq [-h] [--clean] -c CONFIG [CONFIG ...]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                        [--genpipes_file GENPIPES_FILE]
                        [-j {pbs,batch,daemon,slurm}] [--json-pt]
-                       [-l {debug,info,warning,error,critical}]
+                       [-l {debug,info,warning,error,critical}] [--no-json]
                        [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
                        [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
                        [-p PAIRS] [--profyle]
                        [-t {germline_snv,germline_sv,germline_high_cov,somatic_tumor_only,somatic_fastpass,somatic_ensemble,somatic_sv}]
 
-For more documentation, visit our website: https://genpipes.readthedocs.io
+Version: 5.0.3
+
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 options:
   -h, --help            show this help message and exit
@@ -56,6 +58,9 @@ options:
                         created)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
                         output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
@@ -63,9 +68,9 @@ options:
                         available on the system (default: false)
   -s STEPS, --steps STEPS
                         step range e.g. '1-5', '3,6,7', '2,4-8'
-  --wrap [WRAP]         Path to the genpipes cvmfs wrapper script. Default is 
-                        genpipes/ressources/container/bin/container_wrapper.sh
-                        . This is a convenience option for using genpipes in a
+  --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
+                        enpipes/ressources/container/bin/container_wrapper.sh.
+                        This is a convenience options for using genpipes in a
                         container
   -r READSETS_FILE, --readsets READSETS_FILE
                         readset file
@@ -398,6 +403,7 @@ Generates metrics with picard, including:
     [CollectQualityYieldMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectQualityYieldMetrics-Picard-)
     [CollectQualityByCycle](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectQualityByCycle-Picard-)
     [CollectBaseDistributionByCycle](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectBaseDistributionByCycle-Picard-)
+
 
 metrics_dna_sample_mosdepth 
 ---------------------------
