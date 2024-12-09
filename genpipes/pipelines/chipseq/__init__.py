@@ -748,8 +748,8 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                 self.multiqc_inputs.append(os.path.join(link_directory,  re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file))))
                 inputs_report.extend(
                     [
-                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
-                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file))),
+                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
+                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))),
                         bam_file
                     ]
                 )
