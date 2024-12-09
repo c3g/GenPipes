@@ -99,7 +99,6 @@ echo \"{config_content}\" > {config_file}""".format(
         )
 
 def make_metadata(metadata_list, metadata_file):
-    
     return Job(
             output_files = [metadata_file],
             command="""\
@@ -110,16 +109,14 @@ echo -e 'sampleID,dataset,library,sample,file1,file2 {metadata_list}' > {metadat
             )
 
 def prepare(
-        metadata, 
-        config_file, 
-        output_dir,
-        ini_section="gembs_prepare"
-        ):
+    metadata, 
+    config_file, 
+    output_dir,
+    ini_section="gembs_prepare"
+    ):
+    mp_file = output_dir + "/.gemBS/gemBS.mp"
+    output = [mp_file]
 
-    output = [
-            output_dir + "/.gemBS/gemBS.mp",
-            ]
-    
     return Job(
         [metadata,config_file],
         output,
@@ -131,14 +128,19 @@ rm -rf {hidden_dir}
 gemBS {gembs_flags} {gembs_options} \\
   prepare {flags} {options} \\
   --config {config_file} \\
-  --text-metadata {metadata}""".format(
+  --text-metadata {metadata}
+while [ ! -s "{mp_file}" ]; then
+    echo "{mp_file} is empty. Checking again in 2 seconds..."
+    sleep 2
+done""".format(
       hidden_dir=output_dir + "/.gemBS",
       gembs_flags=global_conf.global_get(ini_section, 'gembs_flags', required=False),
       gembs_options=global_conf.global_get(ini_section, 'gembs_options', required=False),
       flags=global_conf.global_get(ini_section, 'flags', required=False),
       options=global_conf.global_get(ini_section, 'options', required=False),
       config_file=config_file,
-      metadata=metadata
+      metadata=metadata,
+      mp_file=mp_file
       )
     )
 
