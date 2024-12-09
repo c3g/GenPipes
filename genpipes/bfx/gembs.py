@@ -129,9 +129,9 @@ gemBS {gembs_flags} {gembs_options} \\
   prepare {flags} {options} \\
   --config {config_file} \\
   --text-metadata {metadata}
-while [ ! -s "{mp_file}" ]; then
-    echo "{mp_file} is empty. Checking again in 2 seconds..."
-    sleep 2
+while [ ! -s "{mp_file}" ]; do
+  echo "{mp_file} is empty. Checking again in 2 seconds..."
+  sleep 2
 done""".format(
       hidden_dir=output_dir + "/.gemBS",
       gembs_flags=global_conf.global_get(ini_section, 'gembs_flags', required=False),
