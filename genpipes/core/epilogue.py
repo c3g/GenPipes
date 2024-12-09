@@ -330,6 +330,7 @@ def main():
     """
     Main function to run the epilogue script.
     """
+    log_separator()
     if 'SLURM_JOB_ID' in os.environ:
         job_id = os.getenv('SLURM_JOB_ID')
         job_details = get_slurm_job_info(job_id)
@@ -373,7 +374,6 @@ def main():
     cpu_usage_percentage = calculate_percentage(total_cpu, elapsed)
     mem_usage_percentage = calculate_percentage(max_mem_gb, req_mem_gb)
 
-    log_separator()
     logger.info(f"GenPipes Epilogue for job {job_id}")
     logger.info(f"Job Name:                                                         {custom_get(job_details, 'JobName')}")
     logger.info(f"User:                                                             {custom_get(job_details, 'User')}")
