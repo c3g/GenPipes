@@ -28,7 +28,7 @@ def log_separator():
     console_handler.stream.write('\n' + '-' * 90)
     console_handler.flush()
 
-def get_slurm_job_info(job_id, retries=10, delay=5):
+def get_slurm_job_info(job_id, retries=20, delay=10):
     """
     Retrieve job information from SLURM using sacct command with retries.
     Args:
