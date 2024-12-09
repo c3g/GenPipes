@@ -21,7 +21,7 @@ usage: genpipes nanopore_covseq [-h] [--clean] -c CONFIG [CONFIG ...]
                                 [-d DESIGN_FILE] [-v]
                                 [-t {default,basecalling}]
 
-Version: 5.0.2
+Version: 5.0.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
