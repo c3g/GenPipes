@@ -1172,6 +1172,7 @@ class RunProcessing(common.MUGQICPipeline):
                 postprocessing_jobs.append(
                     concat_jobs(
                         [
+                            bash.mkdir(output_dir),
                             bash.mv(os.path.join(tmp_output_dir, "Stats"), output_dir, force=True),
                             bash.mv(os.path.join(tmp_output_dir, "Reports"), output_dir, force=True),
                             bash.mv(os.path.join(tmp_output_dir, f"Undetermined_S0_L00{lane}_R1_001.fastq.gz"), output_dir, force=True),
