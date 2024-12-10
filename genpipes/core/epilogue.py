@@ -351,7 +351,7 @@ def main():
     # Calculate time spent in queue format DD:HH:MM:SS
     time_in_queue = None
     if job_details['Submit'] is not None:
-        time_in_queue = calculate_time_difference(job_details['Submit'], job_details['Start'])
+        time_in_queue = calculate_time_difference(job_details['Eligible'], job_details['Start'])
     # Calculate time efficency between walltime and time used
     time_efficency = calculate_time_efficency(job_details['Elapsed'], job_details['Timelimit'])
     # Convert memory to GB
