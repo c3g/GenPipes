@@ -437,6 +437,7 @@ class PBSScheduler(Scheduler):
                         job_dependencies = "JOB_DEPENDENCIES="
 
                     job_name_prefix = job.name.split(".")[0]
+                    logger.debug(f"For {job.name} the ini section considered is [{job_name_prefix}]")
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
                     self.genpipes_file.write(f"""\
@@ -460,7 +461,7 @@ chmod 755 $SCIENTIFIC_FILE
 
                     self.genpipes_file.flush()
 
-                    job_name_prefix = job.name.split(".")[0]
+                    # job_name_prefix = job.name.split(".")[0]
                     if job.dependency_jobs:
                         dependencies = f"#PBS {self.dependency_arg(job_name_prefix)}$JOB_DEPENDENCIES"
                     else:
@@ -533,6 +534,7 @@ class BatchScheduler(Scheduler):
                 self.print_step(step)
                 for job in step.jobs:
                     job_name_prefix = job.name.split(".")[0]
+                    logger.debug(f"For {job.name} the ini section considered is [{job_name_prefix}]")
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
                     self.genpipes_file.write("""
@@ -642,6 +644,7 @@ class SlurmScheduler(Scheduler):
                         job_dependencies = "JOB_DEPENDENCIES="
 
                     job_name_prefix = job.name.split(".")[0]
+                    logger.debug(f"For {job.name} the ini section considered is [{job_name_prefix}]")
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
                     self.genpipes_file.write(f"""\
@@ -665,7 +668,7 @@ chmod 755 $SCIENTIFIC_FILE
 
                     self.genpipes_file.flush()
 
-                    job_name_prefix = job.name.split(".")[0]
+                    # job_name_prefix = job.name.split(".")[0]
                     if job.dependency_jobs:
                         dependencies = f"#SBATCH {self.dependency_arg(job_name_prefix)}$JOB_DEPENDENCIES"
                     else:
