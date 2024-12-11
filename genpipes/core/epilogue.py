@@ -43,7 +43,7 @@ def get_slurm_job_info(job_id, retries=20, delay=10):
     for _ in range(retries):
         try:
             result = subprocess.run(
-                ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,TotalCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
+                ["sacct", "-j", job_id, "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Eligible,Timelimit,ReqCPUS,ReqMem,State,Start,End,Elapsed,TotalCPU,AveRSS,MaxRSS,AveDiskRead,MaxDiskRead,AveDiskWrite,MaxDiskWrite"],
                 capture_output=True, text=True, check=True
             )
             if result.stdout.strip():
@@ -119,13 +119,13 @@ def get_pbs_job_info(job_id):
         dict: Job details if found, otherwise None.
     """
     result = subprocess.run(
-        ["/opt/torque/x86_64/bin/qstat", "-f", f"{job_id}"],
+        ["/opt/torque/x86_64/bin/qstat", "-f", job_id],
         capture_output=True, text=True, check=True
     )
     job_info = result.stdout
     job_details = parse_pbs_job_info(job_id, job_info)
     if not result.stdout.strip():
-        logger.warning("Error retrieving job info. The prologue will be incomplete.")
+        logger.warning("Error retrieving job info. The epilogue will be incomplete.")
     return job_details
 
 def parse_datetime(job_details, field_name):
