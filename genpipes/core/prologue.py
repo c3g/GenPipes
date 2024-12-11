@@ -41,7 +41,7 @@ def get_slurm_job_info(job_id, retries=20, delay=10):
     for _ in range(retries):
         try:
             result = subprocess.run(
-                ["sacct", "-j", f"{job_id}", "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Timelimit,ReqCPUS,ReqMem"],
+                ["sacct", "-j", job_id, "--parsable", "--format=JobID,JobName,User,NodeList,Priority,Submit,Timelimit,ReqCPUS,ReqMem"],
                 capture_output=True, text=True, check=True
             )
             if result.stdout.strip():
@@ -100,7 +100,7 @@ def get_pbs_job_info(job_id):
         dict: Job details if found, otherwise None.
     """
     result = subprocess.run(
-        ["qstat", "-f", f"{job_id}"],
+        ["qstat", "-f", job_id],
         capture_output=True, text=True, check=True
     )
     job_info = result.stdout
@@ -199,7 +199,7 @@ def custom_get(dictionary, key, default="Unknown"):
 
 def main():
     """
-    Main function to run the epilogue script.
+    Main function to run the prologue script.
     """
     job_id = os.getenv('SLURM_JOB_ID') or os.getenv('PBS_JOBID')
 
