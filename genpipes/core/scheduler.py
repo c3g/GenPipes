@@ -29,20 +29,29 @@ from .utils import expandvars, time_to_datetime
 from .config import global_conf
 
 # Output comment separator line
-separator_line = "#" + "-" * 79
+SEPARATOR_LINE = "#" + "-" * 79
 
 logger = logging.getLogger(__name__)
 
 
 def create_scheduler(s_type, config_files, container=None, genpipes_file=None):
+    """
+    Create a scheduler object
+    Args:
+        s_type (str): Scheduler type
+        config_files (list): List of configuration files
+        container (Container): Container object
+        genpipes_file (file): GenPipes file
+    Returns:
+        Scheduler: Scheduler object
+    """
     if s_type == "pbs":
         return PBSScheduler(config_files, container=container, genpipes_file=genpipes_file)
-    elif s_type == "batch":
+    if s_type == "batch":
         return BatchScheduler(config_files, container=container, genpipes_file=genpipes_file)
-    elif s_type == "slurm":
+    if s_type == "slurm":
         return SlurmScheduler(config_files, container=container, genpipes_file=genpipes_file)
-    else:
-        raise Exception("Error: scheduler type \"" + s_type + "\" is invalid!")
+    raise Exception(f"""Error: scheduler type "{s_type}" is invalid!""")
 
 
 class Scheduler:
@@ -72,7 +81,7 @@ class Scheduler:
     @property
     def submit_cmd(self):
         if self._submit_cmd is None:
-            raise NotImplementedError('submit_cmd needs to be implemented for {} class'.format(self.__class__))
+            raise NotImplementedError(f'submit_cmd needs to be implemented for {self.__class__} class')
         return self._submit_cmd
 
     def walltime(self, job_name_prefix):
@@ -139,26 +148,19 @@ class Scheduler:
 
     @property
     def host_cvmfs_cache(self):
-
         if self._host_cvmfs_cache is None:
-
-            self._host_cvmfs_cache = global_conf.global_get("container", 'host_cvmfs_cache',
-                                                     required=False, param_type="string")
+            self._host_cvmfs_cache = global_conf.global_get("container", 'host_cvmfs_cache', required=False, param_type="string")
             if not self._host_cvmfs_cache:
-
                 tmp_dir = global_conf.global_get("DEFAULT", 'tmp_dir', required=True)
                 tmp_dir = expandvars(tmp_dir)
-
                 if not tmp_dir:
                     tmp_dir = None
-
                 self._host_cvmfs_cache = tempfile.mkdtemp(prefix="genpipes_cvmfs_", dir=tmp_dir)
 
         return self._host_cvmfs_cache
 
     @property
     def cvmfs_cache(self):
-
         if self._cvmfs_cache is None:
             self._cvmfs_cache = global_conf.global_get("container", 'cvmfs_cache', required=False, param_type="string")
             if not self._cvmfs_cache:
@@ -183,6 +185,11 @@ class Scheduler:
 
     @property
     def container_line(self):
+        """
+        Return the container line
+        Returns:
+            str: Container line
+        """
         if self.container:
             if self.container.type == 'docker':
                 v_opt = f' -v {self.host_cvmfs_cache}:{self.cvmfs_cache}'
@@ -190,44 +197,45 @@ class Scheduler:
                     v_opt += f' -v {b}:{b}'
                 network = " --network host"
                 user = " --user $UID:$GROUPS"
+                return f'docker run --env-file <( env| cut -f1 -d= ) --privileged {network} {user} {v_opt} {self.container.name} '
 
-                return (f'docker run --env-file <( env| cut -f1 -d= ) --privileged {network} {user} {v_opt} {self.container.name} ')
-
-            elif self.container.type == 'singularity':
+            if self.container.type == 'singularity':
                 b_opt = f' -B {self.host_cvmfs_cache}:{self.cvmfs_cache}'
                 for b in self.bind:
                     b_opt += f' -B {b}:{b}'
+                return f"singularity run {b_opt} {self.container.name} "
 
-                return (f"singularity run {b_opt} {self.container.name} ")
-
-            elif self.container.type == 'wrapper':
-
+            if self.container.type == 'wrapper':
                 return f"{self.container.name} "
         else:
-
             return ""
 
 
     def fail_on_pattern(self, job_name_prefix):
+        """
+        Return the fail_on_pattern command and test_condition
+        Args:
+            job_name_prefix (str): Job name prefix
+        Returns:
+            tuple: fail_on_pattern command and test_condition
+        """
         pattern = global_conf.global_get(job_name_prefix, 'fail_on_pattern',required=False)
 
         if not pattern:
             return ("", "")
-        else:
-            tmp_dir = global_conf.global_get("DEFAULT", 'tmp_dir', required=True)
 
-            append_command = f" | tee {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o "
-            test_condition = """
+        tmp_dir = global_conf.global_get("DEFAULT", 'tmp_dir', required=True)
+        append_command = f" | tee {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o "
+        test_condition = f"""
 grep {pattern} {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o
 NO_PROBLEM_IN_LOG=\\$?
 
   if [[  \\$NO_PROBLEM_IN_LOG == 0 ]] ; then
-   echo {pattern} found in job log, forcing error 
+   echo {pattern} found in job log, forcing error
    GenPipes_STATE=74
 fi
-""".format(pattern=pattern, tmp_dir=tmp_dir)
-
-            return (append_command, test_condition)
+"""
+        return (append_command, test_condition)
 
 
 
@@ -254,7 +262,7 @@ set -eu -o pipefail
 """
             .format(
                 shebang=shebang,
-                separator_line=separator_line,
+                separator_line=SEPARATOR_LINE,
                 pipeline=pipeline,
                 scheduler=self,
                 steps="\n".join(["#   " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "" if step.jobs else "... skipping") for step in pipeline.step_to_execute]) + \
@@ -288,9 +296,9 @@ mkdir -p $OUTPUT_DIR
             step (Step): Step object
         """
         self.genpipes_file.write(f"""
-{separator_line}
+{SEPARATOR_LINE}
 # STEP: {step.name}
-{separator_line}
+{SEPARATOR_LINE}
 STEP={step.name}
 mkdir -p $JOB_OUTPUT_DIR/$STEP
 """
@@ -409,8 +417,7 @@ class PBSScheduler(Scheduler):
         gpu = self.gpu(job_name_prefix)
         if gpu:
             return f"-l nodes={node}:ppn={cpu}:gpu{gpu}"
-        else:
-            return f"-l nodes={node}:ppn={cpu}"
+        return f"-l nodes={node}:ppn={cpu}"
 
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -433,9 +440,9 @@ class PBSScheduler(Scheduler):
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
                     self.genpipes_file.write(f"""\
-{separator_line}
+{SEPARATOR_LINE}
 # JOB: {job.id}: {job.name}
-{separator_line}
+{SEPARATOR_LINE}
 JOB_NAME={job.name}
 {job_dependencies}
 JOB_DONE={job.done}
@@ -517,8 +524,7 @@ class BatchScheduler(Scheduler):
         self.name = 'Batch'
 
     def submit(self, pipeline):
-        logger.info('\n\t To run the script use: \n\t"{}  ./<command>.sh"'.format(
-            self.container_line))
+        logger.info(f'\n\t To run the script use: \n\t"{self.container_line}  ./<command>.sh"')
         self.print_header(pipeline)
         if pipeline.jobs:
             self.genpipes_file.write("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`\n")
@@ -555,7 +561,7 @@ if [ $GenPipes_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $GenPipes_STATE 
 """.format(
                             job=job,
                             limit_string=os.path.basename(job.done),
-                            separator_line=separator_line,
+                            separator_line=SEPARATOR_LINE,
                             job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
                             job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$GenPipes_STATE'),
                             step_wrapper=config_step_wrapper
@@ -580,7 +586,7 @@ class SlurmScheduler(Scheduler):
         sec = int(time.seconds % 60)
         minutes = int(((time.seconds - sec) / 60) % 60)
         hours = int((time.seconds - sec - 60 * minutes) / 3600 + time.days * 24)
-        return '--time={:02d}:{:02d}:{:02d}'.format(hours, minutes, sec)
+        return f'--time={hours:02d}:{minutes:02d}:{sec:02d}'
 
     def gpu(self, job_name_prefix):
         n_gpu = super().gpu(job_name_prefix)
@@ -639,9 +645,9 @@ class SlurmScheduler(Scheduler):
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
                     self.genpipes_file.write(f"""\
-{separator_line}
+{SEPARATOR_LINE}
 # JOB: {job.id}: {job.name}
-{separator_line}
+{SEPARATOR_LINE}
 JOB_NAME={job.name}
 {job_dependencies}
 JOB_DONE={job.done}
