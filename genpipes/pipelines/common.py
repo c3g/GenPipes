@@ -910,8 +910,7 @@ END
                                         "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                         ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
                                         ("\\tCN:" + global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_center') if global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_center', required=False) else "") + \
-                                        ("\\tPL:" + global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_technology') if global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_technology', required=False) else "Illumina") + \
-                                        "'",
+                                        ("\\tPL:" + global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_technology') if global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_technology', required=False) else "Illumina") + "'",
                                         ini_section='bwa_mem2_samtools_sort'
                                 ),
                                 samtools.sort(
