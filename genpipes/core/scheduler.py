@@ -31,8 +31,7 @@ from .config import global_conf
 # Output comment separator line
 SEPARATOR_LINE = "#" + "-" * 79
 
-logger = logging.getLogger(__name__)
-
+log = logging.getLogger(__name__)
 
 def create_scheduler(s_type, config_files, container=None, genpipes_file=None):
     """
@@ -437,7 +436,7 @@ class PBSScheduler(Scheduler):
                         job_dependencies = "JOB_DEPENDENCIES="
 
                     job_name_prefix = job.name.split(".")[0]
-                    logger.debug(f"For {job.name} the ini section considered is [{job_name_prefix}]")
+                    log.debug(f"For {job.name} the ini section considered is [{job_name_prefix}]")
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
                     self.genpipes_file.write(f"""\
@@ -525,7 +524,7 @@ class BatchScheduler(Scheduler):
         self.name = 'Batch'
 
     def submit(self, pipeline):
-        logger.info(f'\n\t To run the script use: \n\t"{self.container_line}  ./<command>.sh"')
+        log.info(f'\n\t To run the script use: \n\t"{self.container_line}  ./<command>.sh"')
         self.print_header(pipeline)
         if pipeline.jobs:
             self.genpipes_file.write("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`\n")
@@ -534,7 +533,7 @@ class BatchScheduler(Scheduler):
                 self.print_step(step)
                 for job in step.jobs:
                     job_name_prefix = job.name.split(".")[0]
-                    logger.debug(f"For {job.name} the ini section considered is [{job_name_prefix}]")
+                    log.debug(f"For {job.name} the ini section considered is [{job_name_prefix}]")
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
                     self.genpipes_file.write("""
@@ -644,7 +643,7 @@ class SlurmScheduler(Scheduler):
                         job_dependencies = "JOB_DEPENDENCIES="
 
                     job_name_prefix = job.name.split(".")[0]
-                    logger.debug(f"For {job.name} the ini section considered is [{job_name_prefix}]")
+                    log.debug(f"For {job.name} the ini section considered is [{job_name_prefix}]")
                     config_step_wrapper = global_conf.global_get(job_name_prefix, 'step_wrapper', required=False)
 
                     self.genpipes_file.write(f"""\
@@ -711,8 +710,8 @@ sleep 0.1
                     self.genpipes_file.write(cmd)
                     self.genpipes_file.flush()
 
-        logger.info("\nGenpipes file generated\"")
+        log.info("\nGenpipes file generated\"")
         # Check cluster maximum job submission
         cluster_max_jobs = global_conf.global_get('DEFAULT', 'cluster_max_jobs', param_type='posint', required=False)
         if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:
-            logger.warning(f"Number of jobs: {str(len(pipeline.jobs))} > Cluster maximum number of jobs: {str(cluster_max_jobs)} !")
+            log.warning(f"Number of jobs: {str(len(pipeline.jobs))} > Cluster maximum number of jobs: {str(cluster_max_jobs)} !")
