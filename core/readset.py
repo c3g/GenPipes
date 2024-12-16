@@ -608,7 +608,7 @@ def parse_freezeman_readset_file(
                         'alignment',
                         sample_name,
                         'run' + readset.run + "_" + readset.lane,
-                        sample_name + "_" + readset.library + readset.lane + ".sorted"
+                        sample_name + "_" + readset.library + "_L00" + readset.lane + ".sorted"
                     )
 
                 else:
