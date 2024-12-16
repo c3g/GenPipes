@@ -1725,7 +1725,7 @@ class RunProcessing(common.MUGQICPipeline):
                     )
                 )
             self.add_to_report_hash("fastp", lane, lane_jobs)
-            jobs.extend(lane_jobs)
+            jobs.extend(self.throttle_jobs(lane_jobs, lane))
         return jobs
 
     def blast(self):
@@ -1886,12 +1886,12 @@ class RunProcessing(common.MUGQICPipeline):
 
             self.add_to_report_hash("blast", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
-            jobs.extend(lane_jobs)
+            if self.args.type == 'mgit7':
+                jobs.extend(lane_jobs)
+            else:
+                jobs.extend(self.throttle_jobs(lane_jobs, lane))
 
-        if self.args.type == 'mgit7':
-            return jobs
-        else:
-            return self.throttle_jobs(jobs)
+        return jobs
 
     def align(self):
         """
@@ -1916,12 +1916,13 @@ class RunProcessing(common.MUGQICPipeline):
 
             self.add_to_report_hash("align", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
-            jobs.extend(lane_jobs)
+            if self.args.type == 'mgit7':
+                jobs.extend(lane_jobs)
+            else:
+                jobs.extend(self.throttle_jobs(lane_jobs, lane))
 
-        if self.args.type == 'mgit7':
-            return jobs
-        else:
-            return self.throttle_jobs(jobs)
+        return jobs
+
 
     def picard_mark_duplicates(self):
         """
@@ -1952,12 +1953,12 @@ class RunProcessing(common.MUGQICPipeline):
             self.add_to_report_hash("picard_mark_duplicates", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
 
-            jobs.extend(lane_jobs)
+            if self.args.type == 'mgit7':
+                jobs.extend(lane_jobs)
+            else:
+                jobs.extend(self.throttle_jobs(lane_jobs, lane))
 
-        if self.args.type == 'mgit7':
-            return jobs
-        else:
-            return self.throttle_jobs(jobs)
+        return jobs
 
     def check_sample_mixup(self):
         """
@@ -2587,7 +2588,7 @@ class RunProcessing(common.MUGQICPipeline):
 
             self.add_to_report_hash("metrics", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
-            jobs.extend(lane_jobs)
+            jobs.extend(self.throttle_jobs(lane_jobs, lane))
 
         return jobs
         # if self.args.type == 'mgit7':
