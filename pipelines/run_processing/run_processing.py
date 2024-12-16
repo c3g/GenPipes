@@ -4840,7 +4840,6 @@ class RunProcessing(common.MUGQICPipeline):
         """
         Group jobs of the same task (same name prefix) if they exceed the configured threshold number.
         """
-        max_jobs_per_step = config.param('default', 'max_jobs_per_step', required=False, param_type="int")
         jobs_by_name = OrderedDict()
         reply = []
 
@@ -4851,6 +4850,8 @@ class RunProcessing(common.MUGQICPipeline):
         # loop on all task
         for job_name in jobs_by_name:
             current_jobs = jobs_by_name[job_name]
+            max_jobs_per_step = config.param(job_name, 'max_jobs_per_step', required=False, param_type="int")
+            log.debug("Throttling " + job_name)
             if max_jobs_per_step and 0 < max_jobs_per_step < len(current_jobs):
                 # we exceed the threshold, we group using 'number_task_by_job' jobs per group
                 number_task_by_job = int(math.ceil(len(current_jobs) / float(max_jobs_per_step)))
