@@ -261,7 +261,7 @@ def calculate_time_difference(start_time, end_time):
     minutes, seconds = divmod(remainder, 60)
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
-def calculate_time_efficency(elapsed, timelimit):
+def calculate_time_efficiency(elapsed, timelimit):
     """
     Calculate the time efficiency of a job.
     Args:
@@ -270,8 +270,26 @@ def calculate_time_efficency(elapsed, timelimit):
     Returns:
         float: Time efficiency percentage.
     """
-    elapsed_seconds = sum(int(x) * 60 ** i for i, x in enumerate(reversed(elapsed.split(':'))))
-    timelimit_seconds = sum(int(x) * 60 ** i for i, x in enumerate(reversed(timelimit.split(':'))))
+    def parse_time(time_str):
+        if '-' in time_str:
+            # Format is D-HH:MM:SS
+            days, time_part = time_str.split('-')
+            days = int(days)
+            hours, minutes, seconds = map(int, time_part.split(':'))
+        else:
+            # Format is HH:MM:SS
+            days = 0
+            hours, minutes, seconds = map(int, time_str.split(':'))
+
+        return days * 86400 + hours * 3600 + minutes * 60 + seconds
+
+    try:
+        elapsed_seconds = parse_time(elapsed)
+        timelimit_seconds = parse_time(timelimit)
+    except ValueError as e:
+        logger.error(f"Error parsing time: {e}")
+        return 0
+
     return 100 * elapsed_seconds / timelimit_seconds if timelimit_seconds > 0 else 0
 
 def calculate_percentage(used, requested):
