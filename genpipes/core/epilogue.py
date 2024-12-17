@@ -252,13 +252,17 @@ def calculate_time_difference(start_time, end_time):
         start_time (str): Start time in ISO format.
         end_time (str): End time in ISO format.
     Returns:
-        str: Time difference in HH:MM:SS format.
+        str: Time difference in D-HH:MM:SS format.
     """
     start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S")
     end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S")
     delta = end_dt - start_dt
+    days = delta.days
     hours, remainder = divmod(delta.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
+
+    if days > 0:
+        return f"{days}-{hours:02}:{minutes:02}:{seconds:02}"
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 def calculate_time_efficiency(elapsed, timelimit):
@@ -366,7 +370,7 @@ def main():
         logger.error("Unsupported scheduler")
         return
 
-    # Calculate time spent in queue format DD:HH:MM:SS
+    # Calculate time spent in queue format HH:MM:SS
     time_in_queue = None
     if job_details['Submit'] is not None:
         time_in_queue = calculate_time_difference(job_details['Eligible'], job_details['Start'])
