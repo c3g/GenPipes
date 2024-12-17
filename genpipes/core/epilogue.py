@@ -371,7 +371,7 @@ def main():
     if job_details['Submit'] is not None:
         time_in_queue = calculate_time_difference(job_details['Eligible'], job_details['Start'])
     # Calculate time efficency between walltime and time used
-    time_efficency = calculate_time_efficency(job_details['Elapsed'], job_details['Timelimit'])
+    time_efficency = calculate_time_efficiency(job_details['Elapsed'], job_details['Timelimit'])
     # Convert memory to GB
     req_mem_gb = None
     if job_details['ReqMem'] is not None:
