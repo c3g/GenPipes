@@ -415,7 +415,7 @@ class PBSScheduler(Scheduler):
         node = self.node(job_name_prefix)
         gpu = self.gpu(job_name_prefix)
         if gpu:
-            return f"-l nodes={node}:ppn={cpu}:gpu{gpu}"
+            return f"-l nodes={node}:ppn={cpu}:gpu={gpu}"
         return f"-l nodes={node}:ppn={cpu}"
 
     def submit(self, pipeline):
