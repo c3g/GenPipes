@@ -68,7 +68,7 @@ java {java_other_options} -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
   ILLUMINACLIP:{adapter_file}{illumina_clip_settings}{headcrop_length} \\
   TRAILING:{trailing_min_quality} \\
   MINLEN:{min_length}{tophred33} \\
-  2> {trim_log}""".format(
+  2>&1 | tee -a {trim_log}""".format(
         java_other_options=global_conf.global_get('trimmomatic', 'java_other_options'),
         ram=global_conf.global_get('trimmomatic', 'ram'),
         mode = "PE" if input2 else "SE",
