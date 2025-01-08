@@ -412,6 +412,11 @@ class PBSScheduler(Scheduler):
             cpu_ = math.ceil(mem/adapt_mem)
             cpu = max(cpu, cpu_)
 
+        # Checking if this is CIT and if the cpu is 1, then we will increase it to 2 to avoid a problem with cpulimit exceeding cpu usage
+        continuous_integration_testing = 'GENPIPES_CIT' in os.environ
+        if continuous_integration_testing and cpu == 1:
+            cpu += 1
+
         node = self.node(job_name_prefix)
         gpu = self.gpu(job_name_prefix)
         if gpu:
