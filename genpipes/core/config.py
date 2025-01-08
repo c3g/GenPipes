@@ -30,14 +30,7 @@ from .utils import time_to_datetime
 log = logging.getLogger(__name__)
 
 class Config(configparser.ConfigParser):
-
-    # True only for continuous integration testing
-    continuous_integration_testing = 'GENPIPES_CIT' in os.environ
-    # continuous_integration_testing = True
-    cluster_walltime = "cluster_walltime"
-    cit_options = [cluster_walltime]
-    cit_prefix = 'cit_'
-
+    
     # Setting the sanity-check flag to 'False'
     # Will be set to 'True' by the pipeline if it runs with the '--sanity-check' parameter
     sanity = False
@@ -94,13 +87,6 @@ class Config(configparser.ConfigParser):
     def global_get(self, section, option, required=True, param_type='string', **kwargs):
         # Store original section for future error message, in case 'DEFAULT' section is used eventually
         original_section = section
-        # Keep that if block first, it is only evaluated in testing mode
-        if self.continuous_integration_testing and option in self.cit_options:
-            # hack because this class becomes a global
-            try:
-                return super().get(section, f'{self.cit_prefix}{option}')
-            except configparser.Error as e:
-                pass
 
         if not self.has_section(section):
             section = 'DEFAULT'
