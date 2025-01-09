@@ -414,7 +414,7 @@ class PBSScheduler(Scheduler):
 
         # Checking if this is CIT and if the cpu is 1, then we will increase it to 2 to avoid a problem with cpulimit exceeding cpu usage
         continuous_integration_testing = 'GENPIPES_CIT' in os.environ
-        if continuous_integration_testing and cpu == 1:
+        if continuous_integration_testing:
             cpu += 1
 
         node = self.node(job_name_prefix)
