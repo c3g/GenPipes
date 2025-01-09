@@ -241,6 +241,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
     max_stop = []
     total_machine = datetime.timedelta(0)
     total_machine_core = datetime.timedelta(0)
+    status_count = {}
 
     header = OrderedDict([
         ('id', 'job_id'),
@@ -271,7 +272,7 @@ def print_report(report, to_stdout=True, to_tsv=None):
         ('output_file_path', 'path')
     ])
     data_table = []
-
+    nb_jobs = len(report)
     for job in report:
         for dep in job.dependency.split(':'):
             if any(d.status not in ['COMPLETED', 'RUNNING', 'PENDING'] for d in report if d.job_id == dep):
@@ -296,6 +297,12 @@ def print_report(report, to_stdout=True, to_tsv=None):
             cpu_time = parse_time(job.cpu_time)
             if cpu_time and job.n_cpu:
                 total_machine_core += cpu_time * job.n_cpu
+        # Count job status
+        if job.status in status_count:
+            status_count[job.status] += 1
+        else:
+            status_count[job.status] = 1
+
 
     if to_stdout:
         try:
@@ -307,7 +314,10 @@ def print_report(report, to_stdout=True, to_tsv=None):
             logger.error('Missing start or stop time in the report.')
             total_human = None
 
+        status_counts_str = "\n".join([f"    Number of jobs {status}: {count} ({(count / nb_jobs) * 100:.2f}%)" for status, count in status_count.items()])
         print(f"""
+{status_counts_str}
+    Number of jobs: {nb_jobs}
     Cumulative time spent on compute nodes: {total_machine}
     Cumulative core time: {total_machine_core}
     Human time from beginning of pipeline to its end: {total_human}
