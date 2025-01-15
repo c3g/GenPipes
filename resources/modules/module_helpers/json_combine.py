@@ -37,7 +37,7 @@ def get_versions(
     ):
 
     files = os.listdir(dir_)
-    files = [file for file in files if file[0] is not '.']
+    files = [file for file in files if file[0] != '.']
     versions = []
     for version in files:
         version

@@ -38,7 +38,7 @@ class SearchLogger:
             with open(self.logfile_path, 'w') as file:
                 curr_time = time.ctime(time.time())
                 file.write(f'LOG FILE GENERATED ON {curr_time}\n')
-        
+
     def append_log(self, dict_data):
         """
         Appends a single line to the Logfile.
@@ -54,14 +54,14 @@ class SearchLogger:
         dict_data.update({'time': curr_time})
         with open(self.logfile_path, 'a') as file:
             file.write(self.log_format.format(**dict_data))
-    
+
     def reset_log(self):
         """
         Removes the old logfile, and creates a new one.
         """
         with open(self.logfile_path, 'w') as file:
-                curr_time = time.ctime(time.time())
-                file.write(f'LOG FILE GENERATED ON {curr_time}\n')
+            curr_time = time.ctime(time.time())
+            file.write(f'LOG FILE GENERATED ON {curr_time}\n')
 
 class SearchBioconda:
     """
@@ -110,7 +110,7 @@ class SearchBioconda:
             'url',
             'license'
         ]
-        sws_ = page_soup.find('table', class_='indextable modindextable').findAll('a')    
+        sws_ = page_soup.find('table', class_='indextable modindextable').findAll('a')
         sws_dict = {}
         for elem in sws_:
             sws_dict[elem.text.strip()] = 'https://bioconda.github.io/' + elem.get('href')
@@ -134,7 +134,7 @@ class SearchBioconda:
 
         """
         return self.db
-    
+
     def fetch_software(self,  name):
         """
         Fetches the software metadata from their channel page.
@@ -160,7 +160,6 @@ class SearchBioconda:
             source = requests.get(sw_link)
             bs4_source = BeautifulSoup(source.text, features='lxml')
             lxml_source = lxml.html.fromstring(source.content)
-            temp_box = bs4_source.find('dl', class_='field-list simple')
             for key in list(self.xpath_dict.keys()):
                 try:
                     template_dict[key] = lxml_source.xpath(self.xpath_dict[key])[0].text_content().strip().replace('\n', ',')
@@ -186,7 +185,7 @@ class SearchBioconda:
                 })
             return template_dict
         return False
-    
+
     def is_bioconda(self, name):
         """
         Checks if a certain software is available in Bioconda Index.
@@ -239,7 +238,7 @@ class SearchPyPi:
             'license': '/html/body/main/div[3]/div/div/div[1]/div[4]/p[1]'
         }
         self.search_xpath = '/html/body/main/div/div/div[2]/form/div[3]/ul/li/a'
-    
+
     def search_package(self, name):
         """
         Checks if a certain software is available on PyPi.
@@ -260,14 +259,13 @@ class SearchPyPi:
         page_source = requests.get(queried_page)
         lxml_html = lxml.html.fromstring(page_source.content)
         search_results = lxml_html.xpath(self.search_xpath)
-        result_dict = {}
         for result in search_results:
             sw_name = result.text_content().strip().split(' ')[0]
             sw_name = sw_name.replace('\n', '').lower()
-            if sw_name == name: 
+            if sw_name == name:
                 return 'https://pypi.org' + result.get('href')
         return None
-    
+
     def get_metadata(self, name, link):
         """
         Extracts the software metadata from the PyPi page.
@@ -295,8 +293,8 @@ class SearchPyPi:
         }
         for field in list(self.field_paths.keys()):
             try:
-                sw_dict[field] = lxml_html.xpath(self.field_paths[field])[0].text_content().strip()                
-                if field is 'url':
+                sw_dict[field] = lxml_html.xpath(self.field_paths[field])[0].text_content().strip()
+                if field == 'url':
                     sw_dict[field] = lxml_html.xpath(self.field_paths[field])[0].get('href')
             except Exception as e:
                 print("Exception encountered! {}, exception - {}".format(field, e))

@@ -18,9 +18,12 @@
 ################################################################################
 
 import os
+import logging
 
 from ..core.config import global_conf
 from ..core.job import Job
+
+log = logging.getLogger(__name__)
 
 def tohdf5(output_dir, signal_file, ini_section='epigeec'):
     signal_file_basename = os.path.basename(signal_file)+".hdf5"

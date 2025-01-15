@@ -215,10 +215,10 @@ parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-p", "--nanuq-project-id", help="Nanuq project ID used to fetch readset file from server (incompatible with --nanuq-readset-file)")
-group.add_argument("-r", "--nanuq-readset-file", help="Nanuq readset file to use instead of fetching it from server (incompatible with --nanuq-project-id)", type=file)
+group.add_argument("-r", "--nanuq-readset-file", help="Nanuq readset file to use instead of fetching it from server (incompatible with --nanuq-project-id)")
 parser.add_argument("-rn", "--run", help="Nanuq run ID to fetch only readset procesed in specified run(s). Multiple runs can be provided, should they be comma-separated")
 parser.add_argument("-s", "--seq-type", help="Sequencing type (default: HiSeq)", choices=["HiSeq", "NovaSeq", "MiSeq", "iSeq", "Pacbio"], default="HiSeq")
-parser.add_argument("-a", "--nanuq-auth-file", help="Nanuq authentication file containing your Nanuq username and password e.g. $HOME/.nanuqAuth.txt\nTo create it:\n$ echo -n \"user=<USERNAME>&password=<PASSWORD>\" > $HOME/.nanuqAuth.txt ; chmod u+r,go-rwx $HOME/.nanuqAuth.txt\nNote '-n' option since trailing newline is not allowed at the end of the file.", type=file)
+parser.add_argument("-a", "--nanuq-auth-file", help="Nanuq authentication file containing your Nanuq username and password e.g. $HOME/.nanuqAuth.txt\nTo create it:\n$ echo -n \"user=<USERNAME>&password=<PASSWORD>\" > $HOME/.nanuqAuth.txt ; chmod u+r,go-rwx $HOME/.nanuqAuth.txt\nNote '-n' option since trailing newline is not allowed at the end of the file.")
 parser.add_argument("-nl", "--no-links", help="Do not create raw_reads directory and symlinks (default: false)", action="store_true")
 parser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
 

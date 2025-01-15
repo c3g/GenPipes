@@ -23,7 +23,7 @@ import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
-from ..core.job import Job 
+from ..core.job import Job, concat_jobs
 
 def bamqc(input_bam, output_directory, output, options, ini_section='qualimap'):
 
