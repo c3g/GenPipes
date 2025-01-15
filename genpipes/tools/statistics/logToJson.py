@@ -208,7 +208,7 @@ def setInterval(dateFromStr, dateToStr):
         try:
             fromDate = datetime.datetime.strptime(dateFromStr, "%Y-%m-%d").timetuple()
         except Exception as e:
-            print e
+            print(e)
             print("[Pipelines Usage Log] Invalid fromDate:", dateFromStr)
             pass
 
