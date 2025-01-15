@@ -17,7 +17,8 @@
 # along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-from ..core.config import global_conf
+import os
+
 from ..core.job import Job
 
 #Assuming that the module file has already been written and the scripts have been added to path
