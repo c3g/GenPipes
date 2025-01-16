@@ -21,7 +21,7 @@ import re
 import os
 
 from ..core.config import global_conf
-from ..core.job import Job 
+from ..core.job import Job
 
 def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
     outputs = [
@@ -33,7 +33,7 @@ def manta_config(input_normal, input_tumor, output_dir, callRegion=None):
         inputs = [input_normal, input_tumor, callRegion]
     else:
         inputs = [input_normal, callRegion]
-        
+
     return Job(
         inputs,
         outputs,
@@ -73,7 +73,7 @@ def manta_run(input_dir, output_dep):
         [
             ['manta_sv', 'module_python'],
             ['manta_sv', 'module_manta']
-        ],    
+        ],
         command="""\
 python {input_dir}/runWorkflow.py \\
         -m {mode}  \\

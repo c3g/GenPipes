@@ -17,13 +17,6 @@
 # along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Python Standard Modules
-import os
-
-# MUGQIC Modules
-from ..core.config import global_conf
-from ..core.job import Job
-
 ## functions for awk tools ##
 
 ## functions for python tools ##

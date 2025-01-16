@@ -31,7 +31,7 @@ def run(input, output, ini_section='run_vcfanno'):
         [
             [ini_section, 'module_vcfanno'],
         ],
-        
+
         command="""\\
 vcfanno {options} \\
     -lua {lua} {config} \\

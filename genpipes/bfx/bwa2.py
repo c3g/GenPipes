@@ -37,13 +37,13 @@ bwa index \\
         )
 
 def mem(
-  in1fastq, 
-  in2fastq=None, 
-  out_sam=None, 
-  read_group=None, 
-  ref=None, 
-  ini_section='bwa_mem2'
-  ):
+    in1fastq,
+    in2fastq=None,
+    out_sam=None,
+    read_group=None,
+    ref=None,
+    ini_section='bwa_mem2'
+    ):
 
     return Job(
         [in1fastq, in2fastq, ref + ".bwt.2bit.64" if ref else None],

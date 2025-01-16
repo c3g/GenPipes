@@ -23,7 +23,6 @@ import re
 
 # MUGQIC Modules
 from ..core.config import global_conf
-from ..core.job import Job 
 
 ##### General Homer:
 def archive_contigs(
@@ -190,7 +189,7 @@ def hic_interactionMatrix_genome(
 
     if fileNameRN is None:
         fileNameRN = re.sub(r"\.txt", "RN.txt", fileName)
- 
+
     commandFormatMatrix = None
     if format:
         commandFormatMatrix = """\

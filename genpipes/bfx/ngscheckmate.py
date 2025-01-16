@@ -25,8 +25,8 @@ from ..core.config import global_conf
 from ..core.job import Job
 
 def run(input, output_dir, ini_section='run_checkmate'):
-	output = os.path.join(output_dir, "output_corr_matrix.txt")
-	return Job(
+    output = os.path.join(output_dir, "output_corr_matrix.txt")
+    return Job(
         [input],
         [output],
         [

@@ -21,7 +21,6 @@
 
 # MUGQIC Modules
 import os
-from ..core.config import global_conf
 from ..core.job import Job
 
 def structural_variants(input, output):

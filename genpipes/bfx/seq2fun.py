@@ -48,7 +48,7 @@ def processing(input_files, output_file, sample_file, profiling, ini_section='se
 def deseq2(
     design_file,
     count_matrix,
-    output_dir, 
+    output_dir,
     ini_section='seq2fun'
     ):
 

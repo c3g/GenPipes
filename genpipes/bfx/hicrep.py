@@ -21,7 +21,6 @@
 import os
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def calculate_reproducible_score(output_file, sample1, sample2, file1_path, file2_path, chromosome , resolution, bound_width, weights, corr, down_sampling, smooth):
@@ -66,7 +65,7 @@ def merge_tmp_files(input_files, output_files, temp_out_dir, resolution, smooth,
     if not isinstance(input_files, list):
         input_files = [input_files]
     if not isinstance(output_files, list):
-            output_files = [output_files]
+        output_files = [output_files]
 
     return Job(
         input_files,

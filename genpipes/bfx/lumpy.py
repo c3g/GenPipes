@@ -23,10 +23,10 @@ from ..core.job import Job
 def lumpyexpress_pair(normal_bam, tumor_bam, output_vcf, spl_normal=[], spl_tumor=[], dis_normal=[], dis_tumor=[]):
     if tumor_bam is not None and spl_tumor is not None and dis_tumor is not None:
         inputs = [normal_bam, tumor_bam, spl_normal, spl_tumor, dis_normal, dis_tumor]
-    
+
     else:
         inputs = [normal_bam, spl_normal, dis_normal]
-        
+
     return Job(
         inputs,
         [output_vcf],

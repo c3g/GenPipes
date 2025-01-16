@@ -30,17 +30,17 @@ def compute_effects(
         cancer_sample_file=None,
         options=[],
         ini_section='compute_effects'
-):
-    
+        ):
+  
     output_stats = f"{output}.stats.csv"
     output_stats_html = f"{output}.stats.html"
-    
+
     outputs = []
     if not isinstance(output, list):
         outputs = [output]
-    
+
     outputs += [output_stats, output_stats_html]
-    
+
     job = Job(
         [input],
         outputs,

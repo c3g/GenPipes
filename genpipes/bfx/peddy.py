@@ -25,8 +25,8 @@ from ..core.config import global_conf
 from ..core.job import Job
 
 def run(input, ped, output_dir):
-	output = os.path.join(output_dir, ".ped_check.csv")
-	return Job(
+    output = os.path.join(output_dir, ".ped_check.csv")
+    return Job(
         [input, ped],
         [output],
         [

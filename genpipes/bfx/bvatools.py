@@ -97,15 +97,15 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
 
 def extract_sclip(bamFile, output_prefix, flank="200"):
     return Job(
-        [bamFile], 
+        [bamFile],
         [
-          output_prefix + ".sc.bam", 
-          output_prefix + ".scOthers.bam", 
-          output_prefix + ".scPositions.txt", 
+          output_prefix + ".sc.bam",
+          output_prefix + ".scOthers.bam",
+          output_prefix + ".scPositions.txt",
           output_prefix + ".scSequences.txt"
-        ], 
+        ],
         [
-          ['bvatools_ratiobaf', 'module_java'], 
+          ['bvatools_ratiobaf', 'module_java'],
           ['bvatools_ratiobaf', 'module_bvatools']
         ],
         command="""\

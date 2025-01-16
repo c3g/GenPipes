@@ -20,7 +20,6 @@
 # Python Standard Modules
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def paired_somatic(input, normal_name, tumor_name, output):

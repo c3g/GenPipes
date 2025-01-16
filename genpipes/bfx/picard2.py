@@ -140,17 +140,17 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             report_files=outputs
         )
 def collect_sequencing_artifacts_metrics(input, output, annotation_flat=None,reference_sequence=None, ini_section='picard_collect_sequencing_artifacts_metrics'):
-        output_dep = output + ".bait_bias_summary_metrics.txt"
+    output_dep = output + ".bait_bias_summary_metrics.txt"
 
-        return Job(
-            [input],
-            [output_dep],
-            [
-                [ini_section, 'module_java'],
-                [ini_section, 'module_picard'],
-                [ini_section, 'module_R']
-            ],
-            command="""\
+    return Job(
+        [input],
+        [output_dep],
+        [
+            [ini_section, 'module_java'],
+            [ini_section, 'module_picard'],
+            [ini_section, 'module_R']
+        ],
+        command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectSequencingArtifactMetrics \\
  VALIDATION_STRINGENCY=SILENT {options} \\
  TMP_DIR={tmp_dir} \\
@@ -170,17 +170,17 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         )
 
 def convert_sequencing_artifacts_metrics(input, output, annotation_flat=None,reference_sequence=None, ini_section='picard_convert_sequencing_artifacts_metrics'):
-        input_dep = input + ".bait_bias_summary_metrics"
+    input_dep = input + ".bait_bias_summary_metrics"
 
-        return Job(
-            [input_dep],
-            [output],
-            [
-                [ini_section, 'module_java'],
-                [ini_section, 'module_picard'],
-                [ini_section, 'module_R']
-            ],
-            command="""\
+    return Job(
+        [input_dep],
+        [output],
+        [
+            [ini_section, 'module_java'],
+            [ini_section, 'module_picard'],
+            [ini_section, 'module_R']
+        ],
+        command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar ConvertSequencingArtifactToOxoG \\
  VALIDATION_STRINGENCY=SILENT  \\
  TMP_DIR={tmp_dir} \\
@@ -198,15 +198,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def collect_oxog_metrics(input, output, annotation_flat=None, reference_sequence=None, ini_section='picard_collect_oxog_metrics'):
 
-        return Job(
-            [input],
-            [output],
-            [
-                [ini_section, 'module_java'],
-                [ini_section, 'module_picard'],
-                [ini_section, 'module_R']
-            ],
-            command="""\
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_java'],
+            [ini_section, 'module_picard'],
+            [ini_section, 'module_R']
+        ],
+        command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectOxoGMetrics \\
  VALIDATION_STRINGENCY=SILENT  \\
  TMP_DIR={tmp_dir} \\

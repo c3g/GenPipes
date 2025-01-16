@@ -28,7 +28,7 @@ from ..core.job import Job
 log = logging.getLogger(__name__)
 
 def run(fastqs1, fastqs2, chimeric_jxt, star_fusion_bam, output_dir):
-	
+
     output_file = os.path.join(output_dir, "trinity_out_dir", "Trinity.fasta")
     return Job(
         [chimeric_jxt,star_fusion_bam],
