@@ -580,32 +580,15 @@ my_output_dir/job_output/
 
 To view a TAB-separated values log report, use the `log_report` script by typing:
 ```bash
-genpipes tools log_report --remote <cluster> <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+genpipes tools log_report <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 ```
-With `cluster` being either beluga, cedar, narval, or abacus.
 
 which will output e.g.:
 ```text
-# Number of jobs: 41
-#
-# Number of successful jobs: 4
-# Number of active jobs: 0
-# Number of inactive jobs: 36
-# Number of failed jobs: 1
-#
-# Execution time: 2014-09-30T19:52:58 - 2014-09-30T22:38:04 (2 h 45 min 6 s)
-#
-# Shortest job: merge_trimmomatic_stats (1 s)
-# Longest job: insilico_read_normalization_readsets.readset2 (1 h 33 min 53 s)
-#
-# Lowest memory job: merge_trimmomatic_stats (0.00 GiB)
-# Highest memory job: insilico_read_normalization_readsets.readset2 (31.32 GiB)
-#
-#JOB_ID JOB_FULL_ID    JOB_NAME    JOB_DEPENDENCIES    STATUS    JOB_EXIT_CODE    CMD_EXIT_CODE    REAL_TIME    START_DATE    END_DATE    CPU_TIME    CPU_REAL_TIME_RATIO    PHYSICAL_MEM    VIRTUAL_MEM    EXTRA_VIRTUAL_MEM_PCT    LIMITS    QUEUE    USERNAME    GROUP    SESSION    ACCOUNT    NODES    PATH
-2100213.abacus2.ferrier.genome.mcgill.ca    2100213.abacus2.ferrier.genome.mcgill.ca    trimmomatic.readset1    SUCCESS    N/A    0    01:08:45 (1 h 8 min 45 s)    2014-09-30T19:52:58    2014-09-30T21:01:48    02:39:34 (2 h 39 min 34 s)    2.32    1.71 GiB    3.73 GiB    118.2 %    neednodes=1:ppn=6,nodes=1:ppn=6,walltime=24:00:00    sw    jfillon analyste    2465764    N/A    f3c10    /path/to/output_dir/job_output/trimmomatic/trimmomatic.readset1_2014-09-30T19.52.29.o
-2100214.abacus2.ferrier.genome.mcgill.ca    2100214.abacus2.ferrier.genome.mcgill.ca    trimmomatic.readset2    SUCCESS    N/A    0    01:08:59 (1 h 8 min 59 s)    2014-09-30T19:52:58    2014-09-30T21:02:01    02:40:05 (2 h 40 min 5 s)    2.32    1.41 GiB    3.73 GiB    164.0 %    neednodes=1:ppn=6,nodes=1:ppn=6,walltime=24:00:00    sw    jfillon analyste    2465669    N/A    f3c10    /path/to/output_dir/job_output/trimmomatic/trimmomatic.readset2_2014-09-30T19.52.29.o
-2100215.abacus2.ferrier.genome.mcgill.ca    2100215.abacus2.ferrier.genome.mcgill.ca    merge_trimmomatic_stats    2100213.abacus2.ferrier.genome.mcgill.ca:2100214.abacus2.ferrier.genome.mcgill.ca    SUCCESS    N/A    0    00:00:01 (1 s)    2014-09-30T21:04:06    2014-09-30T21:04:12    00:00:00 (0 s)    0.00    0.00 GiB    0.00 GiB    N/A    neednodes=1:ppn=1,nodes=1:ppn=1,walltime=120:00:00    sw    jfillon    analyste    3343994    N/A    f3c11    /path/to/output_dir/job_output/merge_trimmomatic_stats/merge_trimmomatic_stats_2014-09-30T19.52.29.o
-2100216.abacus2.ferrier.genome.mcgill.ca    2100216.abacus2.ferrier.genome.mcgill.ca    insilico_read_normalization_readsets.readset1    2100213.abacus2.ferrier.genome.mcgill.ca    FAILED    N/A    N/A    00:38:16 (38 min 16 s)    2014-09-30T21:02:02    2014-09-30T21:40:23    04:50:10 (4 h 50 min 10 s)    7.58    30.71 GiB    32.32 GiB    5.3 %    neednodes=1:ppn=6,nodes=1:ppn=6,walltime=120:00:00    sw    jfillon    analyste    3343745    N/A    f3c11    /path/to/output_dir/job_output/insilico_read_normalization_readsets/insilico_read_normalization_readsets.readset1_2014-09-30T19.52.29.o
+id  name    status  user    node    priority    submit_time eligible_time   start_time  queue_time  end_time    total_time  time_limit  time_efficiency n_cpu   cpu_time    cpu_efficiency  mem ave_mem max_mem mem_efficiency  ave_diskr   max_diskr   ave_diskw   max_diskw   output_file_path
+16462219 gatk_sam_to_fastq.tumorPair_COLO829T    COMPLETED   pstretenowich   f3u21c04    0   2025-01-09T10:03:30 2025-01-09T10:03:30 2025-01-09T10:04:10 00:00:40    2025-01-09T10:08:42 00:04:32    00:10:00    45.3%   5   00:14:25    318.0%  25.00 GB    Unknown 1.61 GB 6.5%    Unknown Unknown Unknown Unknown path_to/job_output/gatk_sam_to_fastq/gatk_sam_to_fastq.tumorPair_COLO829T_2025-01-09T10.03.29.o
+16462220 trim_fastp.tumorPair_COLO829T   COMPLETED   pstretenowich   f3u21c01    0   2025-01-09T10:03:30 2025-01-09T10:08:42 2025-01-09T10:10:24 00:06:54    2025-01-09T10:12:12 00:01:48    00:20:00    9.0%    5   00:12:21    686.1%  25.00 GB    Unknown 1.84 GB 7.4%    Unknown Unknown Unknown Unknown path_to/job_output/trim_fastp/trim_fastp.tumorPair_COLO829T_2025-01-09T10.03.29.o
+16462221 bwa_mem2_samtools_sort.tumorPair_COLO829T   COMPLETED   pstretenowich   f3u31c04    0   2025-01-09T10:03:31 2025-01-09T10:12:12 2025-01-09T10:12:27 00:08:56    2025-01-09T10:21:47 00:09:20    00:20:00    46.7%   9   00:52:34    563.2%  45.00 GB    Unknown 15.84 GB    35.2%   Unknown Unknown Unknown Unknown path_to/job_output/bwa_mem2_samtools_sort/bwa_mem2_samtools_sort.tumorPair_COLO829T_2025-01-09T10.03.29.o
 ...
 ```
 

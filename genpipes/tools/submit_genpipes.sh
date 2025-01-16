@@ -3,7 +3,7 @@
 
 SLEEP_TIME=120
 MAX_QUEUE=500
-SHEDULER_USER=$USER
+SCHEDULER_USER=$USER
 SCHEDULER=slurm
 export SUBMIT_RETCODE=1
 export RETRY=10
@@ -25,9 +25,9 @@ echo "   -l <N>                  Will retry N time to resubmit a chunk if error 
 
 get_n_jobs () {
   if [[ ${SCHEDULER} ==  'slurm' ]]; then
-    echo "$(squeue -u $SHEDULER_USER -h -t pending,running | wc -l)"
+    echo "$(squeue -u $SCHEDULER_USER -h -t pending,running | wc -l)"
   elif [[ ${SCHEDULER} ==  'pbs' ]]; then
-    echo "$(showq  -u $SHEDULER_USER  | grep $SHEDULER_USER  | wc -l )"
+    echo "$(showq  -u $SCHEDULER_USER  | grep $SCHEDULER_USER  | wc -l )"
   fi
 }
 
@@ -88,7 +88,7 @@ submit () {
 while getopts "hl:n:u:s:S:" opt; do
   case $opt in
     u)
-      SHEDULER_USER=${OPTARG}
+      SCHEDULER_USER=${OPTARG}
     ;;
     s)
       SLEEP_TIME=${OPTARG}
