@@ -19,7 +19,6 @@
 
 # Python Standard Modules
 import os
-import re
 
 # MUGQIC Modules
 from ..core.job import Job

@@ -25,7 +25,7 @@ from ..core.config import global_conf
 from ..core.job import Job
 
 def paired(input1, input2, output_directory, output_directory_sample, sample, ini_section="sortmerna"):
-	return Job(
+    return Job(
 		input_files=[input1, input2],
 		output_files=[output_directory, output_directory_sample, os.path.join(output_directory_sample, sample + ".aligned.log")],
 		module_entries=[
@@ -49,7 +49,7 @@ sortmerna --threads {threads} {other_options} \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
 			input2=input2,
-        	threads=global_conf.global_get(ini_section, 'threads', required=True), 
+        	threads=global_conf.global_get(ini_section, 'threads', required=True),
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
@@ -58,7 +58,7 @@ sortmerna --threads {threads} {other_options} \\
 	)
 
 def single(input1, output_directory, output_directory_sample, sample, ini_section = "sortmerna"):
-	return Job(
+    return Job(
 		input_files=[input1],
 		output_files=[output_directory, output_directory_sample, os.path.join(output_directory_sample, sample + ".aligned.log")],
 		module_entries=[
@@ -80,7 +80,7 @@ sortmerna --threads {threads} {other_options} \\
     --readb {output_directory_sample}/readb \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
-        	threads=global_conf.global_get(ini_section, 'threads', required=True), 
+        	threads=global_conf.global_get(ini_section, 'threads', required=True),
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,

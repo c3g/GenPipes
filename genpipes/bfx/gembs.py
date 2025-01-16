@@ -109,8 +109,8 @@ echo -e 'sampleID,dataset,library,sample,file1,file2 {metadata_list}' > {metadat
             )
 
 def prepare(
-    metadata, 
-    config_file, 
+    metadata,
+    config_file,
     output_dir,
     ini_section="gembs_prepare"
     ):
@@ -164,7 +164,7 @@ gemBS {gembs_flags} {gembs_options} \\
         )
 
 def map(
-        sample, 
+        sample,
         output_dir,
         ini_section="gembs_map"
         ):
@@ -198,8 +198,8 @@ gemBS {gembs_flags} {gembs_options} \\
     )
 
 def call(
-        sample, 
-        input, 
+        sample,
+        input,
         output_prefix,
         ini_section="gembs_call"
         ):
@@ -234,8 +234,8 @@ gemBS {gembs_flags} {gembs_options} \\
     )
 
 def extract(
-        input, 
-        sample, 
+        input,
+        sample,
         output_dir,
         ini_section="gembs_extract"
         ):
@@ -265,7 +265,7 @@ gemBS {gembs_flags} {gembs_options} \\
 )
 
 def report(
-        inputs, 
+        inputs,
         output,
         ini_section="gembs_report"
         ):

@@ -70,11 +70,11 @@ def report(
     )
 
 def report2(
-        input, 
-        output_dir, 
-        tumor_id, 
-        ini_section
-        ):
+    input,
+    output_dir,
+    tumor_id,
+    ini_section
+    ):
     assembly = global_conf.global_get(ini_section, 'assembly')
     output = [
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".vcf.gz"),

@@ -75,7 +75,7 @@ HiCPlotter.py \\
   -wg 1""".format(
             res=res,
             fileNameRN=fileNameRN,
-            name=sample_name, 
+            name=sample_name,
             output_dir=output_dir,
             hmc=global_conf.global_get('interaction_matrices_Chr', 'hmc')
         ),

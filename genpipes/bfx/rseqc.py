@@ -124,7 +124,7 @@ def junction_annotation(input, output, ini_section='rseqc'):
 
 def junction_saturation(input, output, ini_section='rseqc'):
     output_file=output + ".log"
-    
+
     return Job(
         [input],
         [output_file],

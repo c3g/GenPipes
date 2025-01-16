@@ -27,7 +27,7 @@ from ..core.job import Job
 
 log = logging.getLogger(__name__)
 
-#the merge file is name.extendedFrags.fastq 
+#the merge file is name.extendedFrags.fastq
 def flash(
     input1,
     input2,

@@ -54,7 +54,6 @@ $ARRIBA_HOME/./run_arriba.sh \\
             known_fusions=global_conf.global_get('run_arriba', 'known_fusions'),
             protein_domains=global_conf.global_get('run_arriba', 'protein_domains'),
             threads=global_conf.global_get('run_arriba', 'threads', param_type='posint'),
-            options=global_conf.global_get('run_arriba', 'options'),
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
             fastq2=",".join(fastq2 for fastq2 in fastqs2),
         ),

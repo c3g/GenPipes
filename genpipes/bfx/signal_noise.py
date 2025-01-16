@@ -129,4 +129,3 @@ if __name__ == "__main__":
     metrics = computeMetrics(sorted_signals, percent1, percent2)
     outputFile(metrics[0], metrics[1], metrics[2], output_path)
     removeDecompressFile(filename)
-

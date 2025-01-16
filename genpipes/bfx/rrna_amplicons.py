@@ -29,7 +29,7 @@ def merge_barcodes(reads1, reads2, outdir):
     outfile_paired = outdir + "/paired.fastq"
 
     job = Job(
-        reads1 + reads2, 
+        reads1 + reads2,
         [outfile1, outfile2],
         [['tools', 'module_mugqic_tools'], ['memtime', 'module_memtime']]
     )
@@ -250,7 +250,7 @@ memtime itagsQC.pl \\
         revPrimer = revPrimer,
         length_3_prime = global_conf.global_get('itags_QC', 'length3Prime', 'int')
         )
-    
+
     if fwdPrimer != "null":
         job.command+="""\
   --primer_5_prime {fwdPrimer} \\

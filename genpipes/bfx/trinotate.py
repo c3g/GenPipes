@@ -85,10 +85,10 @@ TransDecoder.Predict {other_options} \\
 
 # Identifies protein domains using [HMMR](http://hmmer.janelia.org/).
 def hmmer(
-    transdecoder_directory, 
+    transdecoder_directory,
     transdecoder_fasta,
     transdecoder_pfam):
-    
+
     return Job(
         [transdecoder_fasta],
         [transdecoder_pfam],
@@ -175,7 +175,7 @@ def signalp(
         [transdecoder_fasta],
         [signalp_gff],
         [
-            ['signalp', 'module_perl'], 
+            ['signalp', 'module_perl'],
             ['signalp', 'module_signalp']
         ],
         command="""\
@@ -200,7 +200,7 @@ def signalp6(
         [transdecoder_fasta],
         [output],
         [
-            ['signalp', 'module_python'], 
+            ['signalp', 'module_python'],
             ['signalp', 'module_signalp']
         ],
         command="""\

@@ -53,10 +53,10 @@ def verify2(
 ):
     if not isinstance(input_bam, list):
         inputs = [input_bam]
-        
+
     if bed_file is not None:
         inputs.append(bed_file)
-        
+
     return Job(
         inputs,
         [output_prefix + ".selfSM"],

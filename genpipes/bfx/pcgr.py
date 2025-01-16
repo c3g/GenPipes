@@ -96,7 +96,7 @@ def report2(input_vcf,
            input_cna,
            ini_section='report_pcgr'
            ):
-    
+
     if cpsr_prefix:
         cpsr_input = f"{cpsr_prefix}.classification.tsv.gz"
         cpsr_yaml = f"{cpsr_prefix}.conf.yaml"
@@ -144,7 +144,7 @@ cp -r {tmp_dir}/pcgr {output_dir}""".format(
             msi_options=global_conf.global_get(ini_section, 'msi_options'),
             input_vcf=input_vcf,
             cpsr_report="--input_cpsr " + cpsr_input if cpsr_input else "",
-            cpsr_yaml="--input_cpsr_yaml " + cpsr_yaml if cpsr_yaml else "", 
+            cpsr_yaml="--input_cpsr_yaml " + cpsr_yaml if cpsr_yaml else "",
             input_cna=input_cna,
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
             output_dir=os.path.dirname(output_dir),
@@ -164,7 +164,7 @@ END`"""
 def create_input_cna(
         cna_body,
         header,
-        cnvkit_calls, 
+        cnvkit_calls,
         output
         ):
     return Job(
