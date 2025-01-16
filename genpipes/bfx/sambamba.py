@@ -27,7 +27,7 @@ def sort(input_bam,
          output_bam,
          tmp_dir,
          other_options=None):
-    
+
     return Job(
         [input_bam],
         [output_bam],

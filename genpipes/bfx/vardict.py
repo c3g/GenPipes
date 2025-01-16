@@ -158,4 +158,3 @@ dict2BEDs.py \\
         dict2bed_options=global_conf.global_get(ini_section, 'dict2bed_options')
         )
     )
-

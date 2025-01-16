@@ -22,7 +22,6 @@ import logging
 import os
 
 from ..core.job import Job
-from ..core.config import global_conf
 
 log = logging.getLogger(__name__)
 

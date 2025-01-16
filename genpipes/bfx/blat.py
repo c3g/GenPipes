@@ -17,11 +17,7 @@
 # along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Python Standard Modules
-import os
-
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def blat_dna_vs_dna(ref, query, output, other_options=""):

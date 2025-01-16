@@ -25,8 +25,6 @@ import re
 from ..core.config import global_conf
 from ..core.job import Job
 
-from . import ucsc
-
 def graph(input_bam, output_bed_graph, library_type="PAIRED_END"):
 
     if library_type == "PAIRED_END":

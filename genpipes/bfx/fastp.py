@@ -75,7 +75,7 @@ def trim(
         inputs = [input1, input2]
     else:
         inputs = [input1]
-        
+
     if output2:
         outputs = [output1, output2, output_json_path, output_html_path]
     else:

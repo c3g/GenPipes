@@ -35,10 +35,10 @@ def fastqc(input1, input2, output_directory, output, adapter_file):
     outputs = [output]
 
     (input_basename, file_format) = os.path.splitext(input1)
-    file_format = re.sub("^\.", "", file_format)
+    file_format = re.sub(r"^\.", "", file_format)
     if file_format == 'gz':
         (input_basename, file_format) = os.path.splitext(input_basename)
-        file_format = re.sub("^\.", "", file_format)
+        file_format = re.sub(r"^\.", "", file_format)
 
     return Job(
         inputs,

@@ -44,4 +44,3 @@ $BAMREADCOUNT_BIN/bam-readcount {options} \\
         output="> " + output if output else ""
         )
     )
-

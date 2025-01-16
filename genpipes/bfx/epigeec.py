@@ -104,4 +104,3 @@ def generate_hdf5_list(hdf5_list_file, file_path):
             file_path=file_path
             )
         )
-

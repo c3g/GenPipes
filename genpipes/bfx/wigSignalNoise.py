@@ -20,7 +20,6 @@
 import gzip
 import re
 import argparse
-import os
 
 
 def getFileExtension(file):
@@ -130,4 +129,3 @@ if __name__ == "__main__":
     sorted_signals = sortSignals(filename)
     metrics = computeMetrics(sorted_signals, percent1, percent2)
     outputFile(metrics[0], metrics[1], metrics[2], percent1, percent2, output_path)
-

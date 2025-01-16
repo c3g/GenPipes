@@ -32,7 +32,7 @@ def run(fastqs1, fastqs2, output_dir):
     jxt_file = os.path.join(output_dir, "Chimeric.out.junction")
     star_file = os.path.join(output_dir, "Aligned.out.bam")
     log_file = os.path.join(output_dir, "Log.final.out")
-    
+
     return Job(
         fastqs1,
         [output_file,jxt_file,star_file,log_file],

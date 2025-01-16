@@ -21,10 +21,9 @@
 import os
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
-# This is general to all jobs 
+# This is general to all jobs
 def render(
     job_input,
     job_name,

@@ -18,15 +18,12 @@
 ################################################################################
 
 # Python Standard Modules
-import logging
-import os
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def create(readset, output, fastqc=False):
-    if fastqc == True:
+    if fastqc is True:
         if readset.run_type =="PAIRED_END" and readset.adapter2:  # Paired end reads
             return Job(
                 command="""\

@@ -20,7 +20,6 @@
 # Python Standard Modules
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def ballgown( 
@@ -46,4 +45,3 @@ Rscript $R_TOOLS/ballgown.R \\
             output_dir=output_dir,
         )
     )
-

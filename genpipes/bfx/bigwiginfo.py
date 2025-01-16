@@ -17,10 +17,6 @@
 # along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Python Standard Modules
-import os
-import re
-
 from ..core.job import Job
 
 def bigWigToBedGraph(input_bigWigFile, output_bedgraph):

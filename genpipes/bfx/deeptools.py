@@ -32,12 +32,11 @@ def bamcoverage(input_bam, output_file, strand=None):
     return Job(
         input_files=[input_bam],
         output_files=[output_file],
-        module_entries=[['default', 'module_deeptools'] 
+        module_entries=[['default', 'module_deeptools']
         ],
-        # need to add option for clusters, 
-        # each other_option individually & 
-        # no need to have forward and reverse commands, all in one, dependent on the ini. 
-        # 
+        # need to add option for clusters,
+        # each other_option individually &
+        # no need to have forward and reverse commands, all in one, dependent on the ini.
         command="""\
 bamCoverage --verbose \\
     --outFileFormat bigwig \\
@@ -48,9 +47,9 @@ bamCoverage --verbose \\
     --outFileName {output_file} {strand}""".format(
             output_file=output_file,
             input_bam=input_bam,
-            cpu=global_conf.global_get('wiggle', 'cluster_cpu', required=True), 
+            cpu=global_conf.global_get('wiggle', 'cluster_cpu', required=True),
             bs=global_conf.global_get('wiggle', 'bin_size', required=True),
             nu=global_conf.global_get('wiggle', 'norm_using', required=True),
-            strand="--filterRNAstrand " + strand if strand else "", 
+            strand="--filterRNAstrand " + strand if strand else "",
         )
   )

@@ -22,7 +22,6 @@ import logging
 import os
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 log = logging.getLogger(__name__)

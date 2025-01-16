@@ -29,7 +29,7 @@ def align(input1, input2, output_directory, outputs):
 
     inputs = []
     inputs.append(input1)
-    if input2: 
+    if input2:
         inputs.append(input2)
 
     return Job(

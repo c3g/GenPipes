@@ -19,7 +19,7 @@
 
 # Python Standard Modules
 import os
-import logging 
+import logging
 
 # GenPipes Modules
 from ..core.config import global_conf
@@ -129,7 +129,7 @@ def align(
     ## Check strandness if cufflinks will be run afterwards
     if cuff_follow:
         if stranded.lower() == "stranded":
-           cuff_cmd = ""
+            cuff_cmd = ""
         elif stranded.lower() == "unstranded":
             cuff_cmd = "--outSAMstrandField intronMotif"
         else:
@@ -138,7 +138,7 @@ def align(
         cuff_cmd = ""
 
     if two_pass:
-        two_pass_cmd = "  --sjdbFileChrStartEnd" + " ".join(" " + sjdbFile for sjdbFile in allsjdbFiles),
+        two_pass_cmd = "  --sjdbFileChrStartEnd" + " ".join(" " + sjdbFile for sjdbFile in allsjdbFiles)
     else:
         two_pass_cmd = ""
 
