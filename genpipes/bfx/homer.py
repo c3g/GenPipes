@@ -23,6 +23,7 @@ import re
 
 # MUGQIC Modules
 from ..core.config import global_conf
+from ..core.job import Job
 
 ##### General Homer:
 def archive_contigs(
