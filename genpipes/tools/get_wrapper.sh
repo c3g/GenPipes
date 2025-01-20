@@ -1,6 +1,6 @@
 #!/bin/bash
-# Get Genpipes In A Container image
-GIAC_VERSION=v2.1.0
+# Get Genpipes In A Container image. Cf. https://github.com/c3g/genpipes_in_a_container
+GIAC_VERSION=v3.0.4
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 CONTAINER_DIR=$SCRIPT_DIR/../../resources/container
 mkdir "$CONTAINER_DIR"
@@ -21,5 +21,3 @@ if test -f "${CONTAINER_DIR}/etc/wrapper.conf"; then
 else
    mv -i "${CONTAINER_DIR}/etc/wrapper.conf.tpl" "${CONTAINER_DIR}/etc/wrapper.conf"
 fi
-
-

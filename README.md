@@ -9,7 +9,34 @@ GenPipes consists of Python scripts which create a list of jobs running Bash com
 
 On this page:
 
-[TOC]
+* [Software requirement](#software-requirement)
+* [Quick setup for Abacus, Beluga, Narval, Graham and Cedar users](#quick-setup-for-abacus-beluga-narval-graham-and-cedar-users)
+* [Download and setup for external users](#download-and-setup-for-external-users)
+    * [Download](#download)
+    * [Installation](#installation)
+    * [GenPipes in a Container](#genpipes-in-a-container)
+    * [Setup](#setup)
+        * [Genomes](#genomes)
+            * [Install a new Genome](#install-a-new-genome)
+        * [Modules](#modules)
+            * [Install a new Module](#install-a-new-module)
+    * [Have autocompletion for GenPipes](#have-autocompletion-for-genpipes)
+        * [Source the provided file](#source-the-provided-file)
+        * [Generate autocomplete file yourself](#generate-autocomplete-file-yourself)
+* [Usage](#usage)
+* [Readset File](#readset-file)
+    * [DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Methyl-Seq, CoV-Seq](#dna-seq-rna-seq-rna-seq-de-novo-assembly-amplicon-seq-methyl-seq-cov-seq)
+    * [ChIP-Seq](#chip-seq)
+    * [Nanopore, Nanopore CoV-Seq](#nanopore-nanopore-cov-seq)
+    * [For abacus users with Nanuq readsets](#for-abacus-users-with-nanuq-readsets)
+* [Configuration Files](#configuration-files)
+* [Design File](#design-file)
+    * [RNA-Seq and RNA-Seq De Novo Assembly](#rna-seq-and-rna-seq-de-novo-assembly)
+    * [Chip-Seq](#chip-seq)
+* [Batch File](#batch-file)
+* [HTML Analysis Report](#html-analysis-report)
+* [PBS/Slurm Job Logs](#pbsslurm-job-logs)
+* [Contact](#contact)
 
 
 Software requirement
@@ -25,11 +52,8 @@ To access them, add the following lines to your *$HOME/.bash_profile*:
 
 ```bash
 umask 0006
-
-## MUGQIC genomes and modules
-
+# MUGQIC genomes and modules
 export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/root
-
 module use $MUGQIC_INSTALL_HOME/modulefiles
 ```
 
@@ -37,34 +61,21 @@ For MUGQIC analysts, add the following lines to your *$HOME/.bash_profile*:
 
 ```bash
 umask 0006
-
-## MUGQIC genomes and modules for MUGQIC analysts
-
+# MUGQIC genomes and modules for MUGQIC analysts
 HOST=`hostname`;
-
 DNSDOMAIN=`dnsdomainname`;
-
 export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/root
-
 if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
-
   export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
-
 elif [[ $HOST == ip* || $DNSDOMAIN == m  ]]; then
-
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
-
 elif [[ $HOST == cedar* || $DNSDOMAIN == cedar.computecanada.ca ]]; then
-
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
-
-
 elif [[ $HOST == beluga* || $DNSDOMAIN == beluga.computecanada.ca ]]; then
-
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
-
+elif [[ $HOST == narval* || $DNSDOMAIN == narval.computecanada.ca ]]; then
+  export MUGQIC_INSTALL_HOME_DEV=/project/rrg-bourqueg-ad/C3G/analyste_dev
 fi
-
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
 export RAP_ID=<my-rap-id>
 ```    
@@ -81,9 +92,7 @@ module load mugqic/genpipes/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
 
-
-### For Compute Canada users
-Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *$HOME/.bash_profile*:
+For Alliance users you have to set your `RAP_ID` (Resource Allocation Project ID from Alliance) in your *$HOME/.bash_profile*:
 ```bash
 export RAP_ID=<my-rap-id>
 ```
@@ -95,37 +104,50 @@ Download and setup for external users
 
 ### Download
 
-Visit our [Download page](https://bitbucket.org/mugqic/genpipes/downloads) to get the latest stable release.
+Visit our [Download page](https://github.com/c3g/GenPipes/releases) to get the latest stable release.
 
 If you want to use the most recent development version:
 ```bash
-git clone git@bitbucket.org:mugqic/genpipes.git
+git clone https://github.com/c3g/GenPipes.git
 ```
 
 ### Installation
 
-GenPipes can be installed via pip:
+Optional, you can first create and use a virtual environment:
+```bash
+# For Alliance users you can load our python module by running the following. For others make sure you have python 3.11.1 or later installed
+module load mugqic/python
+
+# Create a virtual environment
+python3 -m venv .genpipes_venv
+# Activate the virtual environment
+source .genpipes_venv/bin/activate
 ```
+
+GenPipes can be installed via pip from PyPi repo:
+```bash
 pip install c3g-genpipes
 ```
-or to install a development version downloaded from bitbucket:
-```
-module load mugqic/python/3.11.1
-cd <bitbucket-repo>
+Or from a GitHub clone:
+```bash
+cd genpipes
 pip install .
 ```
 
-The installation location may have to be added to your PATH, if it is not already on PATH. (See Setup)
+The installation location may have to be added to your PATH, if it is not already on PATH. (See [Setup](#setup)).
+
 
 ### GenPipes in a Container:
 
-You can use one the following to run the container: 'singularity', 'apptainer', 'docker' or 'podman'. You can get more information to run Genpipes in a Container [here](https://github.com/c3g/genpipes_in_a_container).
+You can use one the following software to run the container: 'singularity', 'apptainer', 'docker' or 'podman'. You can get more information to run Genpipes in a Container [here](https://github.com/c3g/genpipes_in_a_container).
 
-Once the GenPipes repo has been cloned, run the following command to install the container.
+Once the GenPipes repo has been cloned and GenPipes has been installed, run the following command to download the container image.
 
 ```bash
 genpipes tools get_wrapper
 ```
+
+To change the config of the container you can edit the file `$MUGQIC_PIPELINES_HOME/resources/container/etc/wrapper.conf`. For instance the container can be changed via the argument `GEN_CONTAINERTYPE` and the GenPipes version to be used can be changed via the argument `PIPELINE_VERSION` (if other than latest).
 
 You can access inside the Genpipes container by typing:
 
@@ -153,9 +175,7 @@ GenPipes (formerly called MUGQIC Pipelines) requires genomes and modules resourc
 First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install those resources, in your *$HOME/.bash_profile*:
 ```bash
 # MUGQIC genomes and modules
-
 export MUGQIC_INSTALL_HOME=/path/to/your/local/mugqic_resources
-
 module use $MUGQIC_INSTALL_HOME/modulefiles
 ```
 
@@ -225,50 +245,46 @@ Example for Chimpanzee:
 * Retrieve the species scientific name on [Ensembl](http://useast.ensembl.org/Pan_troglodytes/Info/Index?redirect=no) or [UCSC](http://genome.ucsc.edu/cgi-bin/hgGateway): "*Pan troglodytes*"
 
 * Retrieve the assembly name:
-    - Ensembl: "*CHIMP2.1.4*"
-    - UCSC: "*panTro4*"
+    * Ensembl: "*CHIMP2.1.4*"
+    * UCSC: "*panTro4*"
 
 * Retrieve the source version:
-    - Ensembl: "78"
-    - UCSC: unfortunately, UCSC does not have version numbers. Use [panTro4.2bit](http://hgdownload.soe.ucsc.edu/goldenPath/panTro4/bigZips/) date formatted as "YYYY-MM-DD": "2012-01-09"
+    * Ensembl: "78"
+    * UCSC: unfortunately, UCSC does not have version numbers. Use [panTro4.2bit](http://hgdownload.soe.ucsc.edu/goldenPath/panTro4/bigZips/) date formatted as "YYYY-MM-DD": "2012-01-09"
 
 * Run
 ```bash
 cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh
 ```
 e.g.:
-
-    - Ensembl:
+* Ensembl:
 ```bash
 cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.CHIMP2.1.4.sh
 ```
-
-    - UCSC:
+* UCSC:
 ```bash
 cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.panTro4.sh
 ```
 
-* Modify `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` (`ASSEMBLY_SYNONYMS` can be left empty but if you know that 2 assemblies
-are identical apart from `chr` sequence prefixes, document it):
-
-    - Ensembl:
-```bash
-SPECIES=Pan_troglodytes   # With "_"; no space!
-COMMON_NAME=Chimpanzee
-ASSEMBLY=CHIMP2.1.4
-ASSEMBLY_SYNONYMS=panTro4
-SOURCE=Ensembl
-VERSION=78
-```
-    - UCSC:
-```bash
-SPECIES=Pan_troglodytes   # With "_"; no space!
-COMMON_NAME=Chimpanzee
-ASSEMBLY=panTro4
-ASSEMBLY_SYNONYMS=CHIMP2.1.4
-SOURCE=UCSC
-VERSION=2012-01-09
-```
+* Modify `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` (`ASSEMBLY_SYNONYMS` can be left empty but if you know that 2 assemblies are identical apart from `chr` sequence prefixes, document it):
+    * Ensembl:
+    ```bash
+    SPECIES=Pan_troglodytes   # With "_"; no space!
+    COMMON_NAME=Chimpanzee
+    ASSEMBLY=CHIMP2.1.4
+    ASSEMBLY_SYNONYMS=panTro4
+    SOURCE=Ensembl
+    VERSION=78
+    ```
+    * UCSC:
+    ```bash
+    SPECIES=Pan_troglodytes   # With "_"; no space!
+    COMMON_NAME=Chimpanzee
+    ASSEMBLY=panTro4
+    ASSEMBLY_SYNONYMS=CHIMP2.1.4
+    SOURCE=UCSC
+    VERSION=2012-01-09
+    ```
 
 * Running `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` will install the genome in `$MUGQIC_INSTALL_HOME_DEV` (by default). This will download and install genomes, indexes and, for Ensembl only, annotations (GTF, VCF, etc.).
 If the genome is big, separate batch jobs will be submitted to the cluster for bwa, bowtie/tophat, star indexing.
@@ -352,16 +368,16 @@ For documentation on how to use each of the pipelines, visit:
 
 For more information about and source code for a specific pipeline, visit:
 
-### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/dnaseq/)
-### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq/)
-### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq_denovo_assembly/)
-### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq_light/)
-### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/chipseq/)
-### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/ampliconseq/)
-### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/methylseq/)
-### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/nanopore/)
-### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/covseq/)
-### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/nanopore_covseq/)
+### [DNA-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/dnaseq)
+### [RNA-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/rnaseq)
+### [RNA-Seq De Novo Assembly Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/rnaseq_denovo_assembly)
+### [RNA-Seq Light Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/rnaseq_light)
+### [ChIP-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/chipseq)
+### [Amplicon-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/ampliconseq)
+### [Methyl-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/methylseq)
+### [Nanopore Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/nanopore)
+### [CoV-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/covseq)
+### [Nanopore CoV-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/nanopore_covseq)
 
 Readset File
 ------------
@@ -570,10 +586,10 @@ When pipelines are run in PBS (Portable Batch System) or SLURM job scheduler mod
 my_output_dir/job_output/
 ├── RnaSeqDeNovoAssembly_job_list_2014-09-30T19.52.29
 ├── trimmomatic
-│   ├── trimmomatic.readset1_2014-09-30T19.52.29.o
-│   └── trimmomatic.readset2_2014-09-30T19.52.29.o
+│   ├── trimmomatic.readset1_2014-09-30T19.52.29.o
+│   └── trimmomatic.readset2_2014-09-30T19.52.29.o
 ├── trinity
-│   └── trinity_2014-10-01T14.17.02.o
+│   └── trinity_2014-10-01T14.17.02.o
 └── trinotate
     └── trinotate_2014-10-22T14.05.58.o
 ```
