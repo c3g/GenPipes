@@ -1,6 +1,32 @@
 #!/bin/bash
+
+THIS_SCRIPT=$(basename "$0")
+# Default GenPipes in a Container version to be used.
+GIAC_VERSION=v3.0.3
+
+usage() {
+  echo "script usage: $THIS_SCRIPT -h [-v GiaC_version]"
+  echo "Usage:"
+  echo " -h                               Display this help message."
+  echo " -v <GiaC_version>                GenPipes in a Container released version to be used."
+  exit 1
+  }
+
+while getopts 'h:v:' OPTION; do
+  case "$OPTION" in
+  v)
+    GIAC_VERSION="$OPTARG"
+    ;;
+  h)
+    usage
+    ;;
+  ?)
+    usage
+    ;;
+  esac
+done
+
 # Get Genpipes In A Container image. Cf. https://github.com/c3g/genpipes_in_a_container
-GIAC_VERSION=v3.0.4
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 CONTAINER_DIR=$SCRIPT_DIR/../../resources/container
 mkdir "$CONTAINER_DIR"

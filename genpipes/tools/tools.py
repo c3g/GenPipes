@@ -151,7 +151,7 @@ def run_submit_genpipes(args):
     cmd += [args.chunk_folder]
     subprocess.run(cmd, check=False)
 
-def run_get_wrapper():
+def run_get_wrapper(_):
     """
     Run the get_wrapper.sh script.
     """
