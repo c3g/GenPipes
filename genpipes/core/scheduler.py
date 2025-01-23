@@ -475,8 +475,8 @@ chmod 755 $SCIENTIFIC_FILE
                         memory = f"#PBS {memory}"
                     else:
                         memory = ""
-                    # Prologue and epilogue scripts have to be updated by IT for Abacus because having them anywhere else than HOME fails
-                    # /!\ Make sure anytime prologue and epilogue scripts are updated IT is informed so they update the scripts on Abacus/!\
+                    # Epilogue script have to be updated by IT for Abacus because having it anywhere else than HOME fails
+                    # /!\ Make sure anytime epilogue script is updated, IT is informed so they update the script on Abacus/!\
                     cmd = f"""\
 # Create the submission file
 echo "#!/bin/bash
