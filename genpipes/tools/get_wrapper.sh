@@ -2,7 +2,7 @@
 
 THIS_SCRIPT=$(basename "$0")
 # Default GenPipes in a Container version to be used.
-GIAC_VERSION=v3.0.3
+GIAC_VERSION=v4.0.0
 
 usage() {
   echo "script usage: $THIS_SCRIPT -h [-v GiaC_version]"

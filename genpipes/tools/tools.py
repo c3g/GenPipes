@@ -83,6 +83,7 @@ def add_subcommands(parser):
 
     # Create the parser for the "get_wrapper" subcommand
     parser_get_wrapper = tools_subparsers.add_parser('get_wrapper', help='Get Genpipes In A Container image.')
+    parser_get_wrapper.add_argument('--version', '-v', help="Version of the container to get. Default: 4.0.0")
     parser_get_wrapper.set_defaults(func=run_get_wrapper)
 
 def run_chunk_genpipes(args):
@@ -151,10 +152,12 @@ def run_submit_genpipes(args):
     cmd += [args.chunk_folder]
     subprocess.run(cmd, check=False)
 
-def run_get_wrapper(_):
+def run_get_wrapper(args):
     """
     Run the get_wrapper.sh script.
     """
     get_wrapper = os.path.join(os.path.dirname(__file__), 'get_wrapper.sh')
     cmd = [get_wrapper]
+    if args.version:
+        cmd += ['-v', args.version]
     subprocess.run(cmd, check=False)
