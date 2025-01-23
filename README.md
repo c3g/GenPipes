@@ -128,7 +128,7 @@ GenPipes can be installed via pip from PyPi repo:
 ```bash
 pip install c3g-genpipes
 ```
-Or from a GitHub clone:
+Or from a GitHub clone, after downloading the repository as mentionned above:
 ```bash
 cd genpipes
 pip install .
@@ -139,22 +139,24 @@ The installation location may have to be added to your PATH, if it is not alread
 
 ### GenPipes in a Container:
 
-You can use one the following software to run the container: 'singularity', 'apptainer', 'docker' or 'podman'. You can get more information to run Genpipes in a Container [here](https://github.com/c3g/genpipes_in_a_container).
+You can use one of the following software to run the container: 'singularity', 'apptainer', 'docker' or 'podman'. You can get more information to run Genpipes in a Container [here](https://github.com/c3g/genpipes_in_a_container).
 
-Once the GenPipes repo has been cloned and GenPipes has been installed, run the following command to download the container image.
+Once the GenPipes repo has been cloned and GenPipes has been installed, run the following command to download the container image and the settings file.
 
 ```bash
 genpipes tools get_wrapper
 ```
 
-To change the config of the container you can edit the file `$MUGQIC_PIPELINES_HOME/resources/container/etc/wrapper.conf`. For instance the container can be changed via the argument `GEN_CONTAINERTYPE` and the GenPipes version to be used can be changed via the argument `PIPELINE_VERSION` (if other than latest).
+Then run the usual GenPipes command but add the argument `--wrap` in order to have the genpipes being run inside the container (for sanity check to have access to all modules required). The GenPipes file will also use the container for each of his jobs when submitted to the scheduler.
 
-You can access inside the Genpipes container by typing:
+To edit the config you have to edit the file `$MUGQIC_PIPELINES_HOME/resources/container/etc/wrapper.conf`, see [here](https://github.com/c3g/genpipes_in_a_container?tab=readme-ov-file#setup-a-giac-environment) for more details. For instance the container can be changed via the argument `GEN_CONTAINERTYPE` and the GenPipes version to be used can be changed via the argument `PIPELINE_VERSION` (if other than latest, for more details see [here](https://github.com/c3g/genpipes_in_a_container?tab=readme-ov-file#genpipes-4-in-a-container)). You can also test a local version of GenPipes by using the option `PIPELINE_DIR`, for more details see [here](https://github.com/c3g/genpipes_in_a_container?tab=readme-ov-file#using-a-local-genpipes-version).
+
+You can access inside the Genpipes container by running:
 
 ```bash
 $MUGQIC_PIPELINES_HOME/resources/container/bin/container_wrapper.sh
-
 ```
+Once inside you have access to all our modules from cvmfs and the latest version of GenPipes being loaded by default.
 
 ### Setup
 
