@@ -136,6 +136,8 @@ pip install .
 
 The installation location may have to be added to your PATH, if it is not already on PATH. (See [Setup](#setup)).
 
+> [!NOTE]  
+> If you are using GenPipes in a PBS cluster not being Abacus, you have to ask your IT to add a config for epilogue of jobs. GenPipes uses `#PBS -T GenPipes` to generate epilogue of jobs using [this script](https://github.com/c3g/GenPipes/tree/6.0.0/genpipes/core/epilogue.py) and so your IT have to add it to the scheduler config accordingly.
 
 ### GenPipes in a Container:
 
