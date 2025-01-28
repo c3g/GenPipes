@@ -4003,202 +4003,202 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 if coverage_bed:
                     bed = coverage_bed
 
-            ref_cnn = os.path.join(cnvkit_dir, f"{sample_name}.reference.cnn")
-            metrics_folder = os.path.join(self.output_dirs['sv_variants_directory'], "cnvkit_reference")
-            pool_ref = os.path.join(self.output_dir, metrics_folder, "pooledReference.cnn")
+                ref_cnn = os.path.join(cnvkit_dir, f"{sample_name}.reference.cnn")
+                metrics_folder = os.path.join(self.output_dirs['sv_variants_directory'], "cnvkit_reference")
+                pool_ref = os.path.join(self.output_dir, metrics_folder, "pooledReference.cnn")
 
-            if os.path.isfile(pool_ref):
-                pool_ref_cnn = pool_ref
-                ref_cnn = None
+                if os.path.isfile(pool_ref):
+                    pool_ref_cnn = pool_ref
+                    ref_cnn = None
 
-            else:
-                pool_ref_cnn = None
+                else:
+                    pool_ref_cnn = None
 
-            vcf_gz = os.path.join(pair_directory, f"{sample_name}.cnvkit.vcf.gz")
+                vcf_gz = os.path.join(pair_directory, f"{sample_name}.cnvkit.vcf.gz")
 
-            jobs.append(
-                pipe_jobs(
-                    [
-                        bcftools.view(
-                            input_vcf,
-                            None,
-                            filter_options="-f PASS -i '%QUAL>=50' -m2 -M2 -v snps"
-                        ),
-                        bash.sed(
-                            None,
-                            None,
-                            r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
-                        ),
-                        htslib.bgzip_tabix(
-                            None,
-                            flt_vcf
-                        )
-                    ],
-                    name=f"cnvkit_batch.vcf_flt.{sample_name}",
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                )
-            )
-
-            call_cns = os.path.join(cnvkit_dir, f"{sample_name}.call.cns")
-
-            input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample_name}.cnvkit.vcf.gz")
-            header = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.header")
-            output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.body.tsv")
-            output_cna = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.cna.tsv")
-            output_check = f"{output_cna}.pass"
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            cnvkit_dir,
-                            remove=True
-                        ),
-                        cnvkit.batch(
-                            input_tumor,
-                            input_normal,
-                            cnvkit_dir,
-                            tar_dep=tarcov_cnn,
-                            antitar_dep=antitarcov_cnn,
-                            target_bed=bed,
-                            reference=pool_ref_cnn,
-                            output_cnn=ref_cnn
-                        )
-                    ],
-                    name=f"cnvkit_batch.{sample_name}",
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                )
-            )
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            cnvkit_dir,
-                            remove=False
-                        ),
-                        cnvkit.fix(
-                            tarcov_cnn,
-                            antitarcov_cnn,
-                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
-                            reference=pool_ref_cnn,
-                            ref_cnn=ref_cnn
-                        ),
-                        cnvkit.segment(
-                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
-                            os.path.join(cnvkit_dir, f"{sample_name}.cns"),
-                            vcf=flt_vcf,
-                            sample_id=sample_id,
-                            normal_id=normal_id
-                        ),
-                        cnvkit.segmetrics(
-                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
-                            os.path.join(cnvkit_dir, f"{sample_name}.cns"),
-                            os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
-                        )
-                    ],
-                    name=f"cnvkit_batch.correction.{sample_name}",
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    removable_files=[cnvkit_dir]
-                )
-            )
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            cnvkit_dir,
-                            remove=True
-                        ),
-                        cnvkit.call(
-                            os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
-                            call_cns
-                        ),
-                        pipe_jobs(
-                            [
-                                cnvkit.export(
-                                    os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
-                                    None,
-                                    sample_id=sample_id
-                                ),
-                                htslib.bgzip_tabix(
-                                    None,
-                                    vcf_gz
-                                )
-                            ]
-                        ),
-                    ],
-                    name=f"cnvkit_batch.call.{sample_name}",
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                )
-            )
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        pcgr.create_header(
-                            header,
-                        ),
-                        bcftools.query(
-                            input_cna,
-                            output_cna_body,
-                            query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
-                        ),
-                        pcgr.create_input_cna(
-                            output_cna_body,
-                            header,
-                            call_cns,
-                            output_cna
-                        ),
-                        cnvkit.file_check(
-                            output_cna,
-                            output_check
+                jobs.append(
+                    pipe_jobs(
+                        [
+                            bcftools.view(
+                                input_vcf,
+                                None,
+                                filter_options="-f PASS -i '%QUAL>=50' -m2 -M2 -v snps"
+                            ),
+                            bash.sed(
+                                None,
+                                None,
+                                r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
+                                flt_vcf
                             )
-                    ],
-                    name=f"cnvkit_batch.cna.{sample_name}",
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency=[input_cna, output_cna],
-                    output_dependency=[header, output_cna_body, output_cna],
-                    removable_files=[header, output_cna_body]
+                        ],
+                        name=f"cnvkit_batch.vcf_flt.{sample_name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    )
                 )
-            )
 
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            cnvkit_dir,
-                            remove=True
-                        ),
-                        cnvkit.metrics(
-                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
-                            os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
-                            os.path.join(metrics_folder, f"{sample_name}.metrics.tsv")
-                        ),
-                        cnvkit.scatter(
-                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
-                            os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
-                            os.path.join(cnvkit_dir, f"{sample_name}.scatter.pdf"),
-                            vcf=flt_vcf,
-                            normal=normal_id,
-                            tumor=sample_id
-                        ),
-                        cnvkit.diagram(
-                            os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
-                            os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
-                            os.path.join(cnvkit_dir, f"{sample_name}.diagram.pdf")
-                        )
-                    ],
-                    name=f"cnvkit_batch.metrics.{sample_name}",
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                call_cns = os.path.join(cnvkit_dir, f"{sample_name}.call.cns")
+
+                input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample_name}.cnvkit.vcf.gz")
+                header = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.header")
+                output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.body.tsv")
+                output_cna = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.cna.tsv")
+                output_check = f"{output_cna}.pass"
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                cnvkit_dir,
+                                remove=True
+                            ),
+                            cnvkit.batch(
+                                input_tumor,
+                                input_normal,
+                                cnvkit_dir,
+                                tar_dep=tarcov_cnn,
+                                antitar_dep=antitarcov_cnn,
+                                target_bed=bed,
+                                reference=pool_ref_cnn,
+                                output_cnn=ref_cnn
+                            )
+                        ],
+                        name=f"cnvkit_batch.{sample_name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    )
                 )
-            )
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                cnvkit_dir,
+                                remove=False
+                            ),
+                            cnvkit.fix(
+                                tarcov_cnn,
+                                antitarcov_cnn,
+                                os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                                reference=pool_ref_cnn,
+                                ref_cnn=ref_cnn
+                            ),
+                            cnvkit.segment(
+                                os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample_name}.cns"),
+                                vcf=flt_vcf,
+                                sample_id=sample_id,
+                                normal_id=normal_id
+                            ),
+                            cnvkit.segmetrics(
+                                os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample_name}.cns"),
+                                os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
+                            )
+                        ],
+                        name=f"cnvkit_batch.correction.{sample_name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        removable_files=[cnvkit_dir]
+                    )
+                )
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                cnvkit_dir,
+                                remove=True
+                            ),
+                            cnvkit.call(
+                                os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
+                                call_cns
+                            ),
+                            pipe_jobs(
+                                [
+                                    cnvkit.export(
+                                        os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
+                                        None,
+                                        sample_id=sample_id
+                                    ),
+                                    htslib.bgzip_tabix(
+                                        None,
+                                        vcf_gz
+                                    )
+                                ]
+                            ),
+                        ],
+                        name=f"cnvkit_batch.call.{sample_name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    )
+                )
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            pcgr.create_header(
+                                header,
+                            ),
+                            bcftools.query(
+                                input_cna,
+                                output_cna_body,
+                                query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                            ),
+                            pcgr.create_input_cna(
+                                output_cna_body,
+                                header,
+                                call_cns,
+                                output_cna
+                            ),
+                            cnvkit.file_check(
+                                output_cna,
+                                output_check
+                                )
+                        ],
+                        name=f"cnvkit_batch.cna.{sample_name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        input_dependency=[input_cna, output_cna],
+                        output_dependency=[header, output_cna_body, output_cna],
+                        removable_files=[header, output_cna_body]
+                    )
+                )
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                cnvkit_dir,
+                                remove=True
+                            ),
+                            cnvkit.metrics(
+                                os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
+                                os.path.join(metrics_folder, f"{sample_name}.metrics.tsv")
+                            ),
+                            cnvkit.scatter(
+                                os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
+                                os.path.join(cnvkit_dir, f"{sample_name}.scatter.pdf"),
+                                vcf=flt_vcf,
+                                normal=normal_id,
+                                tumor=sample_id
+                            ),
+                            cnvkit.diagram(
+                                os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
+                                os.path.join(cnvkit_dir, f"{sample_name}.call.cns"),
+                                os.path.join(cnvkit_dir, f"{sample_name}.diagram.pdf")
+                            )
+                        ],
+                        name=f"cnvkit_batch.metrics.{sample_name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    )
+                )
 
         return jobs
 
