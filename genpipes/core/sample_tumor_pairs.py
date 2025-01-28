@@ -134,7 +134,7 @@ def parse_tumor_pair_file(tumor_pair_file, samples, profyle=False):
         if sample_name not in tumor_pairs:
             tumor_pairs[sample_name] = sample_tumor_pair
         else:
-            _raise(SanitycheckError(f"Sample Error: tumor pair name {sample_name} was already used. The pair name has to be unique!"))
+            _raise(SanitycheckError(f"Sample Error: tumor pair name {sample_name} was already used. The patient/pair name has to be unique!"))
 
     log.info(str(len(tumor_pairs)) + " tumor pair" + ("s" if len(tumor_pairs) > 1 else "") + " parsed")
     return tumor_pairs
