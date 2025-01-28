@@ -710,11 +710,7 @@ END
 
         inputs = {}
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             [inputs["Normal"]] = [
@@ -793,21 +789,31 @@ END
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'],
-                                                          tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = (
-                    os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-                )
 
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")
+            pileup_output = os.path.join(alignment_directory, f"{sample.name}.gatkPileup")
+            jobs.append(
+                concat_jobs(
+                    [
+                        conpair.pileup(
+                            input_bam,
+                            pileup_output
+                        )
+                    ],
+                    name=f"conpair_concordance_contamination.pileup.{sample.name}",
+                    samples=[sample],
+                    readsets=list(sample.readsets)
+                )
+            )
+
+        for tumor_pair in self.tumor_pairs.values():
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             metrics_directory = self.output_dirs['metrics_directory'][tumor_pair.name]
 
-            input_normal = os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")
-            input_tumor = os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")
             pileup_normal = os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.gatkPileup")
             pileup_tumor = os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.gatkPileup")
 
@@ -849,32 +855,6 @@ END
                         )
                     ])
 
-            jobs.append(
-                concat_jobs(
-                    [
-                        conpair.pileup(
-                            input_normal,
-                            pileup_normal
-                        )
-                    ],
-                    name=f"conpair_concordance_contamination.pileup.{tumor_pair.name}.{tumor_pair.normal.name}",
-                    samples=[tumor_pair.normal],
-                    readsets=list(tumor_pair.normal.readsets)
-                )
-            )
-            jobs.append(
-                concat_jobs(
-                    [
-                        conpair.pileup(
-                            input_tumor,
-                            pileup_tumor
-                        )
-                    ],
-                    name=f"conpair_concordance_contamination.pileup.{tumor_pair.name}.{tumor_pair.tumor.name}",
-                    samples=[tumor_pair.tumor],
-                    readsets=list(tumor_pair.tumor.readsets)
-                )
-            )
             jobs.append(
                 concat_jobs(
                     [
@@ -3959,11 +3939,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
 
         else:
             for tumor_pair in self.tumor_pairs.values():
-                if tumor_pair.multiple_normal == 1:
-                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-                else:
-                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
                 tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
                 [input_normal] = self.select_input_files(
@@ -4668,11 +4644,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
         jobs = []
         nb_jobs = global_conf.global_get('sequenza', 'nb_jobs', param_type='posint')
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
@@ -5124,11 +5096,7 @@ zgrep -v 'ID=AD_O' {output_preprocess} | awk 'BEGIN {{OFS=\"\\t\"; FS=\"\\t\"}} 
         reference = global_conf.global_get('manta_sv_calls', 'genome_fasta', param_type='filepath')
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
@@ -5254,11 +5222,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(manta_direc
         reference = global_conf.global_get('strelka2_paired_somatic', 'genome_fasta', param_type='filepath')
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
@@ -5427,11 +5391,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(somatic_dir
         reference = global_conf.global_get('strelka2_paired_germline', 'genome_fasta', param_type='filepath')
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
@@ -5659,11 +5619,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
@@ -5957,11 +5913,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
 
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             [input_normal] = self.select_input_files(
@@ -6476,11 +6428,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
             log.warning("Number of mutect jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
@@ -6883,11 +6831,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
         reference = global_conf.global_get('vardict_paired', 'genome_fasta', param_type='filepath')
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
@@ -7420,11 +7364,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
@@ -7536,11 +7476,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
@@ -7990,10 +7926,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
         """
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             [input_normal] = self.select_input_files(
