@@ -104,7 +104,7 @@ Parameters:
         cls._argparser.add_argument(
             "-t",
             "--type",
-            help="Type of pipeline (default chipseq)",
+            help="Type of pipeline (default bismark)",
             choices=["bismark", "gembs", "hybrid", "dragen"],
             default="bismark",
             dest='protocol'
