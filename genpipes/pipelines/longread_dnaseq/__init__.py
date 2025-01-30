@@ -29,14 +29,19 @@ from .. import common
 
 from ...bfx import (
     bash_cmd as bash,
+    bcftools,
     gatk4,
+    hificnv,
+    htslib,
     minimap2,
     pbmm2,
     pycoqc,
     sambamba,
     samtools,
+    sawfish,
     svim,
-    tools
+    tools,
+    trgt
     )
 
 log = logging.getLogger(__name__)
@@ -362,6 +367,96 @@ TBA: documentation for revio protocol.
 
         return jobs
     
+    def sawfish(self):
+        """
+        Call structural variants from mapped HiFi sequencing reads with Sawfish.
+        """
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            in_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+
+            sawfish_directory = os.path.join(self.output_dirs["sawfish_directory"], sample.name)
+            discover_directory = os.path.join(sawfish_directory, "discover")
+            call_directory = os.path.join(sawfish_directory, "call")
+
+            sawfish_output = os.path.join(call_directory, "genotyped.sv.vcf.gz")
+            sawfish_output_filtered = os.path.join(sawfish_directory, f"{sample.name}.sawfish.flt.vcf.gz")
+            
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(sawfish_directory),
+                        sawfish.discover(
+                            in_bam,
+                            discover_directory
+                        ),
+                        sawfish.joint_call(
+                            discover_directory,
+                            call_directory
+                        ),
+                        bcftools.view(
+                            sawfish_output,
+                            sawfish_output_filtered,
+                            "-f PASS -Oz"
+                        ),
+                        htslib.tabix(
+                            sawfish_output_filtered,
+                            "-pvcf"
+                        )
+                    ],
+                    name=f"sawfish.{sample.name}",
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
+                )
+            )
+
+        return jobs
+    
+    def hificnv(self):
+        """
+        Call copy number variation and visualise results with HiFiCNV
+        """
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            deepvariant_directory = os.path.join(self.output_dirs["deepvariant_directory"], sample.name)
+            in_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
+            in_maf = os.path.join(deepvariant_directory, f"{sample.name}.deepvariant.flt.vcf.gz")
+
+            hificnv_directory = os.path.join(self.output_dirs["hificnv_directory"], sample.name)
+
+            hificnv_out = os.path.join(hificnv_directory, f"{sample.name}.vcf.gz")
+            hificnv_filtered = os.path.join(hificnv_directory, f"{sample.name}.filt.vcf.gz")
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(hificnv_directory),
+                        hificnv.run(
+                            in_bam,
+                            hificnv_directory,
+                            sample.name,
+                            in_maf
+                        ),
+                        bcftools.view(
+                            hificnv_out,
+                            hificnv_filtered,
+                            "-f PASS -Oz"
+                        ),
+                        htslib.tabix(
+                            hificnv_filtered,
+                            "-pvcf"
+                        )
+                    ],
+                    name=f"hificnv.{sample.name}"
+                )
+            )
+
+        return jobs
+    
     def trgt_genotyping(self):
         """
         Call tandem repeats for pathogenic and full repeats with TRGT.
@@ -374,6 +469,9 @@ TBA: documentation for revio protocol.
 
             trgt_directory = os.path.join(self.output_dirs["trgt_directory"], sample.name)
 
+            pathogenic_prefix = os.path.join(self.output_dirs["trgt_directory"], sample.name, f"{sample.name}.pathogenic_repeats")
+            full_prefix = os.path.join(self.output_dirs["trgt_directory"], sample.name, f"{sample.name}.full_repeats")
+
             pathogenic_repeats = global_conf.global_get("trgt_genotyping", 'pathogenic_repeats', required=True)
             full_repeats = global_conf.global_get("trgt_genotyping", 'full_repeat_catalog', required=True)
 
@@ -385,12 +483,67 @@ TBA: documentation for revio protocol.
                             in_bam,
                             pathogenic_repeats,
                             pathogenic_prefix
+                        ),
+                        bcftools.sort(
+                            f"{pathogenic_prefix}.vcf.gz",
+                            f"{pathogenic_prefix}.sorted.vcf.gz",
+                            "-Oz"
+                        ),
+                        bcftools.index(
+                            f"{pathogenic_prefix}.sorted.vcf.gz"
+                        ),
+                        samtools.sort(
+                            f"{pathogenic_prefix}.spanning.bam",
+                            f"{pathogenic_prefix}.spanning.sorted.bam"
+                        ),
+                        samtools.index(
+                            f"{pathogenic_prefix}.spanning.sorted.bam"
                         )
+                    ],
+                    name=f"trgt_genotyping.pathogenic.{sample.name}",
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)],
+                    removable_files=[
+                        f"{pathogenic_prefix}.vcf.gz",
+                        f"{pathogenic_prefix}.spanning.bam"
                     ]
                 )
             )
 
-
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(trgt_directory),
+                        trgt.genotype(
+                            in_bam,
+                            full_repeats,
+                            full_prefix
+                        ),
+                        bcftools.sort(
+                            f"{full_prefix}.vcf.gz",
+                            f"{full_prefix}.sorted.vcf.gz",
+                            "-Oz"
+                        ),
+                        bcftools.index(
+                            f"{full_prefix}.sorted.vcf.gz"
+                        ),
+                        samtools.sort(
+                            f"{full_prefix}.spanning.bam",
+                            f"{full_prefix}.spanning.sorted.bam"
+                        ),
+                        samtools.index(
+                            f"{full_prefix}.spanning.sorted.bam"
+                        )
+                    ],
+                    name=f"trgt_genotyping.full.{sample.name}",
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)],
+                    removable_files=[
+                        f"{full_prefix}.vcf.gz",
+                        f"{full_prefix}.spanning.bam"
+                    ]
+                )
+            )
 
         return jobs
 
