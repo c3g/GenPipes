@@ -28,6 +28,7 @@ from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import common
 
 from ...bfx import (
+    annotsv,
     bash_cmd as bash,
     bcftools,
     gatk4,
@@ -542,6 +543,77 @@ TBA: documentation for revio protocol.
                         f"{full_prefix}.vcf.gz",
                         f"{full_prefix}.spanning.bam"
                     ]
+                )
+            )
+
+        return jobs
+    
+    def annotSV(self):
+        """
+        Annotate and rank structural variants with AnnotSV.
+        """
+        jobs =[]
+
+        for sample in self.samples:
+            annotsv_directory = os.path.join(self.output_dirs["annotsv_directory"], sample.name)
+            hificnv_vcf = os.path.join(self.output_dirs["hificnv_directory"], sample.name, f"{sample.name}.filt.vcf.gz")
+            sawfish_vcf = os.path.join(self.output_dirs["sawfish_directory"], sample.name, f"{sample.name}.sawfish.flt.vcf.gz")
+            deepvariant_vcf = os.path.join(self.output_dirs["deepvariant_directory"], sample.name, f"{sample.name}.deepvariant.flt.vcf.gz")
+
+            hificnv_dir = os.path.join(annotsv_directory, sample.name, "hificnv")
+            sawfish_dir = os.path.join(annotsv_directory, sample.name, "sawfish")
+            hificnv_annot = os.path.join(hificnv_dir, f"{sample.name}.hificnv.annotsv.tsv")
+            sawfish_annot = os.path.join(sawfish_dir, f"{sample.name}.sawfish.annotsv.tsv")
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(hificnv_dir),
+                        annotsv.annotate(
+                            hificnv_vcf,
+                            hificnv_annot,
+                            deepvariant_vcf
+                        ),
+                        annotsv.html(
+                            hificnv_annot,
+                            hificnv_dir,
+                            f"{sample.name}.hificnv.annotsv"
+                        ),
+                        annotsv.excel(
+                            hificnv_annot,
+                            hificnv_dir,
+                            f"{sample.name}.hificnv.annotsv"
+                        )
+                    ],
+                    name=f"annotsv.hificnv.{sample.name}",
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
+                )
+            )
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(sawfish_dir),
+                        annotsv.annotate(
+                            sawfish_vcf,
+                            sawfish_annot,
+                            deepvariant_vcf
+                        ),
+                        annotsv.html(
+                            sawfish_annot,
+                            sawfish_dir,
+                            f"{sample.name}.sawfish.annotsv"
+                        ),
+                        annotsv.excel(
+                            sawfish_annot,
+                            sawfish_dir,
+                            f"{sample.name}.sawfish.annotsv"
+                        )
+                    ],
+                    name=f"annotsv.sawfish.{sample.name}",
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
                 )
             )
 
