@@ -44,7 +44,7 @@ def run(
     ]
 
     return Job(
-        [input_file],
+        [input_file, input_maf],
         outputs,
         [
             [ini_section, "module_hificnv"]
