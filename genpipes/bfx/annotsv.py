@@ -46,7 +46,7 @@ def annotate(
 AnnotSV {other_options} \\
   -SVinputFile {input_vcf} \\
   {input_sv_indel} \\
-  -annotationsDir \$ANNOTSV_ANNOTATIONS \\
+  -annotationsDir \$ANNOTSV/share/AnnotSV \\
   -genomeBuild {genome_build} \\
   {candidate_genes} \\
   -outputFile {output}""".format(
@@ -78,20 +78,19 @@ def html(
         [input_tsv],
         output,
         [
-            [ini_section, "module_annotsv"],
+            [ini_section, "module_knotAnnotSV"],
             [ini_section, "module_perl"]
         ],
         command="""\
-perl \$knotAnnotSV/knotAnnotSV.pl {html_options} \\
+perl \$KNOTANNOTSV_HOME/knotAnnotSV.pl {html_options} \\
   --configFile {config} \\
-  --datatableDir {datatable_dir} \\
+  --datatableDir \$KNOTANNOTSV_HOME/DataTables \\
   --annotSVfile {input_tsv} \\
   -genomeBuild {genome_build} \\
   --outDir {output_dir} \\
   --outPrefix {output_prefix}""".format(
-            other_options=global_conf.global_get(ini_section, 'html_options', required=False),
+            html_options=global_conf.global_get(ini_section, 'html_options', required=False),
             config=global_conf.global_get(ini_section, 'knotAnnotSV_config'),
-            datatable_dir=global_conf.global_get(ini_section, 'knotAnnotSV_datatables'),
             input_tsv=input_tsv,
             genome_build=global_conf.global_get(ini_section, 'assembly'),
             output_dir=output_dir,
@@ -106,7 +105,7 @@ def excel(
     ini_section='annotSV'
     ):
     """
-    Create html output from AnnotSV tsv.
+    Create excel output from AnnotSV tsv.
 
     :return: a job for AnnotSV html creation
     """
@@ -118,21 +117,20 @@ def excel(
         [input_tsv],
         output,
         [
-            [ini_section, "module_annotsv"],
+            [ini_section, "module_knotAnnotSV"],
             [ini_section, "module_perl"]
         ],
         command="""\
-perl \$knotAnnotSV/knotAnnotSV2XL.pl {html_options} \\
+perl \$KNOTANNOTSV_HOME/knotAnnotSV2XL.pl {excel_options} \\
   --configFile {config} \\
-  --datatableDir {datatable_dir} \\
+  --datatableDir \$KNOTANNOTSV_HOME/DataTables \\
   --annotSVfile {input_tsv} \\
   -genomeBuild {genome_build} \\
   --geneCountThreshold {genecount_threshold} \\
   --outDir {output_dir} \\
   --outPrefix {output_prefix}""".format(
-            other_options=global_conf.global_get(ini_section, 'html_options', required=False),
+            excel_options=global_conf.global_get(ini_section, 'excel_options', required=False),
             config=global_conf.global_get(ini_section, 'knotAnnotSV_config'),
-            datatable_dir=global_conf.global_get(ini_section, 'knotAnnotSV_datatables'),
             input_tsv=input_tsv,
             genome_build=global_conf.global_get(ini_section, 'assembly'),
             genecount_threshold=global_conf.global_get(ini_section, 'genecount_threshold'),
