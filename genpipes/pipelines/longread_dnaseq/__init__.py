@@ -26,6 +26,7 @@ import re
 from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import common
+from ...bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 
 from ...bfx import (
     annotsv,
@@ -34,7 +35,9 @@ from ...bfx import (
     gatk4,
     hificnv,
     htslib,
+    job2json_project_tracking,
     minimap2,
+    mosdepth,
     pbmm2,
     pycoqc,
     sambamba,
@@ -348,6 +351,138 @@ TBA: documentation for revio protocol.
 
         return jobs
 
+    def metrics_mosdepth(self):
+        """
+        Calculate depth stats with [Mosdepth](https://github.com/brentp/mosdepth)
+        Returns:
+            list: A list of mosdepth jobs.
+        """
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+
+            [input_file] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.fixmate.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.dup.cram")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")],
+                ]
+            )
+            metrics_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
+            output_prefix = os.path.join(metrics_directory, sample.name)
+            region = None
+            output_dist = f"{output_prefix}.mosdepth.global.dist.txt"
+            output_summary = f"{output_prefix}.mosdepth.summary.txt"
+
+            job_name = f"mosdepth.{sample.name}"
+
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                        mosdepth.parse_dedup_coverage_metrics_pt(f"{output_prefix}.mosdepth.summary.txt"),
+                        job2json_project_tracking.run(
+                            input_file=f"{output_prefix}.mosdepth.summary.txt",
+                            samples=sample.name,
+                            readsets=",".join([readset.name for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="dedup_coverage=$dedup_coverage"
+                        )
+                    ]
+                )
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(metrics_directory),
+                        mosdepth.run(
+                            input_file,
+                            output_prefix,
+                            True,
+                            region
+                        ),
+                        job_project_tracking_metrics
+                    ],
+                    name=job_name,
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)],
+                    output_dependency=[output_dist, output_summary],
+                    removable_files=[]
+                )
+            )
+            self.multiqc_inputs[sample.name].extend(
+                [
+                    os.path.join(metrics_directory, os.path.basename(output_dist)),
+                    os.path.join(metrics_directory, os.path.basename(output_summary))
+                ]
+            )
+
+        return jobs
+    
+    def deepvariant(self):
+        """
+        Germline variant calling with DeepVariant.
+        """
+        jobs = []
+
+        nb_jobs = global_conf.global_get('deepvariant', 'nb_jobs', param_type='posint')
+        sequence_dictionary = parse_sequence_dictionary_file(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=False)
+
+        for sample in self.samples:
+            if nb_jobs > 1:
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(sequence_dictionary, nb_jobs - 1)
+                # Create one separate job for each of the first sequences
+                for idx, sequences in enumerate(unique_sequences_per_job):
+                    job = concat_jobs(
+                        [
+                            bash.mkdir(
+                                split_dir,
+                                remove=True
+                            ),
+                            deepvariant.run(
+                                TBD,
+                                regions=sequences
+                            )
+                        ],
+                        name=f"deepvariant.{sample.name}.{str(idx)}",
+                        samples=[sample],
+                        readsets=list(sample.readsets)
+                    )
+                    jobs.append(job)
+
+                job = concat_jobs(
+                    [
+                        bash.mkdir(
+                            split_dir,
+                            remove=True
+                        ),
+                        deepvariant.run(
+                            TBD,
+                            regions=unique_sequences_per_job_others
+                        )
+                    ],
+                    name="deepvariant." + sample.name + ".others",
+                    samples=[sample],
+                    readsets=list(sample.readsets)
+                )
+                jobs.append(job)
+
+            else:
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(deepvariant_dir),
+                            deepvariant.run()
+                        ]
+                    )
+                )
+
+
+        return jobs
+
     def svim(self):
         """
         Use SVIM to perform SV calling on each sample.
@@ -635,7 +770,7 @@ TBA: documentation for revio protocol.
                 self.qc_nanoplot_fastq,
                 self.pbmm2_align,
                 self.picard_merge_sam_files,
-                self.mosdepth,
+                self.metrics_mosdepth,
                 self.deepvariant,
                 self.merge_filter_deepvariant,
                 self.hificnv,
