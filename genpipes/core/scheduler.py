@@ -597,7 +597,7 @@ module unload {module_python} {command_separator}
             self.container_line))
         self.print_header(pipeline)
         if pipeline.jobs:
-            self.genpipes_file.write("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`\n")
+            self.genpipes_file.write("\nSEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`\n")
         for step in pipeline.step_to_execute:
             if step.jobs:
                 self.print_step(step)
