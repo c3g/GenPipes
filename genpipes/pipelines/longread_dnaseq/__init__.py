@@ -290,7 +290,7 @@ TBA: documentation for revio protocol.
         Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
         This step takes as input files:
-        Aligned and sorted BAM output files from previous minimap2_align step
+        Aligned and sorted BAM output files from previous minimap2_align or pbmm2_align step
         """
         jobs = []
 
@@ -298,7 +298,7 @@ TBA: documentation for revio protocol.
 
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
-            # Find input readset BAMs first from previous minimap2_align job,
+            # Find input readset BAMs first from previous minimap2_align or pbmm2_align job,
             readset_bams = self.select_input_files([
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
             ])
@@ -634,16 +634,16 @@ TBA: documentation for revio protocol.
             [
                 self.qc_nanoplot_fastq,
                 self.pbmm2_align,
+                self.picard_merge_sam_files,
                 self.mosdepth,
                 self.deepvariant,
                 self.merge_filter_deepvariant,
-                self.hifi_cnv_filter,
-                self.cnv_annotate,
+                self.hificnv,
                 self.trgt_genotyping,
-                self.sawfish_filter,
+                self.sawfish,
+                self.annotSV,
                 self.hiphase,
-                self.cpsr,
-                self.sv_annotate
+                self.cpsr
             ]
         }
 
