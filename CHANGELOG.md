@@ -1,6 +1,28 @@
-      54 tags,    11016 commits
+      55 tags,    11030 commits
 
-HEAD        Mon Dec 9 15:44:29 2024 -0500               0 commits
+HEAD        Mon Feb 3 11:53:20 2025 -0500               0 commits
+
+5.1.0        Mon Feb 3 17:04:50 2025 +0000              14 commits
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>            13 commits
+
+       2ccd56ee9 Merged in release_5.1.0 (pull request #560)
+       9dae02c3d Version bump to 5.1.0
+       e29bde9ba Merged in dnaseq_multiple_normals (pull request #559)
+       855559e63 addressing Melissas report for batch mode
+       4e9038907 Merged in dnaseq_multiple_normals (pull request #558)
+       357dc9f3e Improve error message if tumor pair names are not unique
+       580484cc7 Add error if tumor pair names are not unique
+       1e33940e0 dnaseq : remove different alignment directory structure when multiple normals
+       9d9b3961f fix indentation in cnvkit_batch step loop
+       772f3a9a9 Merged tumor_dnaseq_merge into dev
+       ddb6125f2 Version bump to 5.0.4-beta
+       3e08fb928 Merged in release_5.0.3 (pull request #549)
+       6956fa6b5 Version bump to 5.0.3
+
+  mareike.janiak@computationalgenomics.ca <mareike.janiak@computationalgenomics.ca>             1 commits
+
+       32fb1fa0f updating README for release
 
 5.0.3        Mon Dec 9 20:48:52 2024 +0000              10 commits
 
