@@ -19,7 +19,7 @@ usage: genpipes covseq [-h] [--clean] -c CONFIG [CONFIG ...]
                        [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
                        [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
 
-Version: 5.0.3
+Version: 5.1.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
