@@ -54,7 +54,7 @@ AnnotSV {other_options} \\
             input_vcf=input_vcf,
             input_sv_indel="-snvIndelFiles " + input_sv_indel if input_sv_indel else "",
             genome_build=global_conf.global_get(ini_section, 'assembly'),
-            candidate_genes="-candidateGenesFile" + global_conf.global_get(ini_section, 'candidate_genes', required=False) if global_conf.global_get(ini_section, 'candidate_genes', required=False) else "",
+            candidate_genes="-candidateGenesFile " + global_conf.global_get(ini_section, 'candidate_genes', required=False) if global_conf.global_get(ini_section, 'candidate_genes', required=False) else "",
             output=output
         )
     )
