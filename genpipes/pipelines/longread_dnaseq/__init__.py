@@ -590,7 +590,69 @@ TBA: documentation for revio protocol.
                     )
 
         return jobs
+    
+    def merge_filter_deepvariant(self):
+        """
+        Merge deepvariant outputs, if applicable, and filter vcf.
+        """
+        jobs = []
 
+        nb_jobs = global_conf.global_get('deepvariant', 'nb_jobs', param_type='posint')
+
+        for sample in self.samples:
+            
+            deepvariant_dir = os.path.join(self.output_dirs["deepvariant_directory"], sample.name)
+            deepvariant_prefix = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant")
+            deepvariant_vcf = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.vcf.gz")
+            deepvariant_filtered = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.filt.vcf.gz")
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            job = concat_jobs(
+                [
+                    htslib.tabix(
+                        deepvariant_vcf,
+                        "-pvcf"
+                    ),
+                    bcftools.view(
+                        deepvariant_vcf,
+                        deepvariant_filtered,
+                        "-f PASS -Oz"
+                    ),
+                    htslib.tabix(
+                        deepvariant_filtered,
+                        "-pvcf"
+                    )
+                ]
+            )
+
+            if nb_jobs == 1 or coverage_bed:
+                job.name = f"merge_filter_deepvariant.{sample.name}"
+                job.samples = [sample]
+                job.readsets = [*list(sample.readsets)]
+                jobs.append(job)
+
+            else:
+                vcfs_to_merge = [f"{deepvariant_prefix}.{str(idx)}.vcf.gz" for idx in range(nb_jobs)]
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bcftools.concat(
+                                vcfs_to_merge,
+                                deepvariant_vcf,
+                                "-oZ"
+                            ),
+                            job
+                        ],
+                        name = f"merge_filter_deepvariant.{sample.name}",
+                        samples = [sample],
+                        readsets = [*list(sample.readsets)],
+                        removable_files=vcfs_to_merge
+                    )
+                )
+
+        return jobs
+    
     def svim(self):
         """
         Use SVIM to perform SV calling on each sample.
