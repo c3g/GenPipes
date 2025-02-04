@@ -32,6 +32,8 @@ from ...bfx import (
     annotsv,
     bash_cmd as bash,
     bcftools,
+    bvatools,
+    deepvariant,
     gatk4,
     hificnv,
     htslib,
@@ -422,6 +424,104 @@ TBA: documentation for revio protocol.
 
         return jobs
     
+    def set_deepvariant_regions(self):
+        """
+        Create an interval list with ScatterIntervalsByNs from GATK: [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360041416072-ScatterIntervalsByNs-Picard).
+        Used for creating a broken-up interval list that can be used for scattering a variant-calling pipeline in a way that will not cause problems at the edges of the intervals. 
+        By using large enough N blocks (so that the tools will not be able to anchor on both sides) we can be assured that the results of scattering and gathering 
+        the variants with the resulting interval list will be the same as calling with one large region.
+        Returns:
+            list: A list of set interval list jobs.
+        """
+        jobs = []
+
+        reference = global_conf.global_get('deepvariant', 'genome_fasta', param_type='filepath')
+        dictionary = global_conf.global_get('deepvariant', 'genome_dictionary', param_type='filepath')
+        scatter_jobs = global_conf.global_get('deepvariant', 'nb_jobs', param_type='posint')
+
+        for sample in self.samples:
+            interval_directory = os.path.join(self.output_dirs["deepvariant_directory"], sample.name, "regions")
+            output = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.interval_list'))
+            interval_list_acgt_noalt = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list'))
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            if coverage_bed:
+                region = coverage_bed
+                interval_list = os.path.join(interval_directory, os.path.basename(region).replace('.bed', '.interval_list'))
+                interval_list_noalt = os.path.join(interval_directory, os.path.basename(region).replace('.bed', '.noALT.interval_list'))
+
+                # TBD - we can probably use the bed directly
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(interval_directory),
+                            gatk4.bed2interval_list(
+                                dictionary,
+                                region,
+                                interval_list
+                            ),
+                            pipe_jobs(
+                                [
+                                    bash.grep(
+                                        interval_list,
+                                        None,
+                                        '-Ev "_GL|_K"'
+                                        ),
+                                    bash.grep(
+                                        None,
+                                        interval_list_noalt,
+                                        '-v "EBV"'
+                                    )
+                                ]
+                            ),
+                        ],
+                        name=f"gatk_scatterIntervalsByNs.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
+                    )
+                )
+            elif scatter_jobs == 1:
+                log.info("Number of jobs set to 1, skipping region creation for variant calling...")
+  
+            else:
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(interval_directory),
+                            gatk4.scatterIntervalsByNs(
+                                reference,
+                                output
+                            ),
+                            pipe_jobs(
+                                [
+                                    bash.grep(
+                                        output,
+                                        None,
+                                        '-Ev "_GL|_K"'
+                                    ),
+                                    bash.grep(
+                                        None,
+                                        interval_list_acgt_noalt,
+                                        '-v "EBV"'
+                                    )
+                                ]
+                            ),
+                            gatk4.splitInterval(
+                                interval_list_acgt_noalt,
+                                interval_directory,
+                                scatter_jobs
+                            )
+                        ],
+                        name=f"gatk_scatterIntervalsByNs.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
+                    )
+                )
+
+        return jobs
+
+
     def deepvariant(self):
         """
         Germline variant calling with DeepVariant.
@@ -429,57 +529,65 @@ TBA: documentation for revio protocol.
         jobs = []
 
         nb_jobs = global_conf.global_get('deepvariant', 'nb_jobs', param_type='posint')
-        sequence_dictionary = parse_sequence_dictionary_file(global_conf.global_get('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=False)
 
         for sample in self.samples:
-            if nb_jobs > 1:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(sequence_dictionary, nb_jobs - 1)
-                # Create one separate job for each of the first sequences
-                for idx, sequences in enumerate(unique_sequences_per_job):
-                    job = concat_jobs(
-                        [
-                            bash.mkdir(
-                                split_dir,
-                                remove=True
-                            ),
-                            deepvariant.run(
-                                TBD,
-                                regions=sequences
-                            )
-                        ],
-                        name=f"deepvariant.{sample.name}.{str(idx)}",
-                        samples=[sample],
-                        readsets=list(sample.readsets)
-                    )
-                    jobs.append(job)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            deepvariant_dir = os.path.join(self.output_dirs["deepvariant_directory"], sample.name)
+            region_directory = os.path.join(deepvariant_dir, "regions")
+            input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
 
-                job = concat_jobs(
-                    [
-                        bash.mkdir(
-                            split_dir,
-                            remove=True
-                        ),
-                        deepvariant.run(
-                            TBD,
-                            regions=unique_sequences_per_job_others
-                        )
-                    ],
-                    name="deepvariant." + sample.name + ".others",
-                    samples=[sample],
-                    readsets=list(sample.readsets)
-                )
-                jobs.append(job)
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
-            else:
+            if coverage_bed:
+                region = coverage_bed
+            elif nb_jobs == 1:
+                region = global_conf.global_get('deepvariant', 'region') if global_conf.global_get('deepvariant', 'region') else None
+            
+            if nb_jobs == 1 or coverage_bed:
+                
+                output_vcf = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.vcf.gz")
+                tmp_dir = os.path.join(deepvariant_dir, "tmp")
+                
                 jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(deepvariant_dir),
-                            deepvariant.run()
-                        ]
+                            bash.mkdir(tmp_dir),
+                            deepvariant.run(
+                                input_bam,
+                                output_vcf,
+                                tmp_dir,
+                                region
+                            )
+                        ],
+                        name=f"deepvariant.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
                     )
                 )
+            else:
+                regions = [os.path.join(region_directory, f"{idx:04d}-scattered.interval_list") for idx in range(nb_jobs)]
 
+                for idx, region in enumerate(regions):
+
+                    output_vcf = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.{str(idx)}.vcf.gz")
+                    tmp_dir = os.path.join(deepvariant_dir, "tmp", str(idx))
+
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(tmp_dir),
+                                deepvariant.run(
+                                    input_bam,
+                                    output_vcf,
+                                    tmp_dir,
+                                    region
+                                )
+                            ],
+                            name=f"deepvariant.{sample.name}.{str(idx)}",
+                            samples=[sample],
+                            readsets=[*list(sample.readsets)]
+                        )
+                    )
 
         return jobs
 
@@ -771,6 +879,7 @@ TBA: documentation for revio protocol.
                 self.pbmm2_align,
                 self.picard_merge_sam_files,
                 self.metrics_mosdepth,
+                self.set_deepvariant_regions,
                 self.deepvariant,
                 self.merge_filter_deepvariant,
                 self.hificnv,
