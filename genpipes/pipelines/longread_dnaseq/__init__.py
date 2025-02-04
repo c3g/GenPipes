@@ -40,6 +40,7 @@ from ...bfx import (
     job2json_project_tracking,
     minimap2,
     mosdepth,
+    nanoplot,
     pbmm2,
     pycoqc,
     sambamba,
@@ -146,6 +147,45 @@ TBA: documentation for revio protocol.
             jobs.append(job)
 
         return jobs
+    
+    def metrics_nanoplot(self):
+        """
+        Collect QC metrics on unaligned bam or fastq files with nanoplot.
+        """
+        jobs =[]
+
+        for readset in self.readsets:
+            metrics_directory = os.path.join(self.output_dirs['metrics_directory'][readset.sample.name])
+            nanoplot_prefix = f"{readset.name}.nanoplot"
+
+            if readset.fastq:
+                input_fastq = readset.fastq
+                input_bam = None
+            elif readset.bam:
+                input_bam = readset.bam
+                input_fastq = None
+            else:
+                _raise(SanitycheckError(f"Error: Neither BAM nor FASTQ file available for readset {readset.name} !"))
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(metrics_directory),
+                        nanoplot.qc(
+                            metrics_directory,
+                            nanoplot_prefix,
+                            input_bam,
+                            input_fastq
+                        )
+                    ],
+                    name=f"nanoplot.{readset.name}",
+                    samples=[readset.sample],
+                    readsets=[readset]
+                )
+            )
+
+
+        return jobs
 
     def minimap2_align(self):
         """
@@ -246,7 +286,7 @@ TBA: documentation for revio protocol.
                     ],
                     name="pbmm2_align." + readset.name,
                     samples=[readset.sample],
-                    readsets=[readset.name]
+                    readsets=[readset]
                 )
             )
 
@@ -937,7 +977,7 @@ TBA: documentation for revio protocol.
                 self.svim
             ], 'revio':
             [
-                self.qc_nanoplot_fastq,
+                self.metrics_nanoplot,
                 self.pbmm2_align,
                 self.picard_merge_sam_files,
                 self.metrics_mosdepth,
