@@ -26,7 +26,6 @@ import re
 from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
 from .. import common
-from ...bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 
 from ...bfx import (
     annotsv,
@@ -98,9 +97,9 @@ TBA: documentation for revio protocol.
             "-t",
             "--type",
             help="Type of pipeline (default nanopore)",
+            dest='protocol',
             choices=["nanopore", "revio"],
-            default="nanopore",
-            dest='protocol'
+            default="nanopore"
             )
         return cls._argparser
 
@@ -1104,8 +1103,9 @@ def main(parsed_args):
     output_dir = parsed_args.output_dir
     steps = parsed_args.steps
     readset_file = parsed_args.readsets_file
+    protocol = parsed_args.protocol
     design_file = parsed_args.design_file
 
-    pipeline = LongReadDnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, json_pt=json_pt, container=container)
+    pipeline = LongReadDnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, json_pt=json_pt, container=container)
 
     pipeline.submit_jobs()
