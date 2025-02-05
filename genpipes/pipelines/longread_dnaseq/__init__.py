@@ -119,23 +119,6 @@ TBA: documentation for revio protocol.
         }
         return dirs
     
-    def multiqc_inputs(self):
-        """
-        List of MultiQC input files.
-        Returns:
-            list: List of MultiQC input files.
-        """
-        if not hasattr(self, "_multiqc_inputs"):
-            self._multiqc_inputs = {}
-            for sample in self.samples:
-                self._multiqc_inputs[sample.name] = []
-
-        return self._multiqc_inputs
-
-    @multiqc_inputs.setter
-    def multiqc_inputs(self, value):
-        self._multiqc_inputs = value
-
     def guppy(self):
         """
         Use the Guppy basecaller to perform basecalling on all raw fast5 files.
@@ -479,12 +462,12 @@ TBA: documentation for revio protocol.
                     removable_files=[]
                 )
             )
-            self.multiqc_inputs[sample.name].extend(
-                [
-                    os.path.join(metrics_directory, os.path.basename(output_dist)),
-                    os.path.join(metrics_directory, os.path.basename(output_summary))
-                ]
-            )
+          #  self.multiqc_inputs[sample.name].extend(
+          #      [
+          #          os.path.join(metrics_directory, os.path.basename(output_dist)),
+          #          os.path.join(metrics_directory, os.path.basename(output_summary))
+          #      ]
+          #  )
 
         return jobs
     
