@@ -118,6 +118,23 @@ TBA: documentation for revio protocol.
             'hiphase_directory': os.path.relpath(os.path.join(self.output_dir, 'hiphase'), self.output_dir),
         }
         return dirs
+    
+    def multiqc_inputs(self):
+        """
+        List of MultiQC input files.
+        Returns:
+            list: List of MultiQC input files.
+        """
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = {}
+            for sample in self.samples:
+                self._multiqc_inputs[sample.name] = []
+
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
 
     def guppy(self):
         """
@@ -420,7 +437,7 @@ TBA: documentation for revio protocol.
                     [os.path.join(alignment_directory, f"{sample.name}.sorted.bam")],
                 ]
             )
-            metrics_directory = os.path.join(self.output_dirs['metrics_directory'][sample.name])
+            metrics_directory = os.path.join(self.output_dirs['metrics_directory'], sample.name)
             output_prefix = os.path.join(metrics_directory, sample.name)
             region = None
             output_dist = f"{output_prefix}.mosdepth.global.dist.txt"
