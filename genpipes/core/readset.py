@@ -570,6 +570,13 @@ def parse_longread_readset_file(longread_readset_file):
                     abs_files.append(os.path.normpath(file))
                 line[format] = ",".join(abs_files)
 
+        for format in ("BAM"):
+            if line.get(format, None):
+                line[format] = os.path.expandvars(line[format])
+                if not os.path.isabs(line[format]):
+                    line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(longread_readset_file))) + os.sep + line[format]
+                line[format] = os.path.normpath(line[format])
+
         readset._sample = Sample(sample_name)
         readset._run = line.get('Run', None)
         sample._run = readset._run
