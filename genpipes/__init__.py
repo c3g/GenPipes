@@ -21,7 +21,7 @@ PIPELINES = {
     "ChipSeq": "ChipSeq pipeline",
     "CoVSeq": "CoVSeq pipeline",
     "DnaSeq": "DnaSeq pipeline",
-    "LongReadDnaSeq": "LongRead DnaSeq pipeline",
+    "LongRead_DnaSeq": "LongRead DnaSeq pipeline",
     "MethylSeq": "MethylSeq pipeline",
     "Nanopore": "Nanopore pipeline",
     "Nanopore_CoVSeq": "Nanopore CoVSeq pipeline",
