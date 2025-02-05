@@ -1024,6 +1024,11 @@ TBA: documentation for revio protocol.
     
     def report_cpsr(self):
         """
+        Creates a cpsr germline report (https://sigven.github.io/cpsr/)
+        input: annotated/filter vcf
+        output: html report and addtional flat files
+        Returns:
+            list: A list of cpsr report jobs.
         """
         jobs = []
 
