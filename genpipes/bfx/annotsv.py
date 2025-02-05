@@ -46,7 +46,7 @@ def annotate(
 AnnotSV {other_options} \\
   -SVinputFile {input_vcf} \\
   {input_sv_indel} \\
-  -annotationsDir \$ANNOTSV/share/AnnotSV \\
+  -annotationsDir $ANNOTSV/share/AnnotSV \\
   -genomeBuild {genome_build} \\
   {candidate_genes} \\
   -outputFile {output}""".format(
@@ -82,9 +82,9 @@ def html(
             [ini_section, "module_perl"]
         ],
         command="""\
-perl \$KNOTANNOTSV_HOME/knotAnnotSV.pl {html_options} \\
+perl $KNOTANNOTSV_HOME/knotAnnotSV.pl {html_options} \\
   --configFile {config} \\
-  --datatableDir \$KNOTANNOTSV_HOME/DataTables \\
+  --datatableDir $KNOTANNOTSV_HOME/DataTables \\
   --annotSVfile {input_tsv} \\
   -genomeBuild {genome_build} \\
   --outDir {output_dir} \\
@@ -121,9 +121,9 @@ def excel(
             [ini_section, "module_perl"]
         ],
         command="""\
-perl \$KNOTANNOTSV_HOME/knotAnnotSV2XL.pl {excel_options} \\
+perl $KNOTANNOTSV_HOME/knotAnnotSV2XL.pl {excel_options} \\
   --configFile {config} \\
-  --datatableDir \$KNOTANNOTSV_HOME/DataTables \\
+  --datatableDir $KNOTANNOTSV_HOME/DataTables \\
   --annotSVfile {input_tsv} \\
   -genomeBuild {genome_build} \\
   --geneCountThreshold {genecount_threshold} \\
