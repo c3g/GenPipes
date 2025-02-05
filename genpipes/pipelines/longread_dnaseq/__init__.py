@@ -54,7 +54,7 @@ from ...bfx import (
 
 log = logging.getLogger(__name__)
 
-class LongReadDnaSeq(common.Nanopore):
+class LongReadDnaSeq(common.LongRead):
     """
 LongRead DNA-Seq Pipeline
 ==============
@@ -162,11 +162,11 @@ TBA: documentation for revio protocol.
         jobs =[]
 
         for readset in self.readsets:
-            metrics_directory = os.path.join(self.output_dirs['metrics_directory'][readset.sample.name])
+            metrics_directory = os.path.join(self.output_dirs['metrics_directory'], readset.sample.name)
             nanoplot_prefix = f"{readset.name}.nanoplot"
 
-            if readset.fastq:
-                input_fastq = readset.fastq
+            if readset.fastq_files:
+                input_fastq = readset.fastq_files
                 input_bam = None
             elif readset.bam:
                 input_bam = readset.bam
@@ -270,13 +270,13 @@ TBA: documentation for revio protocol.
             if readset.bam:
                 read_group = None
                 input_file = readset.bam
-            elif readset.fastq:
+            elif readset.fastq_files:
                 read_group = "'@RG" + \
                 "\\tID:" + readset.name + \
                 "\\tSM:" + readset.sample.name + \
                 "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                 "\\tPU:1\\tPL:pacbio_revio'"
-                input_file = readset.fastq
+                input_file = readset.fastq_files
             else:
                 _raise(SanitycheckError(f"Error: Neither BAM nor FASTQ file available for readset {readset.name} !"))
 
