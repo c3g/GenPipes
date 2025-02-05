@@ -33,9 +33,11 @@ from ...bfx import (
     bash_cmd as bash,
     bcftools,
     bvatools,
+    cpsr,
     deepvariant,
     gatk4,
     hificnv,
+    hiphase,
     htslib,
     job2json_project_tracking,
     minimap2,
@@ -108,7 +110,12 @@ TBA: documentation for revio protocol.
             'blastqc_directory': os.path.relpath(os.path.join(self.output_dir, 'blastQC'), self.output_dir),
             'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
             'pycoqc_directory': os.path.relpath(os.path.join(self.output_dir, 'pycoQC'), self.output_dir),
-            'svim_directory': os.path.relpath(os.path.join(self.output_dir, 'svim'), self.output_dir)
+            'svim_directory': os.path.relpath(os.path.join(self.output_dir, 'svim'), self.output_dir),
+            'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
+            'annotsv_directory': os.path.relpath(os.path.join(self.output_dir, 'annotSV'), self.output_dir),
+            'hiphase_directory': os.path.relpath(os.path.join(self.output_dir, 'hiphase'), self.output_dir),
         }
         return dirs
 
@@ -480,7 +487,7 @@ TBA: documentation for revio protocol.
         scatter_jobs = global_conf.global_get('deepvariant', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
-            interval_directory = os.path.join(self.output_dirs["deepvariant_directory"], sample.name, "regions")
+            interval_directory = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name, "regions")
             output = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.interval_list'))
             interval_list_acgt_noalt = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list'))
 
@@ -572,7 +579,7 @@ TBA: documentation for revio protocol.
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            deepvariant_dir = os.path.join(self.output_dirs["deepvariant_directory"], sample.name)
+            deepvariant_dir = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name)
             region_directory = os.path.join(deepvariant_dir, "regions")
             input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
 
@@ -641,7 +648,7 @@ TBA: documentation for revio protocol.
 
         for sample in self.samples:
             
-            deepvariant_dir = os.path.join(self.output_dirs["deepvariant_directory"], sample.name)
+            deepvariant_dir = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name)
             deepvariant_prefix = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant")
             deepvariant_vcf = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.vcf.gz")
             deepvariant_filtered = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.filt.vcf.gz")
@@ -723,7 +730,7 @@ TBA: documentation for revio protocol.
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             in_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-            sawfish_directory = os.path.join(self.output_dirs["sawfish_directory"], sample.name)
+            sawfish_directory = os.path.join(self.output_dirs["variants_directory"], "sawfish", sample.name)
             discover_directory = os.path.join(sawfish_directory, "discover")
             call_directory = os.path.join(sawfish_directory, "call")
 
@@ -768,11 +775,11 @@ TBA: documentation for revio protocol.
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
-            deepvariant_directory = os.path.join(self.output_dirs["deepvariant_directory"], sample.name)
+            deepvariant_directory = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name)
             in_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
             in_maf = os.path.join(deepvariant_directory, f"{sample.name}.deepvariant.flt.vcf.gz")
 
-            hificnv_directory = os.path.join(self.output_dirs["hificnv_directory"], sample.name)
+            hificnv_directory = os.path.join(self.output_dirs["variants_directory"], "hificnv", sample.name)
 
             hificnv_out = os.path.join(hificnv_directory, f"{sample.name}.vcf.gz")
             hificnv_filtered = os.path.join(hificnv_directory, f"{sample.name}.filt.vcf.gz")
@@ -813,10 +820,10 @@ TBA: documentation for revio protocol.
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             in_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-            trgt_directory = os.path.join(self.output_dirs["trgt_directory"], sample.name)
+            trgt_directory = os.path.join(self.output_dirs["variants_directory"], "trgt", sample.name)
 
-            pathogenic_prefix = os.path.join(self.output_dirs["trgt_directory"], sample.name, f"{sample.name}.pathogenic_repeats")
-            full_prefix = os.path.join(self.output_dirs["trgt_directory"], sample.name, f"{sample.name}.full_repeats")
+            pathogenic_prefix = os.path.join(trgt_directory, f"{sample.name}.pathogenic_repeats")
+            full_prefix = os.path.join(trgt_directory, f"{sample.name}.full_repeats")
 
             pathogenic_repeats = global_conf.global_get("trgt_genotyping", 'pathogenic_repeats', required=True)
             full_repeats = global_conf.global_get("trgt_genotyping", 'full_repeat_catalog', required=True)
@@ -901,9 +908,9 @@ TBA: documentation for revio protocol.
 
         for sample in self.samples:
             annotsv_directory = os.path.join(self.output_dirs["annotsv_directory"], sample.name)
-            hificnv_vcf = os.path.join(self.output_dirs["hificnv_directory"], sample.name, f"{sample.name}.filt.vcf.gz")
-            sawfish_vcf = os.path.join(self.output_dirs["sawfish_directory"], sample.name, f"{sample.name}.sawfish.flt.vcf.gz")
-            deepvariant_vcf = os.path.join(self.output_dirs["deepvariant_directory"], sample.name, f"{sample.name}.deepvariant.flt.vcf.gz")
+            hificnv_vcf = os.path.join(self.output_dirs["variants_directory"], "hificnv", sample.name, f"{sample.name}.filt.vcf.gz")
+            sawfish_vcf = os.path.join(self.output_dirs["variants_directory"], "sawfish", sample.name, f"{sample.name}.sawfish.flt.vcf.gz")
+            deepvariant_vcf = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name, f"{sample.name}.deepvariant.flt.vcf.gz")
 
             hificnv_dir = os.path.join(annotsv_directory, sample.name, "hificnv")
             sawfish_dir = os.path.join(annotsv_directory, sample.name, "sawfish")
@@ -963,6 +970,82 @@ TBA: documentation for revio protocol.
             )
 
         return jobs
+    
+    def hiphase(self):
+        """
+        Phase variant calls with HiPhase.
+        """
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
+            deepvariant_vcf = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name, f"{sample.name}.deepvariant.flt.vcf.gz")
+            sawfish_vcf = os.path.join(self.output_dirs["variants_directory"], "sawfish", sample.name, f"{sample.name}.sawfish.flt.vcf.gz")
+            trgt_vcf = os.path.join(self.output_dirs["variants_directory"], "trgt", sample.name, f"{sample.name}.pathogenic_repeats.sorted.vcf.gz")
+
+            hiphase_directory = os.path.join(self.output_dirs["hiphase_directory"], sample.name)
+            stats_out = os.path.join(hiphase_directory, f"{sample.name}.stats.csv")
+            blocks_out = os.path.join(hiphase_directory, f"{sample.name}.blocks.tsv")
+            summary_out = os.path.join(hiphase_directory, f"{sample.name}.summary.tsv")
+
+            deepvariant_out = os.path.join(hiphase_directory, f"{sample.name}.deepvariant.hiphase.vcf.gz")
+            sawfish_out = os.path.join(hiphase_directory, f"{sample.name}.sawfish.hiphase.vcf.gz")
+            trgt_out = os.path.join(hiphase_directory, f"{sample.name}.trgt.pathogenic_repeats.hiphase.vcf.gz")
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(hiphase_directory),
+                        hiphase.run(
+                            input_bam,
+                            stats_out,
+                            blocks_out,
+                            summary_out,
+                            deepvariant_vcf,
+                            deepvariant_out,
+                            sawfish_vcf,
+                            sawfish_out,
+                            trgt_vcf,
+                            trgt_out
+                        )
+                    ],
+                    name=f"hiphase.{sample.name}",
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
+                )
+            )
+
+        return jobs
+    
+    def report_cpsr(self):
+        """
+        """
+        jobs = []
+
+        for sample in self.samples:
+            hiphase_directory = os.path.join(self.output_dirs["hiphase_directory"], sample.name)
+            deepvariant_phased = os.path.join(hiphase_directory, f"{sample.name}.deepvariant.hiphase.vcf.gz")
+            cpsr_directory = os.path.join(self.output_dirs["report_directory"], "cpsr", sample.name)
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(cpsr_directory),
+                        cpsr.report(
+                            deepvariant_phased,
+                            cpsr_directory,
+                            sample.name,
+                            "report_cpsr"
+                        )
+                    ],
+                    name=f"report_cpsr.{sample.name}",
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
+                )
+            )
+
+        return jobs
 
     @property
     def step_list(self):
@@ -989,7 +1072,7 @@ TBA: documentation for revio protocol.
                 self.sawfish,
                 self.annotSV,
                 self.hiphase,
-                self.cpsr
+                self.report_cpsr
             ]
         }
 
