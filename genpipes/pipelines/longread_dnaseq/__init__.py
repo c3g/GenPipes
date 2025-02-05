@@ -651,7 +651,7 @@ TBA: documentation for revio protocol.
             deepvariant_dir = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant")
             deepvariant_prefix = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant")
             deepvariant_vcf = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.vcf.gz")
-            deepvariant_filtered = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.filt.vcf.gz")
+            deepvariant_filtered = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.flt.vcf.gz")
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
