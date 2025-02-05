@@ -112,6 +112,7 @@ TBA: documentation for revio protocol.
             'pycoqc_directory': os.path.relpath(os.path.join(self.output_dir, 'pycoQC'), self.output_dir),
             'svim_directory': os.path.relpath(os.path.join(self.output_dir, 'svim'), self.output_dir),
             'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
+            'SVariants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir),
             'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
             'annotsv_directory': os.path.relpath(os.path.join(self.output_dir, 'annotSV'), self.output_dir),
@@ -487,7 +488,7 @@ TBA: documentation for revio protocol.
         scatter_jobs = global_conf.global_get('deepvariant', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
-            interval_directory = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name, "regions")
+            interval_directory = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant", "regions")
             output = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.interval_list'))
             interval_list_acgt_noalt = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list'))
 
@@ -579,7 +580,7 @@ TBA: documentation for revio protocol.
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            deepvariant_dir = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name)
+            deepvariant_dir = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant")
             region_directory = os.path.join(deepvariant_dir, "regions")
             input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
 
@@ -648,7 +649,7 @@ TBA: documentation for revio protocol.
 
         for sample in self.samples:
             
-            deepvariant_dir = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name)
+            deepvariant_dir = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant")
             deepvariant_prefix = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant")
             deepvariant_vcf = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.vcf.gz")
             deepvariant_filtered = os.path.join(deepvariant_dir, f"{sample.name}.deepvariant.filt.vcf.gz")
@@ -730,7 +731,7 @@ TBA: documentation for revio protocol.
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             in_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-            sawfish_directory = os.path.join(self.output_dirs["variants_directory"], "sawfish", sample.name)
+            sawfish_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "sawfish")
             discover_directory = os.path.join(sawfish_directory, "discover")
             call_directory = os.path.join(sawfish_directory, "call")
 
@@ -775,11 +776,11 @@ TBA: documentation for revio protocol.
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
-            deepvariant_directory = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name)
+            deepvariant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant")
             in_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
             in_maf = os.path.join(deepvariant_directory, f"{sample.name}.deepvariant.flt.vcf.gz")
 
-            hificnv_directory = os.path.join(self.output_dirs["variants_directory"], "hificnv", sample.name)
+            hificnv_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "hificnv")
 
             hificnv_out = os.path.join(hificnv_directory, f"{sample.name}.vcf.gz")
             hificnv_filtered = os.path.join(hificnv_directory, f"{sample.name}.filt.vcf.gz")
@@ -820,7 +821,7 @@ TBA: documentation for revio protocol.
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             in_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-            trgt_directory = os.path.join(self.output_dirs["variants_directory"], "trgt", sample.name)
+            trgt_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "trgt")
 
             pathogenic_prefix = os.path.join(trgt_directory, f"{sample.name}.pathogenic_repeats")
             full_prefix = os.path.join(trgt_directory, f"{sample.name}.full_repeats")
@@ -908,9 +909,10 @@ TBA: documentation for revio protocol.
 
         for sample in self.samples:
             annotsv_directory = os.path.join(self.output_dirs["annotsv_directory"], sample.name)
-            hificnv_vcf = os.path.join(self.output_dirs["variants_directory"], "hificnv", sample.name, f"{sample.name}.filt.vcf.gz")
-            sawfish_vcf = os.path.join(self.output_dirs["variants_directory"], "sawfish", sample.name, f"{sample.name}.sawfish.flt.vcf.gz")
-            deepvariant_vcf = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name, f"{sample.name}.deepvariant.flt.vcf.gz")
+            svariants_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
+            hificnv_vcf = os.path.join(svariants_dir, "hificnv", f"{sample.name}.filt.vcf.gz")
+            sawfish_vcf = os.path.join(svariants_dir, "sawfish", f"{sample.name}.sawfish.flt.vcf.gz")
+            deepvariant_vcf = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant", f"{sample.name}.deepvariant.flt.vcf.gz")
 
             hificnv_dir = os.path.join(annotsv_directory, sample.name, "hificnv")
             sawfish_dir = os.path.join(annotsv_directory, sample.name, "sawfish")
@@ -980,9 +982,11 @@ TBA: documentation for revio protocol.
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
-            deepvariant_vcf = os.path.join(self.output_dirs["variants_directory"], "deepvariant", sample.name, f"{sample.name}.deepvariant.flt.vcf.gz")
-            sawfish_vcf = os.path.join(self.output_dirs["variants_directory"], "sawfish", sample.name, f"{sample.name}.sawfish.flt.vcf.gz")
-            trgt_vcf = os.path.join(self.output_dirs["variants_directory"], "trgt", sample.name, f"{sample.name}.pathogenic_repeats.sorted.vcf.gz")
+            variants_dir = os.path.join(self.output_dirs["variants_directory"], sample.name)
+            svariants_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
+            deepvariant_vcf = os.path.join(variants_dir, "deepvariant", f"{sample.name}.deepvariant.flt.vcf.gz")
+            sawfish_vcf = os.path.join(svariants_dir, "sawfish", f"{sample.name}.sawfish.flt.vcf.gz")
+            trgt_vcf = os.path.join(svariants_dir, "trgt", f"{sample.name}.pathogenic_repeats.sorted.vcf.gz")
 
             hiphase_directory = os.path.join(self.output_dirs["hiphase_directory"], sample.name)
             stats_out = os.path.join(hiphase_directory, f"{sample.name}.stats.csv")
