@@ -23,7 +23,6 @@ PIPELINES = {
     "DnaSeq": "DnaSeq pipeline",
     "LongRead_DnaSeq": "LongRead DnaSeq pipeline",
     "MethylSeq": "MethylSeq pipeline",
-    "Nanopore": "Nanopore pipeline",
     "Nanopore_CoVSeq": "Nanopore CoVSeq pipeline",
     "RnaSeq": "RnaSeq pipeline",
     "RnaSeq_DeNovo_Assembly": "RnaSeq DeNovo Assembly pipeline",
