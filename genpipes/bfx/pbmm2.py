@@ -39,8 +39,10 @@ def align(
 
     return Job(
         [input_file],
-        [out_bam],
-        [[ini_section, "module_pbmm2"]],
+        [out_bam, out_bam + ".bai"],
+        [
+            [ini_section, "module_pbmm2"]
+        ],
         command="""\
 pbmm2 align {other_options} \\
   --preset {pbmm2_preset} \\
