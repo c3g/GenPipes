@@ -521,8 +521,8 @@ class LongReadReadset(Readset):
         return self._fast5_files
     
     @property
-    def bam_files(self):
-        return self._bam_files
+    def bam(self):
+        return self._bam
 
     @property
     def analysis_name(self):
@@ -581,8 +581,8 @@ def parse_longread_readset_file(longread_readset_file):
         sample._summary_file = readset._summary_file
         readset._fastq_files = line['FASTQ'] if line.get('FASTQ', None) else []
         sample._fastq_files = readset._fastq_files
-        readset._bam_files = line['BAM'] if line.get('BAM', None) else []
-        sample._bam_files = readset._bam_files
+        readset._bam = line['BAM'] if line.get('BAM', None) else []
+        sample._bam = readset._bam
         readset._fast5_files = line['FAST5'] if line.get('FAST5', None) else []
         sample._fast5_files = readset._fast5_files
         readset._analysis_name = line.get('AnalysisName', None)
