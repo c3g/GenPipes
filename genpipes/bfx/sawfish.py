@@ -35,6 +35,7 @@ def discover(
 
     genome_fasta = global_conf.global_get(ini_section, 'genome_fasta', required=True)
     outputs = [
+        output_dir,
         output_dir + "/tbd",
         output_dir + "/tbd"
     ]
