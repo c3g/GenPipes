@@ -569,8 +569,8 @@ TBA: documentation for revio protocol.
                         ]
                     )
 
-                job.name=f"gatk_scatterIntervalsByNs.{sample.name}",
-                job.samples=[sample],
+                job.name=f"gatk_scatterIntervalsByNs.{sample.name}"
+                job.samples=[sample]
                 job.readsets=[*list(sample.readsets)]
 
                 jobs.append(job)
