@@ -495,29 +495,22 @@ TBA: documentation for revio protocol.
 
             if coverage_bed:
                 region = coverage_bed
-                interval_list = os.path.join(interval_directory, os.path.basename(region).replace('.bed', '.interval_list'))
-                interval_list_noalt = os.path.join(interval_directory, os.path.basename(region).replace('.bed', '.noALT.interval_list'))
+                coverage_bed_noalt = os.path.join(interval_directory, os.path.basename(region).replace('.bed', '.noALT.bed'))
 
-                # TBD - we can probably use the bed directly
                 jobs.append(
                     concat_jobs(
                         [
                             bash.mkdir(interval_directory),
-                            gatk4.bed2interval_list(
-                                dictionary,
-                                region,
-                                interval_list
-                            ),
                             pipe_jobs(
                                 [
                                     bash.grep(
-                                        interval_list,
+                                        region,
                                         None,
                                         '-Ev "_GL|_K"'
                                         ),
                                     bash.grep(
                                         None,
-                                        interval_list_noalt,
+                                        coverage_bed_noalt,
                                         '-v "EBV"'
                                     )
                                 ]
@@ -532,8 +525,8 @@ TBA: documentation for revio protocol.
                 log.info("Number of jobs set to 1, skipping region creation for variant calling...")
   
             else:
-                jobs.append(
-                    concat_jobs(
+
+                job = concat_jobs(
                         [
                             bash.mkdir(interval_directory),
                             gatk4.scatterIntervalsByNs(
@@ -559,12 +552,28 @@ TBA: documentation for revio protocol.
                                 interval_directory,
                                 scatter_jobs
                             )
-                        ],
-                        name=f"gatk_scatterIntervalsByNs.{sample.name}",
-                        samples=[sample],
-                        readsets=[*list(sample.readsets)]
+                        ]
                     )
-                )
+                
+                for idx in range(scatter_jobs):
+                    interval_file = os.path.join(interval_directory, str(idx).zfill(4) + "-scattered.interval_list")
+                    bed_file = os.path.join(interval_directory, str(idx).zfill(4) + "-region.bed")
+                    job = concat_jobs(
+                        [
+                            job,
+                            gatk4.interval_list2bed(
+                                interval_file,
+                                bed_file,
+                                ini_section='gatk_splitInterval'
+                            )
+                        ]
+                    )
+
+                job.name=f"gatk_scatterIntervalsByNs.{sample.name}",
+                job.samples=[sample],
+                job.readsets=[*list(sample.readsets)]
+
+                jobs.append(job)
 
         return jobs
 
@@ -612,7 +621,7 @@ TBA: documentation for revio protocol.
                     )
                 )
             else:
-                regions = [os.path.join(region_directory, f"{idx:04d}-scattered.interval_list") for idx in range(nb_jobs)]
+                regions = [os.path.join(region_directory, f"{idx:04d}-region.bed") for idx in range(nb_jobs)]
 
                 for idx, region in enumerate(regions):
 

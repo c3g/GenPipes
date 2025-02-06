@@ -38,7 +38,8 @@ def qc(
     """
 
     output = [
-        os.path.join(output_dir, output_prefix + "TBD")
+        os.path.join(output_dir, output_prefix + "NanoPlot-report.html"),
+        os.path.join(output_dir, output_prefix + "NanoStats.txt")
     ]
 
     return Job(

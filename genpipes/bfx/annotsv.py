@@ -110,7 +110,7 @@ def excel(
     :return: a job for AnnotSV html creation
     """
     output = [
-        os.path.join(output_dir, output_prefix + ".xlxs")
+        os.path.join(output_dir, output_prefix + ".xlsm")
     ]
 
     return Job(
