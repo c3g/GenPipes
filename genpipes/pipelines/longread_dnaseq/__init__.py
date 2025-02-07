@@ -163,7 +163,7 @@ TBA: documentation for revio protocol.
 
         for readset in self.readsets:
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'], readset.sample.name)
-            nanoplot_prefix = f"{readset.name}.nanoplot"
+            nanoplot_prefix = f"{readset.name}."
 
             if readset.fastq_files:
                 input_fastq = readset.fastq_files
@@ -789,6 +789,7 @@ TBA: documentation for revio protocol.
             in_maf = os.path.join(deepvariant_directory, f"{sample.name}.deepvariant.flt.vcf.gz")
 
             hificnv_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "hificnv")
+            output_prefix = os.path.join(hificnv_directory, f"{sample.name}")
 
             hificnv_out = os.path.join(hificnv_directory, f"{sample.name}.vcf.gz")
             hificnv_filtered = os.path.join(hificnv_directory, f"{sample.name}.filt.vcf.gz")
@@ -799,8 +800,7 @@ TBA: documentation for revio protocol.
                         bash.mkdir(hificnv_directory),
                         hificnv.run(
                             in_bam,
-                            hificnv_directory,
-                            sample.name,
+                            output_prefix,
                             in_maf
                         ),
                         bcftools.view(

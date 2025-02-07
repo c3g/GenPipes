@@ -24,8 +24,7 @@ from ..core.job import Job
 
 def run(
     input_file,
-    output_dir,
-    sample_name,
+    output_prefix,
     input_maf = None,
     ini_section='hificnv'
     ):
@@ -37,10 +36,10 @@ def run(
 
     genome_fasta = global_conf.global_get(ini_section, 'genome_fasta', required=True)
     outputs = [
-        output_dir + f"/{sample_name}.copynum.bedgraph",
-        output_dir + f"/{sample_name}.depth.bw",
-        output_dir + f"/{sample_name}.maf.bw",
-        output_dir + f"/{sample_name}.vcf.gz"
+        output_prefix + ".copynum.bedgraph",
+        output_prefix + ".depth.bw",
+        output_prefix + ".maf.bw",
+        output_prefix + ".vcf.gz"
     ]
 
     return Job(
@@ -57,7 +56,7 @@ hificnv {other_options} \\
   {expected_cn} \\
   {input_maf} \\
   --threads {threads} \\
-  --output-dir {output_dir}""".format(
+  --output-prefix {output_dir}""".format(
             threads=global_conf.global_get(ini_section, 'threads'),
             other_options=global_conf.global_get(ini_section, 'other_options', required=False),
             genome_fasta=genome_fasta,
@@ -65,6 +64,6 @@ hificnv {other_options} \\
             exclude="--exclude " + global_conf.global_get(ini_section, 'excluded_regions', required=False) if global_conf.global_get(ini_section, 'excluded_regions', required=False) else "",
             expected_cn="--expected-cn " + global_conf.global_get(ini_section, 'cn_bed', required=False) if global_conf.global_get(ini_section, 'cn_bed', required=False) else "",
             input_file=input_file,
-            output_dir=output_dir + "/"
+            output_prefix=output_prefix
         ),
     )
