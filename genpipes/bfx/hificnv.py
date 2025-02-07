@@ -56,7 +56,7 @@ hificnv {other_options} \\
   {expected_cn} \\
   {input_maf} \\
   --threads {threads} \\
-  --output-prefix {output_dir}""".format(
+  --output-prefix {output_prefix}""".format(
             threads=global_conf.global_get(ini_section, 'threads'),
             other_options=global_conf.global_get(ini_section, 'other_options', required=False),
             genome_fasta=genome_fasta,
