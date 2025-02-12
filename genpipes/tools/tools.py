@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2025 GenPipes, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes Pipelines.
 #
@@ -86,6 +86,13 @@ def add_subcommands(parser):
     parser_get_wrapper.add_argument('--version', '-v', help="Version of the container to get. Default: 4.0.0")
     parser_get_wrapper.set_defaults(func=run_get_wrapper)
 
+    # Create the parser for the "validate_genpipes" subcommand
+    parser_validate_genpipes = tools_subparsers.add_parser('validate_genpipes', help='Validate the genpipes Readset and Design files.')
+    parser_validate_genpipes.add_argument('-r', '--readset', help='Readset file to validate')
+    parser_validate_genpipes.add_argument('-d', '--design', help='Design file to validate')
+    parser_validate_genpipes.add_argument('-p', '--pipeline', required=True, help='Pipeline name to validate against', choices=['ampliconseq', 'chipseq', 'covseq', 'dnaseq', 'methylseq', 'nanopore', 'nanopore_covseq', 'rnaseq', 'rnaseq_denovo_assembly', 'rnaseq_light'])
+    parser_validate_genpipes.set_defaults(func=run_validate_genpipes)
+
 def run_chunk_genpipes(args):
     """
     Run the chunk_genpipes.sh script with the given arguments.
@@ -160,4 +167,16 @@ def run_get_wrapper(args):
     cmd = [get_wrapper]
     if args.version:
         cmd += ['-v', args.version]
+    subprocess.run(cmd, check=False)
+
+def run_validate_genpipes(args):
+    """
+    Run the validate_genpipes.sh script with the given arguments.
+    """
+    validate_genpipes = os.path.join(os.path.dirname(__file__), 'validate_genpipes.py')
+    cmd = [validate_genpipes, '-p', args.pipeline]
+    if args.readset:
+        cmd += ['-r', args.readset]
+    if args.design:
+        cmd += ['-d', args.design]
     subprocess.run(cmd, check=False)
