@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2025 GenPipes, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of GenPipes Pipelines.
 #
