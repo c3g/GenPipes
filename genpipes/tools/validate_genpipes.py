@@ -185,6 +185,22 @@ def readset_integer_check(string_array):
                 errors.append(f"Row {row_num}: QualityOffset must be an integer.")
     return errors
 
+def readset_uniqueness_check(string_array):
+    '''
+    Checks if Readset values are unique and reports the row number and non-unique Readset value
+    '''
+    readset_dict = {}
+    errors = []
+    for row_num, row in enumerate(string_array, start=1):
+        readset = row.get('Readset')
+        if readset in readset_dict:
+            errors.append(f"Row {row_num}: Readset '{readset}' is not unique. Previously found in row {readset_dict[readset]}.")
+        else:
+            readset_dict[readset] = row_num
+    if errors:
+        raise ValidationError("\n".join(errors))
+    return True
+
 def design_structure_check(string_array, pipeline):
     '''
     Checks if the entries in a design file are valid based on the pipeline
@@ -241,6 +257,7 @@ def readset_validator(readset_file, pipeline):
         readset_dict['headerPass'] = True  # Already checked in readset_header_check
         readset_dict['rowSizePass'] = row_size_check(readset_str)
         readset_dict['trailingSpacesPass'] = trailing_spaces_check(readset_str)
+        readset_dict['uniquenessPass'] = readset_uniqueness_check(readset_str)
 
         all_errors = []
         if 'RunType' in expected_header:
