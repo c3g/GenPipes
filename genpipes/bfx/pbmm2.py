@@ -46,8 +46,8 @@ def align(
         ],
         command="""\
 pbmm2 align {other_options} \\
-  --preset {pbmm2_preset} \\
-  -j {threads} -J 2 -m 4G {sort} \\
+  --preset {pbmm2_preset} --log-level INFO \\
+  -j {threads} -J {sort_threads} -m 4G {sort} \\
   --sample {sample_name} \\
   {read_group} \\
   {genome_fasta} \\
@@ -55,6 +55,7 @@ pbmm2 align {other_options} \\
   {out_bam}""".format(
             pbmm2_preset=global_conf.global_get(ini_section, 'preset'),
             threads=global_conf.global_get(ini_section, 'threads'),
+            sort_threads=global_conf.global_get(ini_section, 'sort_threads'),
             sort="--sort " if sort else "",
             sample_name=sample_name,
             read_group="--rg " + read_group if read_group else "",
