@@ -25,6 +25,7 @@ from ..core.job import Job
 def run(
     input_file,
     output_prefix,
+    sample_name,
     input_maf = None,
     ini_section='hificnv'
     ):
@@ -36,10 +37,10 @@ def run(
 
     genome_fasta = global_conf.global_get(ini_section, 'genome_fasta', required=True)
     outputs = [
-        output_prefix + ".copynum.bedgraph",
-        output_prefix + ".depth.bw",
-        output_prefix + ".maf.bw",
-        output_prefix + ".vcf.gz"
+        output_prefix + sample_name + ".copynum.bedgraph",
+        output_prefix + sample_name + ".depth.bw",
+        output_prefix + sample_name + ".maf.bw",
+        output_prefix + sample_name + ".vcf.gz"
     ]
 
     return Job(

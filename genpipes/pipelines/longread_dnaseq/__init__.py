@@ -801,6 +801,7 @@ TBA: documentation for revio protocol.
                         hificnv.run(
                             in_bam,
                             output_prefix,
+                            sample.name,
                             in_maf
                         ),
                         bcftools.view(
