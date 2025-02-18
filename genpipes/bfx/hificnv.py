@@ -37,10 +37,10 @@ def run(
 
     genome_fasta = global_conf.global_get(ini_section, 'genome_fasta', required=True)
     outputs = [
-        output_prefix + sample_name + ".copynum.bedgraph",
-        output_prefix + sample_name + ".depth.bw",
-        output_prefix + sample_name + ".maf.bw",
-        output_prefix + sample_name + ".vcf.gz"
+        f"{output_prefix}.{sample_name}.copynum.bedgraph",
+        f"{output_prefix}.{sample_name}.depth.bw",
+        f"{output_prefix}.{sample_name}.maf.bw",
+        f"{output_prefix}.{sample_name}.vcf.gz"
     ]
 
     return Job(
