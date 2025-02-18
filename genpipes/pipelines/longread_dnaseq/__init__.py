@@ -789,9 +789,9 @@ TBA: documentation for revio protocol.
             in_maf = os.path.join(deepvariant_directory, f"{sample.name}.deepvariant.flt.vcf.gz")
 
             hificnv_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "hificnv")
-            output_prefix = os.path.join(hificnv_directory, f"{sample.name}")
+            output_prefix = os.path.join(hificnv_directory, "hificnv")
 
-            hificnv_out = os.path.join(hificnv_directory, f"{sample.name}.vcf.gz")
+            hificnv_out = os.path.join(hificnv_directory, f"hificnv.{sample.name}.vcf.gz")
             hificnv_filtered = os.path.join(hificnv_directory, f"{sample.name}.filt.vcf.gz")
 
             jobs.append(
