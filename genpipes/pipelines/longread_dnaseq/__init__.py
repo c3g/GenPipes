@@ -1043,7 +1043,7 @@ TBA: documentation for revio protocol.
         for sample in self.samples:
             hiphase_directory = os.path.join(self.output_dirs["hiphase_directory"], sample.name)
             deepvariant_phased = os.path.join(hiphase_directory, f"{sample.name}.deepvariant.hiphase.vcf.gz")
-            cpsr_directory = os.path.join(self.output_dirs["report_directory"], "cpsr", sample.name)
+            cpsr_directory = os.path.join(self.output_dirs["report_directory"], sample.name, "cpsr")
 
             jobs.append(
                 concat_jobs(
