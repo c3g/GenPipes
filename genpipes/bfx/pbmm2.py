@@ -25,6 +25,7 @@ from ..core.job import Job
 def align(
     input_file,
     read_group,
+    sample_name,
     out_bam=None,
     sort=False,
     ini_section='pbmm2_align'
@@ -47,6 +48,7 @@ def align(
 pbmm2 align {other_options} \\
   --preset {pbmm2_preset} \\
   -j {threads} -J 2 -m 4G {sort} \\
+  --sample {sample_name} \\
   {read_group} \\
   {genome_fasta} \\
   {input_file} \\
@@ -54,6 +56,7 @@ pbmm2 align {other_options} \\
             pbmm2_preset=global_conf.global_get(ini_section, 'preset'),
             threads=global_conf.global_get(ini_section, 'threads'),
             sort="--sort " if sort else "",
+            sample_name=sample_name,
             read_group="--rg " + read_group if read_group else "",
             other_options=global_conf.global_get(ini_section, 'other_options', required=False),
             genome_fasta=genome_fasta,
