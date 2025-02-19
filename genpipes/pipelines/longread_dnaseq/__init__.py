@@ -41,6 +41,7 @@ from ...bfx import (
     job2json_project_tracking,
     minimap2,
     mosdepth,
+    multiqc,
     nanoplot,
     pbmm2,
     pycoqc,
@@ -119,6 +120,21 @@ TBA: documentation for revio protocol.
         }
         return dirs
     
+    @property
+    def multiqc_inputs(self):
+        """
+        List of MultiQC input files.
+        Returns:
+            list: List of MultiQC input files.
+        """
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = []
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
+    
     def guppy(self):
         """
         Use the Guppy basecaller to perform basecalling on all raw fast5 files.
@@ -163,13 +179,24 @@ TBA: documentation for revio protocol.
 
         for readset in self.readsets:
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'], readset.sample.name)
+            nanoplot_directory = os.path.join(metrics_directory, "nanoplot")
             nanoplot_prefix = f"{readset.name}."
 
             if readset.fastq_files:
-                input_fastq = readset.fastq_files
+                input_fastq = os.path.join(nanoplot_directory, os.path.basename(readset.fastq_files))
+                link_job = bash.ln(
+                    os.path.relpath(readset.fastq_files, nanoplot_directory),
+                    input_fastq,
+                    readset.fastq_files
+                    )
                 input_bam = None
             elif readset.bam:
-                input_bam = readset.bam
+                input_bam = os.path.join(nanoplot_directory, os.path.basename(readset.bam))
+                link_job = bash.ln(
+                    os.path.relpath(readset.bam, nanoplot_directory),
+                    input_bam,
+                    readset.bam
+                    )
                 input_fastq = None
             else:
                 _raise(SanitycheckError(f"Error: Neither BAM nor FASTQ file available for readset {readset.name} !"))
@@ -177,9 +204,10 @@ TBA: documentation for revio protocol.
             jobs.append(
                 concat_jobs(
                     [
-                        bash.mkdir(metrics_directory),
+                        bash.mkdir(nanoplot_directory),
+                        link_job,
                         nanoplot.qc(
-                            metrics_directory,
+                            nanoplot_directory,
                             nanoplot_prefix,
                             input_bam,
                             input_fastq
@@ -191,6 +219,7 @@ TBA: documentation for revio protocol.
                 )
             )
 
+            self.multiqc_inputs.append(f"{nanoplot_prefix}NanoStats.txt")
 
         return jobs
 
@@ -422,7 +451,8 @@ TBA: documentation for revio protocol.
                 ]
             )
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'], sample.name)
-            output_prefix = os.path.join(metrics_directory, sample.name)
+            mosdepth_directory = os.path.join(metrics_directory, "mosdepth")
+            output_prefix = os.path.join(mosdepth_directory, sample.name)
             region = None
             output_dist = f"{output_prefix}.mosdepth.global.dist.txt"
             output_summary = f"{output_prefix}.mosdepth.summary.txt"
@@ -447,7 +477,7 @@ TBA: documentation for revio protocol.
             jobs.append(
                 concat_jobs(
                     [
-                        bash.mkdir(metrics_directory),
+                        bash.mkdir(mosdepth_directory),
                         mosdepth.run(
                             input_file,
                             output_prefix,
@@ -463,12 +493,12 @@ TBA: documentation for revio protocol.
                     removable_files=[]
                 )
             )
-          #  self.multiqc_inputs[sample.name].extend(
-          #      [
-          #          os.path.join(metrics_directory, os.path.basename(output_dist)),
-          #          os.path.join(metrics_directory, os.path.basename(output_summary))
-          #      ]
-          #  )
+            self.multiqc_inputs.extend(
+                [
+                    os.path.join(mosdepth_directory, os.path.basename(output_dist)),
+                    os.path.join(mosdepth_directory, os.path.basename(output_summary))
+                ]
+            )
 
         return jobs
     
@@ -1065,6 +1095,33 @@ TBA: documentation for revio protocol.
             )
 
         return jobs
+    
+    def multiqc(self):
+        """
+        Aggregate results from bioinformatics analyses across many samples into a single report.
+        MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
+        perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
+        Returns:
+            list: A list of MultiQC jobs.
+        """
+        jobs = []
+
+        output = os.path.join(self.output_dirs['report_directory'], f"LongRead_DnaSeq.{self.protocol}.multiqc")
+
+        job = concat_jobs(
+            [
+                bash.mkdir(os.path.join(self.output_dirs['report_directory'])),
+                multiqc.run(
+                    self.multiqc_inputs,
+                    output
+                )
+            ]
+        )
+        job.name = "multiqc"
+        job.input_files = self.multiqc_inputs
+        jobs.append(job)
+
+        return jobs
 
     @property
     def step_list(self):
@@ -1091,7 +1148,8 @@ TBA: documentation for revio protocol.
                 self.sawfish,
                 self.annotSV,
                 self.hiphase,
-                self.report_cpsr
+                self.report_cpsr,
+                self.multiqc
             ]
         }
 
