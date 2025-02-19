@@ -219,7 +219,9 @@ TBA: documentation for revio protocol.
                 )
             )
 
-            self.multiqc_inputs.append(f"{nanoplot_prefix}NanoStats.txt")
+            self.multiqc_inputs.append(
+                os.path.join(nanoplot_directory, f"{nanoplot_prefix}NanoStats.txt")
+                )
 
         return jobs
 
