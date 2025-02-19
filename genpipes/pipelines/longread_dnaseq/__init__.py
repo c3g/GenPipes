@@ -286,8 +286,8 @@ TBA: documentation for revio protocol.
                         bash.mkdir(alignment_directory),
                         pbmm2.align(
                             input_file,
-                            readset.sample.name,
                             read_group,
+                            readset.sample.name,
                             output_bam,
                             sort=True
                         )
