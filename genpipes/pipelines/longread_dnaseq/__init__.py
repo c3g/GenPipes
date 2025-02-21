@@ -516,7 +516,6 @@ TBA: documentation for revio protocol.
         jobs = []
 
         reference = global_conf.global_get('deepvariant', 'genome_fasta', param_type='filepath')
-        dictionary = global_conf.global_get('deepvariant', 'genome_dictionary', param_type='filepath')
         scatter_jobs = global_conf.global_get('deepvariant', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
