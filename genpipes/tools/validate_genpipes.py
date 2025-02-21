@@ -75,22 +75,40 @@ def readset_header_check(header, pipeline):
     }
 
     formats = {
-        'format1': ['Sample', 'Readset', 'Library', 'RunType', 'Run', 'Lane', 'Adapter1', 'Adapter2', 'QualityOffset', 'BED', 'FASTQ1', 'FASTQ2', 'BAM'],
-        'format2': ['Sample', 'Readset', 'MarkName', 'MarkType', 'Library', 'RunType', 'Run', 'Lane', 'Adapter1', 'Adapter2', 'QualityOffset', 'BED', 'FASTQ1', 'FASTQ2', 'BAM'],
-        'format3': ['Sample', 'Readset', 'Run', 'Flowcell', 'Library', 'Summary', 'FASTQ', 'FAST5', 'Barcode', 'AnalysisName'],
-        'format4': ['Sample', 'Readset', 'Run', 'Flowcell', 'Library', 'Summary', 'FASTQ', 'FAST5'],
-        'format5': ['Sample', 'Readset', 'RunType', 'Adapter1', 'Adapter2', 'primer1', 'primer2', 'FASTQ1', 'FASTQ2']
+        'format1': {
+            'required': ['Sample', 'Readset', 'Library', 'RunType', 'Adapter1', 'Adapter2'],
+            'optional': ['Run', 'Lane', 'QualityOffset', 'BED', 'FASTQ1', 'FASTQ2', 'BAM']
+        },
+        'format2': {
+            'required': ['Sample', 'Readset', 'MarkName', 'MarkType', 'Library', 'Adapter1', 'Adapter2'],
+            'optional': ['Run', 'Lane', 'QualityOffset', 'BED', 'FASTQ1', 'FASTQ2', 'BAM']
+        },
+        'format3': {
+            'required': ['Sample', 'Readset', 'Flowcell', 'Library', 'FAST5'],
+            'optional': ['Run', 'Summary', 'FASTQ', 'Barcode', 'AnalysisName']
+        },
+        'format4': {
+            'required': ['Sample', 'Readset', 'Flowcell', 'Library'],
+            'optional': ['Run', 'Summary', 'FASTQ', 'FAST5']
+        },
+        'format5': {
+            'required': ['Sample', 'Readset', 'RunType', 'Adapter1', 'Adapter2', 'primer1', 'primer2'],
+            'optional': ['FASTQ1', 'FASTQ2']
+        }
     }
 
     pipeline_format = valid_headers.get(pipeline)
     if not pipeline_format:
         raise ValidationError(f"Pipeline {pipeline} is not recognized. Please revise and try again!")
 
-    expected_header = formats[pipeline_format[0]]
+    expected_header = formats[pipeline_format[0]]['required']
+    optional_header = formats[pipeline_format[0]]['optional']
 
-    if not all(column in header for column in expected_header):
-        raise ValidationError(f"File header is not correct for {pipeline}. It should contain the following columns:\n\n{'\t'.join(expected_header)}\n\nPlease fix this and try again!")
-    return expected_header
+    missing_columns = [column for column in expected_header if column not in header]
+    if missing_columns:
+        raise ValidationError(f"File header is not correct for {pipeline}. It should contain the following required columns:\n\n{'\t'.join(expected_header)}\n\nMissing columns: {', '.join(missing_columns)}\n\nPlease fix this and try again!")
+
+    return expected_header + optional_header
 
 def check_column_dependencies(row, pipeline, row_num):
     '''
