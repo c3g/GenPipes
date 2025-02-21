@@ -672,6 +672,7 @@ TBA: documentation for revio protocol.
                                 )
                             ],
                             name=f"deepvariant.{sample.name}.{str(idx)}",
+                            input_dependency=[input_bam, region],
                             samples=[sample],
                             readsets=[*list(sample.readsets)]
                         )

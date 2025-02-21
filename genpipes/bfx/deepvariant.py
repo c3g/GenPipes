@@ -36,7 +36,7 @@ def run(
     """
 
     return Job(
-        [input_bam, region],
+        [input_bam],
         [output],
         [
             [ini_section, "module_deepvariant"]
