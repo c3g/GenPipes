@@ -11,11 +11,18 @@ class ValidationError(Exception):
 
 def load_file(file_path):
     '''
-    Loads file and returns a list of dictionaries
+    Loads file and returns a list of dictionaries, also checks for extra tabs
     '''
     with open(file_path, newline='') as f:
-        reader = csv.DictReader(f, delimiter='\t')
-        return [row for row in reader]
+        reader = csv.reader(f, delimiter='\t')
+        header = next(reader)
+        data = []
+        for row_num, row in enumerate(reader, start=1):
+            if len(row) > len(header):
+                print(f"Warning: Extra tab(s) detected at the end of line {row_num + 1}. Please remove any extra tabs.")
+            data.append(dict(zip(header, row)))
+        return data
+
 
 def unicode_check(string_array):
     '''
@@ -266,26 +273,26 @@ def readset_validator(readset_file, pipeline):
     Validator for readset file. activated by -r
     '''
     readset_dict = {}
-    readset_str = load_file(readset_file)
+    readset_list_dict = load_file(readset_file)
     try:
-        expected_header = readset_header_check(list(readset_str[0].keys()), pipeline)
+        expected_header = readset_header_check(list(readset_list_dict[0].keys()), pipeline)
 
-        readset_dict['unicodePass'] = unicode_check(readset_str)
-        readset_dict['DosNewlinePass'] = dos_newline_check(readset_str)
+        readset_dict['unicodePass'] = unicode_check(readset_list_dict)
+        readset_dict['DosNewlinePass'] = dos_newline_check(readset_list_dict)
         readset_dict['headerPass'] = True  # Already checked in readset_header_check
-        readset_dict['rowSizePass'] = row_size_check(readset_str)
-        readset_dict['trailingSpacesPass'] = trailing_spaces_check(readset_str)
-        readset_dict['uniquenessPass'] = readset_uniqueness_check(readset_str)
+        readset_dict['rowSizePass'] = row_size_check(readset_list_dict)
+        readset_dict['trailingSpacesPass'] = trailing_spaces_check(readset_list_dict)
+        readset_dict['uniquenessPass'] = readset_uniqueness_check(readset_list_dict)
 
         all_errors = []
         if 'RunType' in expected_header:
-            all_errors.extend(readset_run_type_check(readset_str))
+            all_errors.extend(readset_run_type_check(readset_list_dict))
         if 'Adapter1' in expected_header and 'Adapter2' in expected_header:
-            all_errors.extend(readset_adapter_check(readset_str))
+            all_errors.extend(readset_adapter_check(readset_list_dict))
         if 'QualityOffset' in expected_header:
-            all_errors.extend(readset_integer_check(readset_str))
+            all_errors.extend(readset_integer_check(readset_list_dict))
 
-        for row_num, row in enumerate(readset_str, start=1):
+        for row_num, row in enumerate(readset_list_dict, start=1):
             errors = check_column_dependencies(row, pipeline, row_num)
             all_errors.extend(errors)
 
