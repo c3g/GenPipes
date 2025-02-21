@@ -40,7 +40,10 @@ def annotate(
         [input_vcf, input_sv_indel],
         [output],
         [
-            [ini_section, "module_annotsv"]
+            [ini_section, "module_annotsv"],
+            [ini_section, "module_bedtools"],
+            [ini_section, "module_bcftools"]
+
         ],
         command="""\
 AnnotSV {other_options} \\
@@ -78,8 +81,8 @@ def html(
         [input_tsv],
         output,
         [
-            [ini_section, "module_knotAnnotSV"],
-            [ini_section, "module_perl"]
+            [ini_section, "module_perl"],
+            [ini_section, "module_knotAnnotSV"]
         ],
         command="""\
 perl $KNOTANNOTSV_HOME/knotAnnotSV.pl {html_options} \\
@@ -117,8 +120,8 @@ def excel(
         [input_tsv],
         output,
         [
-            [ini_section, "module_knotAnnotSV"],
-            [ini_section, "module_perl"]
+            [ini_section, "module_perl"],
+            [ini_section, "module_knotAnnotSV"]
         ],
         command="""\
 perl $KNOTANNOTSV_HOME/knotAnnotSV2XL.pl {excel_options} \\
