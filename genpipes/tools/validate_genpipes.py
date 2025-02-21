@@ -59,7 +59,7 @@ def dos_newline_check(string_array):
 
 def readset_header_check(header, pipeline):
     '''
-    Checks that the readset file header is correct based on the pipeline
+    Checks that the readset file header contains the required columns based on the pipeline
     '''
     valid_headers = {
         'ampliconseq': ['format5'],
@@ -88,8 +88,8 @@ def readset_header_check(header, pipeline):
 
     expected_header = formats[pipeline_format[0]]
 
-    if header != expected_header:
-        raise ValidationError(f"File header is not correct for {pipeline}. It should be:\n\n{'\t'.join(expected_header)}\n\nPlease fix this and try again!")
+    if not all(column in header for column in expected_header):
+        raise ValidationError(f"File header is not correct for {pipeline}. It should contain the following columns:\n\n{'\t'.join(expected_header)}\n\nPlease fix this and try again!")
     return expected_header
 
 def check_column_dependencies(row, pipeline, row_num):
