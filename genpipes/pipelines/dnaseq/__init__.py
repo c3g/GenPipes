@@ -47,6 +47,7 @@ from ...bfx import (
     cpsr,
     deliverables,
     delly,
+    djerba,
     gatk,
     gatk4,
     gemini,
@@ -2980,6 +2981,87 @@ END
                     )
                 else:
                     jobs.append(pcgr_job)
+
+        return jobs
+    
+    def report_djerba(self):
+        """
+        Produce Djerba report.
+        """
+        jobs = []
+        
+        token = global_conf.global_get('report_djerba', 'oncokb_token', param_type='filepath', required=False)
+
+        if token:
+            ensemble_directory = os.path.join(
+                self.output_dirs['paired_variants_directory'],
+                "ensemble"
+                )
+            assembly = global_conf.global_get('report_pcgr', 'assembly')
+        
+            for tumor_pair in self.tumor_pairs.values():
+                djerba_dir = os.path.join(self.output_dirs['report'][tumor_pair.name], "djerba")
+                purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
+                purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
+            
+                cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
+                input_cpsr = os.path.join(cpsr_directory, tumor_pair.name + ".cpsr." + assembly + ".json.gz")
+                input_vcf = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz")
+                pcgr_directory = os.path.join(djerba_dir, "pcgr")
+                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")
+                clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".clean.maf") # MAF from pcgr version 1.4.1 required, remove any empty t_depth lines, needs to be gzipped
+            
+                provenance_decoy = os.path.join(djerba_dir, "provenance_subset.tsv.gz")
+                config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
+                djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(djerba_dir),
+                            bash.mkdir(pcgr_directory),
+                            pcgr.report(
+                                input_vcf,
+                                input_cpsr,
+                                pcgr_directory,
+                                tumor_pair.name,
+                                ini_section='report_djerba'
+                                ),# add pcgr job to create MAF in correct format (1.4.1), remove chrM, gzip.
+                            djerba.clean_maf(
+                                input_maf,
+                                clean_maf
+                                ),
+                            bash.zip(
+                                purple_dir,
+                                purple_zip,
+                                recursive=True
+                                ),
+                            bash.touch(provenance_decoy),
+                            djerba.make_config(
+                                config_file,
+                                tumor_pair.name,
+                                tumor_pair.tumor.name,
+                                tumor_pair.normal.name,
+                                clean_maf + ".gz",
+                                purple_zip
+                                ),
+                            # djerba report requires internet connection. Script is produced but must be executed locally.
+                            djerba.make_script(
+                                config_file,
+                                djerba_dir,
+                                djerba_script
+                                )
+                        ],
+                        name="djerba." + tumor_pair.name,
+                        samples=[tumor_pair.tumor],
+                        readsets=list(tumor_pair.tumor.readsets),
+                        input_dependency=[input_vcf, os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")],
+                        output_dependency=[config_file, djerba_script]
+                        )
+                    )
+
+        else:
+            log.debug("No CncoKB token provided in config file, skipping djerba report step.")
 
         return jobs
 
@@ -8266,6 +8348,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.report_cpsr,
                 self.filter_somatic,
                 self.report_pcgr,
+                self.report_djerba,
                 self.run_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,
