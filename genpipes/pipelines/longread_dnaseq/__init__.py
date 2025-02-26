@@ -803,6 +803,7 @@ TBA: documentation for revio protocol.
                     ],
                     name=f"sawfish.{sample.name}",
                     samples=[sample],
+                    output_dependency=[sawfish_output_filtered],
                     readsets=[*list(sample.readsets)]
                 )
             )
