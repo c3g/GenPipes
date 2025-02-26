@@ -3061,7 +3061,7 @@ END
                     )
 
         else:
-            log.debug("No CncoKB token provided in config file, skipping djerba report step.")
+            log.debug("No OncoKB token provided in config file, skipping djerba report step.")
 
         return jobs
 
