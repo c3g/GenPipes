@@ -43,7 +43,10 @@ def run(
             [ini_section, "module_apptainer"]
         ],
         command="""\
-run_deepvariant {other_options} \\
+apptainer exec \\
+  --bind /cvmfs/soft.mugqic,/cvmfs/ref.mugqic,{extra_paths_to_bind} \\
+  -e $DEEPVARIANT_ROOT \\
+  run_deepvariant {other_options} \\
   --reads {input_bam} \\
   --ref {genome_fasta} \\
   --model_type {model_type} \\
@@ -51,6 +54,7 @@ run_deepvariant {other_options} \\
   --num_shards {threads} \\
   --intermediate_results_dir {tmp_dir} \\
   --output_vcf {output}""".format(
+            extra_paths_to_bind=global_conf.global_get(ini_section, 'extra_paths_to_bind', required=False),
             other_options=global_conf.global_get(ini_section, 'other_options', required=False),
             input_bam=input_bam,
             genome_fasta=global_conf.global_get(ini_section, 'genome_fasta'),
