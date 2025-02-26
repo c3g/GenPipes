@@ -699,10 +699,6 @@ TBA: documentation for revio protocol.
 
             job = concat_jobs(
                 [
-                    htslib.tabix(
-                        deepvariant_vcf,
-                        "-pvcf"
-                    ),
                     bcftools.view(
                         deepvariant_vcf,
                         deepvariant_filtered,
@@ -710,7 +706,7 @@ TBA: documentation for revio protocol.
                     ),
                     htslib.tabix(
                         deepvariant_filtered,
-                        "-pvcf"
+                        "-f -pvcf"
                     )
                 ]
             )
@@ -730,6 +726,10 @@ TBA: documentation for revio protocol.
                                 vcfs_to_merge,
                                 deepvariant_vcf,
                                 "-oZ"
+                            ),
+                            htslib.tabix(
+                                deepvariant_vcf,
+                                "-f -pvcf"
                             ),
                             job
                         ],
