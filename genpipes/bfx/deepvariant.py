@@ -39,7 +39,8 @@ def run(
         [input_bam],
         [output],
         [
-            [ini_section, "module_deepvariant"]
+            [ini_section, "module_deepvariant"],
+            [ini_section, "module_apptainer"]
         ],
         command="""\
 run_deepvariant {other_options} \\
