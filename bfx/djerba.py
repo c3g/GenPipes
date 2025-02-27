@@ -122,7 +122,7 @@ depends_extract =
 configure_priority = 1200
 extract_priority = 1200
 render_priority = 1200
-{"custom_template_dir = " + config.param(ini_section, 'custom_template_dir', required = False) if config.param(ini_section, 'custom_template_dir', required = False) else ""}
+{"template_dir = " + config.param(ini_section, 'template_dir', required = False) if config.param(ini_section, 'template_dir', required = False) else ""}
 """
     return Job(
         output_files = [output],
@@ -165,7 +165,8 @@ def make_script(
         [],
         command="""\
 echo "module purge && module load {module_djerba} {module_wkhtmltopdf} && \\
-export ONCOKB_TOKEN={oncokb_token} \\
+export ONCOKB_TOKEN={oncokb_token} && \\
+export DJERBA_CORE_HTML_DIR={html_directory} && \\
 
 djerba.py {djerba_options} report \\
     -i {config_file} \\
@@ -174,6 +175,7 @@ djerba.py {djerba_options} report \\
         module_djerba=config.param(ini_section, 'module_djerba'),
         module_wkhtmltopdf=config.param(ini_section, 'module_wkhtmltopdf'),
         oncokb_token=config.param(ini_section, 'oncokb_token'),
+        html_directory=config.param(ini_section, 'custom_html_directory'),
         djerba_options=config.param(ini_section, 'djerba_options', required=False),
         config_file=config_file,
         output_dir=output_dir,
