@@ -69,7 +69,7 @@ multiBamSummary bins --verbose \\
     --bamfiles {all_bam_files} \\
     --outFileName {summ_matrix}""".format(
             cpu=global_conf.global_get('deeptools_QC', 'cluster_cpu', required=True),
-            all_bam_file=[''.join(lst) for lst in all_bam_file],
+            all_bam_files=[''.join(lst) for lst in all_bam_files],
             summ_matrix=summ_matrix,
         )
   )
