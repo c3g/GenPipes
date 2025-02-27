@@ -35,6 +35,7 @@ from ...bfx import(
     bash_cmd as bash,
     bedtools,
     bwa2,
+    deeptools,
     differential_binding,
     gatk4,
     homer,
