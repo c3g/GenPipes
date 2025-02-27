@@ -62,12 +62,12 @@ donor = {tumor_pair_name}
 provenance_input_path = provenance_input.tsv.gz
 
 [case_overview]
-assay = testing
+assay = {assay}
 attributes = research
 assay_description = Whole Genome Sequencing - Tumor Pair Pipeline
 primary_cancer = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else "Unknown"}
 site_of_biopsy = Unknown
-study = {global_conf.global_get(ini_section, 'project_name', required = False) if global_conf.global_get(ini_section, 'project_name', required = False) else "MoH"}
+study = {global_conf.global_get(ini_section, 'project_name', required = False) if global_conf.global_get(ini_section, 'project_name', required = False) else "Unknown"}
 patient_study_id = {tumor_pair_name}
 donor = {tumor_pair_name}
 tumour_id = {tumor_id}
@@ -122,7 +122,7 @@ depends_extract =
 configure_priority = 1200
 extract_priority = 1200
 render_priority = 1200
-{"custom_template_dir = " + global_conf.global_get(ini_section, 'custom_template_dir', required = False) if global_conf.global_get(ini_section, 'custom_template_dir', required = False) else ""}
+{"template_dir = " + global_conf.global_get(ini_section, 'template_dir', required = False) if global_conf.global_get(ini_section, 'template_dir', required = False) else ""}
 """
     return Job(
         output_files = [output],
@@ -164,7 +164,8 @@ def make_script(
         [output_file],
         [],
         command="""\
-echo "module purge && module load {module_djerba} {module_wkhtmltopdf} && \\
+echo "module purge && \\
+module load {module_djerba} {module_wkhtmltopdf} && \\
 export ONCOKB_TOKEN={oncokb_token} \\
 
 djerba.py {djerba_options} report \\
