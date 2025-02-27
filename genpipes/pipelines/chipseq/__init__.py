@@ -886,24 +886,25 @@ done""".format(
         corr_table = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools', "corrMatrixCounts.txt")
 
         jobs.append(
-            concat_jobs([
-                bash.mkdir(output_dir),
-                bash.mkdir(link_directory),
-                deeptools.multibamsummary(
-                    all_bam_files,
-                    summ_matrix
-                ),
-                deeptools.plotcorrelation( 
-                    summ_matrix,
-                    corr_plot,
-                    corr_table
-                ),
-                bash.ln(
-                    os.path.relpath(output_plot, link_directory),
-                    os.path.join(link_directory, f"corrMatrix.pdf"),
-                    input = output_plot
-                )
-            ],
+            concat_jobs(
+                [
+                    bash.mkdir(output_dir),
+                    bash.mkdir(link_directory),
+                    deeptools.multibamsummary(
+                        all_bam_files,
+                        summ_matrix
+                    ),
+                    deeptools.plotcorrelation( 
+                        summ_matrix,
+                        corr_plot,
+                        corr_table
+                    ),
+                    bash.ln(
+                        os.path.relpath(output_plot, link_directory),
+                        os.path.join(link_directory, f"corrMatrix.pdf"),
+                        input = output_plot
+                    )
+                ],
                 name=f"deeptools_corrMatrix",
             )
         )
@@ -926,25 +927,26 @@ done""".format(
                 any_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items()]
 
             jobs.append(
-                        concat_jobs([
-                            bash.mkdir(output_sample_dir),
-                            bash.mkdir(link_directory),
-                            deeptools.fingerprint(
-                                options,
-                                any_bam_file,
-                                fingerprint_plot, 
-                                fingerprint_matrix
-                            ),
-                            bash.ln(
-                                os.path.relpath(fingerprint_plot, link_directory),
-                                os.path.join(link_directory, f"{sample.name}_fingerprint.pdf"),
-                                input = fingerprint_plot
-                            )
-                        ],
-                            name=f"deeptools_finger.{sample.name}",
+                concat_jobs(
+                    [
+                        bash.mkdir(output_sample_dir),
+                        bash.mkdir(link_directory),
+                        deeptools.fingerprint(
+                            options,
+                            any_bam_file,
+                            fingerprint_plot, 
+                            fingerprint_matrix
+                        ),
+                        bash.ln(
+                            os.path.relpath(fingerprint_plot, link_directory),
+                            os.path.join(link_directory, f"{sample.name}_fingerprint.pdf"),
+                            input = fingerprint_plot
                         )
-                    )
-                    self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint.pdf"))
+                    ],
+                    name=f"deeptools_finger.{sample.name}",
+                )
+            )
+            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint.pdf"))
 
         return jobs
 
