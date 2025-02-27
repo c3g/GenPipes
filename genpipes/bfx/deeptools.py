@@ -55,9 +55,9 @@ bamCoverage --verbose \\
   )
 
 
-def multibamsummary(all_bam_file, summ_matrix, ini_section='deeptools_QC'):
+def multibamsummary(all_bam_files, summ_matrix, ini_section='deeptools_QC'):
     return Job(
-        input_files=[all_bam_file],
+        input_files=[all_bam_files],
         output_files=[summ_matrix],
         module_entries=[
                 [ini_section, 'default'],
@@ -66,10 +66,10 @@ def multibamsummary(all_bam_file, summ_matrix, ini_section='deeptools_QC'):
         command="""\
 multiBamSummary bins --verbose \\
     --numberOfProcessors {cpu} \\
-    --bamfiles {all_bam_file} \\
+    --bamfiles {all_bam_files} \\
     --outFileName {summ_matrix}""".format(
             cpu=global_conf.global_get('deeptools_QC', 'cluster_cpu', required=True),
-            all_bam_file=all_bam_file,
+            all_bam_files=" ".join(all_bam_files),
             summ_matrix=summ_matrix,
         )
   )
@@ -100,7 +100,7 @@ plotCorrelation --verbose \\
 
 def plotfingerplot(any_bam_file, fingerprint_plot, fingerprint_matrix, ini_section='deeptools_QC'):
     return Job(
-        input_files=[any_bam_file],
+        input_files=any_bam_file,
         output_files=[fingerprint_plot, fingerprint_matrix],
         module_entries=[
                 [ini_section, 'default'],
@@ -117,7 +117,7 @@ plotFingerprint --verbose \\
     --outRawCounts {fingerprint_matrix}""".format(
             options=global_conf.global_get('deeptools_QC', 'options'),
             cpu=global_conf.global_get('deeptools_QC', 'cluster_cpu', required=True),
-            any_bam_file=any_bam_file,
+            any_bam_file=" ".join(any_bam_file),
             fingerprint_plot=fingerprint_plot,
             fingerprint_matrix=fingerprint_matrix,
         )
