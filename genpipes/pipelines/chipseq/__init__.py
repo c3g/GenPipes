@@ -866,25 +866,31 @@ done""".format(
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
         all_bam_files = []
-        if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
-            all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam") for mark_name, mark_type in sample.marks.items()]
-        else:
-            all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items()]
-        all_bam_file = ' '.join(any_file_list)
+
+        ## Loop to get bam files per sample
+        for sample in self.samples:
+
+            ## if - to get cleaned or not bams / for each mark.type
+            if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+                all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam") for mark_name, mark_type in sample.marks.items()]
+            else:
+                all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items()]
+
+            all_bam_files.append(all_file_list)
 
         # Set essential variables - First Step
-        output_dir = os.path.join(self.output_dirs['metrics_directory'], sample.name, 'Deeptools')
-        summ_matrix = os.path.join(self.output_dirs['metrics_directory'], sample.name, 'Deeptools', sample.name + "_results.npz.txt")
+        output_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
+        summ_matrix = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools', "BamSummResults.npz.txt")
         # Set essential variables - Second Step
-        corr_plot = os.path.join(self.output_dirs['metrics_directory'], sample.name, 'Deeptools', sample.name + "_corrMatrix.pdf")
-        corr_table = os.path.join(self.output_dirs['metrics_directory'], sample.name, 'Deeptools', sample.name + "_corrMatrixCounts.txt")
+        corr_plot = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools', "corrMatrix.pdf")
+        corr_table = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools', "corrMatrixCounts.txt")
 
         jobs.append(
             concat_jobs([
                 bash.mkdir(output_dir),
                 bash.mkdir(link_directory),
                 deeptools.multibamsummary(
-                    all_bam_file,
+                    all_bam_files,
                     summ_matrix
                 ),
                 deeptools.plotcorrelation( 
@@ -894,22 +900,23 @@ done""".format(
                 ),
                 bash.ln(
                     os.path.relpath(output_plot, link_directory),
-                    os.path.join(link_directory, f"{sample.name}_corrMatrix.pdf"),
+                    os.path.join(link_directory, f"corrMatrix.pdf"),
                     input = output_plot
                 )
             ],
-                name=f"deeptools_corrMatrix.{sample.name}",
-                removable_files=[output_dir]
+                name=f"deeptools_corrMatrix",
             )
         )
-        self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_corrMatrix.pdf"))
+        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix.pdf"))
 
 
         for sample in self.samples:
 
+            output_sample_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools', sample.name)
+
             # Set essential variables - fingerprint
-            fingerprint_plot = os.path.join(self.output_dirs['metrics_directory'], sample.name, 'Deeptools', sample.name + "_fingerprint.pdf")
-            fingerprint_matrix = os.path.join(self.output_dirs['metrics_directory'], sample.name, 'Deeptools', sample.name + "_counts.txt")
+            fingerprint_plot = os.path.join(self.output_dirs['metrics_directory'],'Deeptools', sample.name, sample.name + "_fingerprint.pdf")
+            fingerprint_matrix = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools', sample.name, sample.name + "_counts.txt")
             
             # Get bam files - input and mark together
             any_bam_file = []
@@ -917,11 +924,10 @@ done""".format(
                 any_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam") for mark_name, mark_type in sample.marks.items()]
             else:
                 any_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items()]
-            any_bam_file = ' '.join(any_file_list)
 
             jobs.append(
                         concat_jobs([
-                            bash.mkdir(output_dir),
+                            bash.mkdir(output_sample_dir),
                             bash.mkdir(link_directory),
                             deeptools.fingerprint(
                                 options,
@@ -930,13 +936,12 @@ done""".format(
                                 fingerprint_matrix
                             ),
                             bash.ln(
-                                os.path.relpath(output_plot, link_directory),
+                                os.path.relpath(fingerprint_plot, link_directory),
                                 os.path.join(link_directory, f"{sample.name}_fingerprint.pdf"),
-                                input = output_plot
+                                input = fingerprint_plot
                             )
                         ],
                             name=f"deeptools_finger.{sample.name}",
-                            removable_files=[output_dir]
                         )
                     )
                     self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint.pdf"))
