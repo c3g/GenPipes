@@ -2008,6 +2008,7 @@ cat {metrics_merged_out} >> {ihec_multiqc_file}"""
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,
+                self.deeptools_QC
                 self.homer_make_ucsc_file,  #12
                 self.macs2_callpeak,
                 self.homer_annotate_peaks,
