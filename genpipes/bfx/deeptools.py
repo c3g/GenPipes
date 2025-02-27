@@ -59,9 +59,7 @@ def multibamsummary(all_bam_files, summ_matrix, ini_section='deeptools_QC'):
     return Job(
         input_files=[all_bam_files],
         output_files=[summ_matrix],
-        module_entries=[
-                [ini_section, 'default'],
-                [ini_section, 'module_deeptools']
+        module_entries=[['default', 'module_deeptools']
         ],
         command="""\
 multiBamSummary bins --verbose \\
@@ -79,9 +77,7 @@ def plotcorrelation(input_matrix, corr_plot, corr_table, ini_section='deeptools_
     return Job(
         input_files=[input_matrix],
         output_files=[corr_plot, corr_table],
-        module_entries=[
-                [ini_section, 'default'],
-                [ini_section, 'module_deeptools']
+        module_entries=[['default', 'module_deeptools']
         ],
         command="""\
 plotCorrelation --verbose \\
