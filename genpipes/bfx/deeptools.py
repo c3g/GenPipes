@@ -69,7 +69,7 @@ multiBamSummary bins --verbose \\
     --bamfiles {all_bam_files} \\
     --outFileName {summ_matrix}""".format(
             cpu=global_conf.global_get('deeptools_QC', 'cluster_cpu', required=True),
-            all_bam_files=" ".join(all_bam_files),
+            all_bam_file=[''.join(lst) for lst in all_bam_file],
             summ_matrix=summ_matrix,
         )
   )
@@ -117,7 +117,7 @@ plotFingerprint --verbose \\
     --outRawCounts {fingerprint_matrix}""".format(
             options=global_conf.global_get('deeptools_QC', 'options'),
             cpu=global_conf.global_get('deeptools_QC', 'cluster_cpu', required=True),
-            any_bam_file=" ".join(any_bam_file),
+            any_bam_file=[''.join(lst) for lst in any_bam_file],
             fingerprint_plot=fingerprint_plot,
             fingerprint_matrix=fingerprint_matrix,
         )
