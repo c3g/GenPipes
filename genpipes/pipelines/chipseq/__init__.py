@@ -871,11 +871,11 @@ done""".format(
         ## Loop to get bam files per sample
         for sample in self.samples:
             for mark_name in sample.marks:
-                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                alignment_directory=os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 # Select input from blacklist filtered (clean) or just sambamba filtered bam
-                filtered_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam")
-                clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
-                candidate_bam_files = [[clean_bam], [filtered_bam]]
+                filtered_bam=os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam")
+                clean_bam=os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
+                candidate_bam_files=[[clean_bam], [filtered_bam]]
                 [bam_file] = self.select_input_files(candidate_bam_files)
 
                 all_bam_files.append(bam_file)
