@@ -933,7 +933,6 @@ done""".format(
                         bash.mkdir(output_sample_dir),
                         bash.mkdir(link_directory),
                         deeptools.plotfingerplot(
-                            options,
                             any_bam_file,
                             fingerprint_plot, 
                             fingerprint_matrix

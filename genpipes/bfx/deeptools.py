@@ -111,7 +111,7 @@ plotFingerprint --verbose \\
     --bamfiles {any_bam_file} \\
     --plotFile {fingerprint_plot} \\
     --outRawCounts {fingerprint_matrix}""".format(
-            options=global_conf.global_get('deeptools_QC', 'options'),
+            options=global_conf.global_get(ini_section, 'options'),
             cpu=global_conf.global_get('deeptools_QC', 'cluster_cpu', required=True),
             any_bam_file=[''.join(lst) for lst in any_bam_file],
             fingerprint_plot=fingerprint_plot,
