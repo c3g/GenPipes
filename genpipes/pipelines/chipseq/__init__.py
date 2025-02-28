@@ -894,11 +894,11 @@ done""".format(
         #     all_bam_files.append(all_file_list)
 
         # Set essential variables - First Step
-        output_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
-        summ_matrix = os.path.join(output_dir, "BamSummResults.npz.txt")
+        output_dir=os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
+        summ_matrix=os.path.join(output_dir, "BamSummResults.npz.txt")
         # Set essential variables - Second Step
-        corr_plot = os.path.join(output_dir, "corrMatrix.pdf")
-        corr_table = os.path.join(output_dir, "corrMatrixCounts.txt")
+        corr_plot=os.path.join(output_dir, "corrMatrix.pdf")
+        corr_table=os.path.join(output_dir, "corrMatrixCounts.txt")
 
         jobs.append(
             concat_jobs(
