@@ -901,9 +901,9 @@ done""".format(
                         corr_table
                     ),
                     bash.ln(
-                        os.path.relpath(output_plot, link_directory),
-                        os.path.join(link_directory, f"corrMatrix.pdf"),
-                        input = output_plot
+                        target_file=os.path.relpath(corr_plot, link_directory),
+                        link=os.path.join(link_directory, ".corrMatrix_mqc.pdf"),
+                        input_file=corr_plot
                     )
                 ],
                 name=f"deeptools_corrMatrix",
@@ -939,9 +939,9 @@ done""".format(
                             fingerprint_matrix
                         ),
                         bash.ln(
-                            os.path.relpath(fingerprint_plot, link_directory),
-                            os.path.join(link_directory, f"{sample.name}_fingerprint.pdf"),
-                            input = fingerprint_plot
+                            target_file=os.path.relpath(fingerprint_plot, link_directory),
+                            link=os.path.join(link_directory, sample.name + "_fingerprint_mqc.pdf"),
+                            input_file=fingerprint_plot
                         )
                     ],
                     name=f"deeptools_finger.{sample.name}",
