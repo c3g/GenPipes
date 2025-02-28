@@ -866,14 +866,12 @@ done""".format(
 
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
-        bam_file=[]
         all_bam_files = []
 
         ## Loop to get bam files per sample
         for sample in self.samples:
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
-                raw_bam_file = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.bam")
                 # Select input from blacklist filtered (clean) or just sambamba filtered bam
                 filtered_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam")
                 clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
@@ -881,6 +879,8 @@ done""".format(
                 [bam_file] = self.select_input_files(candidate_bam_files)
 
                 all_bam_files.append(bam_file)
+
+        all_bam_files=[" ".join(" ".join(lst) for lst in all_bam_files)]
 
         # ## Loop to get bam files per sample
         # for sample in self.samples:
