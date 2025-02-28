@@ -866,6 +866,7 @@ done""".format(
 
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
+        bam_file=[]
         all_bam_files = []
 
         ## Loop to get bam files per sample
@@ -877,8 +878,9 @@ done""".format(
                 filtered_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam")
                 clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
                 candidate_bam_files = [[clean_bam], [filtered_bam]]
+                [bam_file] = self.select_input_files(candidate_input_files)
 
-                all_bam_files.append(candidate_bam_files)
+                all_bam_files.append(bam_file)
 
         # ## Loop to get bam files per sample
         # for sample in self.samples:
