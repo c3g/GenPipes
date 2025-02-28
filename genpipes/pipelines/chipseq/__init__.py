@@ -866,50 +866,50 @@ done""".format(
 
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
-        all_bam_files = []
+        # all_bam_files = []
 
-        ## Loop to get bam files per sample
-        for sample in self.samples:
+        # ## Loop to get bam files per sample
+        # for sample in self.samples:
 
-            ## if - to get cleaned or not bams / for each mark.type
-            if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
-                all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam") for mark_name, mark_type in sample.marks.items()]
-            else:
-                all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items()]
+        #     ## if - to get cleaned or not bams / for each mark.type
+        #     if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+        #         all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam") for mark_name, mark_type in sample.marks.items()]
+        #     else:
+        #         all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items()]
 
-            all_bam_files.append(all_file_list)
+        #     all_bam_files.append(all_file_list)
 
-        # Set essential variables - First Step
-        output_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
-        summ_matrix = os.path.join(output_dir, "BamSummResults.npz.txt")
-        # Set essential variables - Second Step
-        corr_plot = os.path.join(output_dir, "corrMatrix.pdf")
-        corr_table = os.path.join(output_dir, "corrMatrixCounts.txt")
+        # # Set essential variables - First Step
+        # output_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
+        # summ_matrix = os.path.join(output_dir, "BamSummResults.npz.txt")
+        # # Set essential variables - Second Step
+        # corr_plot = os.path.join(output_dir, "corrMatrix.pdf")
+        # corr_table = os.path.join(output_dir, "corrMatrixCounts.txt")
 
-        jobs.append(
-            concat_jobs(
-                [
-                    bash.mkdir(output_dir),
-                    bash.mkdir(link_directory),
-                    deeptools.multibamsummary(
-                        all_bam_files,
-                        summ_matrix
-                    ),
-                    deeptools.plotcorrelation( 
-                        summ_matrix,
-                        corr_plot,
-                        corr_table
-                    ),
-                    bash.ln(
-                        target_file=os.path.relpath(corr_plot, link_directory),
-                        link=os.path.join(link_directory, "corrMatrix_mqc.pdf"),
-                        input_file=corr_plot
-                    )
-                ],
-                name=f"deeptools_corrMatrix",
-            )
-        )
-        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix_mqc.pdf"))
+        # jobs.append(
+        #     concat_jobs(
+        #         [
+        #             bash.mkdir(output_dir),
+        #             bash.mkdir(link_directory),
+        #             deeptools.multibamsummary(
+        #                 all_bam_files,
+        #                 summ_matrix
+        #             ),
+        #             deeptools.plotcorrelation( 
+        #                 summ_matrix,
+        #                 corr_plot,
+        #                 corr_table
+        #             ),
+        #             bash.ln(
+        #                 target_file=os.path.relpath(corr_plot, link_directory),
+        #                 link=os.path.join(link_directory, "corrMatrix_mqc.pdf"),
+        #                 input_file=corr_plot
+        #             )
+        #         ],
+        #         name=f"deeptools_corrMatrix",
+        #     )
+        # )
+        # self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix_mqc.pdf"))
 
 
         for sample in self.samples:
