@@ -909,7 +909,7 @@ done""".format(
                 name=f"deeptools_corrMatrix",
             )
         )
-        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix.pdf"))
+        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix_mqc.pdf"))
 
 
         for sample in self.samples:
@@ -945,10 +945,10 @@ done""".format(
                             input_file=fingerprint_plot
                         )
                     ],
-                    name=f"deeptools_finger.{sample.name}",
+                    name=f"deeptools_fingerplot.{sample.name}",
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint.pdf"))
+            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint_mqc.pdf"))
 
         return jobs
 
