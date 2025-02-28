@@ -98,10 +98,7 @@ def plotfingerplot(any_bam_file, fingerprint_plot, fingerprint_matrix, ini_secti
     return Job(
         input_files=any_bam_file,
         output_files=[fingerprint_plot, fingerprint_matrix],
-        module_entries=[
-                [ini_section, 'default'],
-                [ini_section, 'module_deeptools']
-        ],
+        module_entries=[['default', 'module_deeptools']],
         command="""\
 plotFingerprint --verbose \\
     {options} \\
