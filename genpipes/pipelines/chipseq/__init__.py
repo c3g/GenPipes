@@ -909,7 +909,7 @@ done""".format(
                 name=f"deeptools_corrMatrix",
             )
         )
-        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix_mqc.pdf"))
+        #self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix_mqc.pdf"))
 
 
         for sample in self.samples:
