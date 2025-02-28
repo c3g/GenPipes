@@ -56,6 +56,9 @@ bamCoverage --verbose \\
 
 
 def multibamsummary(all_bam_files, summ_matrix, ini_section='deeptools_QC'):
+    
+    all_bam_files=" ".join((" ".join(lst) for lst in all_bam_files))
+
     return Job(
         input_files=[all_bam_files],
         output_files=[summ_matrix],
