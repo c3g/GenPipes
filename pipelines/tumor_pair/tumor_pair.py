@@ -7191,12 +7191,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.filter_ensemble_somatic, #35
                 self.report_cpsr,
                 self.report_pcgr,
-                self.report_djerba,
                 self.run_pair_multiqc,
-                self.sym_link_fastq_pair, #40
-                self.sym_link_final_bam, 
+                self.sym_link_fastq_pair,
+                self.sym_link_final_bam, #40
                 self.sym_link_report,
-                self.sym_link_ensemble
+                self.sym_link_ensemble,
+                self.report_djerba
             ],
             [
                 self.picard_sam_to_fastq,
