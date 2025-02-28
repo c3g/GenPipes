@@ -880,6 +880,8 @@ done""".format(
 
                 all_bam_files.append(bam_file)
 
+        print(all_bam_files)
+
         # ## Loop to get bam files per sample
         # for sample in self.samples:
 
