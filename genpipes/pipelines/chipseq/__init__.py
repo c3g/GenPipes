@@ -927,6 +927,8 @@ done""".format(
             else:
                 any_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items()]
 
+            any_bam_files.append(any_file_list)
+
             jobs.append(
                 concat_jobs(
                     [
