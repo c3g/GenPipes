@@ -870,14 +870,26 @@ done""".format(
 
         ## Loop to get bam files per sample
         for sample in self.samples:
+            for mark_name in sample.marks:
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                raw_bam_file = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.bam")
+                # Select input from blacklist filtered (clean) or just sambamba filtered bam
+                filtered_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam")
+                clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
+                candidate_bam_files = [[clean_bam], [filtered_bam]]
 
-            ## if else - to get cleaned or not bams / for each mark.type
-            if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
-                all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam") for mark_name in sample.marks]
-            else:
-                all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam") for mark_name in sample.marks]
+                all_bam_files.append(candidate_bam_files)
 
-            all_bam_files.append(all_file_list)
+        # ## Loop to get bam files per sample
+        # for sample in self.samples:
+
+        #     ## if else - to get cleaned or not bams / for each mark.type
+        #     if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+        #         all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam") for mark_name, mark_type in sample.marks.items()]
+        #     else:
+        #         all_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items()]
+
+        #     all_bam_files.append(all_file_list)
 
         # Set essential variables - First Step
         output_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
