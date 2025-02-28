@@ -948,7 +948,7 @@ done""".format(
                     name=f"deeptools_fingerplot.{sample.name}",
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint_mqc.pdf"))
+            #self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint_mqc.pdf"))
 
         return jobs
 
