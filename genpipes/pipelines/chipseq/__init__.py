@@ -935,7 +935,7 @@ done""".format(
                 candidate_bam_files = [[clean_bam], [filtered_bam]]
                 bam_file = self.select_input_files(candidate_bam_files)
 
-            any_bam_file.extend(bam_file)
+                any_bam_file.extend(bam_file)
 
             jobs.append(
                 concat_jobs(
