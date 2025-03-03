@@ -878,12 +878,7 @@ done""".format(
                 candidate_bam_files=[[clean_bam], [filtered_bam]]
                 bam_file = self.select_input_files(candidate_bam_files)
 
-                all_bam_files.append(bam_file)
-
-        all_bam_files2=" ".join((" ".join(lst) for lst in all_bam_files))
-
-        print(all_bam_files)
-        print(all_bam_files2)
+                all_bam_files.extend(bam_file)
 
         # ## Loop to get bam files per sample
         # for sample in self.samples:
