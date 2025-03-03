@@ -880,7 +880,7 @@ done""".format(
 
                 all_bam_files.append(bam_file)
 
-        all_bam_files2=" ".join(all_bam_files)
+        all_bam_files2=" ".join((" ".join(lst) for lst in all_bam_files))
 
         print(all_bam_files)
         print(all_bam_files2)
