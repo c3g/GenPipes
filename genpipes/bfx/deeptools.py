@@ -80,11 +80,15 @@ def plotcorrelation(input_matrix, corr_plot, corr_table, ini_section='deeptools_
         module_entries=[['default', 'module_deeptools']
         ],
         command="""\
-plotCorrelation --verbose \\
+plotCorrelation \\
     --corData {input_matrix} \\
     --corMethod spearman \\
     --whatToPlot heatmap \\
-    --plotFileFormat pdf \\
+    --colorMap RdYlGn \\
+    --plotNumbers \\
+    --skipZeros \\
+    --plotTitle "Spearman Correlation of Read Counts" \\
+    --plotFileFormat png \\
     --plotFile {corr_plot} \\
     --outFileCorMatrix {corr_table}""".format(
             input_matrix=input_matrix,
@@ -102,7 +106,8 @@ def plotfingerplot(any_bam_file, fingerprint_plot, fingerprint_matrix, ini_secti
         command="""\
 plotFingerprint --verbose \\
     {options} \\
-    --plotFileFormat pdf \\
+    --plotFileFormat png \\
+    --smartLabels \\
     --centerReads \\
     --numberOfProcessors {cpu} \\
     --bamfiles {any_bam_file} \\

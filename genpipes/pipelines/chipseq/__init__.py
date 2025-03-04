@@ -885,7 +885,7 @@ done""".format(
         output_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
         summ_matrix = os.path.join(output_dir, "BamSummResults.npz.txt")
         # Set essential variables - Second Step
-        corr_plot = os.path.join(output_dir, "corrMatrix.pdf")
+        corr_plot = os.path.join(output_dir, "corrMatrix.png")
         corr_table = os.path.join(output_dir, "corrMatrixCounts.txt")
 
         jobs.append(
@@ -904,14 +904,14 @@ done""".format(
                     ),
                     bash.ln(
                         target_file = os.path.relpath(corr_plot, link_directory),
-                        link = os.path.join(link_directory, "corrMatrix_mqc.pdf"),
+                        link = os.path.join(link_directory, "corrMatrix_mqc.png"),
                         input_file = corr_plot
                     )
                 ],
                 name = f"deeptools_corrMatrix",
             )
         )
-        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix_mqc.pdf"))
+        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix_mqc.png"))
 
 
         for sample in self.samples:
@@ -919,7 +919,7 @@ done""".format(
             output_sample_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools', sample.name)
 
             # Set essential variables - fingerprint
-            fingerprint_plot = os.path.join(output_sample_dir, f"{sample.name}_fingerprint.pdf")
+            fingerprint_plot = os.path.join(output_sample_dir, f"{sample.name}_fingerprint.png")
             fingerprint_matrix = os.path.join(output_sample_dir, f"{sample.name}_counts.txt")
             
 
@@ -949,14 +949,14 @@ done""".format(
                         ),
                         bash.ln(
                             target_file = os.path.relpath(fingerprint_plot, link_directory),
-                            link = os.path.join(link_directory, f"{sample.name}_fingerprint_mqc.pdf"),
+                            link = os.path.join(link_directory, f"{sample.name}_fingerprint_mqc.png"),
                             input_file = fingerprint_plot
                         )
                     ],
                     name=f"deeptools_fingerplot.{sample.name}",
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint_mqc.pdf"))
+            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint_mqc.png"))
 
         return jobs
 
