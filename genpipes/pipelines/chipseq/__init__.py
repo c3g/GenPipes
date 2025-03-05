@@ -884,7 +884,7 @@ done""".format(
                 bam_name = f"{sample.name}.{mark_name}"
 
                 all_bam_files.extend(bam_file)
-                all_bam_names.extend(bam_name)
+                all_bam_names.append(bam_name)
 
         # Set essential variables - First Step
         output_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
@@ -945,7 +945,7 @@ done""".format(
                 bam_name = f"{sample.name}.{mark_name}"
 
                 any_bam_file.extend(bam_file)
-                any_bam_name.extend(bam_name)
+                any_bam_name.append(bam_name)
 
             jobs.append(
                 concat_jobs(
