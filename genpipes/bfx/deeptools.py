@@ -82,7 +82,7 @@ def plotcorrelation(input_matrix, all_bam_names, corr_plot, corr_table, ini_sect
         command="""\
 plotCorrelation \\
     --corData {input_matrix} \\
-    --lables {all_bam_names} \\
+    --labels {all_bam_names} \\
     --corMethod spearman \\
     --whatToPlot heatmap \\
     --colorMap RdYlGn \\
