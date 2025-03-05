@@ -72,7 +72,7 @@ patient_study_id = {tumor_pair_name}
 donor = {tumor_pair_name}
 tumour_id = {tumor_id}
 normal_id = {normal_id}
-requisition_approved = 2185-07-18
+requisition_approved = 0000-00-00
 
 [treatment_options_merger]
 attributes = research,supplementary
