@@ -75,7 +75,7 @@ multiBamSummary bins --verbose \\
 
 def plotcorrelation(input_matrix, all_bam_names, corr_plot, corr_table, ini_section='deeptools_QC'):
     return Job(
-        input_files=[input_matrix, all_bam_names],
+        input_files=[input_matrix],
         output_files=[corr_plot, corr_table],
         module_entries=[['default', 'module_deeptools']
         ],
@@ -102,7 +102,7 @@ plotCorrelation \\
 
 def plotfingerplot(any_bam_file, any_bam_name, fingerprint_plot, fingerprint_matrix, ini_section='deeptools_QC'):
     return Job(
-        input_files=[any_bam_file, any_bam_name],
+        input_files=any_bam_file,
         output_files=[fingerprint_plot, fingerprint_matrix],
         module_entries=[['default', 'module_deeptools']],
         command="""\
