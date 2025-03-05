@@ -185,7 +185,7 @@ TBA: documentation for revio protocol.
             if readset.fastq_files:
                 input_fastq = os.path.join(nanoplot_directory, os.path.basename(readset.fastq_files))
                 link_job = bash.ln(
-                    os.path.relpath(readset.fastq_files, nanoplot_directory),
+                    os.path.abspath(readset.fastq_files),
                     input_fastq,
                     readset.fastq_files
                     )
@@ -193,7 +193,7 @@ TBA: documentation for revio protocol.
             elif readset.bam:
                 input_bam = os.path.join(nanoplot_directory, os.path.basename(readset.bam))
                 link_job = bash.ln(
-                    os.path.relpath(readset.bam, nanoplot_directory),
+                    os.path.abspath(readset.bam),
                     input_bam,
                     readset.bam
                     )
