@@ -869,6 +869,9 @@ done""".format(
         all_bam_files = []
         bam_file = []
 
+        all_bam_names = []
+        bam_name = []
+
         ## Loop to get bam files per sample
         for sample in self.samples:
             for mark_name in sample.marks:
@@ -878,8 +881,10 @@ done""".format(
                 clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
                 candidate_bam_files = [[clean_bam], [filtered_bam]]
                 bam_file = self.select_input_files(candidate_bam_files)
+                bam_name = f"{sample.name}.{mark_name}"
 
                 all_bam_files.extend(bam_file)
+                all_bam_names.extend(bam_name)
 
         # Set essential variables - First Step
         output_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
@@ -899,6 +904,7 @@ done""".format(
                     ),
                     deeptools.plotcorrelation( 
                         summ_matrix,
+                        all_bam_names,
                         corr_plot,
                         corr_table
                     ),
@@ -921,10 +927,12 @@ done""".format(
             # Set essential variables - fingerprint
             fingerprint_plot = os.path.join(output_sample_dir, f"{sample.name}_fingerprint.png")
             fingerprint_matrix = os.path.join(output_sample_dir, f"{sample.name}_counts.txt")
-            
 
             any_bam_file = []
             bam_file = []
+
+            any_bam_name = []
+            bam_name = []
 
             ## Loop to get bam files for all mark types
             for mark_name in sample.marks:
@@ -934,8 +942,10 @@ done""".format(
                 clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
                 candidate_bam_files = [[clean_bam], [filtered_bam]]
                 bam_file = self.select_input_files(candidate_bam_files)
+                bam_name = f"{sample.name}.{mark_name}"
 
                 any_bam_file.extend(bam_file)
+                any_bam_name.extend(bam_name)
 
             jobs.append(
                 concat_jobs(
@@ -944,6 +954,7 @@ done""".format(
                         bash.mkdir(link_directory),
                         deeptools.plotfingerplot(
                             any_bam_file,
+                            any_bam_name,
                             fingerprint_plot, 
                             fingerprint_matrix
                         ),

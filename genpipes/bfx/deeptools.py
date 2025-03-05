@@ -73,15 +73,16 @@ multiBamSummary bins --verbose \\
   )
 
 
-def plotcorrelation(input_matrix, corr_plot, corr_table, ini_section='deeptools_QC'):
+def plotcorrelation(input_matrix, all_bam_names, corr_plot, corr_table, ini_section='deeptools_QC'):
     return Job(
-        input_files=[input_matrix],
+        input_files=[input_matrix, all_bam_names],
         output_files=[corr_plot, corr_table],
         module_entries=[['default', 'module_deeptools']
         ],
         command="""\
 plotCorrelation \\
     --corData {input_matrix} \\
+    --lables {all_bam_names} \\
     --corMethod spearman \\
     --whatToPlot heatmap \\
     --colorMap RdYlGn \\
@@ -92,22 +93,23 @@ plotCorrelation \\
     --plotFile {corr_plot} \\
     --outFileCorMatrix {corr_table}""".format(
             input_matrix=input_matrix,
+            all_bam_names=" ".join(all_bam_names),
             corr_plot=corr_plot,
             corr_table=corr_table,
         )
   )
 
 
-def plotfingerplot(any_bam_file, fingerprint_plot, fingerprint_matrix, ini_section='deeptools_QC'):
+def plotfingerplot(any_bam_file, any_bam_name, fingerprint_plot, fingerprint_matrix, ini_section='deeptools_QC'):
     return Job(
-        input_files=any_bam_file,
+        input_files=[any_bam_file, any_bam_name],
         output_files=[fingerprint_plot, fingerprint_matrix],
         module_entries=[['default', 'module_deeptools']],
         command="""\
 plotFingerprint --verbose \\
     {options} \\
     --plotFileFormat png \\
-    --smartLabels \\
+    --labels {any_bam_name} \\
     --centerReads \\
     --numberOfProcessors {cpu} \\
     --bamfiles {any_bam_file} \\
@@ -116,6 +118,7 @@ plotFingerprint --verbose \\
             options=global_conf.global_get(ini_section, 'options'),
             cpu=global_conf.global_get('deeptools_QC', 'cluster_cpu', required=True),
             any_bam_file=" ".join(any_bam_file),
+            any_bam_name=" ".join(any_bam_name),
             fingerprint_plot=fingerprint_plot,
             fingerprint_matrix=fingerprint_matrix,
         )
