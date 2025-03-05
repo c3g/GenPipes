@@ -126,11 +126,8 @@ render_priority = 1200
 """
     return Job(
         output_files = [output],
-        command="""\
-echo \"{config_content}\" > {config_file}""".format(
-    config_content=config_content,
-    config_file=output
-        )
+        command=f"""\
+echo "{config_content}" > {output}"""
     )
 
 def clean_maf(
@@ -143,13 +140,10 @@ def clean_maf(
         [input_maf],
         [output],
         [],
-        command="""\
+        command=f"""\
 col=$( awk -v RS='\\t' '/t_depth/{{print NR; exit}}' {input_maf} ) && \\
 awk -F'\\t' -v col=$col '! ( $col=="" )' {input_maf} > {output_maf} && \\
-gzip {output_maf}""".format(
-        input_maf=input_maf,
-        output_maf=output_maf
-        )
+gzip {output_maf}"""
     )
 
 def make_script(
