@@ -329,7 +329,9 @@ Parameters:
         """
         jobs = []
 
-        inputs = {}
+        inputs = {"Normal": {},
+                  "Tumor": {}
+                  }
         for tumor_pair in self.tumor_pairs.values():
             for readset in tumor_pair.readsets[tumor_pair.normal.name]:
                 inputs["Normal"][tumor_pair.readset.name] = self.select_input_files(
