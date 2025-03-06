@@ -74,7 +74,7 @@ def readset_header_check(header, pipeline):
         'covseq': ['format1'],
         'dnaseq': ['format1'],
         'methylseq': ['format1'],
-        'nanopore': ['format4'],
+        'longread_dnaseq': ['format4'],
         'nanopore_covseq': ['format3'],
         'rnaseq': ['format1'],
         'rnaseq_denovo_assembly': ['format1'],
@@ -96,7 +96,7 @@ def readset_header_check(header, pipeline):
         },
         'format4': {
             'required': ['Sample', 'Readset', 'Flowcell', 'Library'],
-            'optional': ['Run', 'Summary', 'FASTQ', 'FAST5']
+            'optional': ['Run', 'Summary', 'FASTQ', 'FAST5', 'BAM']
         },
         'format5': {
             'required': ['Sample', 'Readset', 'RunType', 'Adapter1', 'Adapter2', 'primer1', 'primer2'],
@@ -137,7 +137,7 @@ def check_column_dependencies(row, pipeline, row_num):
             errors.append(f"Row {row_num}: Lane must be provided.")
         if not row.get('FASTQ1') and not row.get('BAM'):
             errors.append(f"Row {row_num}: Either FASTQ1 or BAM must be provided.")
-        if row.get('RunType') == 'PAIRED_END' and not row.get('FASTQ2'):
+        if row.get('RunType') == 'PAIRED_END' and not (row.get('FASTQ2') or row.get('BAM')):
             errors.append(f"Row {row_num}: FASTQ2 must be provided for PAIRED_END RunType.")
         if row.get('FASTQ1') and row.get('BAM'):
             errors.append(f"Row {row_num}: BAM should be ignored if FASTQ1 is provided.")
@@ -150,13 +150,13 @@ def check_column_dependencies(row, pipeline, row_num):
             errors.append(f"Row {row_num}: FASTQ1 must be provided for chipseq.")
         if row.get('RunType') == 'PAIRED_END' and not row.get('FASTQ2'):
             errors.append(f"Row {row_num}: FASTQ2 must be provided for PAIRED_END RunType.")
-    elif pipeline == 'nanopore':
+    elif pipeline == 'longread_dnaseq':
         if not row.get('Run'):
             errors.append(f"Row {row_num}: Run must be provided.")
         if not row.get('Summary'):
             errors.append(f"Row {row_num}: Summary must be provided.")
-        if not row.get('FASTQ') and not row.get('FAST5'):
-            errors.append(f"Row {row_num}: Either FASTQ or FAST5 must be provided for nanopore.")
+        if not row.get('BAM') and not row.get('FASTQ') and not row.get('FAST5'):
+            errors.append(f"Row {row_num}: Either BAM, FASTQ or FAST5 must be provided for longread_dnaseq.")
     elif pipeline == 'nanopore_covseq':
         if not row.get('Run'):
             errors.append(f"Row {row_num}: Run must be provided.")
