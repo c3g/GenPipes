@@ -334,7 +334,7 @@ Parameters:
                   }
         for tumor_pair in self.tumor_pairs.values():
             for readset in tumor_pair.readsets[tumor_pair.normal.name]:
-                inputs["Normal"][tumor_pair.readset.name] = self.select_input_files(
+                inputs["Normal"][readset.name] = self.select_input_files(
                     [
                         [
                             readset.fastq1,
@@ -376,7 +376,7 @@ Parameters:
                #     ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
                # ]
                 for readset in tumor_pair.readsets[tumor_pair.tumor.name]:
-                    inputs["Tumor"][tumor_pair.readset.name] = self.select_input_files(
+                    inputs["Tumor"][readset.name] = self.select_input_files(
                         [
                             [
                                 readset.fastq1,
