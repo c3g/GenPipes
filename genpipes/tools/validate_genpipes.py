@@ -130,7 +130,7 @@ def check_column_dependencies(row, pipeline, row_num):
         errors.append(f"Row {row_num}: Readset must be provided.")
 
     # Check pipeline-specific dependencies
-    if pipeline in ['covseq', 'chipseq', 'dnaseq', 'methylseq', 'rnaseq', 'rnaseq_denovo_assembly', 'rnaseq_light']:
+    if pipeline in ['covseq', 'dnaseq', 'methylseq', 'rnaseq', 'rnaseq_denovo_assembly', 'rnaseq_light']:
         if not row.get('Run'):
             errors.append(f"Row {row_num}: Run must be provided.")
         if not row.get('Lane'):
