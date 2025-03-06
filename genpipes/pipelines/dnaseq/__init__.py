@@ -389,34 +389,35 @@ Parameters:
                         ]
                     )
 
-            for key, input_files in inputs.items():
-                for read, input_file in enumerate(input_files):
-                    symlink_pair_job = deliverables.sym_link_pair(
-                        input_file,
-                        tumor_pair,
-                        self.output_dir,
-                        type="raw_reads",
-                        sample=key,
-                        profyle=self.profyle
-                    )
-                    dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
-                    # do not compute md5sum in the readset input directory
-                    md5sum_job = deliverables.md5sum(
-                        symlink_pair_job.output_files[0],
-                        f"{file_name}.md5",
-                        dir_name
-                    )
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                symlink_pair_job,
-                                md5sum_job
-                            ],
-                            name=f"sym_link_fastq.pairs.{str(read)}.{tumor_pair.name}.{key}",
-                            samples=[tumor_pair.tumor, tumor_pair.normal],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+            for i in inputs.keys():
+                for key, input_files in inputs[i].items():
+                    for read, input_file in enumerate(input_files):
+                        symlink_pair_job = deliverables.sym_link_pair(
+                            input_file,
+                            tumor_pair,
+                            self.output_dir,
+                            type="raw_reads",
+                            sample=key,
+                            profyle=self.profyle
                         )
-                    )
+                        dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
+                        # do not compute md5sum in the readset input directory
+                        md5sum_job = deliverables.md5sum(
+                            symlink_pair_job.output_files[0],
+                            f"{file_name}.md5",
+                            dir_name
+                        )
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    symlink_pair_job,
+                                    md5sum_job
+                                ],
+                                name=f"sym_link_fastq.pairs.{str(read)}.{tumor_pair.name}.{key}",
+                                samples=[tumor_pair.tumor, tumor_pair.normal],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
+                        )
 
         return jobs
 
