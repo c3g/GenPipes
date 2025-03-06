@@ -346,35 +346,7 @@ Parameters:
                         ]
                     ]
                 )
-           # [inputs["Normal"]] = [
-           #     self.select_input_files(
-           #         [
-           #             [
-           #                 readset.fastq1,
-           #                 readset.fastq2
-           #             ],
-           #             [
-           #                 os.path.join(self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair1.fastq.gz"),
-           #                 os.path.join(self.output_dirs['raw_reads_directory'],readset.sample.name, f"{readset.name}.pair2.fastq.gz")
-           #             ]
-           #         ]
-           #     ) for readset in tumor_pair.readsets[tumor_pair.normal.name]
-           # ]
 
-               # [inputs["Tumor"]] = [
-               #     self.select_input_files(
-               #         [
-               #             [
-               #                 readset.fastq1,
-               #                 readset.fastq2
-               #             ],
-               #             [
-               #                 os.path.join(self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair1.fastq.gz"),
-               #                 os.path.join(self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair2.fastq.gz")
-               #             ]
-               #         ]
-               #     ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
-               # ]
                 for readset in tumor_pair.readsets[tumor_pair.tumor.name]:
                     inputs["Tumor"][readset.name] = self.select_input_files(
                         [
