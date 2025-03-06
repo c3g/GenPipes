@@ -369,7 +369,7 @@ Parameters:
                             tumor_pair,
                             self.output_dir,
                             type="raw_reads",
-                            sample=key,
+                            sample=i,
                             profyle=self.profyle
                         )
                         dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
