@@ -153,10 +153,10 @@ def check_column_dependencies(row, pipeline, row_num):
     elif pipeline == 'longread_dnaseq':
         if not row.get('Run'):
             errors.append(f"Row {row_num}: Run must be provided.")
-        if not row.get('Summary'):
-            errors.append(f"Row {row_num}: Summary must be provided.")
         if not row.get('BAM') and not row.get('FASTQ') and not row.get('FAST5'):
             errors.append(f"Row {row_num}: Either BAM, FASTQ or FAST5 must be provided for longread_dnaseq.")
+        if (row.get('FASTQ') or row.get('FAST5')) and not row.get('Summary'):
+            errors.append(f"Row {row_num}: Summary must be provided for the nanopore protocol.")
     elif pipeline == 'nanopore_covseq':
         if not row.get('Run'):
             errors.append(f"Row {row_num}: Run must be provided.")
