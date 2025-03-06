@@ -141,6 +141,21 @@ def check_column_dependencies(row, pipeline, row_num):
             errors.append(f"Row {row_num}: FASTQ2 must be provided for PAIRED_END RunType.")
         if row.get('FASTQ1') and row.get('BAM'):
             errors.append(f"Row {row_num}: BAM should be ignored if FASTQ1 is provided.")
+    elif pipeline == 'chipseq':
+        if not row.get('Run'):
+            errors.append(f"Row {row_num}: Run must be provided.")
+        if not row.get('Lane'):
+            errors.append(f"Row {row_num}: Lane must be provided.")
+        if not row.get('FASTQ1') and not row.get('BAM'):
+            errors.append(f"Row {row_num}: Either FASTQ1 or BAM must be provided.")
+        if row.get('RunType') == 'PAIRED_END' and not (row.get('FASTQ2') or row.get('BAM')):
+            errors.append(f"Row {row_num}: FASTQ2 must be provided for PAIRED_END RunType.")
+        if row.get('FASTQ1') and row.get('BAM'):
+            errors.append(f"Row {row_num}: BAM should be ignored if FASTQ1 is provided.")
+        if not row.get('MarkName'):
+            errors.append(f"Row {row_num}: MarkName must be provided (either histone mark or input).")
+        if not row.get('MarkType') or not row.get('MarkType') in ['B', 'N', 'I']:
+            errors.append(f"Row {row_num}: MarkType must be provided and should be B, N, or I.")
     elif pipeline == 'longread_dnaseq':
         if not row.get('Run'):
             errors.append(f"Row {row_num}: Run must be provided.")
