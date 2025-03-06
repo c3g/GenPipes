@@ -130,7 +130,7 @@ def check_column_dependencies(row, pipeline, row_num):
         errors.append(f"Row {row_num}: Readset must be provided.")
 
     # Check pipeline-specific dependencies
-    if pipeline in ['covseq', 'dnaseq', 'methylseq', 'rnaseq', 'rnaseq_denovo_assembly', 'rnaseq_light']:
+    if pipeline in ['covseq', 'chipseq', 'dnaseq', 'methylseq', 'rnaseq', 'rnaseq_denovo_assembly', 'rnaseq_light']:
         if not row.get('Run'):
             errors.append(f"Row {row_num}: Run must be provided.")
         if not row.get('Lane'):
@@ -141,15 +141,6 @@ def check_column_dependencies(row, pipeline, row_num):
             errors.append(f"Row {row_num}: FASTQ2 must be provided for PAIRED_END RunType.")
         if row.get('FASTQ1') and row.get('BAM'):
             errors.append(f"Row {row_num}: BAM should be ignored if FASTQ1 is provided.")
-    elif pipeline == 'chipseq':
-        if not row.get('Run'):
-            errors.append(f"Row {row_num}: Run must be provided.")
-        if not row.get('Lane'):
-            errors.append(f"Row {row_num}: Lane must be provided.")
-        if not row.get('FASTQ1'):
-            errors.append(f"Row {row_num}: FASTQ1 must be provided for chipseq.")
-        if row.get('RunType') == 'PAIRED_END' and not row.get('FASTQ2'):
-            errors.append(f"Row {row_num}: FASTQ2 must be provided for PAIRED_END RunType.")
     elif pipeline == 'longread_dnaseq':
         if not row.get('Run'):
             errors.append(f"Row {row_num}: Run must be provided.")
