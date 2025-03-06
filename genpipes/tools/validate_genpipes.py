@@ -334,7 +334,7 @@ def main():
     )
     parser.add_argument('-r', '--readset', type=argparse.FileType('r'), help='Readset file to validate')
     parser.add_argument('-d', '--design', type=argparse.FileType('r'), help='Design file to validate')
-    parser.add_argument('-p', '--pipeline', type=str, required=True, help='Pipeline name to validate against', choices=['ampliconseq', 'chipseq', 'covseq', 'dnaseq', 'methylseq', 'nanopore', 'nanopore_covseq', 'rnaseq', 'rnaseq_denovo_assembly', 'rnaseq_light'])
+    parser.add_argument('-p', '--pipeline', type=str, required=True, help='Pipeline name to validate against', choices=['ampliconseq', 'chipseq', 'covseq', 'dnaseq', 'methylseq', 'longread_dnaseq', 'nanopore_covseq', 'rnaseq', 'rnaseq_denovo_assembly', 'rnaseq_light'])
     args = parser.parse_args()
 
     if not args.readset and not args.design:
