@@ -154,7 +154,7 @@ def check_column_dependencies(row, pipeline, row_num):
             errors.append(f"Row {row_num}: BAM should be ignored if FASTQ1 is provided.")
         if not row.get('MarkName'):
             errors.append(f"Row {row_num}: MarkName must be provided (either histone mark or input).")
-        if not row.get('MarkType') or not row.get('MarkType') in ('B', 'N', 'I'):
+        if not row.get('MarkType') or row.get('MarkType') not in ('B', 'N', 'I'):
             errors.append(f"Row {row_num}: MarkType must be provided and should be B, N, or I.")
     elif pipeline == 'longread_dnaseq':
         if not row.get('Run'):
