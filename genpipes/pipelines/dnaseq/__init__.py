@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2025 GenPipes, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -47,6 +47,7 @@ from ...bfx import (
     cpsr,
     deliverables,
     delly,
+    djerba,
     gatk,
     gatk4,
     gemini,
@@ -328,10 +329,12 @@ Parameters:
         """
         jobs = []
 
-        inputs = {}
+        inputs = {"Normal": {},
+                  "Tumor": {}
+                  }
         for tumor_pair in self.tumor_pairs.values():
-            [inputs["Normal"]] = [
-                self.select_input_files(
+            for readset in tumor_pair.readsets[tumor_pair.normal.name]:
+                inputs["Normal"][readset.name] = self.select_input_files(
                     [
                         [
                             readset.fastq1,
@@ -342,52 +345,51 @@ Parameters:
                             os.path.join(self.output_dirs['raw_reads_directory'],readset.sample.name, f"{readset.name}.pair2.fastq.gz")
                         ]
                     ]
-                ) for readset in tumor_pair.readsets[tumor_pair.normal.name]
-            ]
+                )
 
-            [inputs["Tumor"]] = [
-                self.select_input_files(
-                    [
+                for readset in tumor_pair.readsets[tumor_pair.tumor.name]:
+                    inputs["Tumor"][readset.name] = self.select_input_files(
                         [
-                            readset.fastq1,
-                            readset.fastq2
-                        ],
-                        [
-                            os.path.join(self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair1.fastq.gz"),
-                            os.path.join(self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair2.fastq.gz")
-                        ]
-                    ]
-                ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
-            ]
-
-            for key, input_files in inputs.items():
-                for read, input_file in enumerate(input_files):
-                    symlink_pair_job = deliverables.sym_link_pair(
-                        input_file,
-                        tumor_pair,
-                        self.output_dir,
-                        type="raw_reads",
-                        sample=key,
-                        profyle=self.profyle
-                    )
-                    dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
-                    # do not compute md5sum in the readset input directory
-                    md5sum_job = deliverables.md5sum(
-                        symlink_pair_job.output_files[0],
-                        f"{file_name}.md5",
-                        dir_name
-                    )
-                    jobs.append(
-                        concat_jobs(
                             [
-                                symlink_pair_job,
-                                md5sum_job
+                                readset.fastq1,
+                                readset.fastq2
                             ],
-                            name=f"sym_link_fastq.pairs.{str(read)}.{tumor_pair.name}.{key}",
-                            samples=[tumor_pair.tumor, tumor_pair.normal],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                        )
+                            [
+                                os.path.join(self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair1.fastq.gz"),
+                                os.path.join(self.output_dirs['raw_reads_directory'],readset.sample.name, f"{readset.name}.pair2.fastq.gz")
+                            ]
+                        ]
                     )
+
+            for i in inputs.keys():
+                for key, input_files in inputs[i].items():
+                    for read, input_file in enumerate(input_files):
+                        symlink_pair_job = deliverables.sym_link_pair(
+                            input_file,
+                            tumor_pair,
+                            self.output_dir,
+                            type="raw_reads",
+                            sample=i,
+                            profyle=self.profyle
+                        )
+                        dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
+                        # do not compute md5sum in the readset input directory
+                        md5sum_job = deliverables.md5sum(
+                            symlink_pair_job.output_files[0],
+                            f"{file_name}.md5",
+                            dir_name
+                        )
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    symlink_pair_job,
+                                    md5sum_job
+                                ],
+                                name=f"sym_link_fastq.pairs.{str(read)}.{tumor_pair.name}.{key}",
+                                samples=[tumor_pair.tumor, tumor_pair.normal],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
+                        )
 
         return jobs
 
@@ -2980,6 +2982,87 @@ END
                     )
                 else:
                     jobs.append(pcgr_job)
+
+        return jobs
+    
+    def report_djerba(self):
+        """
+        Produce Djerba report.
+        """
+        jobs = []
+        
+        token = global_conf.global_get('report_djerba', 'oncokb_token', param_type='filepath', required=False)
+
+        if token:
+            ensemble_directory = os.path.join(
+                self.output_dirs['paired_variants_directory'],
+                "ensemble"
+                )
+            assembly = global_conf.global_get('report_pcgr', 'assembly')
+        
+            for tumor_pair in self.tumor_pairs.values():
+                djerba_dir = os.path.join(self.output_dirs['report'][tumor_pair.name], "djerba")
+                purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
+                purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
+            
+                cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
+                input_cpsr = os.path.join(cpsr_directory, tumor_pair.name + ".cpsr." + assembly + ".json.gz")
+                input_vcf = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz")
+                pcgr_directory = os.path.join(djerba_dir, "pcgr")
+                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")
+                clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".clean.maf") # MAF from pcgr version 1.4.1 required, remove any empty t_depth lines, needs to be gzipped
+            
+                provenance_decoy = os.path.join(djerba_dir, "provenance_subset.tsv.gz")
+                config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
+                djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(djerba_dir),
+                            bash.mkdir(pcgr_directory),
+                            pcgr.report(
+                                input_vcf,
+                                input_cpsr,
+                                pcgr_directory,
+                                tumor_pair.name,
+                                ini_section='report_djerba'
+                                ),# add pcgr job to create MAF in correct format (1.4.1), remove chrM, gzip.
+                            djerba.clean_maf(
+                                input_maf,
+                                clean_maf
+                                ),
+                            bash.zip(
+                                purple_dir,
+                                purple_zip,
+                                recursive=True
+                                ),
+                            bash.touch(provenance_decoy),
+                            djerba.make_config(
+                                config_file,
+                                tumor_pair.name,
+                                tumor_pair.tumor.name,
+                                tumor_pair.normal.name,
+                                clean_maf + ".gz",
+                                purple_zip
+                                ),
+                            # djerba report requires internet connection. Script is produced but must be executed locally.
+                            djerba.make_script(
+                                config_file,
+                                djerba_dir,
+                                djerba_script
+                                )
+                        ],
+                        name="djerba." + tumor_pair.name,
+                        samples=[tumor_pair.tumor],
+                        readsets=list(tumor_pair.tumor.readsets),
+                        input_dependency=[input_vcf, os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")],
+                        output_dependency=[config_file, djerba_script]
+                        )
+                    )
+
+        else:
+            log.debug("No OncoKB token provided in config file, skipping djerba report step.")
 
         return jobs
 
@@ -8266,6 +8349,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.report_cpsr,
                 self.filter_somatic,
                 self.report_pcgr,
+                self.report_djerba,
                 self.run_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -94,7 +94,7 @@ class Sample(metaclass=UniqueName):
             self.marks[mark_name] = mark_type
 
 
-class NanoporeSample(Sample):
+class LongReadSample(Sample):
     """docstring for NanoporeSample"""
     @property
     def run(self):
@@ -119,6 +119,10 @@ class NanoporeSample(Sample):
     @property
     def fast5_files(self):
         return self._fast5_files
+    
+    @property
+    def bam_files(self):
+        return self._bam_files
 
     @property
     def analysis_name(self):

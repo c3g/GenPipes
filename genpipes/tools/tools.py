@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2025 GenPipes, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes Pipelines.
 #
@@ -81,7 +81,7 @@ def add_subcommands(parser):
     parser_validate_genpipes = tools_subparsers.add_parser('validate_genpipes', help='Validate the genpipes Readset and Design files.')
     parser_validate_genpipes.add_argument('-r', '--readset', help='Readset file to validate')
     parser_validate_genpipes.add_argument('-d', '--design', help='Design file to validate')
-    parser_validate_genpipes.add_argument('-p', '--pipeline', required=True, help='Pipeline name to validate against', choices=['ampliconseq', 'chipseq', 'covseq', 'dnaseq', 'methylseq', 'nanopore', 'nanopore_covseq', 'rnaseq', 'rnaseq_denovo_assembly', 'rnaseq_light'])
+    parser_validate_genpipes.add_argument('-p', '--pipeline', required=True, help='Pipeline name to validate against', choices=['ampliconseq', 'chipseq', 'covseq', 'dnaseq', 'methylseq', 'longread_dnaseq', 'nanopore_covseq', 'rnaseq', 'rnaseq_denovo_assembly', 'rnaseq_light'])
     parser_validate_genpipes.set_defaults(func=run_validate_genpipes)
 
 def run_chunk_genpipes(args):

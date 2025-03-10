@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2025 GenPipes, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -35,7 +35,7 @@ from ..core.config import global_conf, _raise, SanitycheckError
 from ..core.job import Job, concat_jobs, pipe_jobs
 from ..core.pipeline import Pipeline
 from ..core.design import parse_design_file
-from ..core.readset import parse_illumina_readset_file, parse_nanopore_readset_file
+from ..core.readset import parse_illumina_readset_file, parse_longread_readset_file
 from ..core.sample_tumor_pairs import *
 
 from ..bfx import (
@@ -175,10 +175,10 @@ wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${
 
 # Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
 # Specific steps must be defined in Illumina children pipelines.
-class Nanopore(GenPipesPipeline):
+class LongRead(GenPipesPipeline):
 
     def __init__(self, *args, **kwargs):
-        super(Nanopore, self).__init__(*args, **kwargs)
+        super(LongRead, self).__init__(*args, **kwargs)
 
     @property
     def output_dirs(self):
@@ -196,7 +196,7 @@ class Nanopore(GenPipesPipeline):
     @property
     def readsets(self):
         if getattr(self, "_readsets") is None:
-            self._readsets = parse_nanopore_readset_file(self.readsets_file)
+            self._readsets = parse_longread_readset_file(self.readsets_file)
         return self._readsets
 
 
