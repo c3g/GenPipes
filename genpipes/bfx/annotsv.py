@@ -133,7 +133,7 @@ perl $KNOTANNOTSV_HOME/knotAnnotSV2XL.pl {excel_options} \\
   --outDir {output_dir} \\
   --outPrefix {output_prefix}""".format(
             excel_options=global_conf.global_get(ini_section, 'excel_options', required=False),
-            config=global_conf.global_get(ini_section, 'knotAnnotSV_config', required=False) if global_conf.global_get(ini_section, 'knotAnnotSV_config', required=False) else "\$KNOTANNOTSV_CONFIG",
+            config=global_conf.global_get(ini_section, 'knotAnnotSV_config', required=False) if global_conf.global_get(ini_section, 'knotAnnotSV_config', required=False) else "$KNOTANNOTSV_CONFIG",
             input_tsv=input_tsv,
             genome_build=global_conf.global_get(ini_section, 'assembly'),
             genecount_threshold=global_conf.global_get(ini_section, 'genecount_threshold'),
