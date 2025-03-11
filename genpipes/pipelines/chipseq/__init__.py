@@ -852,7 +852,7 @@ done""".format(
         return jobs
 
 
-    def deeptools_QC(self):
+    def deeptools_qc(self):
         """
         Fingerplot quality control will most likely be of interest for you if you are dealing with ChIP-seq samples - “Did my ChIP work?”
         Fingerplot tool samples indexed BAM files and plots a profile of cumulative read coverages for each. 
@@ -898,26 +898,26 @@ done""".format(
                 [
                     bash.mkdir(output_dir),
                     bash.mkdir(link_directory),
-                    deeptools.multibamsummary(
+                    deeptools.multi_bam_summary(
                         all_bam_files,
                         summ_matrix
                     ),
-                    deeptools.plotcorrelation( 
+                    deeptools.plot_correlation( 
                         summ_matrix,
                         all_bam_names,
                         corr_plot,
                         corr_table
                     ),
                     bash.ln(
-                        target_file = os.path.relpath(corr_plot, link_directory),
-                        link = os.path.join(link_directory, "corrMatrix_mqc.png"),
+                        target_file = os.path.relpath(corr_table, link_directory),
+                        link = os.path.join(link_directory, "corrMatrixCounts.txt"),
                         input_file = corr_plot
                     )
                 ],
                 name = f"deeptools_corrMatrix",
             )
         )
-        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrix_mqc.png"))
+        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrixCounts.txt"))
 
 
         for sample in self.samples:
@@ -928,10 +928,10 @@ done""".format(
             fingerprint_plot = os.path.join(output_sample_dir, f"{sample.name}_fingerprint.png")
             fingerprint_matrix = os.path.join(output_sample_dir, f"{sample.name}_counts.txt")
 
-            any_bam_file = []
+            bam_file_list = []
             bam_file = []
 
-            any_bam_name = []
+            bam_name_list = []
             bam_name = []
 
             ## Loop to get bam files for all mark types
@@ -944,30 +944,30 @@ done""".format(
                 bam_file = self.select_input_files(candidate_bam_files)
                 bam_name = f"{sample.name}.{mark_name}"
 
-                any_bam_file.extend(bam_file)
-                any_bam_name.append(bam_name)
+                bam_file_list.extend(bam_file)
+                bam_name_list.append(bam_name)
 
             jobs.append(
                 concat_jobs(
                     [
                         bash.mkdir(output_sample_dir),
                         bash.mkdir(link_directory),
-                        deeptools.plotfingerplot(
-                            any_bam_file,
-                            any_bam_name,
+                        deeptools.plot_fingerplot(
+                            bam_file_list,
+                            bam_name_list,
                             fingerprint_plot, 
                             fingerprint_matrix
                         ),
                         bash.ln(
-                            target_file = os.path.relpath(fingerprint_plot, link_directory),
-                            link = os.path.join(link_directory, f"{sample.name}_fingerprint_mqc.png"),
+                            target_file = os.path.relpath(fingerprint_matrix, link_directory),
+                            link = os.path.join(link_directory, f"{sample.name}_counts.txt"),
                             input_file = fingerprint_plot
                         )
                     ],
                     name=f"deeptools_fingerplot.{sample.name}",
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_fingerprint_mqc.png"))
+            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_counts.txt"))
 
         return jobs
 
@@ -2029,7 +2029,7 @@ cat {metrics_merged_out} >> {ihec_multiqc_file}"""
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,
-                self.deeptools_QC,
+                self.deeptools_qc,
                 self.homer_make_ucsc_file,  #12
                 self.macs2_callpeak,
                 self.homer_annotate_peaks,
