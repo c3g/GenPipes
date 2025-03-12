@@ -941,7 +941,7 @@ done""".format(
                         input_file = corr_plot
                     )
                 ],
-                name = f"deeptools_corrMatrix",
+                name = f"deeptools_qc.corrMatrix",
                 samples=self.samples
             )
         )
