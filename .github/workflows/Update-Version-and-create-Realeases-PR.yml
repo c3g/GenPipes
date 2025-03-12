@@ -1,4 +1,4 @@
-name: Update version and create Release's PR Workflow
+name: Update version and create Release's PR
 
 on:
   workflow_dispatch:
@@ -81,5 +81,6 @@ jobs:
           body: "This pull request contains the updated __version__.py file with the new release version, an updated CHANGELOG.md file, updated READMEs and autocomplete files.
           This also pushes this version to https://test.pypi.org/project/c3g-genpipes"
           base: main
+          assignees: paulstretenowich, MareikeJaniak
           delete-branch: true
           labels: automated pr
