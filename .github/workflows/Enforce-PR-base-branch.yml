@@ -1,0 +1,16 @@
+name: Enforce PR Base Branch
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+jobs:
+  enforce-base-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check base branch
+        run: |
+          if [[ "${{ github.event.pull_request.base.ref }}" == "main" ]]; then
+            if [[ "${{ github.event.pull_request.head.ref }}" != "dev" && "${{ github.event.pull_request.head.ref }}" != "main" && ! "${{ github.event.pull_request.head.ref }}" =~ ^release/ ]]; then
+              echo "ERROR: Pull requests to main are only allowed from dev, main, or release/* branches."
+              exit 1
+            fi
+          fi
