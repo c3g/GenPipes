@@ -28,11 +28,17 @@ log = logging.getLogger(__name__)
 
 ### Start from here ###
 
-def bamcoverage(input_bam, output_file, strand=None):
+def bamcoverage(
+        input_bam,
+        output_file,
+        strand=None,
+        ini_section="wiggle"
+        ):
     return Job(
-        input_files=[input_bam],
-        output_files=[output_file],
-        module_entries=[['default', 'module_deeptools']
+        [input_bam],
+        [output_file],
+        [
+            [ini_section, 'module_deeptools']
         ],
         # need to add option for clusters,
         # each other_option individually &
@@ -47,9 +53,97 @@ bamCoverage --verbose \\
     --outFileName {output_file} {strand}""".format(
             output_file=output_file,
             input_bam=input_bam,
-            cpu=global_conf.global_get('wiggle', 'cluster_cpu', required=True),
-            bs=global_conf.global_get('wiggle', 'bin_size', required=True),
-            nu=global_conf.global_get('wiggle', 'norm_using', required=True),
+            cpu=global_conf.global_get(ini_section, 'cluster_cpu', required=True),
+            bs=global_conf.global_get(ini_section, 'bin_size', required=True),
+            nu=global_conf.global_get(ini_section, 'norm_using', required=True),
             strand="--filterRNAstrand " + strand if strand else "",
+        )
+  )
+
+
+def multi_bam_summary(
+        all_bam_files,
+        summ_matrix,
+        ini_section='deeptools_qc'
+        ):
+    return Job(
+        all_bam_files,
+        [summ_matrix],
+        [
+            [ini_section, 'module_deeptools']
+        ],
+        command="""\
+multiBamSummary bins --verbose \\
+    --numberOfProcessors {cpu} \\
+    --bamfiles {all_bam_files} \\
+    --outFileName {summ_matrix}""".format(
+            cpu=global_conf.global_get(ini_section, 'cluster_cpu', required=True),
+            all_bam_files=" ".join(all_bam_files),
+            summ_matrix=summ_matrix,
+        )
+  )
+
+
+def plot_correlation(
+        input_matrix,
+        all_bam_names,
+        corr_plot,
+        corr_table,
+        ini_section='deeptools_qc'):
+    return Job(
+        [input_matrix],
+        [corr_plot, corr_table],
+        [
+            [ini_section, 'module_deeptools']
+        ],
+        command="""\
+plotCorrelation \\
+    --corData {input_matrix} \\
+    --labels {all_bam_names} \\
+    --corMethod spearman \\
+    --whatToPlot heatmap \\
+    --colorMap RdYlGn \\
+    --plotNumbers \\
+    --skipZeros \\
+    --plotTitle "Spearman Correlation of Read Counts" \\
+    --plotFileFormat png \\
+    --plotFile {corr_plot} \\
+    --outFileCorMatrix {corr_table}""".format(
+            input_matrix=input_matrix,
+            all_bam_names=" ".join(all_bam_names),
+            corr_plot=corr_plot,
+            corr_table=corr_table,
+        )
+  )
+
+
+def plot_fingerplot(
+        bam_files,
+        bam_names,
+        fingerprint_plot,
+        fingerprint_matrix,
+        ini_section='deeptools_qc'):
+    return Job(
+        bam_files,
+        output_files=[fingerprint_plot, fingerprint_matrix],
+        module_entries=[
+            ['ini_section', 'module_deeptools']
+            ],
+        command="""\
+plotFingerprint --verbose \\
+    {options} \\
+    --plotFileFormat png \\
+    --labels {bam_names} \\
+    --centerReads \\
+    --numberOfProcessors {cpu} \\
+    --bamfiles {bam_files} \\
+    --plotFile {fingerprint_plot} \\
+    --outRawCounts {fingerprint_matrix}""".format(
+            options=global_conf.global_get(ini_section, 'options', required=False),
+            cpu=global_conf.global_get(ini_section, 'cluster_cpu'),
+            bam_files=" ".join(bam_files),
+            bam_names=" ".join(bam_names),
+            fingerprint_plot=fingerprint_plot,
+            fingerprint_matrix=fingerprint_matrix,
         )
   )

@@ -35,6 +35,7 @@ from ...bfx import(
     bash_cmd as bash,
     bedtools,
     bwa2,
+    deeptools,
     differential_binding,
     gatk4,
     homer,
@@ -849,6 +850,105 @@ done""".format(
             )
         )
         return jobs
+
+
+    def deeptools_qc(self):
+        """
+        Fingerplot quality control will most likely be of interest for you if you are dealing with ChIP-seq samples - “Did my ChIP work?”
+        Fingerplot tool samples indexed BAM files and plots a profile of cumulative read coverages for each. 
+        All reads overlapping a window (bin) of the specified length are counted; these counts are sorted and the cumulative sum is finally plotted.
+        Correlation Matrix:
+        Tool for the analysis and visualization of sample correlations based on the output of multiBamSummary or multiBigwigSummary. 
+        Pearson or Spearman methods are available to compute correlation coefficients
+        """
+
+        jobs = []
+
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
+        output_dir = os.path.join(self.output_dirs['metrics_directory'], 'deeptools')
+
+        all_bam_files = []
+        all_bam_names = []
+
+        ## Loop to get bam files per sample
+        for sample in self.samples:
+            sample_bam_files = []
+            sample_bam_names = []
+            for mark_name in sample.marks:
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                # Select input from blacklist filtered (clean) or just sambamba filtered bam
+                filtered_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam")
+                clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
+                candidate_bam_files = [[clean_bam], [filtered_bam]]
+                output_sample_dir = os.path.join(output_dir, sample.name)
+                # Set essential variables - fingerprint
+                fingerprint_plot = os.path.join(output_sample_dir, f"{sample.name}_fingerprint.png")
+                fingerprint_matrix = os.path.join(output_sample_dir, f"{sample.name}_counts.txt")
+                
+                sample_bam_files.extend(self.select_input_files(candidate_bam_files))
+                sample_bam_names.append(f"{sample.name}.{mark_name}")
+
+            all_bam_files.extend(sample_bam_files)
+            all_bam_names.extend(sample_bam_names)
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(output_sample_dir),
+                        bash.mkdir(link_directory),
+                        deeptools.plot_fingerplot(
+                            sample_bam_files,
+                            sample_bam_names,
+                            fingerprint_plot, 
+                            fingerprint_matrix
+                        ),
+                        bash.ln(
+                            target_file = os.path.relpath(fingerprint_matrix, link_directory),
+                            link = os.path.join(link_directory, f"{sample.name}_counts.txt"),
+                            input_file = fingerprint_plot
+                        )
+                    ],
+                    name=f"deeptools_fingerplot.{sample.name}",
+                    samples=[sample]
+                )
+            )
+            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_counts.txt"))
+
+        # Set output files
+        summ_matrix = os.path.join(output_dir, "BamSummResults.npz.txt")
+        corr_plot = os.path.join(output_dir, "corrMatrix.png")
+        corr_table = os.path.join(output_dir, "corrMatrixCounts.txt")
+
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(output_dir),
+                    bash.mkdir(link_directory),
+                    deeptools.multi_bam_summary(
+                        all_bam_files,
+                        summ_matrix
+                    ),
+                    deeptools.plot_correlation( 
+                        summ_matrix,
+                        all_bam_names,
+                        corr_plot,
+                        corr_table
+                    ),
+                    bash.ln(
+                        target_file = os.path.relpath(corr_table, link_directory),
+                        link = os.path.join(link_directory, "corrMatrixCounts.txt"),
+                        input_file = corr_plot
+                    )
+                ],
+                name = f"deeptools_qc.corrMatrix",
+                samples=self.samples
+            )
+        )
+        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrixCounts.txt"))
+
+        return jobs
+
 
     def homer_make_ucsc_file(self):
         """
@@ -1905,20 +2005,21 @@ cat {metrics_merged_out} >> {ihec_multiqc_file}"""
                 self.sambamba_view_filter,
                 self.bedtools_blacklist_filter,
                 self.metrics,
-                self.homer_make_tag_directory,
+                self.homer_make_tag_directory, #10
                 self.qc_metrics,
-                self.homer_make_ucsc_file,  #12
+                self.deeptools_qc,    
+                self.homer_make_ucsc_file,  
                 self.macs2_callpeak,
-                self.homer_annotate_peaks,
+                self.homer_annotate_peaks, #15
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
-                self.run_spp,
-                self.differential_binding, #18
-                self.ihec_metrics,
+                self.run_spp, 
+                self.differential_binding, 
+                self.ihec_metrics, #20
                 self.multiqc_report,
                 self.cram_output,
                 self.gatk_haplotype_caller,
-                self.merge_and_call_individual_gvcf #23
+                self.merge_and_call_individual_gvcf #24
             ], 'atacseq':
             [
                 self.picard_sam_to_fastq,
