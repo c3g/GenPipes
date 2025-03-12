@@ -873,8 +873,8 @@ done""".format(
 
         ## Loop to get bam files per sample
         for sample in self.samples:
-            bam_files = []
-            bam_names = []
+            sample_bam_files = []
+            sample_bam_names = []
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 # Select input from blacklist filtered (clean) or just sambamba filtered bam
@@ -886,11 +886,11 @@ done""".format(
                 fingerprint_plot = os.path.join(output_sample_dir, f"{sample.name}_fingerprint.png")
                 fingerprint_matrix = os.path.join(output_sample_dir, f"{sample.name}_counts.txt")
                 
-                bam_files.extend(self.select_input_files(candidate_bam_files))
-                bam_names.append = f"{sample.name}.{mark_name}"
+                sample_bam_files.extend(self.select_input_files(candidate_bam_files))
+                sample_bam_names.append(f"{sample.name}.{mark_name}")
 
-            all_bam_files.extend(bam_files)
-            all_bam_names.extend(bam_names)
+            all_bam_files.extend(sample_bam_files)
+            all_bam_names.extend(sample_bam_names)
 
             jobs.append(
                 concat_jobs(
@@ -898,8 +898,8 @@ done""".format(
                         bash.mkdir(output_sample_dir),
                         bash.mkdir(link_directory),
                         deeptools.plot_fingerplot(
-                            bam_files,
-                            bam_names,
+                            sample_bam_files,
+                            sample_bam_names,
                             fingerprint_plot, 
                             fingerprint_matrix
                         ),
