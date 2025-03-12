@@ -126,7 +126,9 @@ def plot_fingerplot(
     return Job(
         bam_files,
         output_files=[fingerprint_plot, fingerprint_matrix],
-        module_entries=[['ini_section', 'module_deeptools']],
+        module_entries=[
+            ['ini_section', 'module_deeptools']
+            ],
         command="""\
 plotFingerprint --verbose \\
     {options} \\
@@ -134,13 +136,13 @@ plotFingerprint --verbose \\
     --labels {bam_names} \\
     --centerReads \\
     --numberOfProcessors {cpu} \\
-    --bamfiles {any_bam_file} \\
+    --bamfiles {bam_files} \\
     --plotFile {fingerprint_plot} \\
     --outRawCounts {fingerprint_matrix}""".format(
-            options=global_conf.global_get(ini_section, 'options'),
-            cpu=global_conf.global_get(ini_section, 'cluster_cpu', required=True),
-            any_bam_file=" ".join(bam_files),
-            any_bam_name=" ".join(bam_names),
+            options=global_conf.global_get(ini_section, 'options', required=False),
+            cpu=global_conf.global_get(ini_section, 'cluster_cpu'),
+            bam_files=" ".join(bam_files),
+            bam_names=" ".join(bam_names),
             fingerprint_plot=fingerprint_plot,
             fingerprint_matrix=fingerprint_matrix,
         )
