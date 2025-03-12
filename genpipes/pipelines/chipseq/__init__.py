@@ -866,30 +866,57 @@ done""".format(
 
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
-        all_bam_files = []
-        bam_file = []
+        output_dir = os.path.join(self.output_dirs['metrics_directory'], 'deeptools')
 
+        all_bam_files = []
         all_bam_names = []
-        bam_name = []
 
         ## Loop to get bam files per sample
         for sample in self.samples:
+            bam_files = []
+            bam_names = []
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 # Select input from blacklist filtered (clean) or just sambamba filtered bam
                 filtered_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam")
                 clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
                 candidate_bam_files = [[clean_bam], [filtered_bam]]
-                bam_file = self.select_input_files(candidate_bam_files)
-                bam_name = f"{sample.name}.{mark_name}"
+                output_sample_dir = os.path.join(output_dir, sample.name)
+                # Set essential variables - fingerprint
+                fingerprint_plot = os.path.join(output_sample_dir, f"{sample.name}_fingerprint.png")
+                fingerprint_matrix = os.path.join(output_sample_dir, f"{sample.name}_counts.txt")
+                
+                bam_files.extend(self.select_input_files(candidate_bam_files))
+                bam_names.append = f"{sample.name}.{mark_name}"
 
-                all_bam_files.extend(bam_file)
-                all_bam_names.append(bam_name)
+            all_bam_files.extend(bam_files)
+            all_bam_names.extend(bam_names)
 
-        # Set essential variables - First Step
-        output_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools')
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(output_sample_dir),
+                        bash.mkdir(link_directory),
+                        deeptools.plot_fingerplot(
+                            bam_files,
+                            bam_names,
+                            fingerprint_plot, 
+                            fingerprint_matrix
+                        ),
+                        bash.ln(
+                            target_file = os.path.relpath(fingerprint_matrix, link_directory),
+                            link = os.path.join(link_directory, f"{sample.name}_counts.txt"),
+                            input_file = fingerprint_plot
+                        )
+                    ],
+                    name=f"deeptools_fingerplot.{sample.name}",
+                    samples=[sample]
+                )
+            )
+            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_counts.txt"))
+
+        # Set output files
         summ_matrix = os.path.join(output_dir, "BamSummResults.npz.txt")
-        # Set essential variables - Second Step
         corr_plot = os.path.join(output_dir, "corrMatrix.png")
         corr_table = os.path.join(output_dir, "corrMatrixCounts.txt")
 
@@ -915,59 +942,10 @@ done""".format(
                     )
                 ],
                 name = f"deeptools_corrMatrix",
+                samples=self.samples
             )
         )
         self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrixCounts.txt"))
-
-
-        for sample in self.samples:
-
-            output_sample_dir = os.path.join(self.output_dirs['metrics_directory'], 'Deeptools', sample.name)
-
-            # Set essential variables - fingerprint
-            fingerprint_plot = os.path.join(output_sample_dir, f"{sample.name}_fingerprint.png")
-            fingerprint_matrix = os.path.join(output_sample_dir, f"{sample.name}_counts.txt")
-
-            bam_file_list = []
-            bam_file = []
-
-            bam_name_list = []
-            bam_name = []
-
-            ## Loop to get bam files for all mark types
-            for mark_name in sample.marks:
-                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
-                # Select input from blacklist filtered (clean) or just sambamba filtered bam
-                filtered_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam")
-                clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
-                candidate_bam_files = [[clean_bam], [filtered_bam]]
-                bam_file = self.select_input_files(candidate_bam_files)
-                bam_name = f"{sample.name}.{mark_name}"
-
-                bam_file_list.extend(bam_file)
-                bam_name_list.append(bam_name)
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(output_sample_dir),
-                        bash.mkdir(link_directory),
-                        deeptools.plot_fingerplot(
-                            bam_file_list,
-                            bam_name_list,
-                            fingerprint_plot, 
-                            fingerprint_matrix
-                        ),
-                        bash.ln(
-                            target_file = os.path.relpath(fingerprint_matrix, link_directory),
-                            link = os.path.join(link_directory, f"{sample.name}_counts.txt"),
-                            input_file = fingerprint_plot
-                        )
-                    ],
-                    name=f"deeptools_fingerplot.{sample.name}",
-                )
-            )
-            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_counts.txt"))
 
         return jobs
 

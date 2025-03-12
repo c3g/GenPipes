@@ -28,11 +28,17 @@ log = logging.getLogger(__name__)
 
 ### Start from here ###
 
-def bamcoverage(input_bam, output_file, strand=None):
+def bamcoverage(
+        input_bam,
+        output_file,
+        strand=None,
+        ini_section="wiggle"
+        ):
     return Job(
-        input_files=[input_bam],
-        output_files=[output_file],
-        module_entries=[['ini_section', 'module_deeptools']
+        [input_bam],
+        [output_file],
+        [
+            [ini_section, 'module_deeptools']
         ],
         # need to add option for clusters,
         # each other_option individually &
@@ -55,11 +61,16 @@ bamCoverage --verbose \\
   )
 
 
-def multi_bam_summary(all_bam_files, summ_matrix, ini_section='deeptools_qc'):
+def multi_bam_summary(
+        all_bam_files,
+        summ_matrix,
+        ini_section='deeptools_qc'
+        ):
     return Job(
-        input_files=all_bam_files,
-        output_files=[summ_matrix],
-        module_entries=[['ini_section', 'module_deeptools']
+        all_bam_files,
+        [summ_matrix],
+        [
+            [ini_section, 'module_deeptools']
         ],
         command="""\
 multiBamSummary bins --verbose \\
@@ -73,11 +84,17 @@ multiBamSummary bins --verbose \\
   )
 
 
-def plot_correlation(input_matrix, all_bam_names, corr_plot, corr_table, ini_section='deeptools_qc'):
+def plot_correlation(
+        input_matrix,
+        all_bam_names,
+        corr_plot,
+        corr_table,
+        ini_section='deeptools_qc'):
     return Job(
-        input_files=[input_matrix],
-        output_files=[corr_plot, corr_table],
-        module_entries=[['ini_section', 'module_deeptools']
+        [input_matrix],
+        [corr_plot, corr_table],
+        [
+            [ini_section, 'module_deeptools']
         ],
         command="""\
 plotCorrelation \\
@@ -100,16 +117,21 @@ plotCorrelation \\
   )
 
 
-def plot_fingerplot(any_bam_file, any_bam_name, fingerprint_plot, fingerprint_matrix, ini_section='deeptools_qc'):
+def plot_fingerplot(
+        bam_files,
+        bam_names,
+        fingerprint_plot,
+        fingerprint_matrix,
+        ini_section='deeptools_qc'):
     return Job(
-        input_files=any_bam_file,
+        bam_files,
         output_files=[fingerprint_plot, fingerprint_matrix],
         module_entries=[['ini_section', 'module_deeptools']],
         command="""\
 plotFingerprint --verbose \\
     {options} \\
     --plotFileFormat png \\
-    --labels {any_bam_name} \\
+    --labels {bam_names} \\
     --centerReads \\
     --numberOfProcessors {cpu} \\
     --bamfiles {any_bam_file} \\
@@ -117,8 +139,8 @@ plotFingerprint --verbose \\
     --outRawCounts {fingerprint_matrix}""".format(
             options=global_conf.global_get(ini_section, 'options'),
             cpu=global_conf.global_get(ini_section, 'cluster_cpu', required=True),
-            any_bam_file=" ".join(any_bam_file),
-            any_bam_name=" ".join(any_bam_name),
+            any_bam_file=" ".join(bam_files),
+            any_bam_name=" ".join(bam_names),
             fingerprint_plot=fingerprint_plot,
             fingerprint_matrix=fingerprint_matrix,
         )
