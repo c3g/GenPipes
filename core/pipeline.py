@@ -182,7 +182,7 @@ class Pipeline:
                 operation_name=operation_name,
                 operation_config_version=self._genpipes_version,
                 operation_cmd_line=full_command,
-                operation_config_md5sum=md5(config_trace_filename),
+                operation_config_md5sum=md5_list(config_trace_content),
                 operation_config_data=config_trace_content,
                 pipeline_output_dir=self._output_dir,
                 timestamp=self.timestamp
@@ -626,12 +626,11 @@ class ValidateContainer(argparse.Action):
 
         setattr(args, self.dest, Container(c_type, container))
 
-def md5(fname):
+def md5_list(content_list):
     """
-    Returns md5 of a given file
+    Returns md5 of the content of a list
     """
     hash_md5 = hashlib.md5()
-    with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
+    for item in content_list:
+        hash_md5.update(item.encode('utf-8'))
     return hash_md5.hexdigest()
