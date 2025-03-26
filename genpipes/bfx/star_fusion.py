@@ -54,7 +54,7 @@ def run(fastqs1, fastqs2, output_dir):
             threads=global_conf.global_get('run_star_fusion', 'threads', param_type='posint'),
             options=global_conf.global_get('run_star_fusion', 'options'),
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
-            fastq2="--right_fq" + ",".join(fastq2 for fastq2 in fastqs2) if fastqs2 else "",
+            fastq2=("--right_fq" + ",".join(fastq2 for fastq2 in fastqs2)) if fastqs2 else "",
             output_dir=output_dir,
         ),
     )
