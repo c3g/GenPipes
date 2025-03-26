@@ -33,6 +33,8 @@ def run(fastqs1, fastqs2, output_dir):
     star_file = os.path.join(output_dir, "Aligned.out.bam")
     log_file = os.path.join(output_dir, "Log.final.out")
 
+    fastqs2_empty = all(fastq2 is None for fastq2 in fastqs2)
+
     return Job(
         fastqs1,
         [output_file,jxt_file,star_file,log_file],
@@ -54,7 +56,7 @@ def run(fastqs1, fastqs2, output_dir):
             threads=global_conf.global_get('run_star_fusion', 'threads', param_type='posint'),
             options=global_conf.global_get('run_star_fusion', 'options'),
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
-            fastq2=("--right_fq" + ",".join(fastq2 for fastq2 in fastqs2)) if fastqs2 else "",
+            fastq2="--right_fq" + ",".join(fastq2 for fastq2 in fastqs2 if fastq2) if not fastqs2_empty else "",
             output_dir=output_dir,
         ),
     )
