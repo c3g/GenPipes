@@ -48,13 +48,13 @@ def run(fastqs1, fastqs2, output_dir):
     STAR-Fusion --CPU {threads} {options} \\
         --genome_lib_dir {genome_build} \\
         --left_fq {fastq1} \\
-        --right_fq {fastq2} \\
+        {fastq2} \\
         --output_dir {output_dir}""".format(
             genome_build=global_conf.global_get('run_star_fusion', 'genome_build'),
             threads=global_conf.global_get('run_star_fusion', 'threads', param_type='posint'),
             options=global_conf.global_get('run_star_fusion', 'options'),
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
-            fastq2=",".join(fastq2 for fastq2 in fastqs2),
+            fastq2="--right_fq" + ",".join(fastq2 for fastq2 in fastqs2) if fastqs2 else "",
             output_dir=output_dir,
         ),
     )
