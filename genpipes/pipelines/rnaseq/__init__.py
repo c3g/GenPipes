@@ -216,6 +216,26 @@ quality of the data.
                     )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
+                link_job = concat_jobs(
+                    [
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
+                            trim_file_prefix + ".trim.pair1.fastq.gz",
+                            input_file=trim_file_prefix + "-trimmed-pair1.fastq.gz"
+                        ),
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed-pair2.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair2.fastq.gz")),
+                            trim_file_prefix + ".trim.pair2.fastq.gz",
+                            input_file=trim_file_prefix + "-trimmed-pair2.fastq.gz"
+                        ),
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed.log", link_directory),
+                            os.path.join(link_directory, readset.name + "-trimmed.log"),
+                            trim_file_prefix + "-trimmed.log"
+                            )
+                    ]
+                )
+
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
@@ -227,6 +247,21 @@ quality of the data.
                     candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
+
+                link_job = concat_jobs(
+                    [
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.single.fastq.gz")),
+                            trim_file_prefix + ".trim.single.fastq.gz",
+                            input_file=trim_file_prefix + "-trimmed.fastq.gz"
+                        ),
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed.log", link_directory),
+                            os.path.join(link_directory, readset.name + "-trimmed.log"),
+                            trim_file_prefix + "-trimmed.log"
+                            )
+                    ]
+                )
 
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -250,21 +285,7 @@ quality of the data.
                             adapter_file,
                             quality_offset
                         ),
-                        bash.ln(
-                            os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
-                            trim_file_prefix + ".trim.pair1.fastq.gz",
-                            input_file=trim_file_prefix + "-trimmed-pair1.fastq.gz"
-                        ),
-                        bash.ln(
-                            os.path.relpath(trim_file_prefix + "-trimmed-pair2.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair2.fastq.gz")),
-                            trim_file_prefix + ".trim.pair2.fastq.gz",
-                            input_file=trim_file_prefix + "-trimmed-pair2.fastq.gz"
-                        ),
-                        bash.ln(
-                            os.path.relpath(trim_file_prefix + "-trimmed.log", link_directory),
-                            os.path.join(link_directory, readset.name + "-trimmed.log"),
-                            trim_file_prefix + "-trimmed.log"
-                            )
+                        link_job
                     ],
                     name="skewer_trimming." + readset.name,
                     removable_files=[output_dir],
@@ -1916,10 +1937,10 @@ pandoc \\
         right_fastqs = collections.defaultdict(list)
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + "-trimmed-")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + "-trimmed")
 
             if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                candidate_input_files = [[trim_file_prefix + "-pair1.fastq.gz", trim_file_prefix + "-pair2.fastq.gz"]]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
@@ -1929,7 +1950,7 @@ pandoc \\
                         ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                candidate_input_files = [[trim_file_prefix + ".fastq.gz"]]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
@@ -2000,10 +2021,10 @@ pandoc \\
         right_fastqs = collections.defaultdict(list)
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + "-trimmed-")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + "-trimmed")
 
             if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                candidate_input_files = [[trim_file_prefix + "-pair1.fastq.gz", trim_file_prefix + "-pair2.fastq.gz"]]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
@@ -2015,7 +2036,7 @@ pandoc \\
                     )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                candidate_input_files = [[trim_file_prefix + ".fastq.gz"]]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:

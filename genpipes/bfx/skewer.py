@@ -27,16 +27,17 @@ from ..core.job import Job
 log = logging.getLogger(__name__)
 
 def trim( input1, input2, prefix, adapter_file, quality_offset):
-    output_pair1 = prefix + "-trimmed-pair1.fastq.gz"
-    output_pair2 = prefix + "-trimmed-pair2.fastq.gz"
     output_log = prefix + "-trimmed.log"
 
     if input2:  # Paired end reads
         inputs = [input1, input2]
+        output_pair1 = prefix + "-trimmed-pair1.fastq.gz"
+        output_pair2 = prefix + "-trimmed-pair2.fastq.gz"
         output = [output_pair1, output_pair2, output_log]
     else:   # Single end reads
+        output_single = prefix + "-trimmed.fastq.gz"
         inputs = [input1]
-        output = [output_pair1, output_log]
+        output = [output_single, output_log]
 
     return Job(
         inputs,
