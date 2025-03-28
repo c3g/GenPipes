@@ -3005,8 +3005,8 @@ END
                 purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
                 purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
             
-                cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
-                input_cpsr = os.path.join(cpsr_directory, tumor_pair.name + ".cpsr." + assembly + ".json.gz")
+                #cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
+                input_cpsr = None
                 input_vcf = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz")
                 pcgr_directory = os.path.join(djerba_dir, "pcgr")
                 input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")

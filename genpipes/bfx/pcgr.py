@@ -65,7 +65,7 @@ fi && \\
     {tmb_options} \\
     {msi_options} \\
     --input_vcf {input_vcf} \\
-    --cpsr_report {cpsr_report} \\
+    {cpsr_report} \\
     $input_cna \\
     --pcgr_dir $PCGR_DATA \\
     --output_dir {output_dir} \\
@@ -81,7 +81,7 @@ fi && \\
             tmb_options=global_conf.global_get(ini_section, 'tmb_options', required=False),
             msi_options=global_conf.global_get(ini_section, 'msi_options', required=False),
             input_vcf=input_vcf,
-            cpsr_report=cpsr_report,
+            cpsr_report="--cpsr_report " + cpsr_report if cpsr_report else "",
             input_cna=input_cna,
             output_dir=output_dir,
             assembly=global_conf.global_get(ini_section, 'assembly'),
