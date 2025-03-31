@@ -1241,7 +1241,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         jobs = []
         
         for sample in self.samples:
-            bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".bam")
+            bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.bam")
             output_dir = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             output_prefix = os.path.join(output_dir, sample.name)
             config_dir = os.path.join(output_dir, ".gemBS")
