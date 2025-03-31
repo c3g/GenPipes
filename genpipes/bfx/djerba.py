@@ -64,7 +64,7 @@ provenance_input_path = provenance_input.tsv.gz
 [case_overview]
 assay = {assay}
 attributes = research
-assay_description = Whole Genome Sequencing - Tumor Pair Pipeline
+assay_description = WGS - DnaSeq Pipeline - Somatic Ensemble Protocol
 primary_cancer = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else "Unknown"}
 site_of_biopsy = Unknown
 study = {global_conf.global_get(ini_section, 'project_name', required = False) if global_conf.global_get(ini_section, 'project_name', required = False) else "Unknown"}
@@ -166,7 +166,8 @@ def make_script(
         command="""\
 echo "module purge && \\
 module load {module_djerba} {module_wkhtmltopdf} && \\
-export ONCOKB_TOKEN={oncokb_token} \\
+export ONCOKB_TOKEN={oncokb_token} && \\
+export DJERBA_CORE_HTML_DIR={html_directory} && \\
 
 djerba.py {djerba_options} report \\
     -i {config_file} \\
@@ -175,6 +176,7 @@ djerba.py {djerba_options} report \\
         module_djerba=global_conf.global_get(ini_section, 'module_djerba'),
         module_wkhtmltopdf=global_conf.global_get(ini_section, 'module_wkhtmltopdf'),
         oncokb_token=global_conf.global_get(ini_section, 'oncokb_token'),
+        html_directory=global_conf.global_get(ini_section, 'custom_html_directory'),
         djerba_options=global_conf.global_get(ini_section, 'djerba_options', required=False),
         config_file=config_file,
         output_dir=output_dir,

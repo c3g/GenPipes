@@ -28,15 +28,15 @@ def report(input_vcf,
            cpsr_report,
            output_dir,
            tumor_id,
-           input_cna,
+           input_cna=None,
            ini_section='report_pcgr'
            ):
 
-    if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] >= "1":
+    if global_conf.global_get(ini_section, 'module_pcgr').split("/")[2] >= "1":
         call = 'pcgr'
     else:
         call = 'pcgr.py'
-    if global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] >= "2":
+    if global_conf.global_get(ini_section, 'module_pcgr').split("/")[2] >= "2":
         return report2(input_vcf, cpsr_report, output_dir, tumor_id, input_cna, ini_section=ini_section)
     else:
         tumor_id = tumor_id[:35]
@@ -65,7 +65,7 @@ fi && \\
     {tmb_options} \\
     {msi_options} \\
     --input_vcf {input_vcf} \\
-    --cpsr_report {cpsr_report} \\
+    {cpsr_report} \\
     $input_cna \\
     --pcgr_dir $PCGR_DATA \\
     --output_dir {output_dir} \\
@@ -77,11 +77,11 @@ fi && \\
             assay=global_conf.global_get(ini_section, 'assay'),
             tumor_options=global_conf.global_get(ini_section, 'tumor_options'),
             normal_options=global_conf.global_get(ini_section, 'normal_options'),
-            mutsig_options=global_conf.global_get(ini_section, 'mutsig_options'),
-            tmb_options=global_conf.global_get(ini_section, 'tmb_options'),
-            msi_options=global_conf.global_get(ini_section, 'msi_options'),
+            mutsig_options=global_conf.global_get(ini_section, 'mutsig_options', required=False),
+            tmb_options=global_conf.global_get(ini_section, 'tmb_options', required=False),
+            msi_options=global_conf.global_get(ini_section, 'msi_options', required=False),
             input_vcf=input_vcf,
-            cpsr_report=cpsr_report,
+            cpsr_report="--cpsr_report " + cpsr_report if cpsr_report else "",
             input_cna=input_cna,
             output_dir=output_dir,
             assembly=global_conf.global_get(ini_section, 'assembly'),
