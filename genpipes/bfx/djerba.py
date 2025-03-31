@@ -64,7 +64,7 @@ provenance_input_path = provenance_input.tsv.gz
 [case_overview]
 assay = {assay}
 attributes = research
-assay_description = Whole Genome Sequencing - Tumor Pair Pipeline
+assay_description = WGS - DnaSeq Pipeline - Somatic Ensemble Protocol
 primary_cancer = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else "Unknown"}
 site_of_biopsy = Unknown
 study = {global_conf.global_get(ini_section, 'project_name', required = False) if global_conf.global_get(ini_section, 'project_name', required = False) else "Unknown"}
