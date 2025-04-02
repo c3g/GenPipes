@@ -70,9 +70,7 @@ jobs:
           genpipes -s zsh > resources/autocomplete/genpipes.zsh
           genpipes -s tcsh > resources/autocomplete/genpipes.tcsh
       - name: Publish package to TestPyPI
-        run: |
-          pdm build
-          pdm publish --repository testpypi --username __token__ --password ${{ secrets.TESTPYPI_API_TOKEN }}
+        run: pdm publish --repository testpypi --username __token__ --password ${{ secrets.TESTPYPI_API_TOKEN }}
       - name: Create pull request
         id: create_pr
         uses: peter-evans/create-pull-request@v7
