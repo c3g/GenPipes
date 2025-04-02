@@ -53,8 +53,6 @@ jobs:
           git branch --show-current
           git pull
           pdm install --prod --no-lock --no-editable
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
       - name: Update READMEs
         run: |
           $(pdm venv activate)
@@ -71,6 +69,8 @@ jobs:
           genpipes -s bash > resources/autocomplete/genpipes.bash
           genpipes -s zsh > resources/autocomplete/genpipes.zsh
           genpipes -s tcsh > resources/autocomplete/genpipes.tcsh
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
       - name: Publish package to TestPyPI
         run: |
           pdm build
