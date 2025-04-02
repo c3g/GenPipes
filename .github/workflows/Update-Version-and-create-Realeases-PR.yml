@@ -53,9 +53,9 @@ jobs:
           git branch --show-current
           git pull
           pdm install --prod --no-lock --no-editable
-          $(pdm venv activate)
       - name: Update READMEs
         run: |
+          $(pdm venv activate)
           npm install -g doctoc
           for pipeline in ampliconseq chipseq covseq dnaseq methylseq longread_dnaseq nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light; do
             SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/, /^Steps:/' | sed '$d' | sed '1d' | sed '/Attributes:/,$d')
@@ -65,6 +65,7 @@ jobs:
           done
       - name: Update autocomplete files
         run: |
+          $(pdm venv activate)
           genpipes -s bash > resources/autocomplete/genpipes.bash
           genpipes -s zsh > resources/autocomplete/genpipes.zsh
           genpipes -s tcsh > resources/autocomplete/genpipes.tcsh
@@ -79,8 +80,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: release/${{ steps.update_version.outputs.version }}
           title: "Release: Candidate Version ${{ steps.update_version.outputs.version }} Pull Request"
-          body: "This pull request contains the updated __version__.py file with the new release version, an updated CHANGELOG.md file, updated READMEs and autocomplete files.
-          This also pushes this version to https://test.pypi.org/project/c3g-genpipes"
+          body: |
+            This pull request contains the updated __version__.py file with the new release version, an updated CHANGELOG.md file, updated READMEs and autocomplete files.
+            This also pushes this version to https://test.pypi.org/project/c3g-genpipes
           base: main
           assignees: paulstretenowich, MareikeJaniak
           delete-branch: true
