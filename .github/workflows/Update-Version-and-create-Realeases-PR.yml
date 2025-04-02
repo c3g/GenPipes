@@ -71,7 +71,7 @@ jobs:
           genpipes -s tcsh > resources/autocomplete/genpipes.tcsh
       - name: Publish package to TestPyPI
         run: |
-          source $(pdm venv activate)
+          $(pdm venv activate)
           pdm build
           pdm publish --repository testpypi --username __token__ --password ${{ secrets.TESTPYPI_API_TOKEN }} --verbose
       - name: Create pull request
