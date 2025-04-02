@@ -5,13 +5,11 @@ on:
     workflows: ["Tag and Release"]
     types:
       - completed
-    conclusions:
-      - success
 
 jobs:
   rebase:
     runs-on: ubuntu-latest
-
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,5 +37,9 @@ jobs:
           echo "__version__ = '${version_number}.dev'" > $version_file
 
       - name: Push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}
         run: |
+          git add genpipes/__version__.py
+          git commit -m "Dev Version update"
           git push --force-with-lease origin dev
