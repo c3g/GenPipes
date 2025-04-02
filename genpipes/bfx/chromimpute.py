@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -76,7 +76,7 @@ def convert(input_dir, input_file, output_dir, output_files, inputinfofile, hist
         [input_file],
         output_files,
         [
-            [ini_section, 'module_java'], 
+            [ini_section, 'module_java'],
             [ini_section, 'module_chromimpute']
         ],
         command="""\
@@ -107,7 +107,7 @@ def compute_global_dist(input_files, output_dir, output_files, converteddir, inp
         input_files,
         output_files,
         [
-            ['java', 'module_java'], 
+            ['java', 'module_java'],
             ['chromimpute', 'module_chromimpute']
         ],
         name="chromimpute_compute_global_dist." + histone_mark,
@@ -177,41 +177,6 @@ awk -v OFS="\\t" '{{if(NR==1){{sample=$1;rowindex=NR-1; print $0,rowindex}} else
       )
     )
 
-def apply(input_dir, output, converteddir, distancedir, predictordir, inputinfofile, output_dir, sample, mark):
-    return Job(
-        ['chromimpute_metrics_dir', converteddir, distancedir, predictordir],
-        [output],
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_apply."+sample+"_"+mark,
-        command = """\
-java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
-    Apply \\
-    {chrom} \\
-    {resolution} \\
-    {converteddir} \\
-    {distancedir} \\
-    {predictordir} \\
-    {inputinfofile} \\
-    {chrom_sizes} \\
-    {output_dir} \\
-    {sample} \\
-    {mark}""".format(
-        java_other_options = global_conf.global_get('DEFAULT', 'java_other_options'),
-        ram = global_conf.global_get('chromimpute', 'ram'),
-        chrom = global_conf.global_get('chromimpute', 'chrom'),
-        resolution = global_conf.global_get('chromimpute', 'resolution'),
-        converteddir = converteddir,
-        distancedir = distancedir,
-        predictordir = predictordir,
-        inputinfofile = inputinfofile,
-        chrom_sizes = global_conf.global_get('chromimpute', 'chromsizes'),
-        output_dir = output_dir,
-        sample = sample,
-        mark = mark
-        )
-    )
-
-
 def train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample, histone_mark):
     return Job(
         input_files,
@@ -241,7 +206,7 @@ def apply(input_files, output_dir, converteddir, distancedir, predictordir, inpu
         input_files,
         output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_apply."+sample+"_"+mark,
+        name=f"chromimpute_apply.{sample}_{mark}",
         command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Apply \\

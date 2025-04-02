@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -19,6 +19,7 @@
 
 # Python Standard Modules
 import os
+import re
 
 # MUGQIC Modules
 from ..core.config import global_conf
@@ -28,7 +29,7 @@ def align(input1, input2, output_directory, outputs):
 
     inputs = []
     inputs.append(input1)
-    if input2: 
+    if input2:
         inputs.append(input2)
 
     return Job(

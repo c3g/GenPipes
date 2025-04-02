@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -16,9 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-
-# Python Standard Modules
-import os
 
 # MUGQIC Modules
 from ..core.config import global_conf

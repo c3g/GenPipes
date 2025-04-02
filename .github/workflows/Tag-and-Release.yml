@@ -1,0 +1,68 @@
+name: Tag and Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: ['main']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
+    permissions:
+      contents: write
+      packages: write
+      attestations: write
+      id-token: write
+
+    if: startsWith(github.event.pull_request.title, 'Release:') && github.event.pull_request.merged == true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v4.1
+        with:
+          python-version: '3.x'
+      - name: Get tag
+        id: get_tag
+        run: |
+          git branch --show-current
+          git pull
+          pdm install --prod --no-lock --no-editable
+          echo "version=$(pdm show --version)" >> $GITHUB_OUTPUT
+      - name: Tag the commit
+        run: |
+          next_version=${{ steps.get_tag.outputs.version }}
+          git tag -a "$next_version" -m "Version $next_version"
+          git push --follow-tags
+      - name: Create changelog diff
+        id: changelog_diff
+        run: |
+          sed -n '/#### \[${{ steps.get_tag.outputs.version }}\]/,/^#### /p' CHANGELOG.md | sed '$d' > release_notes.md
+      - name: Build package
+        run: pdm build
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v2.1.0
+        with:
+          tag_name: ${{ steps.get_tag.outputs.version }}
+          name: Release ${{ steps.get_tag.outputs.version }}
+          body_path: ./release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish package to PyPI
+        run: |
+          pdm publish --repository pypi --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
+      - name: Delete release_notes file
+        run: rm release_notes.md

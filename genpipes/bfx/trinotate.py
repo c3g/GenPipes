@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -85,10 +85,10 @@ TransDecoder.Predict {other_options} \\
 
 # Identifies protein domains using [HMMR](http://hmmer.janelia.org/).
 def hmmer(
-    transdecoder_directory, 
+    transdecoder_directory,
     transdecoder_fasta,
     transdecoder_pfam):
-    
+
     return Job(
         [transdecoder_fasta],
         [transdecoder_pfam],
@@ -175,7 +175,7 @@ def signalp(
         [transdecoder_fasta],
         [signalp_gff],
         [
-            ['signalp', 'module_perl'], 
+            ['signalp', 'module_perl'],
             ['signalp', 'module_signalp']
         ],
         command="""\
@@ -200,7 +200,7 @@ def signalp6(
         [transdecoder_fasta],
         [output],
         [
-            ['signalp', 'module_python'], 
+            ['signalp', 'module_python'],
             ['signalp', 'module_signalp']
         ],
         command="""\

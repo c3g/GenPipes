@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -19,7 +19,6 @@
 
 # Python Standard Modules
 import logging
-import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
@@ -68,7 +67,7 @@ java {java_other_options} -Xmx{ram} -jar $TRIMMOMATIC_JAR {mode} \\
   ILLUMINACLIP:{adapter_file}{illumina_clip_settings}{headcrop_length} \\
   TRAILING:{trailing_min_quality} \\
   MINLEN:{min_length}{tophred33} \\
-  2> {trim_log}""".format(
+  2>&1 | tee -a {trim_log}""".format(
         java_other_options=global_conf.global_get('trimmomatic', 'java_other_options'),
         ram=global_conf.global_get('trimmomatic', 'ram'),
         mode = "PE" if input2 else "SE",

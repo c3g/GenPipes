@@ -7,8 +7,8 @@ import genpipes
 
 # Entry point for setuptools pipelines.
 def main():
-    return genpipes.main( sys.argv[1:] )
+    return genpipes.main(sys.argv[1:])
 
-# Run when called as `python -m augur`, here for good measure.
+# Run when called as `python -m genpipes`, here for good measure.
 if __name__ == "__main__":
-    sys.exit( main() )
+    sys.exit(main())

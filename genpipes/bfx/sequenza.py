@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -146,35 +146,35 @@ Rscript $R_TOOLS/RunSequenza_analysis.R \\
     )
 
 def filter(calls, pair_name, output, ini_section='sequenza'):
-     return Job(
-         [calls],
-         [output],
-         [
-             [ini_section, 'module_mugqic_tools']
-         ],
-         command="""\
+    return Job(
+        [calls],
+        [output],
+        [
+            [ini_section, 'module_mugqic_tools']
+        ],
+command="""\
 sequenza_filterOut.sh \\
     {scones_calls} \\
     {output} \\
     {pair_name} """.format(
-             scones_calls=calls,
-             output=output,
-             pair_name=pair_name
-         )
-     )
+            scones_calls=calls,
+            output=output,
+            pair_name=pair_name
+        )
+    )
 
 def annotate(calls_filtered, output_basename, tmp_basename, ini_section='scones_annotate'):
-     scones_outputs = [output_basename + ".counts.filteredSV.annotate.txt",
+    scones_outputs = [output_basename + ".counts.filteredSV.annotate.txt",
                        output_basename + ".other.filteredSV.annotate.txt",
                        output_basename + ".TumS.filteredSV.annotate.txt"]
-    
-     return Job(
-         [calls_filtered],
-         scones_outputs,
-         [
-             ['sequenza', 'module_mugqic_tools']
-         ],
-         command="""\
+
+    return Job(
+        [calls_filtered],
+        scones_outputs,
+        [
+            ['sequenza', 'module_mugqic_tools']
+        ],
+        command="""\
 sequenza_filterAnnotCNV.sh \\
     {scones_calls_filtered} \\
     {excluded_regions} \\
@@ -185,14 +185,14 @@ sequenza_filterAnnotCNV.sh \\
     {AutosomeSize} \\
     {output_basename} \\
     {tmp_basename} """.format(
-             scones_calls_filtered=calls_filtered,
-             excluded_regions=global_conf.global_get(ini_section, 'excluded_regions_bed', param_type='filepath', required=True),
-             genes=global_conf.global_get(ini_section, 'genes_bed', param_type='filepath', required=True),
-             DGV=global_conf.global_get(ini_section, 'dgv_bed', param_type='filepath', required=True),
-             microsat=global_conf.global_get(ini_section, 'microsat_bed', param_type='filepath', required=True),
-             repeatMasker=global_conf.global_get(ini_section, 'repeat_masker_bed', param_type='filepath', required=True),
-             AutosomeSize=global_conf.global_get(ini_section, 'autosome_size_file', param_type='filepath', required=True),
-             output_basename=output_basename,
-             tmp_basename=tmp_basename
-         )
-     )
+            scones_calls_filtered=calls_filtered,
+            excluded_regions=global_conf.global_get(ini_section, 'excluded_regions_bed', param_type='filepath', required=True),
+            genes=global_conf.global_get(ini_section, 'genes_bed', param_type='filepath', required=True),
+            DGV=global_conf.global_get(ini_section, 'dgv_bed', param_type='filepath', required=True),
+            microsat=global_conf.global_get(ini_section, 'microsat_bed', param_type='filepath', required=True),
+            repeatMasker=global_conf.global_get(ini_section, 'repeat_masker_bed', param_type='filepath', required=True),
+            AutosomeSize=global_conf.global_get(ini_section, 'autosome_size_file', param_type='filepath', required=True),
+            output_basename=output_basename,
+            tmp_basename=tmp_basename
+        )
+    )

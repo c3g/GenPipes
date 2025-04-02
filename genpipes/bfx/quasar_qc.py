@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -21,7 +21,6 @@
 # Python Standard Modules
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr, temp_dir):
@@ -130,6 +129,5 @@ for f in {out_dir}/{temp_dir}/*_{quasr_prefix}_{res}_{enzyme}_report.txt ;do awk
             quasr_prefix=quasr_prefix,
             temp_dir=temp_dir,
             quasar_resolution=q_res
-
-        ))
-
+            )
+        )

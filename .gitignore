@@ -7,3 +7,8 @@ resources/container/*
 .gitignore
 tmp/
 venv
+.venv
+.pdm-*
+pdm.lock
+dist
+__pycache__

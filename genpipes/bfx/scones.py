@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -21,10 +21,10 @@ from ..core.config import global_conf
 from ..core.job import Job
 
 def scones_pair(bined_file, output_basename, window):
-    
+
     models= [0,2,3,4,5,6,7]
     scones_outputs=[output_basename + "_Model_" + str(i) + "_GenomicRatios.pdf" for i in models ] + [output_basename + "_Model_" + str(i) + "_CNVcalls.txt" for i in models ]
-    
+
     return Job(
         [bined_file],
         scones_outputs,
@@ -48,7 +48,7 @@ def scones_pair(bined_file, output_basename, window):
 
 
 def scones_filter(scones_calls,pair_name, output):
-    
+
     return Job(
         [scones_calls],
         [output],
@@ -67,9 +67,9 @@ def scones_filter(scones_calls,pair_name, output):
     )
 
 def scones_annotate(scones_calls_filtered, output_basename, tmp_basename):
-    
+
     scones_outputs=[output_basename + ".counts.filteredSV.annotate.txt", output_basename + ".other.filteredSV.annotate.txt", output_basename + ".TumS.filteredSV.annotate.txt"]
-    
+
     return Job(
         [scones_calls_filtered],
         scones_outputs,

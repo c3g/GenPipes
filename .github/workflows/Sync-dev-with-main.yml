@@ -1,0 +1,41 @@
+name: Sync dev with main
+
+on:
+  workflow_run:
+    workflows: ["Tag and Release"]
+    types:
+      - completed
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Fetch all branches
+        run: git fetch --all
+
+      - name: Rebase dev with main
+        run: |
+          git checkout dev
+          git rebase origin/main
+
+      - name: Update the version to <latest>.dev
+        id: update_version
+        run: |
+          version_file="genpipes/__version__.py"
+          version_number=$(grep -oP '(?<=__version__ = ")[^"]+' $version_file)
+          echo "__version__ = '${version_number}.dev'" > $version_file
+
+      - name: Push changes
+        run: |
+          git push --force-with-lease origin dev

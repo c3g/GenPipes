@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -796,7 +796,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(output, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                             os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(output)),
-                            input=output
+                            input_file=output
                         )
                     ],
                     name=f"dna_sample_qualimap.{sample.name}",
@@ -914,7 +914,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(outfile, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                             os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(outfile)),
-                            input=outfile
+                            input_file=outfile
                         )
                     ]
                 )
@@ -1131,7 +1131,7 @@ Parameters:
                                 bash.cat(
                                     output_consensus_norm,
                                     None,
-                                    zip=True
+                                    zipped=True
                                 ),
                                 bash.awk(
                                     None,
@@ -2003,7 +2003,6 @@ def main(parsed_args):
     genpipes_file = parsed_args.genpipes_file
     container = parsed_args.container
     clean = parsed_args.clean
-    no_json = parsed_args.no_json
     json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
@@ -2013,6 +2012,6 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     design_file = parsed_args.design_file
 
-    pipeline = CoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container)
+    pipeline = CoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, json_pt=json_pt, container=container)
 
     pipeline.submit_jobs()

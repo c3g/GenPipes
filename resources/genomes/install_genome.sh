@@ -6,6 +6,7 @@ module_bismark=mugqic/bismark/0.21.0
 module_bowtie=mugqic/bowtie/1.2.2
 module_bowtie2=mugqic/bowtie2/2.3.5
 module_bwa=mugqic/bwa/0.7.17
+module_bwa_mem2=mugqic/bwa-mem2/2.2.1
 module_java=mugqic/java/openjdk-jdk1.8.0_72
 module_mugqic_tools=mugqic/mugqic_tools/2.4.0
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.6
@@ -313,10 +314,10 @@ is_up2date() {
 
 cmd_or_job() {
   CMD=$1
-  CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
-  JOB_PREFIX=${3:-$CMD}  # Job prefix = 3rd param if defined else cmd name
+  CORES=${2:-1} # Nb cores = 2nd param if defined else 1
+  JOB_PREFIX=${3:-$CMD} # Job prefix = 3rd param if defined else cmd name
+  MEMORY=${4:-31G} # Memory = 4th param if defined else 31G
   JOB_NAME=$JOB_PREFIX
-  MEMORY=${4:-31G}
 
   # If genome is too big, run command in a separate job since login node memory is limited
   if is_genome_big
@@ -473,6 +474,30 @@ chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
   else
     echo
     echo "Genome BWA index up to date... skipping"
+    echo
+  fi
+}
+
+create_bwa_mem2_index() {
+  INDEX_DIR=$GENOME_DIR/bwa-mem2_index
+  if ! is_up2date $INDEX_DIR/$GENOME_FASTA.sa
+  then
+    echo
+    echo "Creating genome bwa-mem2 index..."
+    echo
+    BWA_MEM2_CMD="\
+mkdir -p $INDEX_DIR && \
+ln -s -f -t $INDEX_DIR ../$GENOME_FASTA && \
+ln -s -f -t $INDEX_DIR ../$GENOME_FASTA.fai && \
+ln -s -f ../${GENOME_FASTA/.fa/.dict} $INDEX_DIR/$GENOME_FASTA.dict && \
+module load $module_bwa_mem2 && \
+LOG=$LOG_DIR/bwa_mem2$TIMESTAMP.log && \
+bwa-mem2 index $INDEX_DIR/$GENOME_FASTA > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG"
+    cmd_or_job BWA_MEM2_CMD 2 BWA_MEM2_CMD 80G
+  else
+    echo
+    echo "Genome bwa-mem2 index up to date... skipping"
     echo
   fi
 }
@@ -936,6 +961,7 @@ build_files() {
   create_picard_index
   create_samtools_index
   create_bwa_index
+  create_bwa_mem2_index
   create_genome_digest
   create_bismark_genome_reference
   create_bowtie_index
@@ -995,9 +1021,9 @@ assembly=$ASSEMBLY
 assembly_synonyms=$ASSEMBLY_SYNONYMS
 source=$SOURCE
 version=$VERSION
-module_star=$module_star" > $INI
+module_star=$module_star" > "$INI"
 
-  if [ ! -z "${DBSNP_VERSION:-}" ]
+  if [ -n "${DBSNP_VERSION:-}" ]
   then
     mv $INI ${INI/ini/dbSNP${DBSNP_VERSION}.ini}
     INI=${INI/ini/dbSNP${DBSNP_VERSION}.ini}
@@ -1014,6 +1040,9 @@ install_genome() {
   ASSEMBLY_SYNONYMS="$4"
   SOURCE="$5"
   VERSION="$6"
+
+  # Make sure no modules are loaded
+  module purge
 
   init_install
   set_urls

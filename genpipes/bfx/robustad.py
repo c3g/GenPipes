@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -21,19 +21,18 @@
 import os
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def call_TADs(matrix, output_dir, res, minwin, maxwin):
 
     prefix = os.path.splitext(os.path.basename(matrix))[0]
 
-    output_Scores = os.path.join(output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , f'{float(int(res)/1000):g}' ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5.txt")))
+    output_scores = os.path.join(output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , f'{float(int(res)/1000):g}' ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5.txt")))
     output_calls = os.path.join(output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , f'{float(int(res)/1000):g}' ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5_threshold0.2.txt")))
 
     return Job(
         [matrix],
-        [output_Scores, output_calls],
+        [output_scores, output_calls],
         [
             ["identify_TADs", "module_R"],
             ["identify_TADs", "module_mugqic_tools"]

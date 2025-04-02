@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -24,7 +24,7 @@ from ..core.job import Job
 def call_sv(input_normal, input_tumor, output, ini_section='wham_call_sv'):
     if input_tumor is not None:
         inputs = [input_normal, input_tumor]
-        
+
     else:
         inputs = [input_normal]
 
@@ -72,10 +72,10 @@ mergeIndvs  \\
 def genotype(input_vcf, input_normal, input_tumor, output, ini_section='wham_call_sv'):
     if input_tumor is not None:
         inputs = [input_vcf, input_normal, input_tumor]
-    
+
     else:
         inputs = [input_vcf, input_normal]
-        
+
     return Job(
         inputs,
         [output],

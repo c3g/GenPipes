@@ -1,1 +1,2 @@
 include genpipes/pipelines/*/*.ini
+include resources/autocomplete/*

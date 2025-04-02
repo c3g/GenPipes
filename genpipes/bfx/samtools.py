@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -133,7 +133,7 @@ def merge(
     merges an array of bams into a single bam
     """
     postfix = sample_output.split('.')[-1].upper()
-    
+
     return Job(
         input_bams,
         [sample_output],
@@ -186,7 +186,7 @@ def sort(
         sort_by_name=False,
         ini_section='samtools_sort'
 ):
-    
+  
     return Job(
         [input],
         [output],
@@ -267,7 +267,7 @@ def bcftools_cat(
 
     if not isinstance(inputs, list):
         inputs = [inputs]
-        
+
     return Job(
         inputs,
         [output],
@@ -493,4 +493,3 @@ samtools quickcheck {options} \\
       output="> " + output if output else ""
       )
   )
-

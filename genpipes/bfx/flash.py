@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -27,7 +27,7 @@ from ..core.job import Job
 
 log = logging.getLogger(__name__)
 
-#the merge file is name.extendedFrags.fastq 
+#the merge file is name.extendedFrags.fastq
 def flash(
     input1,
     input2,
@@ -43,14 +43,15 @@ def flash(
     outputs = [fastq_output, log_output, hist_output]
 
     pre_command = None
+    min_overlap = global_conf.global_get('flash', 'min_overlap', param_type='posint')
+    max_overlap = global_conf.global_get('flash', 'max_overlap', param_type='posint')
     if flash_stats_file:                        # If flash_stat_file is present, then it means this is the Flash 2nd pass
         inputs.append(flash_stats_file)         # Append it to inputs for dependencies matter
-        pre_command="""\
-minFlashOverlap=$(grep -w {readset} {file} | cut -f 5)
-maxFlashOverlap=$(grep -w {readset} {file} | cut -f 6)""".format(
-            readset=readset_name,
-            file=flash_stats_file
-        )
+        pre_command = f"""\
+minFlashOverlap=$(grep -w {readset_name} {flash_stats_file} | cut -f 5)
+maxFlashOverlap=$(grep -w {readset_name} {flash_stats_file} | cut -f 6)"""
+        min_overlap = "${minFlashOverlap}"
+        max_overlap = "${maxFlashOverlap}"
 
     return Job(
         inputs,
@@ -58,21 +59,13 @@ maxFlashOverlap=$(grep -w {readset} {file} | cut -f 6)""".format(
         [
             ['flash', 'module_flash']
         ],
-        command="""\
+        command=f"""\
 {pre_command}
 $FLASH_HOME/flash \\
-  -t {threads} \\
+  -t {global_conf.global_get('flash', 'threads', param_type='posint')} \\
   -m {min_overlap} \\
   -M {max_overlap} \\
-  -o {name_out} \\
-  {inputs} 2>&1 | tee {log_out}""".format(
-        pre_command=pre_command,
-        threads=global_conf.global_get('flash', 'threads', param_type='posint'),
-        min_overlap="${minFlashOverlap}" if pre_command else global_conf.global_get('flash', 'min_overlap', param_type='posint'),
-        max_overlap="${maxFlashOverlap}" if pre_command else global_conf.global_get('flash', 'max_overlap', param_type='posint'),
-        name_out=re.sub(".extendedFrags.fastq", "", fastq_output),
-        inputs=" \\\n  ".join(inputs[0:2]),
-        log_out=log_output
-        ),
+  -o {re.sub(".extendedFrags.fastq", "", fastq_output)} \\
+  {" \\\n ".join(inputs[0:2])} 2>&1 | tee {log_output}""",
         removable_files=[fastq_output]
     )

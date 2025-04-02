@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -25,7 +25,7 @@ from ..core.job import Job
 
 log = logging.getLogger(__name__)
 
-def run(input_file, pipeline, samples, readsets, job_name, metrics):
+def run(input_file, samples, readsets, job_name, metrics):
     """
     Calls job2json_project_tracking within jobs to update metrics
     """
@@ -44,7 +44,7 @@ module purge && \\
   -j {job_name} \\
   -o $PT_JSON_OUTFILE \\
   -m {metrics}""".format(
-    job2json_project_tracking_script="job2json_project_tracking.py",
+    job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "tools", "job2json_project_tracking.py"),
     samples=samples,
     readsets=readsets,
     job_name=job_name,

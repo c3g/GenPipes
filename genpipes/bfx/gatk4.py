@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -481,7 +481,7 @@ def haplotype_caller(
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
     inputs_list = inputs.copy()
     if not interval_list is None:
-       inputs_list.append(interval_list)
+        inputs_list.append(interval_list)
 
     if global_conf.global_get(ini_section, 'module_gatk').split("/")[2] < "4":
         return gatk.haplotype_caller(
@@ -1395,7 +1395,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 java_other_options=global_conf.global_get(ini_section, 'gatk_java_options'),
                 other_options=global_conf.global_get(ini_section, 'other_options'),
                 create_index="--CREATE_INDEX true" if create_index else "",
-                ram=global_conf.global_get(ini_section, 'ram'), 
+                ram=global_conf.global_get(ini_section, 'ram'),
                 reference=global_conf.global_get(ini_section, 'genome_fasta'),
                 input=input,
                 output=output,

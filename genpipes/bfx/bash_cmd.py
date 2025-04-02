@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -27,49 +27,45 @@ def mkdir(
     folder,
     remove=False
     ):
+    """
+    Invokes mkdir command.
+    """
 
     return Job(
         [],
         [folder],
-        command="""\
-mkdir -p {directory} && \\
-touch {directory}""".format(
-            directory=folder
-        ),
+        command=f"mkdir -p {folder} && touch {folder}",
         removable_files=[folder] if remove else []
     )
 
 def chdir(folder):
+    """
+    Invokes cd command.
+    """
     return Job(
         [],
         [folder],
-        command="""\
-cd {directory}""".format(
-            directory=folder
-        )
+        command=f"cd {folder}"
     )
 
 def ln(
     target_file,
     link,
-    input=None,
+    input_file=None,
     output=None,
     remove=False
     ):
+    """
+    Invokes ln command.
+    """
 
-    inputs = [input] if input else [target_file]
+    input_files = [input_file] if input_file else [target_file]
     outputs = [output] if output else [link]
 
     return Job(
-        inputs,
+        input_files,
         outputs,
-        command="""\
-ln -s -f \\
-  {target_file} \\
-  {link}""".format(
-            target_file=target_file,
-            link=link
-        ),
+        command=f"ln -s -f {target_file} {link}",
         removable_files=[link] if remove else []
     )
 
@@ -79,12 +75,16 @@ def mv(
     force=False,
     extra=None
     ):
+    """
+    Invokes mv command.
+    """
+
     if isinstance(source, list):
-        inputs = source
-    else: 
-        inputs = [source]
+        input_files = source
+    else:
+        input_files = [source]
     return Job(
-        inputs,
+        input_files,
         [target],
         command="""\
 mv {force}{source} \\
@@ -102,6 +102,9 @@ def cp(
     recursive=False,
     update=False
     ):
+    """
+    Invokes cp command.
+    """
 
     return Job(
         [source],
@@ -120,6 +123,9 @@ def rm(
     recursive=True,
     force=True
     ):
+    """
+    Invokes rm command.
+    """
 
     return Job(
         [source],
@@ -133,208 +139,240 @@ rm {rec}{force}{source}""".format(
     )
 
 def touch(target):
+    """
+    Invokes touch command.
+    """
     return Job(
         [],
         [],
-        command="""\
-touch {target}""".format(
-            target=target
-        )
+        command=f"touch {target}"
     )
 
 def md5sum(
-    inputs,
-    output,
+    input_file,
+    output=None,
     check=False
     ):
+    """
+    Invokes md5sum command.
+    """
 
-    if not isinstance(inputs, list):
-        inputs = [inputs]
+    if not output:
+        output = f"{input_file}.md5"
 
     return Job(
-        inputs,
+        [input_file],
         [output],
-        command="""\
-md5sum {check}{input}{output}""".format(
-            check="-c " if check else "",
-            input=" ".join(["'"+os.path.abspath(input)+"'" for input in inputs]),
-            output=" > " + os.path.abspath(output) if output else ""
-        )
+        command=f"""md5sum {"-c " if check else ""}{input_file} > {output}"""
     )
 
 def cat(
-    input,
+    input_file,
     output,
-    zip=False,
+    zipped=False,
     append=False
     ):
+    """
+    Invokes cat command.
+    """
 
-    if not isinstance(input, list):
-        inputs=[input]
+    if not isinstance(input_file, list):
+        input_files=[input_file]
     else:
-        inputs=input
+        input_files=input_file
 
-    cat_call = "cat"    
-    if zip:
+    cat_call = "cat"
+    if zipped:
         cat_call = "zcat"
 
     return Job(
-        inputs,
+        input_files,
         [output],
         command="""\
-{cat} {input} {append}{output}""".format(
+{cat} {input_file} {append}{output}""".format(
             cat=cat_call,
-            input=" ".join(inputs) if input else "",
+            input_file=" ".join(input_files) if input_file else "",
             append=">" if append else "",
             output="> " + output if output else ""
         )
     )
 
 def cut(
-    input,
+    input_file,
     output,
     options=None
     ):
+    """
+    Invokes cut command.
+    """
 
     return Job(
-        [input],
+        [input_file],
         [output],
         command="""\
-cut {options} {input}{output}""".format(
+cut {options} {input_file}{output}""".format(
             options=options if options else "",
-            input=input if input else "",
+            input_file=input_file if input_file else "",
             output=" > " + output if output else "",
         )
     )
 
 def paste(
-    input,
+    input_file,
     output,
     options=None
     ):
+    """
+    Invokes paste command.
+    """
 
     return Job(
-        [input],
+        [input_file],
         [output],
         command="""\
-paste {options} {input}{output}""".format(
+paste {options} {input_file}{output}""".format(
             options=options if options else "",
-            input=input if input else "",
+            input_file=input_file if input_file else "",
             output=" > " + output if output else "",
         )
     )
 
 def awk(
-    input,
+    input_file,
     output,
     instructions,
     append=False
     ):
+    """
+    Invokes awk command.
+    """
 
     return Job(
-        [input],
+        [input_file],
         [output],
         command="""\
-awk {instructions} {input}{append}{output}""".format(
+awk {instructions} {input_file}{append}{output}""".format(
             instructions=instructions,
-            input=input if input else "",
+            input_file=input_file if input_file else "",
             append=" >" if append else " ",
             output="> " + output if output else "",
         )
     )
 
 def sed(
-    input,
+    input_file,
     output,
     instructions
     ):
+    """
+    Invokes sed command.
+    """
 
     return Job(
-        [input],
+        [input_file],
         [output],
         command="""\
-sed {instructions} {input} {output}""".format(
+sed {instructions} {input_file} {output}""".format(
             instructions=instructions,
-            input=input if input else "",
+            input_file=input_file if input_file else "",
             output="> " + output if output else ""
         )
     )
 
 def grep(
-    input,
+    input_file,
     output,
     instructions
     ):
+    """
+    Invokes grep command.
+    """
+
     return Job(
-        [input],
+        [input_file],
         [output],
         command="""\
-grep {instructions} {input} {output}""".format(
+grep {instructions} {input_file} {output}""".format(
             instructions=instructions,
-            input=input if input else "",
+            input_file=input_file if input_file else "",
             output="> " + output if output else ""
         )
     )
 
 def sort(
-    input,
+    input_file,
     output,
     instructions,
     extra=None
     ):
+    """
+    Invokes sort command.
+    """
+
     return Job(
-        [input],
+        [input_file],
         [output],
         command="""\
-sort {instructions} {input} {output}{extra}""".format(
+sort {instructions} {input_file} {output}{extra}""".format(
             instructions=instructions,
-            input=input if input else "",
+            input_file=input_file if input_file else "",
             output="> " + output if output else "",
             extra=extra if (extra and output) else ""
         )
     )
 
 def zip(
-    input,
+    input_file,
     output,
     recursive=False
     ):
-    inputs = [input] if not isinstance(input, list) else input
+    """
+    Invokes zip command.
+    """
+
+    input_files = [input_file] if not isinstance(input_file, list) else input_file
     if output:
-        outputs = [output] 
+        outputs = [output]
     else:
-        output = f"{input}.zip"
+        output = f"{input_file}.zip"
         outputs = None
     if recursive:
         rec = "-r"
-        if isinstance(input, list):
-            input = os.path.dirname(input[0])
+        if isinstance(input_file, list):
+            input_file = os.path.dirname(input_file[0])
     else:
         rec = ""
     return Job(
-        inputs,
+        input_files,
         outputs,
-        command=f"zip {rec} {output} {input}"
+        command=f"zip {rec} {output} {input_file}"
     )
 
 def gzip(
-    input,
+    input_file,
     output,
     options=None
     ):
+    """
+    Invokes gzip command.
+    """
 
     return Job(
-        [input],
+        [input_file],
         [output],
         command="""\
-gzip {options}{input}{output}""".format(
+gzip {options}{input_file}{output}""".format(
             options=options if options else "",
-            input=input if input else "",
+            input_file=input_file if input_file else "",
             output=" > " + output if output else "",
         )
     )
 
 def chmod(file, permission):
+    """
+    Invokes chmod command.
+    """
+
     return Job(
         [],
         [file],
@@ -346,14 +384,18 @@ chmod {permission} {file}""".format(
     )
 
 def pigz(
-    inputs,
+    input_files,
     threads,
     options=None,
     ini_section='pigz'
     ):
+    """
+    Invokes pigz compression tool.
+    """
+
     return Job(
-        input_files=inputs,
-        output_files=[s + ".gz" for s in inputs],
+        input_files=input_files,
+        output_files=[s + ".gz" for s in input_files],
         module_entries=[
             [ini_section, 'module_pigz']
         ],
@@ -361,40 +403,39 @@ def pigz(
 pigz {options} \\
   {nthreads} \\
   {input_files}""".format(
-            input_files=" ".join(inputs),
+            input_files=" ".join(input_files),
             nthreads=threads,
             options=options if options else ""
         )
     )
 
-def ls(
-    target
-    ):
+def ls(target):
+    """
+    Invokes ls command.
+    """
+
     return Job(
         [target],
         [],
-        command="""\
-ls {path}""".format(
-            path=target
-        )
+        command=f"ls {target}"
     )
 
 def tar(
-    inputs,
+    input_files,
     output,
     options="-c",
     file_list=False,
-    input_dependency=True,
+    input_file_dependency=True,
     ):
     """
     Invokes tar compression tool.
 
-    By default it compresses inputs, but it can be used to extract the content
+    By default it compresses input_files, but it can be used to extract the content
     of a tar with option "-x" and supplying the tar in the output arg.
-        tar {options} -f {output} {inputs}
+        tar {options} -f {output} {input_files}
 
     Args:
-        inputs      list
+        input_files      list
             Paths/strings of files and folders to compress.
         output      str
             Filename preferably with extension .tar or .tar.gz.
@@ -403,8 +444,8 @@ def tar(
         file_list   boolean, default = False
             Adds a second output file to the Job object.
             The file is a list of the tar content in plain text.
-        input_dependency    boolean, defautlt = True
-            Adds dependencies to input files to the Job object.
+        input_file_dependency    boolean, defautlt = True
+            Adds dependencies to input_file files to the Job object.
             Set to False to remove dependency.
 
     Returns:
@@ -419,18 +460,18 @@ def tar(
                 )
     else:
         args = options
-    if input_dependency:
-        dependencies = inputs
+    if input_file_dependency:
+        dependencies = input_files
     else:
         dependencies = [None]
     return Job(
         dependencies,
         outputs,
         command="""\
-tar {args} -f {output} {inputs}{stdout}""".format(
+tar {args} -f {output} {input_files}{stdout}""".format(
             args=args,
             output=output,
-            inputs=" ".join(inputs),
+            input_files=" ".join(input_files),
             stdout=" ".join([" >", outputs[-1]]) if file_list else ""
         )
     )

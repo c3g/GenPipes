@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -53,10 +53,10 @@ def verify2(
 ):
     if not isinstance(input_bam, list):
         inputs = [input_bam]
-        
+
     if bed_file is not None:
         inputs.append(bed_file)
-        
+
     return Job(
         inputs,
         [output_prefix + ".selfSM"],

@@ -7,5 +7,6 @@ __all__ = [
     "sample",
     "sample_tumor_pairs",
     "scheduler",
-    "step"
+    "step",
+    "utils"
 ]

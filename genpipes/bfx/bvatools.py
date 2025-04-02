@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -97,15 +97,15 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
 
 def extract_sclip(bamFile, output_prefix, flank="200"):
     return Job(
-        [bamFile], 
+        [bamFile],
         [
-          output_prefix + ".sc.bam", 
-          output_prefix + ".scOthers.bam", 
-          output_prefix + ".scPositions.txt", 
+          output_prefix + ".sc.bam",
+          output_prefix + ".scOthers.bam",
+          output_prefix + ".scPositions.txt",
           output_prefix + ".scSequences.txt"
-        ], 
+        ],
         [
-          ['bvatools_ratiobaf', 'module_java'], 
+          ['bvatools_ratiobaf', 'module_java'],
           ['bvatools_ratiobaf', 'module_bvatools']
         ],
         command="""\

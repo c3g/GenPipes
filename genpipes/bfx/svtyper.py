@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -17,9 +17,6 @@
 # along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Python Standard Modules
-import os
-
 # GenPipes Modules
 from ..core.config import global_conf
 from ..core.job import Job
@@ -33,10 +30,10 @@ def genotyper(
     ):
 
     if input_tumor is not None:
-        inputs=[input_tumor, input_normal]        
+        inputs=[input_tumor, input_normal]
     else:
         inputs=[input_normal]
-        
+
     return Job(
         inputs,
         [output_vcf],

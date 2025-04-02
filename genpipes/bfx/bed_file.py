@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -19,7 +19,6 @@
 
 # Python Standard Modules
 import logging
-import re
 
 # MUGQIC Modules
 
@@ -29,7 +28,7 @@ def parse_bed_file(bed_file):
     bed_intervals = []
 
     log.info("Parse bed file" + bed_file + " ...")
-    
+
     total=0
     with open(bed_file) as bf:
         for line in bf:
@@ -43,9 +42,9 @@ def parse_bed_file(bed_file):
     return bed_intervals, total
 
 def split_by_size(bed_intervals, interval_size, nbSplits, output="tmp"):
-    
+
     blockSize = int(interval_size/nbSplits)
-    
+
     total = 0
     splitNum = 0
     bed_file_list=[]
@@ -63,6 +62,5 @@ def split_by_size(bed_intervals, interval_size, nbSplits, output="tmp"):
             bed_file_list.append(output+"."+str(splitNum)+".bed")
             total = 0
     out.close()
-        
 
     return bed_file_list

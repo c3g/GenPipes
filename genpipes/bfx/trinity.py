@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -112,7 +112,7 @@ Trinity {other_options} \\
     )
 
 # Index Trinity FASTA file for further abundance estimation using [Trinity align_and_estimate_abundance.pl utility](http://trinityrnaseq.sourceforge.net/analysis/abundance_estimation.html).
-# or run align_and_estimate_abundance perl script 
+# or run align_and_estimate_abundance perl script
 
 def align_and_estimate_abundance(trinity_fasta, output_directory=None, prep_reference=True, left_or_single_reads=None, right_reads=None, sample_name=None):
     # Prepare reference

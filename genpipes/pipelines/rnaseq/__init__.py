@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -25,6 +25,7 @@ import logging
 import math
 import os
 import re
+import shtab
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
@@ -215,6 +216,26 @@ quality of the data.
                     )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
+                link_job = concat_jobs(
+                    [
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
+                            trim_file_prefix + ".trim.pair1.fastq.gz",
+                            input_file=trim_file_prefix + "-trimmed-pair1.fastq.gz"
+                        ),
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed-pair2.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair2.fastq.gz")),
+                            trim_file_prefix + ".trim.pair2.fastq.gz",
+                            input_file=trim_file_prefix + "-trimmed-pair2.fastq.gz"
+                        ),
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed.log", link_directory),
+                            os.path.join(link_directory, readset.name + "-trimmed.log"),
+                            trim_file_prefix + "-trimmed.log"
+                            )
+                    ]
+                )
+
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
@@ -226,6 +247,21 @@ quality of the data.
                     candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
+
+                link_job = concat_jobs(
+                    [
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.single.fastq.gz")),
+                            trim_file_prefix + ".trim.single.fastq.gz",
+                            input_file=trim_file_prefix + "-trimmed.fastq.gz"
+                        ),
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed.log", link_directory),
+                            os.path.join(link_directory, readset.name + "-trimmed.log"),
+                            trim_file_prefix + "-trimmed.log"
+                            )
+                    ]
+                )
 
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -249,21 +285,7 @@ quality of the data.
                             adapter_file,
                             quality_offset
                         ),
-                        bash.ln(
-                            os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
-                            trim_file_prefix + ".trim.pair1.fastq.gz",
-                            input=trim_file_prefix + "-trimmed-pair1.fastq.gz"
-                        ),
-                        bash.ln(
-                            os.path.relpath(trim_file_prefix + "-trimmed-pair2.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair2.fastq.gz")),
-                            trim_file_prefix + ".trim.pair2.fastq.gz",
-                            input=trim_file_prefix + "-trimmed-pair2.fastq.gz"
-                        ),
-                        bash.ln(
-                            os.path.relpath(trim_file_prefix + "-trimmed.log", link_directory),
-                            os.path.join(link_directory, readset.name + "-trimmed.log"),
-                            trim_file_prefix + "-trimmed.log"
-                            )
+                        link_job
                     ],
                     name="skewer_trimming." + readset.name,
                     removable_files=[output_dir],
@@ -338,6 +360,10 @@ quality of the data.
                 ],
                 name="sortmerna." + readset.name,
                 input_dependency = inputs,
+                output_dependency = [
+                    os.path.join(output_dir_sample, readset.name + ".aligned.log"),
+                    os.path.join(link_directory, readset.name + ".aligned.log")
+                    ],
                 samples=[readset.sample]
                 )
             )
@@ -543,7 +569,7 @@ quality of the data.
                         bash.ln(
                             os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
                             sample_bam,
-                            input=readset_bam
+                            input_file=readset_bam
                         )
                     ],
                     removable_files=[sample_bam]
@@ -670,7 +696,6 @@ quality of the data.
                     picard.parse_aligned_reads_ratio_metrics_pt(os.path.join(output_directory, f"{sample.name}.alignment_summary_metrics")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_directory, f"{sample.name}.alignment_summary_metrics"),
-                        pipeline=self,
                         samples=sample.name,
                         readsets=",".join([readset.name for readset in sample.readsets]),
                         job_name=job_name,
@@ -971,7 +996,6 @@ pandoc \\
                     rnaseqc2.parse_expression_profiling_efficiency_metrics_pt(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
-                        pipeline=self,
                         samples=sample.name,
                         readsets=",".join([readset.name for readset in sample.readsets]),
                         job_name=job_name,
@@ -980,7 +1004,6 @@ pandoc \\
                     rnaseqc2.parse_rrna_rate_metrics_pt(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
-                        pipeline=self,
                         samples=sample.name,
                         readsets=",".join([readset.name for readset in sample.readsets]),
                         job_name=job_name,
@@ -1044,7 +1067,7 @@ pandoc \\
                         bash.ln(
                             os.path.relpath(split_file_prefix + "sorted.mdup.split.bam", alignment_dir),
                             alignment_file_prefix + "sorted.mdup.split.bam",
-                            input=split_file_prefix + "sorted.mdup.split.bam"
+                            input_file=split_file_prefix + "sorted.mdup.split.bam"
                         )
                     ],
                     name="gatk_split_N_trim." + sample.name,
@@ -1179,7 +1202,7 @@ pandoc \\
                         bash.ln(
                             os.path.relpath(output_bam, alignment_directory),
                             sample_output_bam,
-                            input=output_bam
+                            input_file=output_bam
                         )
                     ],
                     name="gatk_indel_realigner." + sample.name,
@@ -1837,17 +1860,17 @@ pandoc \\
                             bash.ln(
                                 os.path.relpath(output[0], pcgr_directory),
                                 os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
-                                input=output[0]
+                                input_file=output[0]
                                 ),
                             bash.ln(
                                 os.path.relpath(output[1], pcgr_directory),
                                 os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".maf"),
-                                input=output[1]
+                                input_file=output[1]
                                 ),
                             bash.ln(
                                 os.path.relpath(output[2], pcgr_directory),
                                 os.path.join(pcgr_directory, sample.name + ".pcgr_acmg." + assembly + ".snvs_indels.tiers.tsv"),
-                                input=output[2]
+                                input_file=output[2]
                                 )
                             ]
                         )
@@ -1861,7 +1884,7 @@ pandoc \\
                 output = [
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".html"),
                         os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".maf"),
-                        os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".snvs_indels_ann.tsv.gz")
+                        os.path.join(pcgr_directory, sample.name + ".pcgr." + assembly + ".snv_indel_ann.tsv.gz")
                     ]
                 final_command = bash.ls(output[0])
                 input_dependencies = [input, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml"]
@@ -1914,10 +1937,10 @@ pandoc \\
         right_fastqs = collections.defaultdict(list)
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + "-trimmed-")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + "-trimmed")
 
             if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                candidate_input_files = [[trim_file_prefix + "-pair1.fastq.gz", trim_file_prefix + "-pair2.fastq.gz"]]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
@@ -1927,7 +1950,7 @@ pandoc \\
                         ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                candidate_input_files = [[trim_file_prefix + ".fastq.gz"]]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
@@ -1998,10 +2021,10 @@ pandoc \\
         right_fastqs = collections.defaultdict(list)
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + "-trimmed-")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + "-trimmed")
 
             if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                candidate_input_files = [[trim_file_prefix + "-pair1.fastq.gz", trim_file_prefix + "-pair2.fastq.gz"]]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
@@ -2013,7 +2036,7 @@ pandoc \\
                     )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                candidate_input_files = [[trim_file_prefix + ".fastq.gz"]]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
@@ -2159,7 +2182,7 @@ pandoc \\
                     bash.ln(
                         target_file=os.path.relpath(os.path.join(output_folder, readset.name+"rRNA.stats.tsv"), link_directory),
                         link=os.path.join(link_directory,  readset.name+"rRNA.stats.tsv"),
-                        input=os.path.join(output_folder, readset.name+"rRNA.stats.tsv")
+                        input_file=os.path.join(output_folder, readset.name+"rRNA.stats.tsv")
                     )
                 ],
                 name=f"bwa_mem_rRNA.{readset.name}",
@@ -2294,8 +2317,8 @@ pandoc \\
                         ),
                     bash.ln(
                         target_file=os.path.relpath(output_count, link_directory),
-                        link=os.path.join(link_directory, sample.name + ".tsv"),
-                        input=output_count
+                        link=os.path.join(link_directory, sample.name + ".readcounts.tsv"),
+                        input_file=output_count
                         )
                 ],
                 name="htseq_count." + sample.name,
@@ -2792,10 +2815,20 @@ class RnaSeq(RnaSeqRaw):
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
-                                    choices=['stringtie', 'variants', 'cancer'], default="stringtie")
-        cls._argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction",
-                                    type=argparse.FileType('r'))
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="RNAseq analysis type",
+            dest='protocol',
+            choices=['stringtie', 'variants', 'cancer'],
+            default="stringtie"
+            )
+        cls._argparser.add_argument(
+            "-b",
+            "--batch",
+            help="batch file (to peform batch effect correction",
+            type=argparse.FileType('r')
+            ).complete = shtab.FILE
 
         return cls._argparser
 
@@ -2810,7 +2843,6 @@ def main(parsed_args):
     genpipes_file = parsed_args.genpipes_file
     container = parsed_args.container
     clean = parsed_args.clean
-    no_json = parsed_args.no_json
     json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
@@ -2821,7 +2853,6 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = RnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, protocol=protocol)
+    pipeline = RnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, json_pt=json_pt, container=container, protocol=protocol)
 
     pipeline.submit_jobs()
-

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -29,8 +29,8 @@ from ..core.job import Job
 
 ## functions for python tools ##
 def py_addLengthRay(
-        file_scaffolds_fasta, 
-        length_file, 
+        file_scaffolds_fasta,
+        length_file,
         output,
         ini_section='add_length_ray'
         ):
@@ -51,8 +51,8 @@ python $PYTHON_TOOLS/addLengthRay.py \\
     )
 
 def py_blastMatchSca(
-        prefix_scaffolds_fasta, 
-        blast_file, 
+        prefix_scaffolds_fasta,
+        blast_file,
         output,
         ini_section='blast_match_sca'
         ):
@@ -73,8 +73,8 @@ python $PYTHON_TOOLS/blastMatchSca.py \\
     )
 
 def py_equalFastqFile(
-        fastq_ref, 
-        fastq, 
+        fastq_ref,
+        fastq,
         output,
         ini_section='equal_fastq_file'):
     return Job(
@@ -94,9 +94,9 @@ python $PYTHON_TOOLS/equalFastqFile.py \\
     )
 
 def py_rrnaBAMcount(
-        bam, 
-        gtf, 
-        output, 
+        bam,
+        gtf,
+        output,
         typ="transcript",
         ini_section='rrna_bam_count'):
     return Job(
@@ -120,13 +120,13 @@ python $PYTHON_TOOLS/rrnaBAMcounter.py \\
     )
 # Parse Trinotate output, create best blast annotated file, GO terms and a list of filtered configs
 def py_parseTrinotateOutput(
-        trinotate_annotation_report, 
-        trinotate_report_genes_prefix, 
-        trinotate_report_transcripts_prefix, 
-        gene_id_column, 
-        transcript_id_column, 
-        isoforms_lengths_file, 
-        job_name, 
+        trinotate_annotation_report,
+        trinotate_report_genes_prefix,
+        trinotate_report_transcripts_prefix,
+        gene_id_column,
+        transcript_id_column,
+        isoforms_lengths_file,
+        job_name,
         filters=None,
         ini_section='parse_trinotate_output'
         ):
@@ -219,9 +219,9 @@ python $PYTHON_TOOLS/AmpliconSeq_script.py \\
     )
 
 def py_filterAssemblyToFastaToTsv(
-        fasta_file, 
-        filter_file, 
-        fasta_id_column, 
+        fasta_file,
+        filter_file,
+        fasta_id_column,
         output,
         ini_section='py_filterAssemblyToFastaToTsv'
         ):
@@ -249,7 +249,7 @@ def dict2beds(
         bed,
         ini_section='py_processIntervals'
         ):
-        
+
     return Job(
         [dictionary],
         [bed],
@@ -272,8 +272,8 @@ def preprocess_varscan(
         input,
         output=None,
         ini_section='preprocess_varscan'
-):
-    
+    ):
+
     return Job(
         [input],
         [output],
@@ -296,7 +296,7 @@ def fix_varscan_output(
         output=None,
         options=None,
         ini_section='fix_varscan_output'):
-    
+
     return Job(
         [input],
         [output],
@@ -314,13 +314,13 @@ python3 $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
     )
 
 def fix_genotypes_strelka(
-        input, 
-        output, 
-        normal, 
+        input,
+        output,
+        normal,
         tumor,
         ini_section='DEFAULT'
         ):
-        return Job(
+    return Job(
             [input],
             [output],
             [
@@ -346,7 +346,7 @@ def format2pcgr(input,
                 variant_type,
                 tumor,
                 ini_section='filter_ensemble'):
-    
+
     return Job(
         [input],
         [output],
@@ -423,7 +423,7 @@ bed2IntervalList.pl \\
     )
 
 def filter_long_indel(
-        input, 
+        input,
         output,
         ini_section='filter_long_indel'
         ):
@@ -464,7 +464,7 @@ rm {input_filename} """.format(
     )
 
 def vcf2bed(
-        input, 
+        input,
         output,
         ini_section='vcf2bed'
         ):
@@ -484,12 +484,12 @@ cat {input} | perl $PERL_TOOLS/vcf2bed.pl - \\
     )
 
 def rnaseqLight_kallisto(
-        fastq_file1, 
-        fastq_file2, 
-        transcriptome_file, 
-        tx2genes_file, 
-        output_dir, 
-        parameters, 
+        fastq_file1,
+        fastq_file2,
+        transcriptome_file,
+        tx2genes_file,
+        output_dir,
+        parameters,
         job_name,
         ini_section='kallisto'
         ):
@@ -556,9 +556,9 @@ Rscript --vanilla $R_TOOLS/abundanceTranscript2geneLevel.R \\
 
 
 def r_create_kallisto_count_matrix(
-        input_abundance_files, 
-        output_dir, 
-        data_type, 
+        input_abundance_files,
+        output_dir,
+        data_type,
         job_name,
         ini_section='kallisto_count_matrix'
         ):
@@ -606,12 +606,12 @@ R --no-save --args \\
 )
 
 def r_select_scaffolds(
-        inputs, 
-        outputs, 
+        inputs,
+        outputs,
         folder_sca,
-        kmer, 
-        name_sample, 
-        type_insert, 
+        kmer,
+        name_sample,
+        type_insert,
         min_insert_size=200,
         ini_section='puure_select_scaffolds'
         ):
@@ -642,14 +642,14 @@ R --no-save --args \\
     )
 
 def r_find_cluster(
-        inputs, 
-        outputs, 
-        folder_sca, 
-        kmer, 
-        unmap_type, 
-        name_sample, 
-        type_insert, 
-        max_insert_size=200, 
+        inputs,
+        outputs,
+        folder_sca,
+        kmer,
+        unmap_type,
+        name_sample,
+        type_insert,
+        max_insert_size=200,
         min_mapping_quality=10,
         ini_section='puure_find_cluster'
         ):
@@ -683,15 +683,15 @@ R --no-save --args \\
     )
 
 def r_find_insert(
-        inputs, 
-        outputs, 
-        folder_sca, 
-        kmer, 
-        name_sample, 
-        type_insert, 
+        inputs,
+        outputs,
+        folder_sca,
+        kmer,
+        name_sample,
+        type_insert,
         mean_coverage=20,
-        max_insert_size=200, 
-        min_overlap=2, 
+        max_insert_size=200,
+        min_overlap=2,
         exclu_file="None",
         ini_section='puure_find_insert'):
     if not isinstance(inputs, list):
@@ -727,16 +727,16 @@ R --no-save --args \\
     )
 
 def r_filter_insert(
-        inputs, 
-        outputs, 
-        folder_sca, 
-        kmer, 
+        inputs,
+        outputs,
+        folder_sca,
+        kmer,
         name_sample,
-        type_insert, 
-        mean_coverage=20, 
-        max_insert_size=200, 
-        strand=1, 
-        min_num_read=1, 
+        type_insert,
+        mean_coverage=20,
+        max_insert_size=200,
+        strand=1,
+        min_num_read=1,
         mean_read_length=100,
         ini_section='puure_filter_insert'
         ):
@@ -775,9 +775,9 @@ R --no-save --args \\
     )
 
 def methylkit_differential_analysis(
-        design_file, 
-        input_files, 
-        outputfiles, 
+        design_file,
+        input_files,
+        outputfiles,
         output_dir,
         ini_section='methylkit_differential_analysis'
         ):
@@ -810,9 +810,9 @@ Rscript $R_TOOLS/methylKit.R \\
 ## functions for bash tools ##
 
 def sh_ihec_rna_metrics(
-        input_bam, 
-        input_name, 
-        input_picard_dup, 
+        input_bam,
+        input_name,
+        input_picard_dup,
         output_dir,
         ini_section='IHEC_rnaseq_metrics'
         ):
@@ -844,15 +844,15 @@ IHEC_rnaseq_metrics.sh \\
     )
 
 def sh_ihec_chip_metrics(
-        chip_bam, 
-        input_bam, 
-        sample_name, 
-        input_name, 
-        chip_name, 
-        chip_type, 
-        chip_bed, 
-        output_dir, 
-        assembly, 
+        chip_bam,
+        input_bam,
+        sample_name,
+        input_name,
+        chip_name,
+        chip_type,
+        chip_bed,
+        output_dir,
+        assembly,
         crosscor_input,
         ini_section='IHEC_chipseq_metrics'
         ):
@@ -934,8 +934,8 @@ bash FastqReadNameEdit.sh \\
     )
 
 def sh_create_rmap(
-        genome_digest_input, 
-        rmap_output, 
+        genome_digest_input,
+        rmap_output,
         job_name,
         ini_section='create_rmap'
         ):
@@ -956,9 +956,9 @@ bash createRmapFile.sh \\
     )
 
 def sh_create_baitmap(
-        bait, 
-        sorted_bait, 
-        annotation, 
+        bait,
+        sorted_bait,
+        annotation,
         output,
         ini_section='create_baitmap'
         ):
@@ -988,7 +988,7 @@ bash createBaitMapFile.sh \\
     )
 
 def sh_extract_bait_bed(
-        ibed_file, 
+        ibed_file,
         sample_name,
         ini_section='extract_bait_bed'
         ):
@@ -1012,7 +1012,7 @@ bash extractBaitBed.sh \\
     )
 
 def sh_extract_capture_bed(
-        ibed_file, 
+        ibed_file,
         sample_name,
         ini_section='extract_capture_bed'
         ):
@@ -1037,8 +1037,8 @@ bash extractCaptureBed.sh \\
 
 
 def sh_blastQC_ONT(
-        output_directory, 
-        reads_fastq_dir, 
+        output_directory,
+        reads_fastq_dir,
         readset_name,
         ini_section='blastqc'
         ):
@@ -1094,7 +1094,7 @@ cleanOTUtable.sh \\
 ## methylseq tools
 
 def bismark_combine(
-        input, 
+        input,
         output,
         ini_section='bismark_combine'
         ):
@@ -1115,9 +1115,9 @@ methylProfile.bismark.pl \\
     )
 
 def cpg_stats(
-        input, 
-        cg_stats, 
-        lambda_stats, 
+        input,
+        cg_stats,
+        lambda_stats,
         puc19_stats,
         ini_section='cpg_stats'
         ):
@@ -1141,7 +1141,7 @@ bash cpgStats.sh \\
     )
 
 def cpg_cov_stats(
-        input, 
+        input,
         output,
         ini_section='cpg_cov_stats'
         ):
@@ -1162,7 +1162,7 @@ python $PYTHON_TOOLS/CpG_coverageStats.py \\
     )
 
 def filter_snp_cpg(
-        input, 
+        input,
         output,
         ini_section='filter_snp_cpg'
         ):
@@ -1236,7 +1236,7 @@ bedtools intersect {bedtools_options} \\
     )
 
 def prepare_methylkit(
-        input, 
+        input,
         output,
         ini_section='prepare_methylkit'
         ):
@@ -1260,7 +1260,7 @@ awk -F"\t" '$11>={cutoff} {{print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$
     )
 
 def gembs_format_cpg_report(
-        input, 
+        input,
         output,
         ini_section='methylseq_gembs_format_cpg_report'
         ):
@@ -1280,9 +1280,9 @@ gzip -c > {output}""".format(
   )
 
 def methylseq_metrics_report(
-        sample_list, 
-        inputs, 
-        output, 
+        sample_list,
+        inputs,
+        output,
         target_bed,
         ini_section='methylseq_metrics_report'
         ):
@@ -1308,10 +1308,11 @@ bash methylseq_metrics.sh \\
     )
 
 def methylseq_ihec_metrics_report(
-        sample_name, 
-        inputs, output, 
-        output_all, 
-        target_bed, 
+        sample_name,
+        inputs,
+        output,
+        output_all,
+        target_bed,
         count,
         ini_section='ihec_sample_metrics'
         ):
@@ -1341,8 +1342,8 @@ bash IHEC_methylseq_metrics.sh \\
     )
 
 def r_somatic_signature(
-        input, 
-        output, 
+        input,
+        output,
         remove_file=None,
         ini_section='somatic_signature'):
     return Job(

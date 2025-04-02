@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -20,12 +20,6 @@
 # Python Standard Modules
 import re
 
-# MUGQIC Modules
-from ..core.config import global_conf
-from ..core.job import Job
-
-
-
 def chr_names(genome_dict_file):
     """
     extracts chromosome ids from the genome_dictionary file.
@@ -40,7 +34,7 @@ def chr_names(genome_dict_file):
         if mychr.startswith("SN:"):
             mychr = re.sub("^SN:", "", mychr)
             chrs.append(mychr)
-    
+
     genome_dict.close()
 
     return chrs
@@ -66,7 +60,7 @@ def chr_sizes(genome_dict_file):
             size = int(re.sub("^LN:", "", size))
 
         chrs[mychr] = size
-    
+
     genome_dict.close()
 
     return chrs
@@ -122,7 +116,7 @@ def genome_size_conv(genome_dict_file):
     chrs = chr_sizes(genome_dict_file)
     chrs_conv = chr_names_conv(genome_dict_file)
 
-    for key, value in list(chrs.items()):
+    for key, _ in list(chrs.items()):
         if key not in chrs_conv:
             del chrs[key]
 

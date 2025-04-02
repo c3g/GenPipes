@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -55,10 +55,10 @@ def split_by_size(sequence_dictionary, nbSplits, variant=False):
     for sequence in sequence_dictionary:
         if variant and sequence['type'] == 'alt':
             altsToExclude.append(sequence['name'])
-            
+
         if variant and sequence['type'] != 'alt':
             total_genome += sequence['length']
-            
+
         else:
             total_genome += sequence['length']
 
@@ -86,8 +86,8 @@ def split_by_size(sequence_dictionary, nbSplits, variant=False):
     if len(split_list) == len(sequence_dictionary):
         toRemove = split_list.pop()
         for sequence in toRemove:
-          toExcludeChr.pop()
-        
+            toExcludeChr.pop()
+
     if variant and altsToExclude:
         toExcludeChr = toExcludeChr + altsToExclude
 

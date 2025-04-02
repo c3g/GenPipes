@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -28,7 +28,7 @@ from ..core.job import Job
 log = logging.getLogger(__name__)
 
 def run(fastqs1, fastqs2, chimeric_jxt, star_fusion_bam, output_dir):
-	
+
     output_file = os.path.join(output_dir, "trinity_out_dir", "Trinity.fasta")
     return Job(
         [chimeric_jxt,star_fusion_bam],

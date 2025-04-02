@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -18,7 +18,6 @@
 ################################################################################
 
 # Python Standard Modules
-import re
 import os
 
 # MUGQIC Modules
@@ -34,10 +33,10 @@ config = core.config.global_conf
 def base_recalibrator(input, output, intervals):
     if intervals:
         inputs = [input, intervals]
-    
+
     else:
         inputs = [input]
-        
+
     if global_conf.global_get('gatk_base_recalibrator', 'module_gatk').split("/")[2] >= "4":
         return gatk4.base_recalibrator(input, output, intervals)
     else:
@@ -159,7 +158,7 @@ def depth_of_coverage(input, output_prefix, intervals):
     summary_coverage_thresholds = sorted(global_conf.global_get('gatk_depth_of_coverage', 'summary_coverage_thresholds', param_type='list'), key=int)
 
     return Job(
-        [input], 
+        [input],
         [
           output_prefix + ".sample_summary",
           output_prefix + ".sample_cumulative_coverage_counts",
@@ -167,9 +166,9 @@ def depth_of_coverage(input, output_prefix, intervals):
           output_prefix + ".sample_interval_statistics",
           output_prefix + ".sample_interval_summary",
           output_prefix + ".sample_statistics"
-        ],  
+        ],
         [
-          ['gatk_depth_of_coverage', 'module_java'], 
+          ['gatk_depth_of_coverage', 'module_java'],
           ['gatk_depth_of_coverage', 'module_gatk']
         ],
         command="""\
@@ -310,13 +309,13 @@ def mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, interva
     # if set add arg prefix
     if cosmic and os.path.isfile(cosmic):
         cosmic = " --cosmic " + cosmic
-    
+
     if interval_list:
         inputs = [inputNormal, inputTumor, interval_list]
-        
+
     else:
         inputs = [inputNormal, inputTumor]
-    
+
     if global_conf.global_get('gatk_mutect2', 'module_gatk').split("/")[2] >= "4":
         return gatk4.mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, intervals, exclude_intervals, interval_list)
     else:
@@ -364,10 +363,10 @@ def indel_realigner(input,
                     optional=None,
                     fix_encoding=None
                     ):
-    
+
     output_dep = output_norm_dep + output_tum_dep
     output_dep.append(output)
-    
+
     return Job(
         [input, target_intervals, input2],
         output_dep,
@@ -477,7 +476,7 @@ def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
 
     if not isinstance(inputs, list):
         inputs=[inputs]
-    
+
     if global_conf.global_get('gatk_combine_gvcf', 'module_gatk').split("/")[2] >= "4":
         return gatk4.combine_gvcf(inputs, output, intervals, exclude_intervals)
     else:
@@ -590,7 +589,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         ),
         removable_files=[recal_output, tranches_output, R_output]
     )
-        
+   
 def apply_recalibration(variants, recal_input, tranches_input, other_options, apply_recal_output):
 
     return Job(
@@ -626,7 +625,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[], interval_list=None):
     if interval_list:
         inputs = [input]
-    
+
     else:
         inputs = [input]
     return Job(

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -157,13 +157,13 @@ Rscript $R_TOOLS/GCbias_all.R \\
     )
 
 def ihec_metrics_rnaseq(genome):
-  ''' Outputs the ihec metrics file for all samples'''
+    ''' Outputs the ihec metrics file for all samples'''
 
-  ## will parse metrics/rnaseqRep/metrics.tsv to output needed columns only
+    ## will parse metrics/rnaseqRep/metrics.tsv to output needed columns only
 
-  command = "python $PYTHON_TOOLS/ihec_metrics_rnaseq.py {genome}".format(genome=genome)
+    command = f"python $PYTHON_TOOLS/ihec_metrics_rnaseq.py {genome}"
 
-  return Job(input_files=["metrics/rnaseqRep/metrics.tsv", "report/trimAlignmentTable.tsv"],
+    return Job(input_files=["metrics/rnaseqRep/metrics.tsv", "report/trimAlignmentTable.tsv"],
              output_files=["report/IHEC_metrics_rnaseq_All.txt"],
              module_entries=[["ihec_metrics_rnaseq", "module_mugqic_tools"],
                              ["ihec_metrics_rnaseq", "module_samtools"],
@@ -180,8 +180,7 @@ def target_cpg_profile(
     sample,
     coverage_list = [1,10,15,20,25,30]
     ):
-    
-    
+
     return Job(
         [input],
         [output],
@@ -197,7 +196,3 @@ echo -e "$out" >> {output} """.format(
             cov_value=" ".join(str(x) for x in coverage_list)
         )
     )
-
-
-   
-

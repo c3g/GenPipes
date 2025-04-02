@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -25,7 +25,7 @@ from ..core.job import Job
 
 def run(tumor, patient_name, normal, bed, ini_section='svaba_run'):
     outputs = [patient_name + ".svaba.sv.vcf"]
-    
+
     if normal:
         somatic_sv = patient_name + ".svaba.somatic.sv.vcf"
         germline_sv = patient_name + ".svaba.germline.sv.vcf"

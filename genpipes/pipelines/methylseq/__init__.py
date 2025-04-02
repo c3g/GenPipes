@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -101,8 +101,14 @@ Parameters:
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)",
-                                    choices=["bismark", "gembs", "hybrid", "dragen"], default="bismark", dest='protocol')
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="Type of pipeline (default bismark)",
+            choices=["bismark", "gembs", "hybrid", "dragen"],
+            default="bismark",
+            dest='protocol'
+            )
         return cls._argparser
     @property
     def readsets(self):
@@ -219,7 +225,7 @@ Parameters:
                     bash.ln(
                         os.path.relpath(re.sub(".bam", report_suffix, no_readgroup_bam), link_directory),
                         os.path.join(link_directory, readset.name + report_suffix),
-                        input=re.sub(".bam", report_suffix, no_readgroup_bam)
+                        input_file=re.sub(".bam", report_suffix, no_readgroup_bam)
                         )
                 ],
                 name=f"bismark_align.{readset.name}",
@@ -332,7 +338,7 @@ Parameters:
                             )
                         ],
                     name="gembs_prepare",
-                    input_dependency=[self.readsets_file.name] + trim_files
+                    input_dependency=trim_files
                     )
                 )
 
@@ -383,7 +389,7 @@ Parameters:
                             bash.ln(
                                 sample.name + ".bam",
                                 os.path.join(alignment_dir, sample.name + ".sorted.bam"),
-                                input = os.path.join(alignment_dir, sample.name + ".bam"))
+                                input_file = os.path.join(alignment_dir, sample.name + ".bam"))
                         ],
                         name = "gembs_map." + sample.name,
                         samples = [sample],
@@ -476,7 +482,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(metrics_file, link_directory),
                             os.path.join(link_directory, f"{sample.name}.sorted.dedup.metrics"),
-                            input=metrics_file
+                            input_file=metrics_file
                             )
                     ]
                 )
@@ -495,7 +501,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(flagstat_file, link_directory),
                             os.path.join(link_directory, f"{sample.name}.sorted.dedup_flagstat.txt"),
-                            input=flagstat_file
+                            input_file=flagstat_file
                             )
                     ]
                 )
@@ -565,7 +571,7 @@ Parameters:
                             bash.ln(
                                 os.path.relpath(outfile, link_directory),
                                 os.path.join(link_directory, os.path.basename(outfile)),
-                                input=outfile
+                                input_file=outfile
                             )
                         ]
                     )
@@ -798,12 +804,12 @@ Parameters:
                         bash.ln(
                             os.path.relpath(os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup_splitting_report.txt"), link_directory),
                             os.path.join(link_directory, f"{sample.name}.dedup_splitting_report.txt"),
-                            input=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup_splitting_report.txt")
+                            input_file=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup_splitting_report.txt")
                             ),
                         bash.ln(
                             os.path.relpath(os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.M-bias.txt"), link_directory),
                             os.path.join(link_directory, f"{sample.name}.dedup.M-bias.txt"),
-                            input=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.M-bias.txt")
+                            input_file=os.path.join(methyl_directory, f"{sample.name}.readset_sorted.dedup.M-bias.txt")
                             )
                     ]
                 )
@@ -1235,7 +1241,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         jobs = []
         
         for sample in self.samples:
-            bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".bam")
+            bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.bam")
             output_dir = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             output_prefix = os.path.join(output_dir, sample.name)
             config_dir = os.path.join(output_dir, ".gemBS")
@@ -1358,14 +1364,14 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                     name = "gembs_report"
                 )
             )
-        
+
         return jobs
 
     def gembs_format_cpg_report(self):
         """
         Reformat gemBS output to match bismark and dragen output, so following steps can be followed. 
         """
-        
+
         jobs = []
 
         for sample in self.samples:
@@ -1627,7 +1633,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                                 bash.ln(
                                     os.path.relpath(os.path.join(alignment_directory, readset.name, outfile), link_directory),
                                     os.path.join(link_directory, outfile),
-                                    input=os.path.join(alignment_directory, readset.name, outfile)
+                                    input_file=os.path.join(alignment_directory, readset.name, outfile)
                                     )
                                 ]
                             )
@@ -1964,7 +1970,6 @@ def main(parsed_args):
     genpipes_file = parsed_args.genpipes_file
     container = parsed_args.container
     clean = parsed_args.clean
-    no_json = parsed_args.no_json
     json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
@@ -1975,6 +1980,6 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = MethylSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, protocol=protocol)
+    pipeline = MethylSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, json_pt=json_pt, container=container, protocol=protocol)
 
     pipeline.submit_jobs()

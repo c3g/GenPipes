@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -20,7 +20,6 @@
 # Python Standard Modules
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def ballgown( 
@@ -46,4 +45,3 @@ Rscript $R_TOOLS/ballgown.R \\
             output_dir=output_dir,
         )
     )
-

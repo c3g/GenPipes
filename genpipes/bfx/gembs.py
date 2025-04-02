@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -76,7 +76,7 @@ call_threads = {global_conf.global_get('gembs_call', 'threads')}
 memory = {global_conf.global_get('gembs_call', 'ram')}
 left_trim = {global_conf.global_get('gembs_call', 'left_trim')}
 right_trim = {global_conf.global_get('gembs_call', 'right_trim')}
-contig_list = {global_conf.global_get('gembs_call', 'contig_list')}
+{"contig_list = " + global_conf.global_get('gembs_call', 'contig_list') if global_conf.global_get('gembs_call', 'contig_list', required=False) else ""}
 
 [extract]
 cores = {global_conf.global_get('gembs_extract', 'cores')}
@@ -99,7 +99,6 @@ echo \"{config_content}\" > {config_file}""".format(
         )
 
 def make_metadata(metadata_list, metadata_file):
-    
     return Job(
             output_files = [metadata_file],
             command="""\
@@ -110,16 +109,14 @@ echo -e 'sampleID,dataset,library,sample,file1,file2 {metadata_list}' > {metadat
             )
 
 def prepare(
-        metadata, 
-        config_file, 
-        output_dir,
-        ini_section="gembs_prepare"
-        ):
+    metadata,
+    config_file,
+    output_dir,
+    ini_section="gembs_prepare"
+    ):
+    mp_file = output_dir + "/.gemBS/gemBS.mp"
+    output = [mp_file]
 
-    output = [
-            output_dir + "/.gemBS/gemBS.mp",
-            ]
-    
     return Job(
         [metadata,config_file],
         output,
@@ -131,14 +128,19 @@ rm -rf {hidden_dir}
 gemBS {gembs_flags} {gembs_options} \\
   prepare {flags} {options} \\
   --config {config_file} \\
-  --text-metadata {metadata}""".format(
+  --text-metadata {metadata}
+while [ ! -s "{mp_file}" ]; do
+  echo "{mp_file} is empty. Checking again in 2 seconds..."
+  sleep 2
+done""".format(
       hidden_dir=output_dir + "/.gemBS",
       gembs_flags=global_conf.global_get(ini_section, 'gembs_flags', required=False),
       gembs_options=global_conf.global_get(ini_section, 'gembs_options', required=False),
       flags=global_conf.global_get(ini_section, 'flags', required=False),
       options=global_conf.global_get(ini_section, 'options', required=False),
       config_file=config_file,
-      metadata=metadata
+      metadata=metadata,
+      mp_file=mp_file
       )
     )
 
@@ -162,7 +164,7 @@ gemBS {gembs_flags} {gembs_options} \\
         )
 
 def map(
-        sample, 
+        sample,
         output_dir,
         ini_section="gembs_map"
         ):
@@ -196,8 +198,8 @@ gemBS {gembs_flags} {gembs_options} \\
     )
 
 def call(
-        sample, 
-        input, 
+        sample,
+        input,
         output_prefix,
         ini_section="gembs_call"
         ):
@@ -232,8 +234,8 @@ gemBS {gembs_flags} {gembs_options} \\
     )
 
 def extract(
-        input, 
-        sample, 
+        input,
+        sample,
         output_dir,
         ini_section="gembs_extract"
         ):
@@ -263,7 +265,7 @@ gemBS {gembs_flags} {gembs_options} \\
 )
 
 def report(
-        inputs, 
+        inputs,
         output,
         ini_section="gembs_report"
         ):

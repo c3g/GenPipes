@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -21,14 +21,13 @@
 import os
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def fastareformat (input, output):
     return Job(
         input_files=[input],
-        output_files=[output], 
-        command="fastareformat " + input + " > " + output, 
+        output_files=[output],
+        command="fastareformat " + input + " > " + output,
         module_entries=[['DEFAULT' , 'module_exonerate']]
     )
 

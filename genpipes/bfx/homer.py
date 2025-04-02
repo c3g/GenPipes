@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -23,7 +23,7 @@ import re
 
 # MUGQIC Modules
 from ..core.config import global_conf
-from ..core.job import Job 
+from ..core.job import Job
 
 ##### General Homer:
 def archive_contigs(
@@ -190,7 +190,7 @@ def hic_interactionMatrix_genome(
 
     if fileNameRN is None:
         fileNameRN = re.sub(r"\.txt", "RN.txt", fileName)
- 
+
     commandFormatMatrix = None
     if format:
         commandFormatMatrix = """\

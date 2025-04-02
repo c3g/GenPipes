@@ -2,14 +2,41 @@ GenPipes
 ================
 This repository holds several bioinformatics pipelines developed at the [Canadian Centre for Computational Genomics](https://computationalgenomics.ca/) (C3G).
 
-GenPipes consists of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and a smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a scheduler like SLURM or PBS/Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
+GenPipes consists of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and a smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a scheduler like SLURM or PBS/Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files called "ini".
 
 **For a more detailed tutorial on how to use GenPipes, please visit our [documentation page](https://genpipes.readthedocs.io/en/latest/).**  
 
 
 On this page:
 
-[TOC]
+* [Software requirement](#software-requirement)
+* [Quick setup for Abacus, Beluga, Narval, Graham and Cedar users](#quick-setup-for-abacus-beluga-narval-graham-and-cedar-users)
+* [Download and setup for external users](#download-and-setup-for-external-users)
+    * [Download](#download)
+    * [Installation](#installation)
+    * [GenPipes in a Container](#genpipes-in-a-container)
+    * [Setup](#setup)
+        * [Genomes](#genomes)
+            * [Install a new Genome](#install-a-new-genome)
+        * [Modules](#modules)
+            * [Install a new Module](#install-a-new-module)
+    * [Have autocompletion for GenPipes](#have-autocompletion-for-genpipes)
+        * [Source the provided file](#source-the-provided-file)
+        * [Generate autocomplete file yourself](#generate-autocomplete-file-yourself)
+* [Usage](#usage)
+* [Readset File](#readset-file)
+    * [DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Methyl-Seq, CoV-Seq](#dna-seq-rna-seq-rna-seq-de-novo-assembly-amplicon-seq-methyl-seq-cov-seq)
+    * [ChIP-Seq](#chip-seq)
+    * [Nanopore, Nanopore CoV-Seq](#nanopore-nanopore-cov-seq)
+    * [For abacus users with Nanuq readsets](#for-abacus-users-with-nanuq-readsets)
+* [Configuration Files](#configuration-files)
+* [Design File](#design-file)
+    * [RNA-Seq and RNA-Seq De Novo Assembly](#rna-seq-and-rna-seq-de-novo-assembly)
+    * [Chip-Seq](#chip-seq)
+* [Batch File](#batch-file)
+* [HTML Analysis Report](#html-analysis-report)
+* [PBS/Slurm Job Logs](#pbsslurm-job-logs)
+* [Contact](#contact)
 
 
 Software requirement
@@ -23,73 +50,50 @@ Quick setup for Abacus, Beluga, Narval, Graham and Cedar users
 Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/root`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
 
-```
-#!bash
+```bash
 umask 0006
-
-## MUGQIC genomes and modules
-
+# MUGQIC genomes and modules
 export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/root
-
 module use $MUGQIC_INSTALL_HOME/modulefiles
 ```
 
 For MUGQIC analysts, add the following lines to your *$HOME/.bash_profile*:
 
-```
-#!bash
+```bash
 umask 0006
-
-## MUGQIC genomes and modules for MUGQIC analysts
-
+# MUGQIC genomes and modules for MUGQIC analysts
 HOST=`hostname`;
-
 DNSDOMAIN=`dnsdomainname`;
-
 export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/root
-
 if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
-
   export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
-
 elif [[ $HOST == ip* || $DNSDOMAIN == m  ]]; then
-
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
-
 elif [[ $HOST == cedar* || $DNSDOMAIN == cedar.computecanada.ca ]]; then
-
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
-
-
 elif [[ $HOST == beluga* || $DNSDOMAIN == beluga.computecanada.ca ]]; then
-
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
-
+elif [[ $HOST == narval* || $DNSDOMAIN == narval.computecanada.ca ]]; then
+  export MUGQIC_INSTALL_HOME_DEV=/project/rrg-bourqueg-ad/C3G/analyste_dev
 fi
-
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
 export RAP_ID=<my-rap-id>
 ```    
 
 Also, set `JOB_MAIL` in your *$HOME/.bash_profile* to receive PBS job logs:
-```
-#!bash
+```bash
 export JOB_MAIL=<my.name@my.email.ca>
 ```
 
 GenPipes pipelines and compatible Python version are already installed as modules on those clusters.
 To use them by default, add in your *$HOME/.bash_profile*:
-```
-#!bash
-module load genpipes/<latest_version>
+```bash
+module load mugqic/genpipes/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
 
-
-### For Compute Canada users
-Set your `RAP_ID` (Resource Allocation Project ID from Compute Canada) in your *$HOME/.bash_profile*:
-```
-#!bash
+For Alliance users you have to set your `RAP_ID` (Resource Allocation Project ID from Alliance) in your *$HOME/.bash_profile*:
+```bash
 export RAP_ID=<my-rap-id>
 ```
 
@@ -100,65 +104,72 @@ Download and setup for external users
 
 ### Download
 
-Visit our [Download page](https://bitbucket.org/mugqic/genpipes/downloads) to get the latest stable release.
+Visit our [Download page](https://github.com/c3g/GenPipes/releases) to get the latest stable release.
 
 If you want to use the most recent development version:
-```
-#!bash
-git clone git@bitbucket.org:mugqic/genpipes.git
+```bash
+git clone https://github.com/c3g/GenPipes.git
 ```
 
 ### Installation
 
-GenPipes can be installed via pip:
+Optional, you can first create and use a virtual environment:
+```bash
+# For Alliance users you can load our python module by running the following. For others make sure you have python 3.11.1 or later installed
+module load mugqic/python
+
+# Create a virtual environment
+python3 -m venv .genpipes_venv
+# Activate the virtual environment
+source .genpipes_venv/bin/activate
 ```
+
+GenPipes can be installed via pip from PyPi repo:
+```bash
 pip install c3g-genpipes
 ```
-or to install a development version downloaded from bitbucket:
-```
-module load mugqic/python/3.11.1
-cd <bitbucket-repo>
+Or from a GitHub clone, after downloading the repository as mentionned above:
+```bash
+cd genpipes
 pip install .
 ```
 
-The installation location may have to be added to your PATH, if it is not already on PATH. (See Setup)
+The installation location may have to be added to your PATH, if it is not already on PATH. (See [Setup](#setup)).
 
-#### GenPipes' Container:
+> [!NOTE]  
+> If you are using GenPipes in a PBS cluster not being Abacus, you have to ask your IT to add a config for epilogue of jobs. GenPipes uses `#PBS -T GenPipes` to generate epilogue of jobs using [this script](https://github.com/c3g/GenPipes/tree/6.0.0/genpipes/core/epilogue.py) and so your IT have to add it to the scheduler config accordingly.
 
-A new installation with a better taste:
+### GenPipes in a Container:
 
-Singularity needs to be [installed on your system](https://github.com/hpcng/singularity/blob/master/INSTALL.md)
+You can use one of the following software to run the container: 'singularity', 'apptainer', 'docker' or 'podman'. You can get more information to run Genpipes in a Container [here](https://github.com/c3g/genpipes_in_a_container).
 
-Then, make sure that you have fuse installed on your system,  if `ls /dev/fuse` returns no error, you are all set.
+Once the GenPipes repo has been cloned and GenPipes has been installed, run the following command to download the container image and the settings file.
 
-Once the genpipes repo has been cloned, run the following command to install the container and wrapper code for the fuse libraries.
-
-```
-#!bash
-./genpipes/resources/container/get_wrapper.sh
+```bash
+genpipes tools get_wrapper
 ```
 
-You can access the Genpipes container by typing:
+Then run the usual GenPipes command but add the argument `--wrap` in order to have the genpipes being run inside the container (for sanity check to have access to all modules required). The GenPipes file will also use the container for each of his jobs when submitted to the scheduler.
 
+To edit the config you have to edit the file `$MUGQIC_PIPELINES_HOME/resources/container/etc/wrapper.conf`, see [here](https://github.com/c3g/genpipes_in_a_container?tab=readme-ov-file#setup-a-giac-environment) for more details. For instance the container can be changed via the argument `GENPIPES_CONTAINERTYPE` and the GenPipes version to be used can be changed via the argument `GENPIPES_VERSION` (if other than latest, for more details see [here](https://github.com/c3g/genpipes_in_a_container?tab=readme-ov-file#genpipes-4-in-a-container)). You can also test a local version of GenPipes by using the option `GENPIPES_DIR`, for more details see [here](https://github.com/c3g/genpipes_in_a_container?tab=readme-ov-file#using-a-local-genpipes-version).
+
+You can access inside the Genpipes container by running:
+
+```bash
+$MUGQIC_PIPELINES_HOME/resources/container/bin/container_wrapper.sh
 ```
-#!bash
-./genpipes/resources/container/bin/container_wrapper.sh`
-
-```
-
-You can get more information to run [Genpipes with containers here](https://github.com/c3g/genpipes_in_a_container)
+Once inside you have access to all our modules from cvmfs and the latest version of GenPipes being loaded by default.
 
 ### Setup
 
 Set `MUGQIC_PIPELINES_HOME` and `GENPIPES_INIS` to your local copy path, in your *$HOME/.bash_profile*:
-```
-#!bash
+```bash
 export MUGQIC_PIPELINES_HOME=/path/to/your/local/genpipes
 export GENPIPES_INIS=$MUGQIC_PIPELINES_HOME/genpipes/pipelines
 ```
 
 Add the installation location to your path, if it is not already on path, in your *$HOME/.bash_profile*:
-```
+```bash
 # for example:
 PATH=$PATH:$HOME/.local/bin:$HOME/bin
 export PATH
@@ -166,12 +177,9 @@ export PATH
 
 GenPipes (formerly called MUGQIC Pipelines) requires genomes and modules resources to run properly.
 First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install those resources, in your *$HOME/.bash_profile*:
-```
-#!bash
-## MUGQIC genomes and modules
-
+```bash
+# MUGQIC genomes and modules
 export MUGQIC_INSTALL_HOME=/path/to/your/local/mugqic_resources
-
 module use $MUGQIC_INSTALL_HOME/modulefiles
 ```
 
@@ -184,8 +192,7 @@ To install all of them at once, use the script `$MUGQIC_PIPELINES_HOME/resources
 All species-related files are in:
 `$MUGQIC_INSTALL_HOME/genomes/species/<species_scientific_name>.<assembly>/`
 e.g. for *Homo sapiens* assembly *GRCh37*, the directory has the following (incomplete) hierarchy:
-```
-#!text
+```text
 $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh37/
 ├── annotations/
 │   ├── gtf_tophat_index/
@@ -221,8 +228,7 @@ Each species directory contains a `<scientific_name>.<assembly>.ini` file
 which lists among other things, the assembly synonyms e.g. "*hg19*":
 
 `Homo_sapiens.GRCh37.ini`
-```
-#!ini
+```bash
 [DEFAULT]
 scientific_name=Homo_sapiens
 common_name=Human
@@ -243,57 +249,55 @@ Example for Chimpanzee:
 * Retrieve the species scientific name on [Ensembl](http://useast.ensembl.org/Pan_troglodytes/Info/Index?redirect=no) or [UCSC](http://genome.ucsc.edu/cgi-bin/hgGateway): "*Pan troglodytes*"
 
 * Retrieve the assembly name:
-    - Ensembl: "*CHIMP2.1.4*"
-    - UCSC: "*panTro4*"
+    * Ensembl: "*CHIMP2.1.4*"
+    * UCSC: "*panTro4*"
 
 * Retrieve the source version:
-    - Ensembl: "78"
-    - UCSC: unfortunately, UCSC does not have version numbers. Use [panTro4.2bit](http://hgdownload.soe.ucsc.edu/goldenPath/panTro4/bigZips/) date formatted as "YYYY-MM-DD": "2012-01-09"
+    * Ensembl: "78"
+    * UCSC: unfortunately, UCSC does not have version numbers. Use [panTro4.2bit](http://hgdownload.soe.ucsc.edu/goldenPath/panTro4/bigZips/) date formatted as "YYYY-MM-DD": "2012-01-09"
 
-* `cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` e.g.:
+* Run
+```bash
+cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh
+```
+e.g.:
+* Ensembl:
+```bash
+cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.CHIMP2.1.4.sh
+```
+* UCSC:
+```bash
+cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.panTro4.sh
+```
 
-    - Ensembl:
+* Modify `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` (`ASSEMBLY_SYNONYMS` can be left empty but if you know that 2 assemblies are identical apart from `chr` sequence prefixes, document it):
+    * Ensembl:
+    ```bash
+    SPECIES=Pan_troglodytes   # With "_"; no space!
+    COMMON_NAME=Chimpanzee
+    ASSEMBLY=CHIMP2.1.4
+    ASSEMBLY_SYNONYMS=panTro4
+    SOURCE=Ensembl
+    VERSION=78
+    ```
+    * UCSC:
+    ```bash
+    SPECIES=Pan_troglodytes   # With "_"; no space!
+    COMMON_NAME=Chimpanzee
+    ASSEMBLY=panTro4
+    ASSEMBLY_SYNONYMS=CHIMP2.1.4
+    SOURCE=UCSC
+    VERSION=2012-01-09
+    ```
 
-            cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.CHIMP2.1.4.sh
-
-    - UCSC:
-
-            cp $MUGQIC_PIPELINES_HOME/resources/genomes/GENOME_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/genomes/Pan_troglodytes.panTro4.sh
-
-* Modify `$MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` (`ASSEMBLY_SYNONYMS` can be left empty but if you know that 2 assemblies
-are identical apart from `chr` sequence prefixes, document it):
-
-    - Ensembl:
-
-            SPECIES=Pan_troglodytes   # With "_"; no space!
-            COMMON_NAME=Chimpanzee
-            ASSEMBLY=CHIMP2.1.4
-            ASSEMBLY_SYNONYMS=panTro4
-            SOURCE=Ensembl
-            VERSION=78
-
-    - UCSC:
-
-            SPECIES=Pan_troglodytes   # With "_"; no space!
-            COMMON_NAME=Chimpanzee
-            ASSEMBLY=panTro4
-            ASSEMBLY_SYNONYMS=CHIMP2.1.4
-            SOURCE=UCSC
-            VERSION=2012-01-09
-
-* Running `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` will install the genome in $MUGQIC_INSTALL_HOME_DEV (by default). This will download and install genomes, indexes and, for Ensembl only, annotations (GTF, VCF, etc.).
-[ADMINS ONLY] To install it in $MUGQIC_INSTALL_HOME run `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh MUGQIC_INSTALL_HOME`.
-
-    If the genome is big, separate batch jobs will be submitted to the cluster for bwa, bowtie/tophat, star indexing.
-    Check that jobs are completed OK.
-
-* [ADMINS ONLY] If the new genome has been installed in `$MUGQIC_INSTALL_HOME_DEV`, to deploy in `$MUGQIC_INSTALL_HOME`:
-
-        rsync -vca --no-o --no-g --no-p --size-only -I -O --ignore-times $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly> $MUGQIC_INSTALL_HOME/genomes/species/
+* Running `bash $MUGQIC_PIPELINES_HOME/resources/genomes/<scientific_name>.<assembly>.sh` will install the genome in `$MUGQIC_INSTALL_HOME_DEV` (by default). This will download and install genomes, indexes and, for Ensembl only, annotations (GTF, VCF, etc.).
+If the genome is big, separate batch jobs will be submitted to the cluster for bwa, bowtie/tophat, star indexing.
+Check that jobs are completed.
 
 * Add the newly created INI file to the genome config files for further usage in pipeline command:
-
-        cp $MUGQIC_INSTALL_HOME/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini $MUGQIC_PIPELINES_HOME/resources/genomes/config/
+```bash
+cp $MUGQIC_INSTALL_HOME_DEV/genomes/species/<scientific_name>.<assembly>/<scientific_name>.<assembly>.ini $MUGQIC_PIPELINES_HOME/resources/genomes/config/
+```
 
 
 #### Modules
@@ -302,20 +306,54 @@ Default software/module installation scripts are already available in `$MUGQIC_P
 
 ##### Install a new Module
 
-New software tools and associated modules can be installed semi-automatically:
+New software tools and associated modules can be installed semi-automatically in a dev environment:
 
-* `cp $MUGQIC_PIPELINES_HOME/resources/modules/MODULE_INSTALL_TEMPLATE.sh $MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh`
+* Create a new `$MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh` file. You can have a look at existing module files in `$MUGQIC_PIPELINES_HOME/resources/modules/`.
 
 * Modify `$MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh` following the instructions inside.
 
 * Run `$MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh` with no arguments. By default, it will download and extract the remote software archive, build the software and create the associated module, all in `$MUGQIC_INSTALL_HOME_DEV` if it is set.
 
-* If everything is OK, to install it in production, run:
+* Check if the module is available with: `module avail 2>&1 | grep mugqic_dev/<my_software>/<version>`
 
-        $MUGQIC_PIPELINES_HOME/resources/modules/<my_software>.sh MUGQIC_INSTALL_HOME
-    (no `$` before `MUGQIC_INSTALL_HOME`!).
 
-* Check if the module is available with: `module avail 2>&1 | grep mugqic/<my_software>/<version>`
+Have autocompletion for GenPipes
+--------------------------------
+
+You can have tab completion for GenPipes by sourcing the right file provided by GenPipes or generate it yourself.
+
+### Source the provided file
+This will only last for the current session and you will have to source it again if you open a new terminal.
+#### For bash users
+```bash
+source $MUGQIC_PIPELINES_HOME/resources/autocomplete/genpipes.bash
+```
+#### For zsh users
+```bash
+source $MUGQIC_PIPELINES_HOME/resources/autocomplete/genpipes.zsh
+```
+#### For tcsh users
+```bash
+source $MUGQIC_PIPELINES_HOME/resources/autocomplete/genpipes.tcsh
+```
+
+### Generate autocomplete file yourself
+This will last even if you open a new terminal.
+#### For bash users
+```bash
+genpipes -s bash > /usr/share/bash-completion/completions/genpipes
+# OR if you are on a shared filesystem like The Alliance or Abacus
+mkdir -p ~/.local/share/bash-completion/completions/
+genpipes -s bash > ~/.local/share/bash-completion/completions/genpipes
+```
+#### For zsh users
+```bash
+genpipes -s zsh > /usr/local/share/zsh/site-functions/_genpipes
+# OR if you are on a shared filesystem like The Alliance or Abacus
+mkdir -p ~/.local/share/zsh/site-functions/_genpipes
+genpipes -s zsh > ~/.local/share/zsh/site-functions/_genpipes
+```
+
 
 Usage
 -----
@@ -323,8 +361,7 @@ Usage
 For each pipeline, get help about usage, arguments and steps with:
 
 * if you use a `mugqic/genpipes/<version>` module on our clusters or a local pip install, simply:
-```
-#!bash
+```bash
 genpipes <pipeline_name> --help
 ```
 
@@ -335,16 +372,16 @@ For documentation on how to use each of the pipelines, visit:
 
 For more information about and source code for a specific pipeline, visit:
 
-### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/dnaseq/)
-### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq/)
-### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq_denovo_assembly/)
-### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/rnaseq_light/)
-### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/chipseq/)
-### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/ampliconseq/)
-### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/methylseq/)
-### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/nanopore/)
-### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/covseq/)
-### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/genpipes/pipelines/nanopore_covseq/)
+### [DNA-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/dnaseq)
+### [RNA-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/rnaseq)
+### [RNA-Seq De Novo Assembly Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/rnaseq_denovo_assembly)
+### [RNA-Seq Light Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/rnaseq_light)
+### [ChIP-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/chipseq)
+### [Amplicon-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/ampliconseq)
+### [Methyl-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/methylseq)
+### [Nanopore Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/nanopore)
+### [CoV-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/covseq)
+### [Nanopore CoV-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/nanopore_covseq)
 
 Readset File
 ------------
@@ -369,12 +406,13 @@ The Readset File is a TAB-separated values plain text file with one line per rea
 * BAM: relative or absolute path to BAM file which will be converted into FASTQ files if they are not available; mandatory if FASTQ1 value is missing, ignored otherwise.
 
 Example:
-
-    Sample	Readset	Library	RunType	Run	Lane	Adapter1	Adapter2	QualityOffset	BED	FASTQ1	FASTQ2	BAM
-    sampleA	readset1	lib0001	PAIRED_END	run100	1	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset1.paired1.fastq.gz	path/to/readset1.paired2.fastq.gz	path/to/readset1.bam
-    sampleA	readset2	lib0001	PAIRED_END	run100	2	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset2.paired1.fastq.gz	path/to/readset2.paired2.fastq.gz	path/to/readset2.bam
-    sampleB	readset3	lib0002	PAIRED_END	run200	5	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
-    sampleB	readset4	lib0002	PAIRED_END	run200	6	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset4.paired1.fastq.gz	path/to/readset4.paired2.fastq.gz	path/to/readset4.bam
+```text
+Sample  Readset  Library RunType    Run    Lane Adapter1                          Adapter2                          QualityOffset BED              FASTQ1                            FASTQ2                            BAM
+sampleA readset1 lib0001 PAIRED_END run100 1    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT 33            path/to/file.bed path/to/readset1.paired1.fastq.gz path/to/readset1.paired2.fastq.gz path/to/readset1.bam
+sampleA readset2 lib0001 PAIRED_END run100 2    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT 33            path/to/file.bed path/to/readset2.paired1.fastq.gz path/to/readset2.paired2.fastq.gz path/to/readset2.bam
+sampleB readset3 lib0002 PAIRED_END run200 5    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT 33            path/to/file.bed path/to/readset3.paired1.fastq.gz path/to/readset3.paired2.fastq.gz path/to/readset3.bam
+sampleB readset4 lib0002 PAIRED_END run200 6    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT 33            path/to/file.bed path/to/readset4.paired1.fastq.gz path/to/readset4.paired2.fastq.gz path/to/readset4.bam
+```
 
 ### ChIP-Seq
 
@@ -395,12 +433,13 @@ Example:
 * BAM: relative or absolute path to BAM file which will be converted into FASTQ files if they are not available; mandatory if FASTQ1 value is missing, ignored otherwise.
 
 Example:
-
-    Sample  Readset  MarkName MarkType Library RunType Run Lane    Adapter1    Adapter2    QualityOffset   BED FASTQ1  FASTQ2  BAM
-    sampleA readset1 H3K27ac  N        lib0001 PAIRED_END  run100  1   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset1.paired1.fastq.gz   path/to/readset1.paired2.fastq.gz   path/to/readset1.bam
-    sampleA readset2 H3K27ac  N        lib0001 PAIRED_END  run100  2   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset2.paired1.fastq.gz   path/to/readset2.paired2.fastq.gz   path/to/readset2.bam
-    sampleB readset3 Input    I        lib0002 PAIRED_END  run200  5   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset3.paired1.fastq.gz   path/to/readset3.paired2.fastq.gz   path/to/readset3.bam
-    sampleB readset4 Input    I        lib0002 PAIRED_END  run200  6   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset4.paired1.fastq.gz   path/to/readset4.paired2.fastq.gz   path/to/readset4.bam
+```text
+Sample  Readset  MarkName MarkType Library RunType    Run    Lane Adapter1                          Adapter2                          QualityOffset BED              FASTQ1                            FASTQ2                            BAM
+sampleA readset1 H3K27ac  N        lib0001 PAIRED_END run100 1    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT 33            path/to/file.bed path/to/readset1.paired1.fastq.gz path/to/readset1.paired2.fastq.gz path/to/readset1.bam
+sampleA readset2 H3K27ac  N        lib0001 PAIRED_END run100 2    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT 33            path/to/file.bed path/to/readset2.paired1.fastq.gz path/to/readset2.paired2.fastq.gz path/to/readset2.bam
+sampleB readset3 Input    I        lib0002 PAIRED_END run200 5    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT 33            path/to/file.bed path/to/readset3.paired1.fastq.gz path/to/readset3.paired2.fastq.gz path/to/readset3.bam
+sampleB readset4 Input    I        lib0002 PAIRED_END run200 6    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT 33            path/to/file.bed path/to/readset4.paired1.fastq.gz path/to/readset4.paired2.fastq.gz path/to/readset4.bam
+```
 
 ### Nanopore, Nanopore CoV-Seq
 
@@ -413,25 +452,24 @@ Example:
 * FASTQ: path to the `fastq_pass` **directory**, that is usually created by the basecaller; mandatory;
 * FAST5: path to the **directory** containing the raw fast5 files, before basecalling; 
 
-Example: 
-
-    Sample  Readset Run Flowcell    Library Summary FASTQ   FAST5
-    sampleA readset1    PAE00001_abcd123    FLO-PRO002  SQK-LSK109 path/to/readset1_sequencing_summary.txt path/to/readset1/fastq_pass   path/to/readset1/fast5_pass 
-    sampleA readset2    PAE00002_abcd456    FLO-PRO002  SQK-LSK109 path/to/readset2_sequencing_summary.txt path/to/readset2/fastq_pass   path/to/readset2/fast5_pass 
-    sampleA readset3    PAE00003_abcd789    FLO-PRO002  SQK-LSK109 path/to/readset3_sequencing_summary.txt path/to/readset3/fastq_pass   path/to/readset3/fast5_pass 
-    sampleA readset4    PAE00004_abcd246    FLO-PRO002  SQK-LSK109 path/to/readset4_sequencing_summary.txt path/to/readset4/fastq_pass   path/to/readset4/fast5_pass 
-
+Example:
+```text
+Sample  Readset  Run              Flowcell   Library    Summary                                 FASTQ                       FAST5
+sampleA readset1 PAE00001_abcd123 FLO-PRO002 SQK-LSK109 path/to/readset1_sequencing_summary.txt path/to/readset1/fastq_pass path/to/readset1/fast5_pass 
+sampleA readset2 PAE00002_abcd456 FLO-PRO002 SQK-LSK109 path/to/readset2_sequencing_summary.txt path/to/readset2/fastq_pass path/to/readset2/fast5_pass 
+sampleA readset3 PAE00003_abcd789 FLO-PRO002 SQK-LSK109 path/to/readset3_sequencing_summary.txt path/to/readset3/fastq_pass path/to/readset3/fast5_pass 
+sampleA readset4 PAE00004_abcd246 FLO-PRO002 SQK-LSK109 path/to/readset4_sequencing_summary.txt path/to/readset4/fastq_pass path/to/readset4/fast5_pass 
+```
 
 ### For abacus users with Nanuq readsets
-If your readsets belong to a [Nanuq](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `$MUGQIC_PIPELINES_HOME/utils/nanuq2mugqic_pipelines.py` script to automatically create a Readset File and symlinks to your readsets on abacus.
+If your readsets belong to a [Nanuq](http://gqinnovationcenter.com/services/nanuq.aspx) project, use `$MUGQIC_PIPELINES_HOME/genpipes/tools/nanuq2mugqic_pipelines.py` script to automatically create a Readset File and symlinks to your readsets on abacus.
 
 
 Configuration Files
 -------------------
 Pipeline command parameters and cluster settings can be customized using Configuration Files (`.ini` extension).
 Those files have a structure similar to Microsoft Windows INI files e.g.:
-```
-#!ini
+```bash
 [DEFAULT]
 module_trimmomatic=mugqic/trimmomatic/0.36
 
@@ -443,8 +481,7 @@ A parameter value is first searched in its specific section, then, if not found,
 The example above would resolve parameter `module_trimmomatic` value from section `trimmomatic` to `mugqic/trimmomatic/0.36`.
 
 Configuration files support interpolation. For example:
-```
-#!ini
+```bash
 scientific_name=Homo_sapiens
 assembly=GRCh37
 assembly_dir=$MUGQIC_INSTALL_HOME/genomes/species/%(scientific_name)s.%(assembly)s
@@ -453,8 +490,7 @@ genome_fasta=%(assembly_dir)s/genome/%(scientific_name)s.%(assembly)s.fa
 would resolve `genome_fasta` value to `$MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh37/genome/Homo_sapiens.GRCh37.fa`.
 
 Each pipeline has several configuration files in:
-```
-#!bash
+```bash
 $GENPIPES_INIS/<pipeline_name>/<pipeline_name>.*.ini
 ```
 A default configuration file (`.base.ini` extension) is set for running on abacus cluster using *Homo sapiens* reference genome
@@ -468,8 +504,7 @@ Each cluster has a special configuration file available (for example, `beluga.in
 And various genome settings are available in `$MUGQIC_INSTALL_HOME/genomes/species/`.
 
 For example, to run the DNA-Seq pipeline on the beluga cluster with *Mus musculus* reference genome:
-```
-#!bash
+```bash
 genpipes dnaseq --config $GENPIPES_INIS/dnaseq/dnaseq.base.ini $GENPIPES_INIS/common_ini/beluga.ini $MUGQIC_INSTALL_HOME/genomes/species/Mus_musculus.GRCm38/Mus_musculus.GRCm38.ini ...
 ```
 
@@ -488,12 +523,13 @@ The Design File is a TAB-separated values plain text file with one line per samp
     * '__2__': the sample belongs to the treatment test case group.
 
 Example:
-
-    Sample	Contrast1	Contrast2	Contrast3
-    sampleA	1	1	1
-    sampleB	2	0	1
-    sampleC	0	2	0
-    sampleD	0	0	2
+```text
+Sample  Contrast1 Contrast2 Contrast3
+sampleA 1         1         1
+sampleB 2         0         1
+sampleC 0         2         0
+sampleD 0         0         2
+```
 
 ### Chip-Seq
 
@@ -505,17 +541,17 @@ Example:
     * '__2__': the sample belongs to the treatment test case group.
 
 Example:
-
-    Sample	MarkName Contrast1 Contrast2
-    sampleA	H3K27ac 1   0
-    sampleB	H3K27ac 1   0
-    sampleC	H3K27ac 2   0
-    sampleD	H3K27ac 2   0
-    sampleA H3K4me3 0   1
-    sampleB H3K4me3 0   1
-    sampleC H3K4me3 0   2
-    sampleD H3K4me3 0   2
-
+```text
+Sample  MarkName Contrast1 Contrast2
+sampleA H3K27ac  1         0
+sampleB H3K27ac  1         0
+sampleC H3K27ac  2         0
+sampleD H3K27ac  2         0
+sampleA H3K4me3  0         1
+sampleB H3K4me3  0         1
+sampleC H3K4me3  0         2
+sampleD H3K4me3  0         2
+```
 
 Batch File
 -----------
@@ -524,20 +560,19 @@ RNA-Seq, RNA-Seq De Novo Assembly pipelines can perform batch effect correction 
 The Batch File is a TAB-separated values plain text file with one line per sample and the following columns:
 
 * Sample: first column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; the sample name must match a sample name in the readset file; mandatory;
-* Batch: second (and last) column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; 
-
+* Batch: second (and last) column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only;
 Example:
-
-    Sample	Batch
-    sampleA	1
-    sampleB	1
-    sampleC	2
-    sampleD	2
-    sampleA 3
-    sampleB 3
-    sampleC 3
-    sampleD 3
-
+```text
+Sample  Batch
+sampleA 1
+sampleB 1
+sampleC 2
+sampleD 2
+sampleA 3
+sampleB 3
+sampleC 3
+sampleD 3
+```
 
 HTML Analysis Report
 --------------------
@@ -551,54 +586,29 @@ If users wish to include additional log files that are not already captured, but
 PBS/Slurm Job Logs
 ------------
 When pipelines are run in PBS (Portable Batch System) or SLURM job scheduler mode (default), a job list file is created in `<output_dir>/job_output/<PipelineName>_job_list_<timestamp>` and subsequent job log files are placed in `<output_dir>/job_output/<step_name>/<job_name>_<timestamp>.o` e.g.:
-```
-#!text
+```text
 my_output_dir/job_output/
 ├── RnaSeqDeNovoAssembly_job_list_2014-09-30T19.52.29
 ├── trimmomatic
-│   ├── trimmomatic.readset1_2014-09-30T19.52.29.o
-│   └── trimmomatic.readset2_2014-09-30T19.52.29.o
+│   ├── trimmomatic.readset1_2014-09-30T19.52.29.o
+│   └── trimmomatic.readset2_2014-09-30T19.52.29.o
 ├── trinity
-│   └── trinity_2014-10-01T14.17.02.o
+│   └── trinity_2014-10-01T14.17.02.o
 └── trinotate
     └── trinotate_2014-10-22T14.05.58.o
 ```
 
-To view a TAB-separated values log report, use the `log_report.pl` (PBS) or `log_report.py` (SLURM) script by typing:
-```
-#!bash
-log_report.pl <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
-```
-or 
-
-```
-#!bash
-log_report.py --tsv log.out <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
+To view a TAB-separated values log report, use the `log_report` script by typing:
+```bash
+genpipes tools log_report <output_dir>/job_output/<PipelineName>_job_list_<timestamp>
 ```
 
 which will output e.g.:
-```
-#!text
-# Number of jobs: 41
-#
-# Number of successful jobs: 4
-# Number of active jobs: 0
-# Number of inactive jobs: 36
-# Number of failed jobs: 1
-#
-# Execution time: 2014-09-30T19:52:58 - 2014-09-30T22:38:04 (2 h 45 min 6 s)
-#
-# Shortest job: merge_trimmomatic_stats (1 s)
-# Longest job: insilico_read_normalization_readsets.readset2 (1 h 33 min 53 s)
-#
-# Lowest memory job: merge_trimmomatic_stats (0.00 GiB)
-# Highest memory job: insilico_read_normalization_readsets.readset2 (31.32 GiB)
-#
-#JOB_ID JOB_FULL_ID    JOB_NAME    JOB_DEPENDENCIES    STATUS    JOB_EXIT_CODE    CMD_EXIT_CODE    REAL_TIME    START_DATE    END_DATE    CPU_TIME    CPU_REAL_TIME_RATIO    PHYSICAL_MEM    VIRTUAL_MEM    EXTRA_VIRTUAL_MEM_PCT    LIMITS    QUEUE    USERNAME    GROUP    SESSION    ACCOUNT    NODES    PATH
-2100213.abacus2.ferrier.genome.mcgill.ca    2100213.abacus2.ferrier.genome.mcgill.ca    trimmomatic.readset1    SUCCESS    N/A    0    01:08:45 (1 h 8 min 45 s)    2014-09-30T19:52:58    2014-09-30T21:01:48    02:39:34 (2 h 39 min 34 s)    2.32    1.71 GiB    3.73 GiB    118.2 %    neednodes=1:ppn=6,nodes=1:ppn=6,walltime=24:00:00    sw    jfillon analyste    2465764    N/A    f3c10    /path/to/output_dir/job_output/trimmomatic/trimmomatic.readset1_2014-09-30T19.52.29.o
-2100214.abacus2.ferrier.genome.mcgill.ca    2100214.abacus2.ferrier.genome.mcgill.ca    trimmomatic.readset2    SUCCESS    N/A    0    01:08:59 (1 h 8 min 59 s)    2014-09-30T19:52:58    2014-09-30T21:02:01    02:40:05 (2 h 40 min 5 s)    2.32    1.41 GiB    3.73 GiB    164.0 %    neednodes=1:ppn=6,nodes=1:ppn=6,walltime=24:00:00    sw    jfillon analyste    2465669    N/A    f3c10    /path/to/output_dir/job_output/trimmomatic/trimmomatic.readset2_2014-09-30T19.52.29.o
-2100215.abacus2.ferrier.genome.mcgill.ca    2100215.abacus2.ferrier.genome.mcgill.ca    merge_trimmomatic_stats    2100213.abacus2.ferrier.genome.mcgill.ca:2100214.abacus2.ferrier.genome.mcgill.ca    SUCCESS    N/A    0    00:00:01 (1 s)    2014-09-30T21:04:06    2014-09-30T21:04:12    00:00:00 (0 s)    0.00    0.00 GiB    0.00 GiB    N/A    neednodes=1:ppn=1,nodes=1:ppn=1,walltime=120:00:00    sw    jfillon    analyste    3343994    N/A    f3c11    /path/to/output_dir/job_output/merge_trimmomatic_stats/merge_trimmomatic_stats_2014-09-30T19.52.29.o
-2100216.abacus2.ferrier.genome.mcgill.ca    2100216.abacus2.ferrier.genome.mcgill.ca    insilico_read_normalization_readsets.readset1    2100213.abacus2.ferrier.genome.mcgill.ca    FAILED    N/A    N/A    00:38:16 (38 min 16 s)    2014-09-30T21:02:02    2014-09-30T21:40:23    04:50:10 (4 h 50 min 10 s)    7.58    30.71 GiB    32.32 GiB    5.3 %    neednodes=1:ppn=6,nodes=1:ppn=6,walltime=120:00:00    sw    jfillon    analyste    3343745    N/A    f3c11    /path/to/output_dir/job_output/insilico_read_normalization_readsets/insilico_read_normalization_readsets.readset1_2014-09-30T19.52.29.o
+```text
+id  name    status  user    node    priority    submit_time eligible_time   start_time  queue_time  end_time    total_time  time_limit  time_efficiency n_cpu   cpu_time    cpu_efficiency  mem ave_mem max_mem mem_efficiency  ave_diskr   max_diskr   ave_diskw   max_diskw   output_file_path
+16462219 gatk_sam_to_fastq.tumorPair_COLO829T    COMPLETED   pstretenowich   f3u21c04    0   2025-01-09T10:03:30 2025-01-09T10:03:30 2025-01-09T10:04:10 00:00:40    2025-01-09T10:08:42 00:04:32    00:10:00    45.3%   5   00:14:25    318.0%  25.00 GB    Unknown 1.61 GB 6.5%    Unknown Unknown Unknown Unknown path_to/job_output/gatk_sam_to_fastq/gatk_sam_to_fastq.tumorPair_COLO829T_2025-01-09T10.03.29.o
+16462220 trim_fastp.tumorPair_COLO829T   COMPLETED   pstretenowich   f3u21c01    0   2025-01-09T10:03:30 2025-01-09T10:08:42 2025-01-09T10:10:24 00:06:54    2025-01-09T10:12:12 00:01:48    00:20:00    9.0%    5   00:12:21    686.1%  25.00 GB    Unknown 1.84 GB 7.4%    Unknown Unknown Unknown Unknown path_to/job_output/trim_fastp/trim_fastp.tumorPair_COLO829T_2025-01-09T10.03.29.o
+16462221 bwa_mem2_samtools_sort.tumorPair_COLO829T   COMPLETED   pstretenowich   f3u31c04    0   2025-01-09T10:03:31 2025-01-09T10:12:12 2025-01-09T10:12:27 00:08:56    2025-01-09T10:21:47 00:09:20    00:20:00    46.7%   9   00:52:34    563.2%  45.00 GB    Unknown 15.84 GB    35.2%   Unknown Unknown Unknown Unknown path_to/job_output/bwa_mem2_samtools_sort/bwa_mem2_samtools_sort.tumorPair_COLO829T_2025-01-09T10.03.29.o
 ...
 ```
 

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -195,7 +195,7 @@ Parameters:
                         bash.ln(
                             os.path.relpath(trim_log, link_directory),
                             os.path.join(link_directory, readset.name + ".trim.log"),
-                            input = trim_log
+                            input_file = trim_log
                         )
                     ],
                     name="trimmomatic16S." + readset.name
@@ -310,12 +310,12 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/""".format(
                         bash.ln(
                             os.path.relpath(flash_log, link_directory),
                             os.path.join(link_directory, readset.name + ".flash.log"),
-                            input = flash_log
+                            input_file = flash_log
                         ),
                         bash.ln(
                             os.path.relpath(flash_hist, link_directory),
                             os.path.join(link_directory, readset.name + ".flash.hist"),
-                            input = flash_hist
+                            input_file = flash_hist
                         )
                     ]
                 )
@@ -543,12 +543,12 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                             bash.ln(
                                 os.path.relpath(trimmed_reads_r1, lnk_raw_reads_folder),
                                 left_or_single_reads,
-                                input=trimmed_reads_r1
+                                input_file=trimmed_reads_r1
                             ),
                             bash.ln(
                                 os.path.relpath(trimmed_reads_r2, lnk_raw_reads_folder),
                                 right_reads,
-                                input=trimmed_reads_r2
+                                input_file=trimmed_reads_r2
                             )
                         ],
                         samples=[readset.sample]
@@ -564,7 +564,7 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                             bash.ln(
                                 os.path.relpath(trimmed_reads_r1, lnk_raw_reads_folder),
                                 left_or_single_reads,
-                                input=trimmed_reads_r1
+                                input_file=trimmed_reads_r1
                             )
                         ],
                         samples=[readset.sample]
@@ -661,7 +661,6 @@ def main(parsed_args):
     genpipes_file = parsed_args.genpipes_file
     container = parsed_args.container
     clean = parsed_args.clean
-    no_json = parsed_args.no_json
     json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
@@ -671,6 +670,6 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     design_file = parsed_args.design_file
 
-    pipeline = AmpliconSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container)
+    pipeline = AmpliconSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, json_pt=json_pt, container=container)
 
     pipeline.submit_jobs()

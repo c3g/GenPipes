@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -75,7 +75,7 @@ def trim(
         inputs = [input1, input2]
     else:
         inputs = [input1]
-        
+
     if output2:
         outputs = [output1, output2, output_json_path, output_html_path]
     else:

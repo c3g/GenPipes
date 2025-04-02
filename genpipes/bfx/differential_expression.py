@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -114,7 +114,7 @@ def goseq(
     input_columns,
     output_file,
     gene_size_file=None,
-    gene_ontology_file=None,    
+    gene_ontology_file=None,
     ):
 
     return  Job(
@@ -145,8 +145,8 @@ def sleuth(
     count_matrix,
     tx2gene_file,
     output_dir
-    ): 
-    
+    ):
+
     return Job(
         [count_matrix],
         [os.path.join(output_dir, "results.wt.gene.csv")],

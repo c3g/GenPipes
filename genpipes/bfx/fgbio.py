@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -66,18 +66,18 @@ def correct_readname(
     input_umi,
     output_umi_corrected
     ):
-    
+
     inputs = [input_umi]
     outputs = [output_umi_corrected]
-    
+
     if input_umi.lower().endswith('.gz'):
         input_opener="zcat "
     else:
         input_opener="cat "
-        
+
     return Job(
         inputs,
-        outputs,        
+        outputs,
         command="""\
 {input_opener} {input_umi} | tr ' ' '_' | gzip -c - > {output_umi_corrected}""".format(
         input_opener=input_opener,

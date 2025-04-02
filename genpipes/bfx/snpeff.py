@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -30,17 +30,17 @@ def compute_effects(
         cancer_sample_file=None,
         options=[],
         ini_section='compute_effects'
-):
-    
+        ):
+  
     output_stats = f"{output}.stats.csv"
     output_stats_html = f"{output}.stats.html"
-    
+
     outputs = []
     if not isinstance(output, list):
         outputs = [output]
-    
+
     outputs += [output_stats, output_stats_html]
-    
+
     job = Job(
         [input],
         outputs,

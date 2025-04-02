@@ -1,0 +1,49 @@
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project]
+dynamic = ["version"]
+name = "genpipes"
+authors = [
+  { name="Canadian Center for Computational Genomics", email="pipelines@computationalgenomics.ca" },
+]
+maintainers = [
+  { name="Mareike Janiak", email="mareike.janiak@computationalgenomics.ca" },
+  { name="Paul Stretenowich", email="paul.stretenowich@mcgill.ca" },
+  { name="Pierre-Olivier Quirion", email="po.quirion@mcgill.ca" },
+  { name="Edouard Henrion", email="edouard.henrion@computationalgenomics.ca" },
+]
+description = "Several bioinformatics pipelines developed at McGill University Genome Centre"
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Operating System :: POSIX :: UNIX :: MACOS",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics"
+]
+dependencies = [
+    "packaging>=20.9",
+    "shtab>=1.7.1"
+]
+
+[project.scripts]
+genpipes = "genpipes.__main__:main"
+
+[project.urls]
+Homepage = "https://bitbucket.org/mugqic/genpipes"
+Issues = "https://bitbucket.org/mugqic/genpipes/issues"
+Documentation = "https://genpipes.readthedocs.io"
+
+[tool.pdm]
+allow-direct-references = true
+
+[tool.pdm.version]
+source = "file"
+path = "genpipes/__version__.py"
+# source = "scm"
+# version_format = "genpipes.version:format_version"
+# write_to = "genpipes/__version__.py"
+# write_template = "__version__ = '{}'"

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -26,7 +26,7 @@ import re
 
 # GenPipes Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner
-from .sample import Sample, NanoporeSample
+from .sample import Sample, LongReadSample
 
 log = logging.getLogger(__name__)
 
@@ -494,7 +494,7 @@ def parse_pacbio_readset_file(pacbio_readset_file):
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
-class NanoporeReadset(Readset):
+class LongReadReadset(Readset):
 
     @property
     def run(self):
@@ -519,52 +519,63 @@ class NanoporeReadset(Readset):
     @property
     def fast5_files(self):
         return self._fast5_files
+    
+    @property
+    def bam(self):
+        return self._bam
 
     @property
     def analysis_name(self):
         return self._analysis_name
 
 
-def parse_nanopore_readset_file(nanopore_readset_file):
+def parse_longread_readset_file(longread_readset_file):
     readsets = []
     samples = []
 
-    if isinstance(nanopore_readset_file, str):
-       readset_fp = open(nanopore_readset_file, 'r')
+    if isinstance(longread_readset_file, str):
+       readset_fp = open(longread_readset_file, 'r')
     else:
-        readset_fp = nanopore_readset_file
-        nanopore_readset_file = readset_fp.name
+        readset_fp = longread_readset_file
+        longread_readset_file = readset_fp.name
 
-    log.info("Parse Nanopore readset file " + nanopore_readset_file + " ...")
+    log.info("Parse LongRead readset file " + longread_readset_file + " ...")
     # Check for duplicate readsets in file
-    dup_found_message = checkDuplicateReadsets(nanopore_readset_file)
+    dup_found_message = checkDuplicateReadsets(longread_readset_file)
     if dup_found_message:
         # Display message with the path to the corrected readset file and end the pipeline
         log.error(dup_found_message)
         exit(18)
 
-    readset_csv = csv.DictReader(open(nanopore_readset_file, 'r'), delimiter='\t')
+    readset_csv = csv.DictReader(open(longread_readset_file, 'r'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
         # Create new sample
-        sample = NanoporeSample(sample_name)
+        sample = LongReadSample(sample_name)
         samples.append(sample)
 
         # Create readset and add it to sample
-        readset = NanoporeReadset(line['Readset'])
+        readset = LongReadReadset(line['Readset'])
 
         # Readset file paths are either absolute or relative to the readset file
         # Convert them to absolute paths
-        for format in ("Summary", "FASTQ", "FAST5"):
+        for format in ("Summary", "FASTQ", "FAST5", "BAM"):
             if line.get(format, None):
                 abs_files = []
                 for file in line[format].split(","):
                     file = os.path.expandvars(file)
                     if not os.path.isabs(file):
-                        file = os.path.dirname(os.path.abspath(os.path.expandvars(nanopore_readset_file))) + os.sep + file
+                        file = os.path.dirname(os.path.abspath(os.path.expandvars(longread_readset_file))) + os.sep + file
                     abs_files.append(os.path.normpath(file))
                 line[format] = ",".join(abs_files)
+
+        for format in ("BAM"):
+            if line.get(format, None):
+                line[format] = os.path.expandvars(line[format])
+                if not os.path.isabs(line[format]):
+                    line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(longread_readset_file))) + os.sep + line[format]
+                line[format] = os.path.normpath(line[format])
 
         readset._sample = Sample(sample_name)
         readset._run = line.get('Run', None)
@@ -577,6 +588,8 @@ def parse_nanopore_readset_file(nanopore_readset_file):
         sample._summary_file = readset._summary_file
         readset._fastq_files = line['FASTQ'] if line.get('FASTQ', None) else []
         sample._fastq_files = readset._fastq_files
+        readset._bam = line['BAM'] if line.get('BAM', None) else []
+        sample._bam = readset._bam
         readset._fast5_files = line['FAST5'] if line.get('FAST5', None) else []
         sample._fast5_files = readset._fast5_files
         readset._analysis_name = line.get('AnalysisName', None)

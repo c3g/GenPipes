@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -18,33 +18,34 @@
 ################################################################################
 
 # Python Standard Modules
+import os
 
 # MUGQIC Modules
 from ..core.config import global_conf
 from ..core.job import Job
 
 def ray(pathOut, pair1=[], pair2=[], single=[], options=""):
-    if (len(pair1)!=len(pair2)):
-      raise Exception("Error Ray: the number of paired files is different :" + len(pair1) + " - " + len(pair2))
-    
+    if len(pair1)!=len(pair2):
+        raise Exception("Error Ray: the number of paired files is different :" + len(pair1) + " - " + len(pair2))
+
     inputList = []
     strPair=""
     for i in range(len(pair1)):
-        strPair = strPair + "-p " + pair1[i] + " " + pair2[i] + " " 
+        strPair = strPair + "-p " + pair1[i] + " " + pair2[i] + " "
         inputList.append(pair1[i])
         inputList.append(pair2[i])
-    
+
     strSingle=""
     for i in range(len(single)):
         strSingle = strSingle + "-s " + single[i] + " "
         inputList.append(single[i])
-        
+
     return Job(
-        inputList, 
+        inputList,
         [#TODO add output files
          os.path.join(pathOut, "Scaffolds.fasta"),
          os.path.join(pathOut, "ScaffoldLengths.txt")
-        ], 
+        ],
         [
             ['ray_assembly', 'module_gcc'],
             ['ray_assembly', 'module_openmpi'],

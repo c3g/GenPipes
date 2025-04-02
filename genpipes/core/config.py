@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -17,7 +17,7 @@
 # along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 # Python Standard Modules
-import configparser 
+import configparser
 import glob
 import logging
 import os
@@ -25,19 +25,12 @@ import re
 import subprocess
 import io
 
-from ..utils import utils
+from .utils import time_to_datetime
 
 log = logging.getLogger(__name__)
 
 class Config(configparser.ConfigParser):
-
-    # True only for continuous integration testing
-    continuous_integration_testing = 'GENPIPES_CIT' in os.environ
-    # continuous_integration_testing = True
-    cluster_walltime = "cluster_walltime"
-    cit_options = [cluster_walltime]
-    cit_prefix = 'cit_'
-
+    
     # Setting the sanity-check flag to 'False'
     # Will be set to 'True' by the pipeline if it runs with the '--sanity-check' parameter
     sanity = False
@@ -94,24 +87,6 @@ class Config(configparser.ConfigParser):
     def global_get(self, section, option, required=True, param_type='string', **kwargs):
         # Store original section for future error message, in case 'DEFAULT' section is used eventually
         original_section = section
-        # Keep that if block first, it is only evaluated in testing mode
-        if self.continuous_integration_testing and option in self.cit_options:
-            # hack because this class becomes a global
-            try:
-                return super().get(section, '{}{}'.format(self.cit_prefix, option))
-            except configparser.Error as e:
-                pass
-
-            if option == self.cluster_walltime and self.has_section(section) and self.has_option(section, option):
-
-                from_section = super().get(section, option)
-                from_default = super().get('DEFAULT', option)
-                if not utils.time_to_datetime(from_section):
-                    return from_default
-                elif utils.time_to_datetime(from_default) <= utils.time_to_datetime(from_section):
-                    return from_default
-                else:
-                    return from_section
 
         if not self.has_section(section):
             section = 'DEFAULT'
@@ -120,46 +95,41 @@ class Config(configparser.ConfigParser):
             try:
                 if param_type == 'int':
                     return self.getint(section, option)
-                elif param_type == 'posint':
+                if param_type == 'posint':
                     value = self.getint(section, option)
                     if value > 0:
                         return value
-                    else:
-                        _raise(SanitycheckError("Integer \"" + str(value) + "\" is not > 0!"))
-                elif param_type == 'float':
+                    _raise(SanitycheckError("Integer \"" + str(value) + "\" is not > 0!"))
+                if param_type == 'float':
                     return self.getfloat(section, option)
-                elif param_type == 'boolean':
+                if param_type == 'boolean':
                     return self.getboolean(section, option)
-                elif param_type == 'filepath':
+                if param_type == 'filepath':
                     value = os.path.expandvars(super().get(section, option))
                     if not value and not required:
                         return None
                     if os.path.isfile(value):
                         return value
-                    else:
-                        log.debug(f"{required=}")
-                        _raise(SanitycheckError(f"File path \"{value}\" provided in section [{section}] for option {option} does not exist or is not a valid regular file!"))
-                elif param_type == 'dirpath':
+                    log.debug(f"{required=}")
+                    _raise(SanitycheckError(f"File path \"{value}\" provided in section [{section}] for option {option} does not exist or is not a valid regular file!"))
+                if param_type == 'dirpath':
                     value = os.path.expandvars(super().get(section, option))
                     if not value and not required:
                         return None
                     if os.path.isdir(value):
                         return value
-                    else:
-                        _raise(SanitycheckError(f"Directory path \"{value}\" provided in section [{section}] for option {option} does not exist or is not a valid directory!"))
-                elif param_type == 'prefixpath':
+                    _raise(SanitycheckError(f"Directory path \"{value}\" provided in section [{section}] for option {option} does not exist or is not a valid directory!"))
+                if param_type == 'prefixpath':
                     value = os.path.expandvars(super().get(section, option))
                     if glob.glob(value + "*"):
                         return value
-                    else:
-                        _raise(SanitycheckError(f"Prefix path \"{value}\" provided in section [{section}] for option {option} does not match any file!"))
-                elif param_type == 'list':
+                    _raise(SanitycheckError(f"Prefix path \"{value}\" provided in section [{section}] for option {option} does not match any file!"))
+                if param_type == 'list':
                     # Remove empty strings from list
                     return [x for x in super().get(section, option).split(",") if x]
-                elif param_type == 'string':
+                if param_type == 'string':
                     return super().get(section, option)
-                else:
-                    _raise(SanitycheckError("Unknown parameter type '" + param_type + "'"))
+                _raise(SanitycheckError("Unknown parameter type '" + param_type + "'"))
             except Exception as e:
                 _raise(SanitycheckError("Error found :\n  " + str(e) + f"\n{section=}, {option=}"))
         elif required:

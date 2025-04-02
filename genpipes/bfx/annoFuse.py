@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -18,10 +18,8 @@
 ################################################################################
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
-from ..core.config import global_conf
 from ..core.job import Job
 
 def run(input_arriba, input_star_fusion, sample_name):
@@ -32,7 +30,7 @@ def run(input_arriba, input_star_fusion, sample_name):
             ['run_annoFuse', 'module_R'],
             ['run_annoFuse', 'module_mugqic_tools'],
         ],
-    
+
         command="""\\
 Rscript $R_TOOLS/run_annofuse.R \\
     {input_arriba}   \\

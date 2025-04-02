@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -27,8 +27,7 @@ class Step(object):
         if re.search(r"^[a-zA-Z]\w+$", step_name):
             self._name = step_name
         else:
-            raise Exception("Error: step name \"" + step_name +
-                "\" is invalid (should match [a-zA-Z][a-zA-Z0-9_]+)!")
+            raise Exception(f"""Error: step name "{step_name}" is invalid (should match [a-zA-Z][a-zA-Z0-9_]+)!""")
 
         self._name = step_name
         self._create_jobs = create_jobs

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -290,7 +290,6 @@ def sam_to_fastq(input, fastq, second_end_fastq=None, ini_section='picard_sam_to
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SamToFastq.jar \\
   {other_options} \\
-  CREATE_MD5_FILE=TRUE \\
   INPUT={input} \\
   FASTQ={fastq}{second_end_fastq}""".format(
                 tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),

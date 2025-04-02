@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -30,10 +30,10 @@ log = logging.getLogger(__name__)
 def run(fastqs1, fastqs2, output_dir, ini_section='run_star_seqr'):
     if not isinstance(fastqs1, list):
         fastqs1 = [fastqs1]
-        
+
     if not isinstance(fastqs2, list):
         fastqs2 = [fastqs2]
-        
+
     output_file = os.path.join(output_dir + "_STAR-SEQR", "star_seqr_STAR-SEQR_candidates.txt")
     return Job(
         fastqs1,

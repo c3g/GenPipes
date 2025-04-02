@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -35,15 +35,15 @@ def stringtie(input_bam, output_directory, gtf=None, abund=False):
         strd_cmd = "--fr"
     elif stranded.lower == "unstranded":
         strd_cmd = ""
-    else: 
+    else:
         raise Exception("Strand info\"" + stranded + "\" unrecognized")
 
     ## Define output files depending on whether or not abundances will be calculated
-    if abund: 
+    if abund:
         out_files = [os.path.join(output_directory , "transcripts.gtf"),
         os.path.join(output_directory , "abundance.tab")]
     else:
-        out_files = [os.path.join(output_directory ,"transcripts.gtf")] 
+        out_files = [os.path.join(output_directory ,"transcripts.gtf")]
 
     return Job(
         [input_bam, gtf],
@@ -63,7 +63,7 @@ stringtie -v {other_options} {strd_cmd} {gtf} {abund_cmd} \\
       abund_cmd="\\\n  -eB -A " + os.path.join(output_directory, "abundance.tab") if abund else " ",
       num_threads=global_conf.global_get('stringtie', 'threads', param_type='posint'),
       min_length=global_conf.global_get('stringtie', 'min_length', param_type='posint'),
-      outgtf=os.path.join(output_directory, "transcripts.gtf"), 
+      outgtf=os.path.join(output_directory, "transcripts.gtf"),
       input_bam=input_bam
         )
     )
@@ -81,9 +81,8 @@ stringtie --merge {other_options}{gtf} \\
   {gtf_list}""".format(
       output_directory=os.path.dirname(output_prefix),
       other_options=global_conf.global_get('stringtie_merge', 'other_options', required=False),
-      gtf="\\\n -G " + gtf if gtf else "", 
-      outfile=os.path.join(output_prefix, "merged.gtf"), 
+      gtf="\\\n -G " + gtf if gtf else "",
+      outfile=os.path.join(output_prefix, "merged.gtf"),
       gtf_list=gtf_list
         )
     )
-

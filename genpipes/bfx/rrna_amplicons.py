@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -29,7 +29,7 @@ def merge_barcodes(reads1, reads2, outdir):
     outfile_paired = outdir + "/paired.fastq"
 
     job = Job(
-        reads1 + reads2, 
+        reads1 + reads2,
         [outfile1, outfile2],
         [['tools', 'module_mugqic_tools'], ['memtime', 'module_memtime']]
     )
@@ -50,58 +50,10 @@ memtime joinPairedFastqs.pl \\
 
     return job
 
-def merge_barcodes_single_end_reads(reads, outdir, pair):
-    outfile = outdir + "/reads" + pair + ".fastq"
-
-    job = Job(reads, [outfile])
-
-    job.command = """\
-cat \\\n  {reads} | gunzip -c > {outfile}""".format(
-        reads1 = " \\\n  ".join(reads1),
-        reads2 = " \\\n  ".join(reads2),
-        outfile1 = outfile1,
-        outfile2 = outfile2,
-        outfile_paired = outfile_paired
-    )
-
-    return job
-
-#### TO BE CONVERTED TO PYTHON
-def duk_wrapper(infile_fastq, contam, ncontam, log, db):
-    
-    job = Job( 
-        [infile_fastq], 
-        [contam, ncontam],
-        [
-            ['memtime', 'module_memtime'],
-            ['tools', 'module_mugqic_tools'],
-            ['perl', 'module_perl'],
-            ['duk', 'module_duk']
-        ]
-    )
-
-    job.command="""\
-memtime contamWrapper.pl \\
-  --infile {infile_fastq} \\
-  --outfile_matched {contam} \\
-  --outfile_unmatched {ncontam} \\
-  --log {log} \\
-  --db {db} \\
-  --num_threads {num_threads}""".format(
-    infile_fastq = infile_fastq,
-    outfile_matched = outfile_matched,
-    outfile_unmatched = outfile_unmatched,
-    log = log,
-    db = db,
-    num_threads = global_conf.global_get('duk_wrapper', 'num_threads', param_type='int')
-    )
-    return job
-
-
 def duk(log, ncontam, contam, db, infile):
-                
+
     job = Job(
-        [infile], 
+        [infile],
         [contam, ncontam, log],
         [
             ['memtime', 'module_memtime'],
@@ -110,7 +62,7 @@ def duk(log, ncontam, contam, db, infile):
             ['duk', 'module_duk']
         ]
     )
-        
+
     job.command="""\
 memtime gunzip -c {infile} | duk \\
   -o log {log} \\
@@ -126,11 +78,11 @@ memtime gunzip -c {infile} | duk \\
     k = global_conf.global_get('duk', 'k', 'int'),
     s = global_conf.global_get('duk', 's', 'int'),
     c = global_conf.global_get('duk', 'c', 'int'),
-    ) 
+    )
     return job
 
 def split_barcodes(infile, barcodes, outfile, log):
-    
+
     job = Job(
         [infile],
         [outfile],
@@ -153,100 +105,13 @@ memtime barcodes.pl \\
     num_threads = global_conf.global_get('barcodes', 'num_threads', 1, 'int'),
     log = log
     )
-    
-    return job
 
-def removeUnpairedReads(infile, outfilePaired, unpairedR1, unpairedR2):
-    job = Job(
-        [infile], 
-        [outfilePaired],
-        [
-            ['memtime', 'module_memtime'],
-            ['tools', 'module_mugqic_tools'],
-            ['perl', 'module_perl']
-        ]
-    )
-    job.command="""\
-memtime removeUnpaired.pl \\
-  --infile {infile} \\
-  --outfile_paired {outfilePaired} \\
-  --outfile_1 {unpairedR1} \\
-  --outfile_2 {unpairedR2} \\
-  --num_threads {num_threads}""".format(
-    infile = infile,
-    outfile_paired = outfile_paired,
-    outfile_1 = outfile_1,
-    outfile_2 = outfile_2,
-    num_threads =  global_conf.global_get('remove_unpaired', 'num_threads', 'int')
-    )
-                
-    return job
-
-def splitPairs(infile, outfileR1, outfileR2):
-        
-    job = Job(
-        [infile], 
-        [outfileR1, outfileR2]
-        [
-            ['memtime', 'module_memtime'],
-            ['tools', 'module_mugqic_tools'],
-            ['perl', 'module_perl']
-        ]
-    )
-
-    job.command="""\
-memtime splitPairs.pl \\
-  --infile {infile} \\
-  --outfile_1 {outfileR1} \\
-  --outfile_2 {outfileR2} \\
-  --num_threads {num_threads}""".format(
-    infile = infile,
-    outfile_1 = outfile_1,
-    outfile_2 = outfile_2,
-    num_threads = global_conf.global_get('split_pairs', 'num_threads', 'int')
-    )
-                
-    return job
-
-def generateQscoreSheet(infile, prefix, log, outfile, barcodes):
-                
-    job = Job(
-        [infile],
-        [outfile],
-        [
-            ['memtime', 'module_memtime'],
-            ['fastx', 'module_fastx'],
-            ['tools', 'module_mugqic_tools'],
-            ['perl', 'module_perl']
-        ]
-    )
-
-    job.command="""\
-memtime qscoreSheets.pl \\ 
-  --fastq {infile} \\
-  --tmp {tmp} \\
-  --prefix {prefix} \\
-  --suffix {suffix} \\
-  --log {log} \\
-  --outfile {outfile} \\
-  --phred {phred} \\
-  --barcodes {barcodes} \\
-  --num_threads {num_threads}""".format(
-        infile = infile,
-        suffix = suffix,
-        log = log,
-        outfile = outfile,
-        tmp = global_conf.global_get('default', 'tmpDir', 'dirpath'),
-        phred = global_conf.global_get('default', 'qual', 'int'),
-        num_threads = global_conf.global_get('qscore_sheet', 'num_threads', 'int')
-    )
-                    
     return job
 
 def generateQscoreGraphSingle(infile, prefix, outfile):
-        
+
     job = Job(
-        [infile] , 
+        [infile],
         [outfile],
         [
             ['memtime', 'module_memtime'],
@@ -270,9 +135,9 @@ memtime qscorePlots.pl \\
     return job
 
 def generateQscoreGraphPaired(infileR1, infileR2, outfile):
-                
+
     job = Job(
-        [infileR1, infileR2], 
+        [infileR1, infileR2],
         [outfile],
         [
             ['memtime', 'module_memtime'],
@@ -298,10 +163,10 @@ memtime qscorePlots.pl
     return job
 
 def cutReads(infile, begin, end, outfile):
-        
+
     job = Job(
         [infile],
-        [outfile]
+        [outfile],
         [
             ['memtime', 'module_memtime'],
             ['tools', 'module_mugqic_tools'],
@@ -324,9 +189,9 @@ memtime cutFastqSeq.pl \\
     return job
 
 def flash(infileR1, infileR2, prefix, outdir):
-                
+
     job = Job(
-        [infileR1, infileR2], 
+        [infileR1, infileR2],
         [outdir + "/assembly_complete/ncontam_nphix_trimmed.extendedFrags.fastq"],
         [
             ['memtime', 'module_memtime'],
@@ -356,14 +221,14 @@ memtime flash.pl \\
     M = global_conf.global_get('flash', 'maxOverlap', 'int'),
     x = global_conf.global_get('flash', 'percentMismatch', 'float'),
     p = global_conf.global_get('flash', 'phred', 'int'),
-    num_threads = global_conf.global_getparam('flash', 'num_threads', 'int')
+    num_threads = global_conf.global_get('flash', 'num_threads', 'int')
     )
     return job
 
 def removePrimers(infile, revPrimer, fwdPrimer, outfile,  outfileFailed):
-        
+
     job = Job(
-        [infile], 
+        [infile],
         [outfile],
         [
             ['memtime', 'module_memtime'],
@@ -378,22 +243,22 @@ memtime itagsQC.pl \\
     infile = infile
     )
 
-    if(revPrimer != "null"):
+    if revPrimer != "null":
         job.command+="""\
   --primer_3_prime {revPrimer} \\
   --length_3_prime {length_3_prime} \\""".format(
         revPrimer = revPrimer,
         length_3_prime = global_conf.global_get('itags_QC', 'length3Prime', 'int')
         )
-    
-    if(fwdPrimer != "null"):
+
+    if fwdPrimer != "null":
         job.command+="""\
   --primer_5_prime {fwdPrimer} \\
   --length_5_prime {length_5_prime} \\""".format(
         fwdPrimer = fwdPrimer,
         length_5_prime = global_conf.global_get('itags_QC', 'length5Prime', 'int')
         )
- 
+
     job.command+="""\
   --outfile {outfile} \\
   --outfile_failed {outfileFailed} \\
@@ -407,66 +272,8 @@ memtime itagsQC.pl \\
 
     return job
 
-def itagsQC(infile, revPrimer, fwdPrimer, outfile, outfileFailed):
-        
-    job = Job(
-        [infile],
-        [outfile],
-        [
-            ['memtime', 'module_memtime'],
-            ['tools', 'module_mugqic_tools'],
-            ['perl', 'module_perl']
-        ]
-    )
-
-    job.command="""\
-memtime  itagsQC.pl
-  --infile {infile} \\""".format(
-     infile = infile
-    )
-
-    if(revPrimer != "null"):
-        job.command+="""\
-  --primer_3_prime {revPrimer} \\
-  --length_3_prime {length_3_prime} \\""".format(
-            revPrimer = revPrimer,
-            length_3_prime = global_conf.global_get('itags_QC', 'length3Prime', 'int')
-        )
-
-    if(fwdPrimer != "null"):
-        job.command+="""\
-  --primer_5_prime {fwdPrimer} \\
-  --length_5_prime {length_5_prime} \\""".format(
-            fwdPrimer = fwdPrimer,
-            length_5_prime = global_conf.global_get('itags_QC', 'length5Prime', 'int')
-        )
-    job.command+="""\
-  --qscore_1 {qscore1} \\
-  --qscore_2 {qscore2} \\
-  --outfile {outfile}
-  --outfile_failed {outfileFailed}
-  --num_threads {num_threads} \\
-  --qual {qual} \\
-  --lq_threshold {lq_threshold} \\
-  --primer_mismatch {primer_mismatch} \\
-  --min_length {min_length} \\
-  --N {N}""".format(
-        qscore_1 = global_conf.global_get('itags_QC', 'qscore1', 'int'),
-        qscore_2 = global_conf.global_get('itags_QC', 'qscore2', 'int'),
-        outfile = outfile,
-        outfile_failed = outfile_failed,
-        num_threads =  global_conf.global_get('itags_QC', 'num_threads', 'int'),
-        qual = global_conf.global_get('default', 'qual', 'int'),
-        lq_threshold = global_conf.global_get('itags_QC', 'lq_threshold', 'int'),
-        primer_mismatch = global_conf.global_get('itags_QC', 'primerMismatch', 'float'),
-        min_length = global_conf.global_get('itags_QC', 'minlength', 'int'),
-        N = global_conf.global_get('itags_QC', 'N', 'int')
-    )
-                
-    return job
-
 def countReport(rA_files, rA_names, analysisType, barcodesDist, OTUtable, obsTable, outfile):
-        
+
     job = Job(
         [OTUtable],
         [outfile],
@@ -476,7 +283,7 @@ def countReport(rA_files, rA_names, analysisType, barcodesDist, OTUtable, obsTab
             ['perl', 'module_perl']
         ]
     )
-    
+
     cmd = "memtime countReport.pl \\"
 
     for file in rA_files:
@@ -489,13 +296,13 @@ def countReport(rA_files, rA_names, analysisType, barcodesDist, OTUtable, obsTab
         cmd += " --OTUtable " + OTUtable
         cmd += " --obsTable " + obsTable
         cmd += " > " + outfile
-     
+
     job.command = cmd
-                    
+
     return job
 
 def txtToPdf(infile, outfile):
-                
+
     job = Job(
         [infile],
         [outfile],
@@ -515,7 +322,7 @@ memtime txtToPdf.pl
     return job
 
 def mergePdf(command):
-        
+
     dummyOutfile = "mergepdf.mugqic.done";
 
     job = Job(
@@ -528,7 +335,7 @@ def mergePdf(command):
             ['perl', 'module_perl']
         ]
     )
-    
+
     job.command="""\
 memtime {command} \\
 && touch {dummyOutfile}; """.format(
@@ -539,7 +346,7 @@ memtime {command} \\
     return job
 
 def clustering1(infile, barcodes, outdir):
-        
+
     job = Job(
         [infile],
         ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"],
@@ -567,7 +374,7 @@ memtime clustering1.pl \\
     return job
 
 def clustering2(infile, barcodes, outdir):
-        
+
     job = Job(
         [infile],
         ["outdir/obs_filtered.fasta", "outdir/obs_filtered.tsv"],
@@ -622,11 +429,11 @@ memtime clustering3.pl \\
     lowAbunCutoff = global_conf.global_get('clustering', 'lowAbunCutOff', 'int'),
     num_threads =  global_conf.global_get('clustering', 'num_threads', 'int')
     )
-    
+
     return job
 
 def clientReport(iniFilePath, projectPath, pipelineType, reportPath):
-        
+
     pipeline = "pipeline=\"" + pipelineType + "\""
     titleTMP = global_conf.global_get('report', 'projectName')
     title = "report.title=\"" + titleTMP + "\""
@@ -662,19 +469,19 @@ mugqicPipelineReport( \\
         report_contact = contactTMP,
         projectPath = projectPath
     )
- 
+
     return job
 
 def cleanup(tmpdir):
-        
+
     job = Job(
-        [""], 
+        [""],
         [""],
         [
             ['memtime', 'module_memtime']
         ]
     )
-    
+
     job.command="""\
 memtime \\
 rm  {tmpdir} -rf""".format(
@@ -683,7 +490,7 @@ rm  {tmpdir} -rf""".format(
     return job
 
 def templateSub(outdir):
-        
+
     job = Job(
         ["undef"],
         ["undef"],

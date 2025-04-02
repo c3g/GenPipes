@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -48,7 +48,7 @@ def processing(input_files, output_file, sample_file, profiling, ini_section='se
 def deseq2(
     design_file,
     count_matrix,
-    output_dir, 
+    output_dir,
     ini_section='seq2fun'
     ):
 

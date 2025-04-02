@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -29,6 +29,7 @@ import logging
 import os
 import re
 import textwrap
+import shtab
 
 # GenPipes Modules
 from .config import _raise, SanitycheckError, global_conf
@@ -36,18 +37,32 @@ from .job import Job
 from .scheduler import create_scheduler
 from .step import Step
 
-from ..bfx import jsonator, jsonator_project_tracking
+from ..bfx import jsonator_project_tracking
 
 log = logging.getLogger(__name__)
 
-class Pipeline(object):
+class Pipeline():
+    """
+    Base class for GenPipes pipelines.
+    """
     # Pipeline version
     version = None
     _argparser = None
 
-    def __init__(self, config_files, sanity_check=False,
-                 output_dir=None, job_scheduler=None, container=None, genpipes_file=None, no_json=False,
-                 json_pt=None, steps=None, clean=False, force=False, force_mem_per_cpu=None):
+    def __init__(
+        self,
+        config_files,
+        sanity_check=False,
+        output_dir=None,
+        job_scheduler=None,
+        container=None,
+        genpipes_file=None,
+        json_pt=None,
+        steps=None,
+        clean=False,
+        force=False,
+        force_mem_per_cpu=None
+        ):
 
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H.%M.%S")
 
@@ -91,10 +106,12 @@ class Pipeline(object):
             self.config_parser._filepath = os.path.abspath(config_trace.name)
 
         if job_scheduler is not None:
-            self._job_scheduler = create_scheduler(job_scheduler, config_files,
-                                                   container=container, genpipes_file=genpipes_file)
-        # sorry about the double negative...
-        self._json = not no_json
+            self._job_scheduler = create_scheduler(
+                job_scheduler,
+                config_files,
+                container=container,
+                genpipes_file=genpipes_file
+                )
 
         self._project_tracking_json = False
         if json_pt:
@@ -131,7 +148,7 @@ class Pipeline(object):
                 operation_name=operation_name,
                 operation_config_version=self.version,
                 operation_cmd_line=full_command,
-                operation_config_md5sum=md5(config_trace_filename),
+                operation_config_md5sum=md5_list(config_trace_content),
                 operation_config_data=config_trace_content,
                 pipeline_output_dir=self._output_dir,
                 timestamp=self.timestamp
@@ -176,9 +193,9 @@ class Pipeline(object):
                 step_lst.append(f'{i} {step.__name__}')
                 steps_doc.append(f'{step.__name__} \n{"-" * len(step.__name__)}\n {textwrap.dedent(step.__doc__) if step.__doc__ else ""}')
         epilog = "\n".join(step_lst)
-        summary = cls.__doc__
+        summary = cls.__doc__.split("\nAttributes:", maxsplit=1)[0]
         if '--help' in argv:
-            epilog = "Summary:\n" + summary + "\nSteps:\n" + epilog + "\n```\n\n" + "\n".join(list(dict.fromkeys(steps_doc)))
+            epilog = "Summary:\n" + summary + "\nSteps:\n" + epilog + "\n```\n\n" + "\n\n".join(step_doc.split("\nReturns:", maxsplit=1)[0] for step_doc in list(dict.fromkeys(steps_doc)))
         return epilog
 
     @classmethod
@@ -199,7 +216,7 @@ class Pipeline(object):
             nargs="+",
             type=argparse.FileType('r'),
             required=True
-            )
+            ).complete = shtab.FILE
 
         cls._argparser.add_argument(
             "--container",
@@ -253,17 +270,11 @@ class Pipeline(object):
             )
 
         cls._argparser.add_argument(
-            "--no-json",
-            help="do not create JSON file per analysed sample to track the analysis status (default: false i.e. JSON file will be created)",
-            action="store_true"
-            )
-
-        cls._argparser.add_argument(
             "-o",
             "--output-dir",
             help="output directory (default: current)",
             default=os.getcwd()
-            )
+            ).complete = shtab.DIRECTORY
 
         cls._argparser.add_argument(
             "--sanity-check",
@@ -279,7 +290,7 @@ class Pipeline(object):
 
         cls._argparser.add_argument(
             '--wrap',
-            help="Path to the genpipe cvmfs wrapper script.\nDefault is genpipes/ressources/container/bin/container_wrapper.sh. This is a convenience options for using genpipes in a container",
+            help="Path to the genpipes cvmfs wrapper script.\nDefault is genpipes/ressources/container/bin/container_wrapper.sh. This is a convenience option for using genpipes in a container",
             nargs='?',
             type=str
             )
@@ -351,10 +362,6 @@ class Pipeline(object):
         for step in self.step_to_execute:
             jobs.extend(step.jobs)
         return jobs
-
-    @property
-    def json(self):
-        return self._json
 
     @property
     def project_tracking_json(self):
@@ -467,22 +474,6 @@ class Pipeline(object):
             if not self.sanity_check:
                 log.info(f"Step {step.name}: {str(len(step.jobs))} job{('s' if len(step.jobs) > 1 else '')} created{('' if step.jobs else '... skipping')}\n")
 
-        # Now create the json dump for all the samples if not already done
-        if self.json:
-            # Check if portal_output_dir is set from a valid environment variable
-            self.portal_output_dir = global_conf.global_get('DEFAULT', 'portal_output_dir', required=False)
-            if self.portal_output_dir.startswith("$") and (os.environ.get(re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
-                if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
-                    self.portal_output_dir = ""
-                    log.info(" --> PORTAL_OUTPUT_DIR environment variable is not set... no JSON file will be generated during analysis...\n")
-                    self._json = False
-                else:
-                    _raise(SanitycheckError("Environment variable \"" + re.search(r"^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
-            elif not os.path.isdir(os.path.expandvars(self.portal_output_dir)):
-                _raise(SanitycheckError("Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
-            else:
-                for sample in self.sample_list:
-                    self.sample_paths.append(jsonator.create(self, sample))
         if self.project_tracking_json:
             for sample in self.sample_list:
                 self.sample_paths.append(jsonator_project_tracking.create(self, sample))
@@ -533,12 +524,11 @@ class ValidateContainer(argparse.Action):
 
         setattr(args, self.dest, Container(c_type, container))
 
-def md5(fname):
+def md5_list(content_list):
     """
-    Returns md5 of a given file
+    Returns md5 of the content of a list
     """
     hash_md5 = hashlib.md5()
-    with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
+    for item in content_list:
+        hash_md5.update(item.encode('utf-8'))
     return hash_md5.hexdigest()

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -23,8 +23,8 @@ from ..core.config import global_conf
 from ..core.job import Job
 
 def run(input, sample_name, output_dir, ini_section='run_breakseq2'):
-	output = os.path.join(output_dir, "breakseq.vcf.gz")
-	return Job(
+    output = os.path.join(output_dir, "breakseq.vcf.gz")
+    return Job(
         [input],
         [output],
         [

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -28,7 +28,7 @@ def mosdepth(
         regions=None,
         ini_section='mosdepth'
 ):
-    
+
     outputs = [
             output_prefix + ".mosdepth.global.dist.txt",
             output_prefix + ".mosdepth.summary.txt",
@@ -71,10 +71,10 @@ def run(
             output_prefix + ".mosdepth.summary.txt",
             output_prefix + ".quantized.bed.gz"
             ]
-    
+
     if regions is not None:
         outputs.append(output_prefix + ".mosdepth.region.dist.txt")
-        
+
     return Job(
             [input],
             outputs,

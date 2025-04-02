@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -75,7 +75,7 @@ HiCPlotter.py \\
   -wg 1""".format(
             res=res,
             fileNameRN=fileNameRN,
-            name=sample_name, 
+            name=sample_name,
             output_dir=output_dir,
             hmc=global_conf.global_get('interaction_matrices_Chr', 'hmc')
         ),

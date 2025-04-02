@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -43,14 +43,14 @@ from ...bfx import (
 
 from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
-from ...core.readset import parse_nanopore_readset_file
+from ...core.readset import parse_longread_readset_file
 from .. import common
-from ...utils.utils import strtobool
+from ...core.utils import strtobool
 
 
 log = logging.getLogger(__name__)
 
-class NanoporeCoVSeq(common.Nanopore):
+class NanoporeCoVSeq(common.LongRead):
     """
 Nanopore CoVSeq Pipeline
 ==============
@@ -68,9 +68,14 @@ For information on the structure and contents of the Nanopore readset file, plea
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-t", "--type",
-                                    help="Type of CoVSeQ analysis,basecalling on/off (default without basecalling)",
-                                    choices=["default", "basecalling"], default="default", dest='protocol')
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="Type of CoVSeQ analysis,basecalling on/off (default without basecalling)",
+            choices=["default", "basecalling"],
+            default="default",
+            dest='protocol'
+            )
 
         return cls._argparser
 
@@ -472,29 +477,29 @@ For information on the structure and contents of the Nanopore readset file, plea
                         bash.ln(
                             consensus_link,
                             consensus,
-                            input=consensus_artic,
+                            input_file=consensus_artic,
                         ),
                         bash.mkdir(variant_directory),
                         bash.ln(
                             variant_link,
                             variant,
-                            input=variant_artic
+                            input_file=variant_artic
                         ),
                         bash.ln(
                             variant_index_link,
                             variant_index,
-                            input=variant_index_artic
+                            input_file=variant_index_artic
                         ),
                         bash.mkdir(alignment_directory),
                         bash.ln(
                             raw_bam_link,
                             raw_bam,
-                            input=raw_bam_artic
+                            input_file=raw_bam_artic
                         ),
                         bash.ln(
                             raw_bam_index_link,
                             raw_bam_index,
-                            input=raw_bam_index_artic
+                            input_file=raw_bam_index_artic
                         ),
                         pipe_jobs(
                             [
@@ -881,7 +886,6 @@ def main(parsed_args):
     genpipes_file = parsed_args.genpipes_file
     container = parsed_args.container
     clean = parsed_args.clean
-    no_json = parsed_args.no_json
     json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
@@ -892,7 +896,6 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = NanoporeCoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, protocol=protocol)
+    pipeline = NanoporeCoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, json_pt=json_pt, container=container, protocol=protocol)
 
     pipeline.submit_jobs()
-

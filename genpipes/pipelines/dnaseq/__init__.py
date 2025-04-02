@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -24,6 +24,7 @@ import math
 import os
 import re
 import gzip
+import shtab
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
@@ -46,6 +47,7 @@ from ...bfx import (
     cpsr,
     deliverables,
     delly,
+    djerba,
     gatk,
     gatk4,
     gemini,
@@ -327,10 +329,12 @@ Parameters:
         """
         jobs = []
 
-        inputs = {}
+        inputs = {"Normal": {},
+                  "Tumor": {}
+                  }
         for tumor_pair in self.tumor_pairs.values():
-            [inputs["Normal"]] = [
-                self.select_input_files(
+            for readset in tumor_pair.readsets[tumor_pair.normal.name]:
+                inputs["Normal"][readset.name] = self.select_input_files(
                     [
                         [
                             readset.fastq1,
@@ -341,52 +345,51 @@ Parameters:
                             os.path.join(self.output_dirs['raw_reads_directory'],readset.sample.name, f"{readset.name}.pair2.fastq.gz")
                         ]
                     ]
-                ) for readset in tumor_pair.readsets[tumor_pair.normal.name]
-            ]
+                )
 
-            [inputs["Tumor"]] = [
-                self.select_input_files(
-                    [
+                for readset in tumor_pair.readsets[tumor_pair.tumor.name]:
+                    inputs["Tumor"][readset.name] = self.select_input_files(
                         [
-                            readset.fastq1,
-                            readset.fastq2
-                        ],
-                        [
-                            os.path.join(self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair1.fastq.gz"),
-                            os.path.join(self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair2.fastq.gz")
-                        ]
-                    ]
-                ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
-            ]
-
-            for key, input_files in inputs.items():
-                for read, input_file in enumerate(input_files):
-                    symlink_pair_job = deliverables.sym_link_pair(
-                        input_file,
-                        tumor_pair,
-                        self.output_dir,
-                        type="raw_reads",
-                        sample=key,
-                        profyle=self.profyle
-                    )
-                    dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
-                    # do not compute md5sum in the readset input directory
-                    md5sum_job = deliverables.md5sum(
-                        symlink_pair_job.output_files[0],
-                        f"{file_name}.md5",
-                        dir_name
-                    )
-                    jobs.append(
-                        concat_jobs(
                             [
-                                symlink_pair_job,
-                                md5sum_job
+                                readset.fastq1,
+                                readset.fastq2
                             ],
-                            name=f"sym_link_fastq.pairs.{str(read)}.{tumor_pair.name}.{key}",
-                            samples=[tumor_pair.tumor, tumor_pair.normal],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                        )
+                            [
+                                os.path.join(self.output_dirs['raw_reads_directory'], readset.sample.name, f"{readset.name}.pair1.fastq.gz"),
+                                os.path.join(self.output_dirs['raw_reads_directory'],readset.sample.name, f"{readset.name}.pair2.fastq.gz")
+                            ]
+                        ]
                     )
+
+            for i in inputs.keys():
+                for key, input_files in inputs[i].items():
+                    for read, input_file in enumerate(input_files):
+                        symlink_pair_job = deliverables.sym_link_pair(
+                            input_file,
+                            tumor_pair,
+                            self.output_dir,
+                            type="raw_reads",
+                            sample=i,
+                            profyle=self.profyle
+                        )
+                        dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
+                        # do not compute md5sum in the readset input directory
+                        md5sum_job = deliverables.md5sum(
+                            symlink_pair_job.output_files[0],
+                            f"{file_name}.md5",
+                            dir_name
+                        )
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    symlink_pair_job,
+                                    md5sum_job
+                                ],
+                                name=f"sym_link_fastq.pairs.{str(read)}.{tumor_pair.name}.{key}",
+                                samples=[tumor_pair.tumor, tumor_pair.normal],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
+                        )
 
         return jobs
 
@@ -829,7 +832,6 @@ END
                         conpair.parse_concordance_metrics_pt(concordance_out),
                         job2json_project_tracking.run(
                             input_file=concordance_out,
-                            pipeline=self,
                             samples=",".join([sample.name for sample in samples]),
                             readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                             job_name=job_name,
@@ -838,7 +840,6 @@ END
                         conpair.parse_contamination_normal_metrics_pt(contamination_out),
                         job2json_project_tracking.run(
                             input_file=contamination_out,
-                            pipeline=self,
                             samples=tumor_pair.normal.name,
                             readsets=",".join([readset.name for readset in tumor_pair.normal.readsets]),
                             job_name=job_name,
@@ -847,7 +848,6 @@ END
                         conpair.parse_contamination_tumor_metrics_pt(contamination_out),
                         job2json_project_tracking.run(
                             input_file=contamination_out,
-                            pipeline=self,
                             samples=tumor_pair.tumor.name,
                             readsets=",".join([readset.name for readset in tumor_pair.tumor.readsets]),
                             job_name=job_name,
@@ -947,7 +947,6 @@ END
                         gatk4.parse_bases_over_q30_percent_metrics_pt(f"{output_prefix}.quality_distribution_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.quality_distribution_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -956,7 +955,6 @@ END
                         gatk4.parse_mean_insert_metrics(f"{output_prefix}.insert_size_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.insert_size_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -965,7 +963,6 @@ END
                         gatk4.parse_stdev_insert_metrics(f"{output_prefix}.insert_size_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.insert_size_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -974,7 +971,6 @@ END
                         gatk4.parse_mode_insert_metrics(f"{output_prefix}.insert_size_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.insert_size_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -983,7 +979,6 @@ END
                         gatk4.parse_total_read_pairs_metrics(f"{output_prefix}.alignment_summary_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.alignment_summary_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -992,7 +987,6 @@ END
                         gatk4.parse_aligned_pairs_metrics_pt(f"{output_prefix}.alignment_summary_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.alignment_summary_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -1001,7 +995,6 @@ END
                         gatk4.parse_high_quality_read_pairs_metrics(f"{output_prefix}.alignment_summary_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.alignment_summary_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -1010,7 +1003,6 @@ END
                         gatk4.parse_chimeras_metrics_pt(f"{output_prefix}.alignment_summary_metrics"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.alignment_summary_metrics",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -1136,7 +1128,6 @@ END
                         mosdepth.parse_dedup_coverage_metrics_pt(f"{output_prefix}.mosdepth.summary.txt"),
                         job2json_project_tracking.run(
                             input_file=f"{output_prefix}.mosdepth.summary.txt",
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -1365,7 +1356,6 @@ END
                             gatk4.parse_bed_bait_set_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1374,7 +1364,6 @@ END
                             gatk4.parse_off_target_metrics_pt(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1383,7 +1372,6 @@ END
                             gatk4.parse_total_reads_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1392,7 +1380,6 @@ END
                             gatk4.parse_dedup_reads_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1401,7 +1388,6 @@ END
                             gatk4.parse_mean_target_coverage_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1410,7 +1396,6 @@ END
                             gatk4.parse_median_target_coverage_metrics(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1419,7 +1404,6 @@ END
                             gatk4.parse_dup_rate_metrics_pt(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1428,7 +1412,6 @@ END
                             gatk4.parse_low_mapping_rate_metrics_pt(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1437,7 +1420,6 @@ END
                             gatk4.parse_read_overlap_metrics_pt(output),
                             job2json_project_tracking.run(
                                 input_file=output,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,
@@ -1641,7 +1623,6 @@ END
                         verify_bam_id.parse_contamination_freemix_metrics(output),
                         job2json_project_tracking.run(
                             input_file=output,
-                            pipeline=self,
                             samples=sample.name,
                             readsets=",".join([readset.name for readset in sample.readsets]),
                             job_name=job_name,
@@ -1822,12 +1803,12 @@ END
                             bash.ln(
                                 os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz", os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz")),
                                 f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
-                                input=f"{haplotype_file_prefix}.hc.g.vcf.gz"
+                                input_file=f"{haplotype_file_prefix}.hc.g.vcf.gz"
                             ),
                             bash.ln(
                                 os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi", os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi")),
                                 f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi",
-                                input=f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi"
+                                input_file=f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi"
                             ),
                             gatk4.genotype_gvcf(
                                 f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
@@ -2837,7 +2818,7 @@ END
                     input_dependency=input_dependencies,
                     output_dependency=[output]
                 )
-                
+
                 if self.project_tracking_json:
                     samples = [sample]
                     pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
@@ -2848,13 +2829,12 @@ END
                                 pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
                                 job2json_project_tracking.run(
                                     input_file=pcgr_output_file,
-                                    pipeline=self,
                                     samples=",".join([sample.name for sample in samples]),
                                     readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                                     job_name=job_name,
                                     metrics="pcgr_passed_variants=$pcgr_passed_variants"
                                 )
-                            ], 
+                            ],
                             name=job_name,
                             samples=[sample],
                             readsets=[*list(sample.readsets)],
@@ -2864,7 +2844,7 @@ END
                     )
                 else:
                     jobs.append(pcgr_job)
-                
+
         else:
             for tumor_pair in self.tumor_pairs.values():
                 # Set directory, ini_section, job and sample name for tumor pair Fastpass protocol
@@ -2975,9 +2955,9 @@ END
                     input_dependency=input_dependencies,
                     output_dependency=[output]
                 )
-                
+
                 samples = [tumor_pair.normal, tumor_pair.tumor]
-                
+
                 if self.project_tracking_json:
                     pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
                     jobs.append(
@@ -2987,14 +2967,13 @@ END
                                 pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
                                 job2json_project_tracking.run(
                                     input_file=pcgr_output_file,
-                                    pipeline=self,
                                     samples=",".join([sample.name for sample in samples]),
                                     readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                                     job_name=job_name,
                                     metrics="pcgr_passed_variants=$pcgr_passed_variants"
                                 )
-                            ], 
-                            name=job_name, 
+                            ],
+                            name=job_name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                             input_dependency=input_dependencies,
@@ -3003,6 +2982,87 @@ END
                     )
                 else:
                     jobs.append(pcgr_job)
+
+        return jobs
+    
+    def report_djerba(self):
+        """
+        Produce Djerba report.
+        """
+        jobs = []
+        
+        token = global_conf.global_get('report_djerba', 'oncokb_token', param_type='filepath', required=False)
+
+        if token:
+            ensemble_directory = os.path.join(
+                self.output_dirs['paired_variants_directory'],
+                "ensemble"
+                )
+            assembly = global_conf.global_get('report_pcgr', 'assembly')
+        
+            for tumor_pair in self.tumor_pairs.values():
+                djerba_dir = os.path.join(self.output_dirs['report_directory'], tumor_pair.name, "djerba")
+                purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
+                purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
+            
+                #cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
+                input_cpsr = None
+                input_vcf = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz")
+                pcgr_directory = os.path.join(djerba_dir, "pcgr")
+                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")
+                clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".clean.maf") # MAF from pcgr version 1.4.1 required, remove any empty t_depth lines, needs to be gzipped
+            
+                provenance_decoy = os.path.join(djerba_dir, "provenance_subset.tsv.gz")
+                config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
+                djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(djerba_dir),
+                            bash.mkdir(pcgr_directory),
+                            pcgr.report(
+                                input_vcf,
+                                input_cpsr,
+                                pcgr_directory,
+                                tumor_pair.name,
+                                ini_section='report_djerba'
+                                ),# add pcgr job to create MAF in correct format (1.4.1), remove chrM, gzip.
+                            djerba.clean_maf(
+                                input_maf,
+                                clean_maf
+                                ),
+                            bash.zip(
+                                purple_dir,
+                                purple_zip,
+                                recursive=True
+                                ),
+                            bash.touch(provenance_decoy),
+                            djerba.make_config(
+                                config_file,
+                                tumor_pair.name,
+                                tumor_pair.tumor.name,
+                                tumor_pair.normal.name,
+                                clean_maf + ".gz",
+                                purple_zip
+                                ),
+                            # djerba report requires internet connection. Script is produced but must be executed locally.
+                            djerba.make_script(
+                                config_file,
+                                djerba_dir,
+                                djerba_script
+                                )
+                        ],
+                        name="report_djerba." + tumor_pair.name,
+                        samples=[tumor_pair.tumor],
+                        readsets=list(tumor_pair.tumor.readsets),
+                        input_dependency=[input_vcf, os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")],
+                        output_dependency=[config_file, djerba_script]
+                        )
+                    )
+
+        else:
+            log.debug("No OncoKB token provided in config file, skipping djerba report step.")
 
         return jobs
 
@@ -3351,13 +3411,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         bash.ln(
                             os.path.relpath(manta_germline_output, os.path.dirname(f"{output_prefix}.manta.germline.vcf.gz")),
                             f"{output_prefix}.manta.germline.vcf.gz",
-                            input=manta_germline_output,
+                            input_file=manta_germline_output,
                             remove=False
                         ),
                         bash.ln(
                             os.path.relpath(manta_germline_output_tbi, os.path.dirname(f"{output_prefix}.manta.germline.vcf.gz.tbi")),
                             f"{output_prefix}.manta.germline.vcf.gz.tbi",
-                            input=manta_germline_output_tbi,
+                            input_file=manta_germline_output_tbi,
                             remove=False
                         )
                     ],
@@ -4759,7 +4819,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                                     bash.cat(
                                         seqz_outputs,
                                         None,
-                                        zip=True
+                                        zipped=True
                                     ),
                                     bash.awk(
                                         None,
@@ -5182,22 +5242,22 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(manta_direc
                         bash.ln(
                             os.path.relpath(manta_somatic_output, os.path.dirname(output_prefix)),
                             f"{output_prefix}.manta.somatic.vcf.gz",
-                            input=manta_somatic_output,
+                            input_file=manta_somatic_output,
                         ),
                         bash.ln(
                             os.path.relpath(manta_somatic_output + ".tbi", os.path.dirname(output_prefix)),
                             f"{output_prefix}.manta.somatic.vcf.gz.tbi",
-                            input=f"{manta_somatic_output}.tbi"
+                            input_file=f"{manta_somatic_output}.tbi"
                         ),
                         bash.ln(
                             os.path.relpath(manta_germline_output, os.path.dirname(output_prefix)),
                             f"{output_prefix}.manta.germline.vcf.gz",
-                            input=manta_germline_output
+                            input_file=manta_germline_output
                         ),
                         bash.ln(
                             os.path.relpath(manta_germline_output + ".tbi", os.path.dirname(output_prefix)),
                             f"{output_prefix}.manta.germline.vcf.gz.tbi",
-                            input=f"{manta_germline_output}.tbi"
+                            input_file=f"{manta_germline_output}.tbi"
                         )
                     ],
                     name=f"manta_sv.{tumor_pair.name}",
@@ -5482,7 +5542,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                         bash.cat(
                                             os.path.join(germline_dir, "results", "variants", "variants.vcf.gz"),
                                             None,
-                                            zip=True
+                                            zipped=True
                                         ),
                                         bash.sed(
                                             None,
@@ -5733,7 +5793,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                     purple.parse_purity_metrics_pt(purple_purity_output),
                     job2json_project_tracking.run(
                         input_file=purple_purity_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in samples]),
                         readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                         job_name=job_name,
@@ -5764,12 +5823,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                         bash.ln(
                             os.path.relpath(purple_purity_output.strip(), metrics_dir),
                             os.path.join(metrics_dir, os.path.basename(purple_purity_output)),
-                            input=purple_purity_output
+                            input_file=purple_purity_output
                         ),
                         bash.ln(
                             os.path.relpath(purple_qc_output.strip(), metrics_dir),
                             os.path.join(metrics_dir, os.path.basename(purple_qc_output)),
-                            input=purple_qc_output
+                            input_file=purple_qc_output
                         ),
                         job_project_tracking_metrics
                     ],
@@ -6617,7 +6676,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                 bash.ln(
                                     os.path.relpath(input_vcf, os.path.dirname(output_gz)),
                                     output_gz,
-                                    input=input_vcf
+                                    input_file=input_vcf
                                 ),
                                 pipe_jobs(
                                     [
@@ -7058,14 +7117,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                             bash.ln(
                                 os.path.relpath(input_file, os.path.dirname(output_tmp)),
                                 output_tmp,
-                                input=input_file
+                                input_file=input_file
                             ),
                             pipe_jobs(
                                 [
                                     bash.cat(
                                         output_tmp,
                                         None,
-                                        zip=True
+                                        zipped=True
                                     ),
                                     bash.awk(
                                         None,
@@ -8290,6 +8349,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.report_cpsr,
                 self.filter_somatic,
                 self.report_pcgr,
+                self.report_djerba,
                 self.run_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,
@@ -8328,7 +8388,6 @@ class DnaSeq(DnaSeqRaw):
         output_dir (str): The output directory.
         protocol (str): The DNAseq analysis type.
         design_file (str): The design file.
-        no_json (bool): Do not create a JSON file.
         container (str): The container to use.
         profyle (bool): Adjust deliverables to PROFYLE folder conventions.
         pairs_file (str): The pairs file.
@@ -8342,10 +8401,25 @@ class DnaSeq(DnaSeqRaw):
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-p", "--pairs", help="pairs file", type=argparse.FileType('r'))
-        cls._argparser.add_argument("--profyle", help=("adjust deliverables to PROFYLE folder conventions (Default: False)"), action="store_true")
-        cls._argparser.add_argument("-t", "--type", help="DNAseq analysis type", dest='protocol',
-                                    choices=["germline_snv", "germline_sv", "germline_high_cov", "somatic_tumor_only", "somatic_fastpass", "somatic_ensemble", "somatic_sv"], default="germline_snv")
+        cls._argparser.add_argument(
+            "-p",
+            "--pairs",
+            help="pairs file",
+            type=argparse.FileType('r')
+            ).complete = shtab.FILE
+        cls._argparser.add_argument(
+            "--profyle",
+            help=("adjust deliverables to PROFYLE folder conventions (Default: False)"),
+            action="store_true"
+            )
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="DNAseq analysis type",
+            dest='protocol',
+            choices=["germline_snv", "germline_sv", "germline_high_cov", "somatic_tumor_only", "somatic_fastpass", "somatic_ensemble", "somatic_sv"],
+            default="germline_snv"
+            )
         return cls._argparser
 
 def main(parsed_args):
@@ -8363,7 +8437,6 @@ def main(parsed_args):
     genpipes_file = parsed_args.genpipes_file
     container = parsed_args.container
     clean = parsed_args.clean
-    no_json = parsed_args.no_json
     json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
@@ -8376,6 +8449,6 @@ def main(parsed_args):
     profyle = parsed_args.profyle
     pairs_file = parsed_args.pairs
 
-    pipeline = DnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, profyle=profyle, pairs_file=pairs_file)
+    pipeline = DnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, json_pt=json_pt, container=container, profyle=profyle, pairs_file=pairs_file)
 
     pipeline.submit_jobs()

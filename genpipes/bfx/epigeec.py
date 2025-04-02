@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -18,9 +18,12 @@
 ################################################################################
 
 import os
+import logging
 
 from ..core.config import global_conf
 from ..core.job import Job
+
+log = logging.getLogger(__name__)
 
 def tohdf5(output_dir, signal_file, ini_section='epigeec'):
     signal_file_basename = os.path.basename(signal_file)+".hdf5"
@@ -101,4 +104,3 @@ def generate_hdf5_list(hdf5_list_file, file_path):
             file_path=file_path
             )
         )
-

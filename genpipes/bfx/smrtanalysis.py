@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -30,7 +30,7 @@ def blasr(
     infile_long,
     outfile,
     outfile_fofn,
-    sam=False, 
+    sam=False,
     ini_section='smrtanalysis_blasr'
     ):
 
@@ -512,11 +512,11 @@ def variant_caller(
     ini_section='smrtanalysis_variant_caller'
     ):
 
-    outfile_fasta_uncompressed = re.sub("\.(gz|gzip)$", "", outfile_fasta)
+    outfile_fasta_uncompressed = re.sub(r"\.(gz|gzip)$", "", outfile_fasta)
 
     return Job(
         [cmph5, ref_fasta],
-        [outfile_variants, outfile_fasta, outfile_fastq, re.sub("\.gz$", "", outfile_fasta_uncompressed)],
+        [outfile_variants, outfile_fasta, outfile_fastq, re.sub(r"\.gz$", "", outfile_fasta_uncompressed)],
         [
             [ini_section, 'module_smrtanalysis']
         ],

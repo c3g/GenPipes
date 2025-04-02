@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPIpes.
 #
@@ -35,6 +35,7 @@ from ...bfx import(
     bash_cmd as bash,
     bedtools,
     bwa2,
+    deeptools,
     differential_binding,
     gatk4,
     homer,
@@ -334,7 +335,7 @@ END
                 bash.ln(
                     os.path.relpath(trim_log, link_directory),
                     os.path.join(link_directory, readset.name + ".trim.log"),
-                    input = trim_log
+                    input_file = trim_log
                 )
             ], name="trimmomatic." + readset.name, samples=[readset.sample]))
 
@@ -527,12 +528,12 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                                 bash.ln(
                                     os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
                                     sample_bam,
-                                    input=readset_bam
+                                    input_file=readset_bam
                                 ),
                                 bash.ln(
                                     os.path.relpath(readset_index, os.path.dirname(sample_index)),
                                     sample_index,
-                                    input=readset_index
+                                    input_file=readset_index
                                 )
                             ],
                             name=f"symlink_readset_sample_bam.{sample.name}.{mark_name}",
@@ -676,14 +677,10 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
 
         jobs = []
 
-        samples_associative_array = []
-        inputs_report = []
-
         metrics_output_directory = self.output_dirs['metrics_directory']
         link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
         for sample in self.samples:
-            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 raw_bam_file = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.bam")
@@ -714,7 +711,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                             bash.ln(
                                 os.path.relpath(outfile, link_directory),
                                 os.path.join(link_directory, os.path.basename(outfile)),
-                                input=outfile
+                                input_file=outfile
                             )
                         ]
                     )
@@ -727,6 +724,7 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                     concat_jobs(
                         [
                             bash.mkdir(os.path.join(metrics_output_directory, sample.name, mark_name)),
+                            bash.mkdir(link_directory),
                             sambamba.flagstat(
                                 raw_bam_file,
                                 os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file)))
@@ -736,113 +734,16 @@ cp {readset_merge_trim_stats} {sample_merge_trim_stats} {self.output_dirs['repor
                                 os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file)))
                             ),
                             bash.ln(
-                                os.path.relpath(os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file))), link_directory),
-                                os.path.join(link_directory, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
-                                input = os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file)))
+                                os.path.relpath(os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))), link_directory),
+                                os.path.join(link_directory, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))),
+                                input_file = os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file)))
                             )
                         ],
                         name=f"metrics_flagstat.{sample.name}.{mark_name}",
                         samples=[sample]
                     )
                 )
-                self.multiqc_inputs.append(os.path.join(link_directory,  re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file))))
-                inputs_report.extend(
-                    [
-                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
-                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))),
-                        bam_file
-                    ]
-                )
-
-        trim_metrics_file = os.path.join(metrics_output_directory, "trimSampleTable.tsv")
-        metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
-        report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
-        if global_conf.global_get('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
-            bam_ext = "sorted.dup.filtered.cleaned.bam"
-        else:
-            bam_ext = "sorted.dup.filtered.bam"
-        flagstat_ext = re.sub(r"\.bam", "", bam_ext)
-        
-        jobs.append(
-            Job(
-                inputs_report,
-                [report_metrics_file],
-                [
-                    ['metrics', 'module_sambamba'],
-                    ['metrics', 'module_samtools']
-                ],
-                # Retrieve number of aligned and duplicate reads from sample flagstat files
-                # Merge trimming stats per sample with aligned and duplicate stats using ugly awk
-                command="""\
-mkdir -p {metrics_dir}
-cp /dev/null {metrics_file} && \\
-declare -A samples_associative_array=({samples_associative_array}) && \\
-for sample in ${{!samples_associative_array[@]}}
-do
-  for mark_name in ${{samples_associative_array[$sample]}}
-  do
-    raw_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.flagstat
-    filtered_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.{flagstat_ext}.flagstat
-    bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.{bam_ext}
-    raw_supplementarysecondary_reads=`bc <<< $(grep "secondary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
-    mapped_reads=`bc <<< $(grep "mapped (" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$raw_supplementarysecondary_reads`
-    filtered_supplementarysecondary_reads=`bc <<< $(grep "secondary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
-    filtered_reads=`bc <<< $(grep "in total" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$filtered_supplementarysecondary_reads`
-    filtered_mapped_reads=`bc <<< $(grep "mapped (" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$filtered_supplementarysecondary_reads`
-    filtered_mapped_rate=`echo "scale=4; 100*$filtered_mapped_reads/$filtered_reads" | bc -l`
-    filtered_dup_reads=`grep "duplicates" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
-    filtered_dup_rate=`echo "scale=4; 100*$filtered_dup_reads/$filtered_mapped_reads" | bc -l`
-    filtered_dedup_reads=`echo "$filtered_mapped_reads-$filtered_dup_reads" | bc -l`
-    if [[ -s {trim_metrics_file} ]]
-      then
-        raw_reads=$(grep -P "${{sample}}\\t${{mark_name}}" {trim_metrics_file} | cut -f 3)
-        raw_trimmed_reads=`bc <<< $(grep "in total" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$raw_supplementarysecondary_reads`
-        mapped_reads_rate=`echo "scale=4; 100*$mapped_reads/$raw_trimmed_reads" | bc -l`
-        raw_trimmed_rate=`echo "scale=4; 100*$raw_trimmed_reads/$raw_reads" | bc -l`
-        filtered_rate=`echo "scale=4; 100*$filtered_reads/$raw_trimmed_reads" | bc -l`
-      else
-        raw_reads=`bc <<< $(grep "in total" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$raw_supplementarysecondary_reads`
-        raw_trimmed_reads="NULL"
-        mapped_reads_rate=`echo "scale=4; 100*$mapped_reads/$raw_reads" | bc -l`
-        raw_trimmed_rate="NULL"
-        filtered_rate=`echo "scale=4; 100*$filtered_reads/$raw_reads" | bc -l`
-    fi
-    filtered_mito_reads=$(sambamba view -F "not duplicate" -c $bam_file chrM)
-    filtered_mito_rate=$(echo "scale=4; 100*$filtered_mito_reads/$filtered_mapped_reads" | bc -l)
-    if [[ $mark_name != "Input" ]]
-        then
-          chip_bed_file={macs_directory}/$sample/$mark_name/$sample.${{mark_name}}_peaks.*Peak.bed
-          nmb_peaks=$(wc -l $chip_bed_file | cut -f 1 -d " ")
-          reads_under_peaks=$(samtools view -c -L $chip_bed_file $bam_file)
-          frip=$(echo "scale=4; $reads_under_peaks/$filtered_mapped_reads" | bc -l)
-        else
-          nmb_peaks="NA"
-          reads_under_peaks="NA"
-          frip="NA"
-    fi
-    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_mapped_reads\\t$filtered_mapped_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate\\t$nmb_peaks\\t$reads_under_peaks\\t$frip" >> {metrics_file}
-  done
-done && \\
-sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tRemaining Reads after Trimming #\\tRemaining Reads after Trimming %\\tAligned Trimmed Reads #\\tAligned Trimmed Reads %\\tRemaining Reads after Filtering #\\tRemaining Reads after Filtering %\\tAligned Filtered Reads #\\tAligned Filtered Reads %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads # without Duplicates\\tMitochondrial Reads #\\tMitochondrial Reads %\\tNumber of Peaks\\tReads under Peaks\\tFRIP" {metrics_file} && \\
-mkdir -p {report_dir} && \\
-cp {metrics_file} {report_metrics_file}""".format(
-                    sambamba=global_conf.global_get('DEFAULT', 'module_sambamba'),
-                    metrics_dir=metrics_output_directory,
-                    macs_directory=self.output_dirs['macs_output_directory'],
-                    metrics_file=metrics_file,
-                    samples_associative_array=" ".join(samples_associative_array),
-                    alignment_dir=self.output_dirs['alignment_output_directory'],
-                    flagstat_ext=flagstat_ext,
-                    bam_ext=bam_ext,
-                    report_dir=self.output_dirs['report_output_directory'],
-                    trim_metrics_file=trim_metrics_file,
-                    report_metrics_file=report_metrics_file
-                ),
-                name="metrics_report",
-                samples=self.samples,
-                removable_files=[report_metrics_file]
-            )
-        )
+                self.multiqc_inputs.append(os.path.join(link_directory,  re.sub(r"\.bam$", ".flagstat", os.path.basename(bam_file))))
 
         return jobs
 
@@ -889,7 +790,7 @@ cp {metrics_file} {report_metrics_file}""".format(
                                 bash.ln(
                                     os.path.relpath(outfile, link_directory),
                                     os.path.join(link_directory, os.path.basename(outfile)),
-                                    input=outfile
+                                    input_file=outfile
                                     )
                                 ]
                             )
@@ -949,6 +850,105 @@ done""".format(
             )
         )
         return jobs
+
+
+    def deeptools_qc(self):
+        """
+        Fingerplot quality control will most likely be of interest for you if you are dealing with ChIP-seq samples - “Did my ChIP work?”
+        Fingerplot tool samples indexed BAM files and plots a profile of cumulative read coverages for each. 
+        All reads overlapping a window (bin) of the specified length are counted; these counts are sorted and the cumulative sum is finally plotted.
+        Correlation Matrix:
+        Tool for the analysis and visualization of sample correlations based on the output of multiBamSummary or multiBigwigSummary. 
+        Pearson or Spearman methods are available to compute correlation coefficients
+        """
+
+        jobs = []
+
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
+        output_dir = os.path.join(self.output_dirs['metrics_directory'], 'deeptools')
+
+        all_bam_files = []
+        all_bam_names = []
+
+        ## Loop to get bam files per sample
+        for sample in self.samples:
+            sample_bam_files = []
+            sample_bam_names = []
+            for mark_name in sample.marks:
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                # Select input from blacklist filtered (clean) or just sambamba filtered bam
+                filtered_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.bam")
+                clean_bam = os.path.join(alignment_directory, f"{sample.name}.{mark_name}.sorted.dup.filtered.cleaned.bam")
+                candidate_bam_files = [[clean_bam], [filtered_bam]]
+                output_sample_dir = os.path.join(output_dir, sample.name)
+                # Set essential variables - fingerprint
+                fingerprint_plot = os.path.join(output_sample_dir, f"{sample.name}_fingerprint.png")
+                fingerprint_matrix = os.path.join(output_sample_dir, f"{sample.name}_counts.txt")
+                
+                sample_bam_files.extend(self.select_input_files(candidate_bam_files))
+                sample_bam_names.append(f"{sample.name}.{mark_name}")
+
+            all_bam_files.extend(sample_bam_files)
+            all_bam_names.extend(sample_bam_names)
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(output_sample_dir),
+                        bash.mkdir(link_directory),
+                        deeptools.plot_fingerplot(
+                            sample_bam_files,
+                            sample_bam_names,
+                            fingerprint_plot, 
+                            fingerprint_matrix
+                        ),
+                        bash.ln(
+                            target_file = os.path.relpath(fingerprint_matrix, link_directory),
+                            link = os.path.join(link_directory, f"{sample.name}_counts.txt"),
+                            input_file = fingerprint_plot
+                        )
+                    ],
+                    name=f"deeptools_fingerplot.{sample.name}",
+                    samples=[sample]
+                )
+            )
+            self.multiqc_inputs.append(os.path.join(link_directory, f"{sample.name}_counts.txt"))
+
+        # Set output files
+        summ_matrix = os.path.join(output_dir, "BamSummResults.npz.txt")
+        corr_plot = os.path.join(output_dir, "corrMatrix.png")
+        corr_table = os.path.join(output_dir, "corrMatrixCounts.txt")
+
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(output_dir),
+                    bash.mkdir(link_directory),
+                    deeptools.multi_bam_summary(
+                        all_bam_files,
+                        summ_matrix
+                    ),
+                    deeptools.plot_correlation( 
+                        summ_matrix,
+                        all_bam_names,
+                        corr_plot,
+                        corr_table
+                    ),
+                    bash.ln(
+                        target_file = os.path.relpath(corr_table, link_directory),
+                        link = os.path.join(link_directory, "corrMatrixCounts.txt"),
+                        input_file = corr_plot
+                    )
+                ],
+                name = f"deeptools_qc.corrMatrix",
+                samples=self.samples
+            )
+        )
+        self.multiqc_inputs.append(os.path.join(link_directory, f"corrMatrixCounts.txt"))
+
+        return jobs
+
 
     def homer_make_ucsc_file(self):
         """
@@ -1093,7 +1093,7 @@ zip -r {report_dir}/tracks.zip {tracks_dir}/*/*/*.ucsc.bedGraph.gz""".format(
                             bash.ln(
                                 os.path.relpath(output[1], link_directory),
                                 os.path.join(link_directory, f"{sample.name}.{mark_name}_peaks.xls"),
-                                input = output[1]
+                                input_file = output[1]
                             )
                         ],
                             name=f"macs2_callpeak.{sample.name}.{mark_name}",
@@ -1193,7 +1193,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                             bash.ln(
                                 os.path.relpath(output[1], link_directory),
                                 os.path.join(link_directory, f"{sample.name}.{mark_name}_peaks.xls"),
-                                input = output[1]
+                                input_file = output[1]
                             )
                         ],
                             name=f"macs2_callpeak.{sample.name}.{mark_name}",
@@ -1406,10 +1406,16 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
 
         jobs = []
 
+        counter = 0
+
+        samples_associative_array = []
+
         for sample in self.samples:
+            mark_list = []
             for mark_name, mark_type in sample.marks.items():
                 # Don't find motifs for broad peaks
                 if mark_type == "N":
+                    mark_list.append(mark_name)
 
                     peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, f"{sample.name}.{mark_name}_peaks.{self.mark_type_conversion[mark_type]}Peak")
                     output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
@@ -1430,8 +1436,33 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                             removable_files=[os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)]
                         )
                     )
+                    counter = counter + 1
                 else:
                     log.warning(f"Mark {mark_name} for Sample {sample.name}is not Narrow; homer_find_motifs_genome is run on narrow peaks... skipping")
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
+
+        if counter > 0:
+            report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_find_motifs_genome.md")
+            jobs.append(
+                Job(
+                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, "homerResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"] +
+                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, "knownResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"],
+                    [report_file],
+                    command=f"""\
+mkdir -p {self.output_dirs['report_output_directory']}/annotation/ && \\
+declare -A samples_associative_array=({" ".join(samples_associative_array)}) && \\
+for sample in ${{!samples_associative_array[@]}}
+do
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    rsync -rvP annotation/$sample {self.output_dirs['report_output_directory']}/annotation/ && \\
+    echo -e "* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/homerResults.html)\\n* [HOMER Known Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/knownResults.html)" >> {report_file}
+  done
+done""",
+                    report_files=[report_file],
+                    name="homer_find_motifs_genome_report"
+                )
+            )
 
         return jobs
 
@@ -1653,21 +1684,145 @@ do
         first_time=false
     fi
     tail -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- >> {metrics_merged_out}
-    sample_name=`tail -n 1 $sample | cut -f 1`
-    input_name=`tail -n 1 $sample | cut -f 4`
-    input_chip_type="NA"
-    genome_assembly=`tail -n 1 $sample | cut -f 5`
-    input_core=`tail -n 1 $sample | cut -f 18-29`
-    input_nsc=`tail -n 1 $sample | cut -f 34`
-    input_rsc=`tail -n 1 $sample | cut -f 36`
-    input_quality=`tail -n 1 $sample | cut -f 38`
-    if [[ $input_name != "no_input" ]]
-    then
-        echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\tNA\\tNA\\tNA\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\tNA\\tNA" >> {metrics_merged_out}
-    fi
-done""",
+done && \\
+sample_name=`tail -n 1 $sample | cut -f 1` && \\
+input_name=`tail -n 1 $sample | cut -f 4` && \\
+input_chip_type="NA" && \\
+genome_assembly=`tail -n 1 $sample | cut -f 5` && \\
+input_core=`tail -n 1 $sample | cut -f 18-29` && \\
+input_nsc=`tail -n 1 $sample | cut -f 34` && \\
+input_rsc=`tail -n 1 $sample | cut -f 36` && \\
+input_quality=`tail -n 1 $sample | cut -f 38` && \\
+if [[ $input_name != "no_input" ]]
+  then
+    echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\tNA\\tNA\\tNA\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\tNA\\tNA" >> {metrics_merged_out}
+fi""",
             )
         )
+# ihec table is read by multiqc
+        report_multiqc_format_job = Job(
+            [metrics_merged_out],
+            [ihec_multiqc_file],
+            command=f"""\
+echo -e "# plot_type: 'table'
+# section_name: 'IHEC'
+# description: 'Sequencing, Alignment and Peak Metrics per Sample'
+# headers:
+#   Mark_Name:
+#       title: 'Mark Name'
+#       description: 'mark name'
+#       placement: 900
+#   ChIP_type:
+#       title: 'ChIP Type'
+#       description: 'type of ChIP'
+#       placement: 910
+#   Genome_Assembly:
+#       title: 'Genome Assembly'
+#       description: 'Genome assembly used for alignment'
+#       placement: 920
+#   Raw_Reads:
+#       title: 'Raw Reads'
+#       description: 'total number of reads obtained from the sequencer'
+#       format: '{{:,.0f}}'
+#       placement: 930
+#   Trimmed_Reads:
+#       title: 'Trimmed Reads'
+#       description: 'number of remaining reads after the trimming step'
+#       format: '{{:,.0f}}'
+#       placement: 940
+#   Trimmed_Reads_Fraction:
+#       title: '% Survival Rate'
+#       description: 'trimmed_reads / raw_reads * 100'
+#       placement: 950
+#   Mapped_Reads:
+#       title: 'Mapped Reads'
+#       description: 'number of reads mapped to the reference'
+#       format: '{{:,.0f}}'
+#       placement: 960
+#   Mapped_Reads_Fraction:
+#       title: '% Mapping Efficiency'
+#       description: 'Mapped_Reads / Trimmed_Reads * 100'
+#       placement: 970
+#   Duplicates_Reads:
+#       title: 'Duplicated Reads'
+#       description: 'number of duplicated read entries providing the same mapping coordinates (due to PCR duplicates)'
+#       format: '{{:,.0f}}'
+#       placement: 980
+#   Duplicates_Reads_Fraction:
+#       title: '% Duplication Rate'
+#       description: 'Duplicates_Reads / Mapped_Reads * 100'
+#       placement: 990
+#   Filtered_Reads:
+#       title: 'Reads remaining after filtering'
+#       description: 'number of filtered reads'
+#       format: '{{:,.0f}}'
+#       placement: 1000
+#   Filtered_Reads_Fraction:
+#       title: 'Percent Filtered Reads'
+#       description: 'Filtered_Reads / Mapped_Reads * 100'
+#       placement: 1010
+#   Mitochondrial_Reads:
+#       title: 'Mitochondrial Reads'
+#       description: 'number of reads mapped to chrM'
+#       format: '{{:,.0f}}'
+#       placement: 1020
+#   Mitochondrial_Reads_Fraction:
+#       title: 'Mitochondrial Reads Rate'
+#       description: 'Mitochondrial_Reads / Mapped_Reads * 100'
+#       placement: 1030
+#   Singleton_Reads:
+#       title: 'Singleton Reads'
+#       description: 'number of singleton reads'
+#       format: '{{:,.0f}}'
+#       placement: 1040
+#   Nbr_Peaks:
+#       title: 'Number of peaks'
+#       description: 'number of peaks'
+#       format: '{{:,.0f}}'
+#       placement: 1050
+#   Reads_in_Peaks:
+#       title: 'Reads in Peaks'
+#       description: 'number of reads in peaks'
+#       format: '{{:,.0f}}'
+#       placement: 1060
+#   frip:
+#       title: 'frip'
+#       description: 'fraction of reads in peaks'
+#       placement: 1070
+#   Mark_NSC:
+#       title: 'Mark NSC'
+#       description: 'normalized strand cross-correlation of mark'
+#       placement: 1080
+#   Mark_RSC:
+#       title: 'Mark RSC'
+#       description: 'relative strand cross-correlation of mark'
+#       placement: 1090
+#   Mark_Quality:
+#       title: 'Mark quality'
+#       description: 'quality of marks'
+#       placement: 1100
+#   JS_Distance:
+#       title: 'JS Distance'
+#       description: 'Jensen-Shannon distance'
+#       placement: 1110
+#   Chance_Divergence:
+#       title: 'Chance divergence'
+#       description: 'chance divergence'
+#       placement: 1120" > {ihec_multiqc_file}
+
+cat {metrics_merged_out} >> {ihec_multiqc_file}"""
+)
+
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(link_directory),
+                    report_multiqc_format_job
+                ],
+                name="ihec_sample_metrics_report"
+            )
+        )
+        self.multiqc_inputs.append(ihec_multiqc_file)
 
         return jobs
 
@@ -1804,12 +1959,12 @@ done""",
                                 bash.ln(
                                     os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz", os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz")),
                                     f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
-                                    input=f"{haplotype_file_prefix}.hc.g.vcf.gz"
+                                    input_file=f"{haplotype_file_prefix}.hc.g.vcf.gz"
                                 ),
                                 bash.ln(
                                     os.path.relpath(f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi", os.path.dirname(f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi")),
                                     f"{output_haplotype_file_prefix}.hc.g.vcf.gz.tbi",
-                                    input=f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi"
+                                    input_file=f"{haplotype_file_prefix}.hc.g.vcf.gz.tbi"
                                 ),
                                 gatk4.genotype_gvcf(
                                     f"{output_haplotype_file_prefix}.hc.g.vcf.gz",
@@ -1850,20 +2005,21 @@ done""",
                 self.sambamba_view_filter,
                 self.bedtools_blacklist_filter,
                 self.metrics,
-                self.homer_make_tag_directory,
+                self.homer_make_tag_directory, #10
                 self.qc_metrics,
-                self.homer_make_ucsc_file,  #12
+                self.deeptools_qc,    
+                self.homer_make_ucsc_file,  
                 self.macs2_callpeak,
-                self.homer_annotate_peaks,
+                self.homer_annotate_peaks, #15
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
-                self.run_spp,
-                self.differential_binding, #18
-                self.ihec_metrics,
+                self.run_spp, 
+                self.differential_binding, 
+                self.ihec_metrics, #20
                 self.multiqc_report,
                 self.cram_output,
                 self.gatk_haplotype_caller,
-                self.merge_and_call_individual_gvcf #23
+                self.merge_and_call_individual_gvcf #24
             ], 'atacseq':
             [
                 self.picard_sam_to_fastq,
@@ -1906,7 +2062,6 @@ def main(parsed_args):
     genpipes_file = parsed_args.genpipes_file
     container = parsed_args.container
     clean = parsed_args.clean
-    no_json = parsed_args.no_json
     json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
@@ -1919,6 +2074,6 @@ def main(parsed_args):
     # Specific pipeline options
     protocol = parsed_args.protocol
 
-    pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, protocol=protocol)
+    pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, json_pt=json_pt, container=container, protocol=protocol)
 
     pipeline.submit_jobs()

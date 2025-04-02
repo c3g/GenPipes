@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -35,10 +35,10 @@ def fastqc(input1, input2, output_directory, output, adapter_file):
     outputs = [output]
 
     (input_basename, file_format) = os.path.splitext(input1)
-    file_format = re.sub("^\.", "", file_format)
+    file_format = re.sub(r"^\.", "", file_format)
     if file_format == 'gz':
         (input_basename, file_format) = os.path.splitext(input_basename)
-        file_format = re.sub("^\.", "", file_format)
+        file_format = re.sub(r"^\.", "", file_format)
 
     return Job(
         inputs,

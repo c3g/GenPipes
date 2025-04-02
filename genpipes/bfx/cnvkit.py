@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -37,7 +37,7 @@ def batch(
         inputs = [tumor_bam, normal_bam]
     else:
         inputs = [normal_bam]
-        
+
     return Job(
         inputs,
         [tar_dep, antitar_dep],
@@ -104,12 +104,12 @@ def segment(input_cnr,
             vcf=None,
             sample_id=None,
             normal_id=None):
-    
+
     if vcf:
         inputs = [input_cnr, vcf]
     else:
         inputs = [input_cnr]
-    
+
     return Job(
         inputs,
         [output_cns],
@@ -217,7 +217,7 @@ cnvkit.py segmetrics {options} \\
 def select_background(input_cnr,
                       input_cns,
                       output):
-    
+
     return Job(
         [input_cnr, input_cns],
         output,
@@ -244,7 +244,7 @@ def read_metrics_file(
         header = next(in_handle).strip().split("\t")[1:]
         vals = map(float, next(in_handle).strip().split("\t")[1:])
     return dict(zip(header, vals))
-    
+
 
 def scatter(input_cnr,
             input_cns,
@@ -295,14 +295,6 @@ cnvkit.py diagram {options} \\
         output=output,
         )
     )
-
-def read_metrics_file(
-        in_file
-        ):
-    with open(in_file) as in_handle:
-        header = next(in_handle).strip().split("\t")[1:]
-        vals = map(float, next(in_handle).strip().split("\t")[1:])
-    return dict(zip(header, vals))
 
 def file_check(
         input,

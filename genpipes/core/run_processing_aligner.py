@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -65,8 +65,8 @@ class RunProcessingAligner(object):
                "\tSM:" + readset.sample.name + \
                "\tLB:" + readset.library + \
                "\tPU:run" + readset.run + "_" + readset.lane + \
-               ("\tCN:" + global_conf.global_getget(ini_section, 'sequencing_center')
-                if global_conf.global_getget(ini_section, 'sequencing_center', required=False) else "") + \
+               ("\tCN:" + global_conf.global_get(ini_section, 'sequencing_center')
+                if global_conf.global_get(ini_section, 'sequencing_center', required=False) else "") + \
                "\tPL:Illumina" + \
                "'"
 
@@ -95,8 +95,8 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
             if genome_config.has_option(section, dbsnp_option_name) and\
                     genome_config.has_option(section, af_option_name):
-                dbsnp_version = genome_global_conf.global_get(section, dbsnp_option_name)
-                af_name = genome_global_conf.global_get(section, af_option_name)
+                dbsnp_version = global_conf.global_get(section, dbsnp_option_name)
+                af_name = global_conf.global_get(section, af_option_name)
                 return [
                     os.path.join(self.genome_folder,
                                  "annotations",
@@ -237,8 +237,8 @@ class StarRunProcessingAligner(RunProcessingAligner):
             genome_config = configparser.ConfigParser()
             genome_config.read(ini_file)
 
-            source = genome_global_conf.global_get("DEFAULT", "source")
-            version = genome_global_conf.global_get("DEFAULT", "version")
+            source = global_conf.global_get("DEFAULT", "source")
+            version = global_conf.global_get("DEFAULT", "version")
 
             return os.path.join(self.genome_folder,
                                 "genome",
@@ -254,8 +254,8 @@ class StarRunProcessingAligner(RunProcessingAligner):
             genome_config = configparser.ConfigParser()
             genome_config.read(ini_file)
 
-            source = genome_global_conf.global_get("DEFAULT", "source")
-            version = genome_global_conf.global_get("DEFAULT", "version")
+            source = global_conf.global_get("DEFAULT", "source")
+            version = global_conf.global_get("DEFAULT", "version")
 
             return [
                 os.path.join(self.genome_folder,
@@ -428,5 +428,3 @@ class StarRunProcessingAligner(RunProcessingAligner):
             jobs.append(job)
 
         return jobs
-
-

@@ -1,0 +1,146 @@
+image: python:3.11
+
+pipelines:
+  custom: # Pipelines that are triggered manually
+    generate-readmes: # The name that is displayed in the list in the Bitbucket Cloud GUI
+      - step:
+          name: Generate READMEs
+          script:
+            # Get an oauth access token using the client credentials, parsing out the token with jq.
+            - apt-get update && apt-get install -y curl jq
+            - >
+              export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+                https://bitbucket.org/site/oauth2/access_token \
+                -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
+            # Configure git to use the oauth token.
+            - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
+            # Installing the repo to generate READMEs
+            - pip install pdm
+            - pdm install --prod --no-lock --no-editable
+            # Create READMEs
+            - for pipeline in ampliconseq chipseq covseq dnaseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light; do
+                SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/, /^Steps:/' | sed '$d' | sed '1d' | sed '/Attributes:/,$d')
+                HELPTEXT=`genpipes $f --help | sed -e '/Summary:/, /^Steps:/{/^Steps:/!d}' | sed -e '/Returns:/,+1d'`
+                echo -e "[TOC]\n${SUMMARY}\nUsage\n-----\n\n\`\`\`\n#!text\n${HELPTEXT}\n" > genpipes/pipelines/$pipeline/README.md
+              done
+            - git add genpipes/pipelines/*/README.md
+            - git commit -m "BitBucketPipelines READMEs generation"
+            # Pushing the changes
+            - git push
+    generate-autocompletes: # The name that is displayed in the list in the Bitbucket Cloud GUI
+      - step:
+          name: Generate autocompletes
+          script:
+            # Get an oauth access token using the client credentials, parsing out the token with jq.
+            - apt-get update && apt-get install -y curl jq
+            - >
+              export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+                https://bitbucket.org/site/oauth2/access_token \
+                -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
+            # Configure git to use the oauth token.
+            - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
+            # Installing the repo to generate READMEs
+            - pip install pdm
+            - pdm install --prod --no-lock --no-editable
+            # Create autocompletes
+            - genpipes -s bash > resources/autocomplete/genpipes.bash
+            - genpipes -s zsh > resources/autocomplete/genpipes.zsh
+            - genpipes -s tcsh > resources/autocomplete/genpipes.tcsh
+            - git add resources/autocomplete/genpipes.*
+            - git commit -m "BitBucketPipelines autocompletes generation"
+            # Pushing the changes
+            - git push
+    pre-release: # The name that is displayed in the list in the Bitbucket Cloud GUI
+      - parallel:
+          - step:
+            name: Security Scan
+            script:
+              # Run a security scan for sensitive data.
+              # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
+              - pipe: atlassian/git-secrets-scan:2.0.1
+          - step:
+            name: Generate READMEs & autocompletes & CHANGELOG for release
+            script:
+              # Get an oauth access token using the client credentials, parsing out the token with jq.
+              - apt-get update && apt-get install -y curl jq
+              - >
+                export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+                  https://bitbucket.org/site/oauth2/access_token \
+                  -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
+              # Configure git to use the oauth token.
+              - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
+              # Installing the repo to generate READMEs
+              - pip install pdm
+              - pdm install --prod --no-lock --no-editable
+              # Create READMEs
+              - for pipeline in ampliconseq chipseq covseq dnaseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light; do
+                  SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/, /^Steps:/' | sed '$d' | sed '1d' | sed '/Attributes:/,$d')
+                  HELPTEXT=`genpipes $f --help | sed -e '/Summary:/, /^Steps:/{/^Steps:/!d}' | sed -e '/Returns:/,+1d'`
+                  echo -e "[TOC]\n${SUMMARY}\nUsage\n-----\n\n\`\`\`\n#!text\n${HELPTEXT}\n" > genpipes/pipelines/$pipeline/README.md
+                done
+              - git add genpipes/pipelines/*/README.md
+              - git commit -m "BitBucketPipelines Pre-Release READMEs generation"
+              # Create autocompletes
+              - genpipes -s bash > resources/autocomplete/genpipes.bash
+              - genpipes -s zsh > resources/autocomplete/genpipes.zsh
+              - genpipes -s tcsh > resources/autocomplete/genpipes.tcsh
+              - git add resources/autocomplete/genpipes.*
+              - git commit -m "BitBucketPipelines autocompletes generation"
+              # Create CHANGELOG
+              - curl -sL https://deb.nodesource.com/setup_14.x | bash -
+              - apt-get install -y nodejs
+              - npm install -g auto-changelog
+              - auto-changelog -v $(genpipes --version)
+              - git add CHANGELOG.md
+              - git commit -m "BitBucketPipelines Pre-Release CHANGELOG generation"
+              # Pushing the changes
+              - git push
+              - pdm build
+              # Publishing to testPyPi
+              - pdm publish --repository testpypi --username __token__ --password $TESTPYPI_PASSWORD
+  pull-requests:
+    master/*: # For each PR on master do the release to pypi, BB and create a new tag matching current version
+      - step:
+          name: Tagging release with __version__.py
+          script:
+            # Get an oauth access token using the client credentials, parsing out the token with jq.
+            - apt-get update && apt-get install -y curl jq
+            - >
+              export access_token=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+                https://bitbucket.org/site/oauth2/access_token \
+                -d grant_type=client_credentials -d scopes="repository"| jq --raw-output '.access_token')
+            # Configure git to use the oauth token.
+            - git remote set-url origin "https://x-token-auth:${access_token}@bitbucket.org/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}"
+            # Installing the repo
+            - pip install pdm
+            - pdm install --prod --no-lock --no-editable
+            # Building dist
+            - pdm build
+            # Tagging the release
+            - git tag $(genpipes --version)
+            # Pushing the tag
+            - git push --tags
+            # Create CHANGELOG
+            - curl -sL https://deb.nodesource.com/setup_14.x | bash -
+            - apt-get install -y nodejs
+            - npm install -g auto-changelog
+            - auto-changelog -v $(genpipes --version)
+            - git add CHANGELOG.md
+            - git commit -m "BitBucketPipelines Release CHANGELOG generation"
+            # Pushing the changes
+            - git push
+  branches:
+    master:
+      - step:
+          name: Release to PyPi and BitBucket downloads
+          script:
+            # Installing the repo
+            - pip install pdm
+            - pdm install --prod --no-lock --no-editable
+            # Building dist
+            - pdm build
+            # Publishing archive to Bitbucket Downloads
+            - curl -X POST \"https://${CLIENT_ID}:${CLIENT_SECRET}@api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" \
+              --form files=@"dist/*.tar.gz"
+            # Publishing to PyPi
+            - pdm publish --repository pypi --username __token__ --password $PYPI_PASSWORD

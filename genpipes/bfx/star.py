@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -19,14 +19,39 @@
 
 # Python Standard Modules
 import os
-import logging 
+import logging
 
 # GenPipes Modules
 from ..core.config import global_conf
 from ..core.job import Job
-from ..utils import utils
 
 log = logging.getLogger(__name__)
+
+def number_symbol_converter(x):
+    """
+    Convert a number abbreviation to a full number
+    :param x: string containing a number abbreviation
+    :return: string containing the full number
+    """
+    dico={}
+    dico["K"]="000"
+    dico["M"]="000000"
+    dico["G"]="000000000"
+    dico["T"]="000000000000"
+    dico["P"]="000000000000000"
+    dico["E"]="000000000000000000"
+    dico["Z"]="000000000000000000000"
+    dico["Y"]="000000000000000000000000"
+    try:
+        int(x[:-1])+1
+        if x[-1].upper() in dico:
+            return x[:-1]+dico[x[-1].upper()]
+        elif int(x[-1])+1 :
+            return x
+        else :
+            raise Exception(f"Number abbreviation \"{x}\" is not recognized finishing with a number symbol (k, M, G, T, P, E, Z or Y")
+    except:
+        raise Exception(f"Number abbreviation \"{x}\" is not a number abbreviation")
 
 def align(
     reads1,
@@ -75,9 +100,9 @@ def align(
     ## Get param from config file
     num_threads = global_conf.global_get(ini_section, 'threads', param_type='int')
     ram_limit = global_conf.global_get(ini_section, 'ram')
-    max_ram = int(utils.number_symbol_converter(ram_limit))
+    max_ram = int(number_symbol_converter(ram_limit))
     io_limit = global_conf.global_get(ini_section, 'io_buffer')
-    io_max = int(utils.number_symbol_converter(io_limit))
+    io_max = int(number_symbol_converter(io_limit))
     stranded = global_conf.global_get(ini_section, 'strand_info')
     wig_prefix = global_conf.global_get(ini_section, 'wig_prefix')
     chimere_segment_min = global_conf.global_get(ini_section,'chimere_segment_min', param_type='int', required=False)
@@ -104,7 +129,7 @@ def align(
     ## Check strandness if cufflinks will be run afterwards
     if cuff_follow:
         if stranded.lower() == "stranded":
-           cuff_cmd = ""
+            cuff_cmd = ""
         elif stranded.lower() == "unstranded":
             cuff_cmd = "--outSAMstrandField intronMotif"
         else:
@@ -113,7 +138,7 @@ def align(
         cuff_cmd = ""
 
     if two_pass:
-        two_pass_cmd = "  --sjdbFileChrStartEnd" + " ".join(" " + sjdbFile for sjdbFile in allsjdbFiles),
+        two_pass_cmd = "  --sjdbFileChrStartEnd" + " ".join(" " + sjdbFile for sjdbFile in allsjdbFiles)
     else:
         two_pass_cmd = ""
 
@@ -179,9 +204,9 @@ def index(
     reference_fasta = global_conf.global_get(ini_section, 'genome_fasta', param_type='filepath')
     num_threads = global_conf.global_get(ini_section, 'threads', param_type='int')
     ram_limit = global_conf.global_get(ini_section, 'ram')
-    max_ram = int(utils.number_symbol_converter(ram_limit))
+    max_ram = int(number_symbol_converter(ram_limit))
     io_limit = global_conf.global_get(ini_section, 'io_buffer')
-    io_max = int(utils.number_symbol_converter(io_limit))
+    io_max = int(number_symbol_converter(io_limit))
     read_size = global_conf.global_get(ini_section, 'star_cycle_number', param_type='posint')
     other_options = global_conf.global_get(ini_section, 'other_options', required=False)
 

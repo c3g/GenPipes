@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -25,6 +25,7 @@ import re
 import socket
 import sys
 import collections
+import shtab
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
@@ -34,7 +35,7 @@ from ..core.config import global_conf, _raise, SanitycheckError
 from ..core.job import Job, concat_jobs, pipe_jobs
 from ..core.pipeline import Pipeline
 from ..core.design import parse_design_file
-from ..core.readset import parse_illumina_readset_file, parse_nanopore_readset_file
+from ..core.readset import parse_illumina_readset_file, parse_longread_readset_file
 from ..core.sample_tumor_pairs import *
 
 from ..bfx import (
@@ -72,15 +73,29 @@ class GenPipesPipeline(Pipeline):
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-r", "--readsets", dest="readsets_file",
-                                    help="readset file", type=argparse.FileType('r'), required=True)
-        cls._argparser.add_argument("-d", "--design", dest="design_file", help="design file",
-                                    type=argparse.FileType('r'))
-
-        cls._argparser.description = "Version: " + cls.genpipes_version() + \
-                                     "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/"
-        cls._argparser.add_argument("-v", "--version", action="version",
-                                    version="genpipes " + cls.genpipes_version(), help="show the version information and exit")
+        cls._argparser.add_argument(
+            "-r",
+            "--readsets",
+            dest="readsets_file",
+            help="readset file",
+            type=argparse.FileType('r'),
+            required=True
+            ).complete = shtab.FILE
+        cls._argparser.add_argument(
+            "-d",
+            "--design",
+            dest="design_file",
+            help="design file",
+            type=argparse.FileType('r')
+            ).complete = shtab.FILE
+        cls._argparser.add_argument(
+            "-v",
+            "--version",
+            action="version",
+            version=f"genpipes {cls.genpipes_version()}",
+            help="show the version information and exit"
+            )
+        cls._argparser.description = "For more documentation, visit our website: https://genpipes.readthedocs.io"
         return cls._argparser
 
     @property
@@ -92,8 +107,7 @@ class GenPipesPipeline(Pipeline):
     @property
     def design_file(self):
         if self._design_file is None:
-            raise MissingInputError("Design file is required for this pipeline/protocol. "
-                                    "Look at help for details")
+            raise MissingInputError("Design file is required for this pipeline/protocol. Look at help for details")
         return self._design_file
 
     @property
@@ -113,7 +127,7 @@ class GenPipesPipeline(Pipeline):
     def genpipes_log(self):
         if 'NO_GENPIPES_REPORT' in os.environ:
             return None
-        server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
+        server = "https://bigbrother.c3g-app.sd4h.ca/cgi-bin/pipeline.cgi"
         list_name = {}
         for readset in self.readsets:
             if readset.sample.name in list_name:
@@ -147,7 +161,7 @@ class GenPipesPipeline(Pipeline):
 {separator_line}
 LOG_MD5=$(echo $USER-'{unique_identifier}' | md5sum | awk '{{ print $1 }}')
 if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; fi; fi
-wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
+wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to https://bigbrother.c3g-app.sd4h.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, unique_identifier=unique_identifier))
         self.job_scheduler.flush()
         log.debug("Pipeline stats call home written")
@@ -161,10 +175,10 @@ wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${
 
 # Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
 # Specific steps must be defined in Illumina children pipelines.
-class Nanopore(GenPipesPipeline):
+class LongRead(GenPipesPipeline):
 
     def __init__(self, *args, **kwargs):
-        super(Nanopore, self).__init__(*args, **kwargs)
+        super(LongRead, self).__init__(*args, **kwargs)
 
     @property
     def output_dirs(self):
@@ -182,7 +196,7 @@ class Nanopore(GenPipesPipeline):
     @property
     def readsets(self):
         if getattr(self, "_readsets") is None:
-            self._readsets = parse_nanopore_readset_file(self.readsets_file)
+            self._readsets = parse_longread_readset_file(self.readsets_file)
         return self._readsets
 
 
@@ -222,24 +236,24 @@ class Illumina(GenPipesPipeline):
             # If readset FASTQ files are available, skip this step
             if not readset.fastq1:
                 if readset.bam:
-                    sortedBamDirectory = os.path.join(
+                    sorted_bam_directory = os.path.join(
                         self.output_dir,
                         "temporary_bams",
                         readset.sample.name
                     )
-                    sortedBamPrefix = os.path.join(
-                        sortedBamDirectory,
+                    sorted_bam_prefix = os.path.join(
+                        sorted_bam_directory,
                         readset.name + ".sorted"
                     )
 
-                    mkdir_job = bash.mkdir(sortedBamDirectory, remove=True)
+                    mkdir_job = bash.mkdir(sorted_bam_directory, remove=True)
 
                     sort_job = samtools.sort(
                         readset.bam,
-                        sortedBamPrefix,
+                        sorted_bam_prefix,
                         sort_by_name = True
                     )
-                    sort_job.removable_files = [sortedBamPrefix + ".bam"]
+                    sort_job.removable_files = [sorted_bam_prefix + ".bam"]
 
                     jobs.append(
                         concat_jobs([
@@ -258,47 +272,51 @@ class Illumina(GenPipesPipeline):
         if FASTQ files are not already specified in the readset file. Do nothing otherwise.
         """
         jobs = []
-        
+
         for readset in self.readsets:
             # If readset FASTQ files are available, skip this step
-            sym_link_job = []
             if not readset.fastq1:
                 if readset.bam:
                     ## check if bam file has been sorted:
-                    sortedBam = os.path.join(
+                    sorted_bam = os.path.join(
                         self.output_dir,
                         "temporary_bams",
                         readset.sample.name,
                         f"{readset.name}.sorted.bam"
                     )
                     candidate_input_files = [
-                        [sortedBam],
+                        [sorted_bam],
                         [readset.bam]
                     ]
                     [bam] = self.select_input_files(candidate_input_files)
 
-                    rawReadsDirectory = os.path.join(
+                    raw_reads_directory = os.path.join(
                         self.output_dirs['raw_reads_directory'],
                         readset.sample.name,
                     )
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.pair1.fastq.gz")
-                        fastq2 = os.path.join(rawReadsDirectory, f"{readset.name}.pair2.fastq.gz")
+                        fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.pair1.fastq.gz")
+                        fastq2 = os.path.join(raw_reads_directory, f"{readset.name}.pair2.fastq.gz")
+                        md5sum_job = concat_jobs([
+                            bash.md5sum(fastq1),
+                            bash.md5sum(fastq2)
+                        ])
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.single.fastq.gz")
+                        fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.single.fastq.gz")
                         fastq2 = None
+                        md5sum_job = bash.md5sum(fastq1)
                     else:
                         _raise(SanitycheckError(f"""Error: run type "{readset.run_type}" is invalid for readset "{readset.name}" (should be PAIRED_END or SINGLE_END)!"""))
 
-                    mkdir_job = bash.mkdir(rawReadsDirectory)
                     jobs.append(
                         concat_jobs([
-                            mkdir_job,
+                            bash.mkdir(raw_reads_directory),
                             picard.sam_to_fastq(
                                 bam,
                                 fastq1,
                                 fastq2
-                                )
+                                ),
+                            md5sum_job
                             ],
                             name=f"picard_sam_to_fastq.{readset.name}",
                             samples=[readset.sample],
@@ -324,32 +342,32 @@ class Illumina(GenPipesPipeline):
             if not readset.fastq1:
                 if readset.bam:
                     ## check if bam file has been sorted:
-                    sortedBam = os.path.join(
+                    sorted_bam = os.path.join(
                         self.output_dir,
                         "temporary_bams",
                         readset.sample.name,
                         f"{readset.name}.sorted.bam"
                     )
                     candidate_input_files = [
-                        [sortedBam],
+                        [sorted_bam],
                         [readset.bam]
                     ]
                     [bam] = self.select_input_files(candidate_input_files)
 
-                    rawReadsDirectory = os.path.join(
+                    raw_reads_directory = os.path.join(
                         self.output_dirs['raw_reads_directory'],
                         readset.sample.name,
                     )
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.pair1.fastq.gz")
-                        fastq2 = os.path.join(rawReadsDirectory, f"{readset.name}.pair2.fastq.gz")
+                        fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.pair1.fastq.gz")
+                        fastq2 = os.path.join(raw_reads_directory, f"{readset.name}.pair2.fastq.gz")
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = os.path.join(rawReadsDirectory, f"{readset.name}.single.fastq.gz")
+                        fastq1 = os.path.join(raw_reads_directory, f"{readset.name}.single.fastq.gz")
                         fastq2 = None
                     else:
                         _raise(SanitycheckError(f"Error: run type {readset.run_type} is invalid for readset {readset.name} (should be PAIRED_END or SINGLE_END)!"))
 
-                    mkdir_job = bash.mkdir(rawReadsDirectory)
+                    mkdir_job = bash.mkdir(raw_reads_directory)
                     jobs.append(
                         concat_jobs([
                             mkdir_job,
@@ -688,10 +706,10 @@ END
         for readset in self.readsets:
             output_dir = os.path.join(self.output_dirs['trim_directory'], readset.sample.name)
             metrics_directory = os.path.join(self.output_dirs['metrics_directory'][readset.sample.name])
-            
+
             trim_json = os.path.join(metrics_directory, f"{readset.name}.trim.json")
             trim_html = os.path.join(metrics_directory, f"{readset.name}.trim.html")
-            
+
             adapter_file = global_conf.global_get('trim_fastp', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
@@ -707,7 +725,7 @@ END
             output1 = ""
             output2 = ""
             trim_file_prefix = os.path.join(output_dir, readset.name)
-            
+
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
@@ -752,7 +770,6 @@ END
                         fastp.parse_quality_thirty_metrics_pt(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -761,7 +778,6 @@ END
                         fastp.parse_pre_length_r1_metrics(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -770,7 +786,6 @@ END
                         fastp.parse_post_length_r1_metrics(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -779,7 +794,6 @@ END
                         fastp.parse_pre_length_r2_metrics(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -788,7 +802,6 @@ END
                         fastp.parse_post_length_r2_metrics(trim_json),
                         job2json_project_tracking.run(
                             input_file=trim_json,
-                            pipeline=self,
                             samples=readset.sample.name,
                             readsets=readset.name,
                             job_name=job_name,
@@ -827,7 +840,7 @@ END
             self.multiqc_inputs[readset.sample.name].append(
                 os.path.join(metrics_directory, f"{readset.name}.trim.json")
             )
-            
+
         return jobs
 
     def bwa_mem2_samtools_sort(self):
@@ -897,8 +910,7 @@ END
                                         "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                         ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
                                         ("\\tCN:" + global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_center') if global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_center', required=False) else "") + \
-                                        ("\\tPL:" + global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_technology') if global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_technology', required=False) else "Illumina") + \
-                                        "'",
+                                        ("\\tPL:" + global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_technology') if global_conf.global_get('bwa_mem2_samtools_sort', 'sequencing_technology', required=False) else "Illumina") + "'",
                                         ini_section='bwa_mem2_samtools_sort'
                                 ),
                                 samtools.sort(
@@ -968,12 +980,12 @@ END
                             bash.ln(
                                 bam_link,
                                 sample_bam,
-                                input=readset_bam
+                                input_file=readset_bam
                             ),
                             bash.ln(
                                 index_link,
                                 sample_index,
-                                input=readset_index
+                                input_file=readset_index
                             )
                         ],
                         name=f"symlink_readset_sample_bam.{sample.name}",
@@ -1059,12 +1071,12 @@ END
                             bash.ln(
                                 bam_link,
                                 sample_bam,
-                                input=readset_bam
+                                input_file=readset_bam
                             ),
                             bash.ln(
                                 index_link,
                                 sample_index,
-                                input=readset_index
+                                input_file=readset_index
                             )
                         ],
                         name=f"symlink_readset_sample_bam.{sample.name}",
@@ -1131,7 +1143,6 @@ END
                             gatk4.parse_duplicate_rate_metrics_pt(metrics_file),
                             job2json_project_tracking.run(
                                 input_file=metrics_file,
-                                pipeline=self,
                                 samples=sample.name,
                                 readsets=",".join([readset.name for readset in sample.readsets]),
                                 job_name=job_name,

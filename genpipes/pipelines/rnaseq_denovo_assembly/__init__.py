@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -23,6 +23,7 @@ import logging
 import os
 import argparse
 import re
+import shtab
 
 # GenPipes Modules
 from ...bfx import (
@@ -116,10 +117,20 @@ software suit from fastq files.
     @classmethod
     def argparser(cls, argparser):
         super().argparser(argparser)
-        cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
-                                    choices=["trinity", "seq2fun"], default="trinity")
-        cls._argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction",
-                                    type=argparse.FileType('r'))
+        cls._argparser.add_argument(
+            "-t",
+            "--type",
+            help="RNAseq analysis type",
+            dest='protocol',
+            choices=["trinity", "seq2fun"],
+            default="trinity"
+            )
+        cls._argparser.add_argument(
+            "-b",
+            "--batch",
+            help="batch file (to peform batch effect correction",
+            type=argparse.FileType('r')
+            ).complete = shtab.FILE
 
     @property
     def output_dirs(self):
@@ -424,7 +435,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
                             bash.ln(
                                 os.path.relpath(trinity_chunk, os.path.dirname(query_chunk)),
                                 query_chunk,
-                                input=trinity_chunk
+                                input_file=trinity_chunk
                             ),
                             blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db, cpu),
                         ],
@@ -656,7 +667,7 @@ tail -n43 {trinity_stats_prefix}.csv | sed 's/,/\t/' >> {report_file}""".format(
                     bash.ln(
                         os.path.relpath(transdecoder_fasta, blast_directory),
                         query,
-                        input=transdecoder_fasta
+                        input_file=transdecoder_fasta
                         ),
                     blast.parallel_blast(
                         transdecoder_fasta,
@@ -1216,7 +1227,7 @@ cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.
                     bash.ln(
                         os.path.relpath(os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv"), link_directory),
                         os.path.join(link_directory, f"Gene_Ontology_{contrast.name}_{item}_mqc.txt"),
-                        input = os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv")
+                        input_file = os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv")
                     )
                 ]
             )
@@ -1991,7 +2002,6 @@ def main(parsed_args):
     genpipes_file = parsed_args.genpipes_file
     container = parsed_args.container
     clean = parsed_args.clean
-    no_json = parsed_args.no_json
     json_pt = parsed_args.json_pt
     force = parsed_args.force
     force_mem_per_cpu = parsed_args.force_mem_per_cpu
@@ -2002,7 +2012,6 @@ def main(parsed_args):
     design_file = parsed_args.design_file
     protocol = parsed_args.protocol
 
-    pipeline = RnaSeqDeNovoAssembly(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, no_json=no_json, json_pt=json_pt, container=container, protocol=protocol)
+    pipeline = RnaSeqDeNovoAssembly(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, design_file=design_file, json_pt=json_pt, container=container, protocol=protocol)
 
     pipeline.submit_jobs()
-

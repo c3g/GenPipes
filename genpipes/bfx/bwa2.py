@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -37,13 +37,13 @@ bwa index \\
         )
 
 def mem(
-  in1fastq, 
-  in2fastq=None, 
-  out_sam=None, 
-  read_group=None, 
-  ref=None, 
-  ini_section='bwa_mem2'
-  ):
+    in1fastq,
+    in2fastq=None,
+    out_sam=None,
+    read_group=None,
+    ref=None,
+    ini_section='bwa_mem2'
+    ):
 
     return Job(
         [in1fastq, in2fastq, ref + ".bwt.2bit.64" if ref else None],

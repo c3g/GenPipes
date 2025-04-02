@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2024 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
 #
 # This file is part of GenPipes.
 #
@@ -17,18 +17,15 @@
 # along with GenPipes. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Python Standard Modules
-import os
-
 # GenPipes Modules
 from ..core.config import global_conf
 from ..core.job import Job
 
 def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None, ini_section='bwa_kit'):
-	other_options = global_conf.global_get(ini_section, 'other_options', required=False)
-	out_bam = out_sam + ".aln.bam"
- 
-	return Job(
+    other_options = global_conf.global_get(ini_section, 'other_options', required=False)
+    out_bam = out_sam + ".aln.bam"
+
+    return Job(
 		[in1fastq, in2fastq, ref + ".bwt" if ref else None],
 		[out_bam],
 		[
@@ -49,7 +46,7 @@ bash <(run-bwamem {other_options}{read_group} \\
     )
 
 def bwa_postalt(input, output):
-	return Job(
+    return Job(
 		[input],
 		[output],
 		[
