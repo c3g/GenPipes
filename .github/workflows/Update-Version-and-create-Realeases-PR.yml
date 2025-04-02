@@ -53,6 +53,8 @@ jobs:
           git branch --show-current
           git pull
           pdm install --prod --no-lock --no-editable
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
       - name: Update READMEs
         run: |
           $(pdm venv activate)
