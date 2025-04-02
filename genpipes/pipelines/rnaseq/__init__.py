@@ -93,7 +93,7 @@ in the differential analyses. The design file format is described [here](https:/
 In addition, [Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential
 transcript and gene expression levels and test them for significant differences.
 It can also take a batch file (optional) which will be used to correct for batch effects
-in the differential analyses. The batch file format is described [here](https://bitbucket.org/mugqic/mugqic_pipelines/src#markdown-header-batch-file)
+in the differential analyses. The batch file format is described [here](https://github.com/c3g/GenPipes?tab=readme-ov-file#batch-file)
 
 The variants protocol is used when variant detection, is the main goal of the analysis. GATK best practices workflow
 is used for variant calling. It also contains a step for annotating genes using [gemini](https://gemini.readthedocs.io/en/latest/)

@@ -62,6 +62,7 @@ LongRead DNA-Seq Pipeline
 
 The LongRead Pipeline is used to analyse long reads produced by the Oxford Nanopore Technologies (ONT) 
 and PacBio Revio sequencers. The protocols used are nanopore and revio, respectively.
+
 Currently, the nanopore protocol of the pipeline uses minimap2 to align reads to the reference genome.
 Additionally, it produces a QC report that includes an interactive dashboard with data from the basecalling
 summary file as well as the alignment. A step aligning random reads to the NCBI nt database and reporting 
@@ -83,8 +84,13 @@ for transcriptomics or epigenomics datasets.
 For more information on using ONT data for structural variant detection, as well as an alternative
 approach, please consult [this GitHub repository](https://github.com/nanoporetech/pipeline-structural-variation).
 
-For information on the structure and contents of the Nanopore readset file, please consult [here](https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
-TBA: documentation for revio protocol.
+The Revio protocol uses pbmm2 to align reads to the reference genome, followed by variant calling with DeepVariant
+and structural variant calling with HiFiCNV, TRGT, and Sawfish. Variants are annotated with AnnotSV and phased
+with HiPhase. A CPSR report can be produced from the phased variants. Metrics on the raw and mapped reads are
+collected with NanoPlot and mosdepth, respectively. 
+
+Both protocols require as input a readset file, which provides sample metadata and paths to input data (FASTQ, FAST5 or BAM).
+For information on the structure and contents of the LongRead readset file, please consult [here](https://genpipes.readthedocs.io/en/latest/get-started/concepts/readset_file.html).
     """
 
     def __init__(self, *args, protocol='nanopore', **kwargs):
