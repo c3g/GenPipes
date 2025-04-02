@@ -69,8 +69,6 @@ jobs:
           genpipes -s bash > resources/autocomplete/genpipes.bash
           genpipes -s zsh > resources/autocomplete/genpipes.zsh
           genpipes -s tcsh > resources/autocomplete/genpipes.tcsh
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
       - name: Publish package to TestPyPI
         run: |
           pdm build
