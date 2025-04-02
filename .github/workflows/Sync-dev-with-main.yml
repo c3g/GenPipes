@@ -5,6 +5,8 @@ on:
     workflows: ["Tag and Release"]
     types:
       - completed
+    conclusions:
+      - success
 
 jobs:
   rebase:
