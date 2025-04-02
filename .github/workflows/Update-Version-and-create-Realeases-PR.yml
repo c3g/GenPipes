@@ -53,6 +53,7 @@ jobs:
           git branch --show-current
           git pull
           pdm install --prod --no-lock --no-editable
+          $(pdm venv activate)
       - name: Update READMEs
         run: |
           npm install -g doctoc
