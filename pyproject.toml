@@ -4,7 +4,7 @@ build-backend = "pdm.backend"
 
 [project]
 dynamic = ["version"]
-name = "genpipes"
+name = "c3g-genpipes"
 authors = [
   { name="Canadian Center for Computational Genomics", email="pipelines@computationalgenomics.ca" },
 ]
