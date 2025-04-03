@@ -27,7 +27,7 @@ On this page:
 * [Readset File](#readset-file)
     * [DNA-Seq, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Methyl-Seq, CoV-Seq](#dna-seq-rna-seq-rna-seq-de-novo-assembly-amplicon-seq-methyl-seq-cov-seq)
     * [ChIP-Seq](#chip-seq)
-    * [Nanopore, Nanopore CoV-Seq](#nanopore-nanopore-cov-seq)
+    * [LongRead DNA-Seq, Nanopore CoV-Seq](#nanopore-nanopore-cov-seq)
     * [For abacus users with Nanuq readsets](#for-abacus-users-with-nanuq-readsets)
 * [Configuration Files](#configuration-files)
 * [Design File](#design-file)
@@ -379,7 +379,7 @@ For more information about and source code for a specific pipeline, visit:
 ### [ChIP-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/chipseq)
 ### [Amplicon-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/ampliconseq)
 ### [Methyl-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/methylseq)
-### [Nanopore Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/nanopore)
+### [LongRead DNA-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/longread_dnaseq)
 ### [CoV-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/covseq)
 ### [Nanopore CoV-Seq Pipeline](https://github.com/c3g/GenPipes/tree/master/genpipes/pipelines/nanopore_covseq)
 
@@ -441,7 +441,7 @@ sampleB readset3 Input    I        lib0002 PAIRED_END run200 5    AGATCGGAAGAGCA
 sampleB readset4 Input    I        lib0002 PAIRED_END run200 6    AGATCGGAAGAGCACACGTCTGAACTCCAGTCA AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT 33            path/to/file.bed path/to/readset4.paired1.fastq.gz path/to/readset4.paired2.fastq.gz path/to/readset4.bam
 ```
 
-### Nanopore, Nanopore CoV-Seq
+### LongRead DNA-Seq, Nanopore CoV-Seq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; mandatory; 
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
@@ -451,6 +451,7 @@ sampleB readset4 Input    I        lib0002 PAIRED_END run200 6    AGATCGGAAGAGCA
 * Summary: path to the `sequencing_summary.txt` file outputted by the ONT basecaller; mandatory;
 * FASTQ: path to the `fastq_pass` **directory**, that is usually created by the basecaller; mandatory;
 * FAST5: path to the **directory** containing the raw fast5 files, before basecalling; 
+* BAM: relative or absolute path to BAM file (for revio protocol), mandatory if FASTQ or FAST5 value is missing, ignored otherwise.
 
 Example:
 ```text
