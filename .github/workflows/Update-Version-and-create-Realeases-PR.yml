@@ -82,7 +82,7 @@ jobs:
         id: create_pr
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BOT_ACCESS_TOKEN }}
           branch: release/${{ steps.update_version.outputs.version }}
           title: "Release: Candidate Version ${{ steps.update_version.outputs.version }} Pull Request"
           body: |
