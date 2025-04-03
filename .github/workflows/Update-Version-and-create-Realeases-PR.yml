@@ -40,15 +40,6 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-      - name: Update the version
-        id: update_version
-        run: |
-          echo "__version__ = '${{ inputs.version }}'" > genpipes/__version__.py
-          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
-      - name: Update Changelog
-        run: |
-          npm install -g auto-changelog
-          auto-changelog -v ${{ steps.update_version.outputs.version }}
       - name: Setup PDM
         uses: pdm-project/setup-pdm@v4.1
         with:
@@ -58,6 +49,15 @@ jobs:
           git branch --show-current
           git pull
           pdm install --prod --no-lock --no-editable
+      - name: Update the version
+        id: update_version
+        run: |
+          echo "__version__ = '${{ inputs.version }}'" > genpipes/__version__.py
+          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+      - name: Update Changelog
+        run: |
+          npm install -g auto-changelog
+          auto-changelog -v ${{ steps.update_version.outputs.version }}
       - name: Update READMEs
         run: |
           $(pdm venv activate)
