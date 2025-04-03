@@ -33,7 +33,7 @@ jobs:
         id: update_version
         run: |
           version_file="genpipes/__version__.py"
-          version_number=$(grep -oP '(?<=__version__ = ")[^"]+' $version_file)
+          version_number=$(sed -n "s/__version__ = '\([^']*\)'/\1/p" $version_file)
           echo "__version__ = '${version_number}.dev'" > $version_file
 
       - name: Push changes
