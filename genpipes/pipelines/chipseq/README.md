@@ -1,3 +1,38 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [ChIP-Seq Pipeline](#chip-seq-pipeline)
+  - [The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
+Usage](#the-pipeline-is-designed-to-be-run-on-a-cluster-and-is-configured-using-a-configuration-file-the-pipeline-can-be-run-in-a-single-step-or-in-multiple-steps-the-pipeline-can-also-be-run-in-parallel-to-process-multiple-samples-simultaneously%0Ausage)
+  - [picard_sam_to_fastq](#picard_sam_to_fastq)
+  - [trimmomatic](#trimmomatic)
+  - [merge_trimmomatic_stats](#merge_trimmomatic_stats)
+  - [mapping_bwa_mem_sambamba](#mapping_bwa_mem_sambamba)
+  - [sambamba_merge_bam_files](#sambamba_merge_bam_files)
+  - [sambamba_mark_duplicates](#sambamba_mark_duplicates)
+  - [sambamba_view_filter](#sambamba_view_filter)
+  - [bedtools_blacklist_filter](#bedtools_blacklist_filter)
+  - [metrics](#metrics)
+  - [homer_make_tag_directory](#homer_make_tag_directory)
+  - [qc_metrics](#qc_metrics)
+  - [deeptools_qc](#deeptools_qc)
+  - [homer_make_ucsc_file](#homer_make_ucsc_file)
+  - [macs2_callpeak](#macs2_callpeak)
+  - [homer_annotate_peaks](#homer_annotate_peaks)
+  - [homer_find_motifs_genome](#homer_find_motifs_genome)
+  - [annotation_graphs](#annotation_graphs)
+  - [run_spp](#run_spp)
+  - [differential_binding](#differential_binding)
+  - [ihec_metrics](#ihec_metrics)
+  - [multiqc_report](#multiqc_report)
+  - [cram_output](#cram_output)
+  - [gatk_haplotype_caller](#gatk_haplotype_caller)
+  - [merge_and_call_individual_gvcf](#merge_and_call_individual_gvcf)
+  - [macs2_atacseq_callpeak](#macs2_atacseq_callpeak)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 [TOC]
 
 ChIP-Seq Pipeline
@@ -18,14 +53,12 @@ usage: genpipes chipseq [-h] [--clean] -c CONFIG [CONFIG ...]
                         [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                         [--genpipes_file GENPIPES_FILE]
                         [-j {pbs,batch,daemon,slurm}] [--json-pt]
-                        [-l {debug,info,warning,error,critical}] [--no-json]
+                        [-l {debug,info,warning,error,critical}]
                         [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
                         [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
                         [-t {chipseq,atacseq}]
 
-Version: 5.1.0
-
-For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+For more documentation, visit our website: https://genpipes.readthedocs.io
 
 options:
   -h, --help            show this help message and exit
@@ -33,7 +66,7 @@ options:
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
-  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+  -c, --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
   --container {wrapper, singularity} <IMAGE PATH>
@@ -45,38 +78,34 @@ options:
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+  --genpipes_file, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+  -j, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: slurm)
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
+  -l, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+  -o, --output-dir OUTPUT_DIR
                         output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
-                        enpipes/ressources/container/bin/container_wrapper.sh.
-                        This is a convenience options for using genpipes in a
+  -s, --steps STEPS     step range e.g. '1-5', '3,6,7', '2,4-8'
+  --wrap [WRAP]         Path to the genpipes cvmfs wrapper script. Default is 
+                        genpipes/ressources/container/bin/container_wrapper.sh
+                        . This is a convenience option for using genpipes in a
                         container
-  -r READSETS_FILE, --readsets READSETS_FILE
+  -r, --readsets READSETS_FILE
                         readset file
-  -d DESIGN_FILE, --design DESIGN_FILE
+  -d, --design DESIGN_FILE
                         design file
   -v, --version         show the version information and exit
-  -t {chipseq,atacseq}, --type {chipseq,atacseq}
+  -t, --type {chipseq,atacseq}
                         Type of pipeline (default chipseq)
 
 Steps:
@@ -93,18 +122,19 @@ Protocol chipseq
 9 metrics
 10 homer_make_tag_directory
 11 qc_metrics
-12 homer_make_ucsc_file
-13 macs2_callpeak
-14 homer_annotate_peaks
-15 homer_find_motifs_genome
-16 annotation_graphs
-17 run_spp
-18 differential_binding
-19 ihec_metrics
-20 multiqc_report
-21 cram_output
-22 gatk_haplotype_caller
-23 merge_and_call_individual_gvcf
+12 deeptools_qc
+13 homer_make_ucsc_file
+14 macs2_callpeak
+15 homer_annotate_peaks
+16 homer_find_motifs_genome
+17 annotation_graphs
+18 run_spp
+19 differential_binding
+20 ihec_metrics
+21 multiqc_report
+22 cram_output
+23 gatk_haplotype_caller
+24 merge_and_call_individual_gvcf
 
 Protocol atacseq
 1 picard_sam_to_fastq
@@ -152,7 +182,6 @@ This step takes as input files:
 1. FASTQ files from the readset file if available
 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-
 merge_trimmomatic_stats 
 -----------------------
  
@@ -170,7 +199,6 @@ This step takes as input files:
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-
 sambamba_merge_bam_files 
 ------------------------
  
@@ -180,19 +208,16 @@ This step takes as input files:
 1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
 2. Else, BAM files from the readset file
 
-
 sambamba_mark_duplicates 
 ------------------------
  
 Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
 will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
-
 sambamba_view_filter 
 --------------------
  
 Filter out unmapped reads and low quality reads [Sambamba](http://lomereiter.github.io/sambamba/index.html).
-
 
 bedtools_blacklist_filter 
 -------------------------
@@ -213,6 +238,16 @@ qc_metrics
 ----------
  
 Sequencing quality metrics as tag count, tag autocorrelation, sequence bias and GC bias are generated.
+
+deeptools_qc 
+------------
+ 
+Fingerplot quality control will most likely be of interest for you if you are dealing with ChIP-seq samples - “Did my ChIP work?”
+Fingerplot tool samples indexed BAM files and plots a profile of cumulative read coverages for each. 
+All reads overlapping a window (bin) of the specified length are counted; these counts are sorted and the cumulative sum is finally plotted.
+Correlation Matrix:
+Tool for the analysis and visualization of sample correlations based on the output of multiBamSummary or multiBigwigSummary. 
+Pearson or Spearman methods are available to compute correlation coefficients
 
 homer_make_ucsc_file 
 --------------------

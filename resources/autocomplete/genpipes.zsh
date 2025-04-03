@@ -5,29 +5,44 @@
 
 _shtab_genpipes_commands() {
   local _commands=(
-    "ampliconseq:Version\: 5.0.1-beta"
-    "chipseq:Version\: 5.0.1-beta"
-    "covseq:Version\: 5.0.1-beta"
-    "dnaseq:Version\: 5.0.1-beta"
-    "methylseq:Version\: 5.0.1-beta"
-    "nanopore:Version\: 5.0.1-beta"
-    "nanopore_covseq:Version\: 5.0.1-beta"
-    "rnaseq:Version\: 5.0.1-beta"
-    "rnaseq_denovo_assembly:Version\: 5.0.1-beta"
-    "rnaseq_light:Version\: 5.0.1-beta"
+    "ampliconseq:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "chipseq:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "covseq:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "dnaseq:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "longread_dnaseq:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "methylseq:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "nanopore_covseq:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "rnaseq:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "rnaseq_denovo_assembly:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "rnaseq_light:For more documentation, visit our website\: https\:\/\/genpipes.readthedocs.io"
+    "tools:"
   )
   _describe 'genpipes commands' _commands
+}
+
+_shtab_genpipes_tools_commands() {
+  local _commands=(
+    "chunk_genpipes:"
+    "csvToreadset:"
+    "get_wrapper:"
+    "job2json_project_tracking:"
+    "log_report:"
+    "submit_genpipes:"
+    "validate_genpipes:"
+  )
+  _describe 'genpipes tools commands' _commands
 }
 
 _shtab_genpipes_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "(- : *)"{-v,--version}"[show program\'s version number and exit]"
+  "(- : *)"{-s,--print-completion}"[print shell completion script]:print_completion:(bash zsh tcsh)"
 )
 
 _shtab_genpipes_ampliconseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
   "--container[Run inside a container providing a valid singularity image path]:container:"
   {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
   "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
@@ -35,21 +50,20 @@ _shtab_genpipes_ampliconseq_options=(
   {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
   "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
   {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
   "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
   {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
 )
 
 _shtab_genpipes_chipseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
   "--container[Run inside a container providing a valid singularity image path]:container:"
   {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
   "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
@@ -57,14 +71,13 @@ _shtab_genpipes_chipseq_options=(
   {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
   "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
   {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
   "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
   {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
   {-t,--type}"[Type of pipeline (default chipseq)]:protocol:(chipseq atacseq)"
 )
@@ -72,7 +85,7 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
 _shtab_genpipes_covseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
   "--container[Run inside a container providing a valid singularity image path]:container:"
   {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
   "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
@@ -80,21 +93,20 @@ _shtab_genpipes_covseq_options=(
   {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
   "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
   {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
   "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
   {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
 )
 
 _shtab_genpipes_dnaseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
   "--container[Run inside a container providing a valid singularity image path]:container:"
   {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
   "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
@@ -102,24 +114,45 @@ _shtab_genpipes_dnaseq_options=(
   {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
   "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
   {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
   "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
   {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
-  {-p,--pairs}"[pairs file]:pairs:"
+  {-p,--pairs}"[pairs file]:pairs:_files"
   "--profyle[adjust deliverables to PROFYLE folder conventions (Default\: False)]"
   {-t,--type}"[DNAseq analysis type]:protocol:(germline_snv germline_sv germline_high_cov somatic_tumor_only somatic_fastpass somatic_ensemble somatic_sv)"
+)
+
+_shtab_genpipes_longread_dnaseq_options=(
+  "(- : *)"{-h,--help}"[show this help message and exit]"
+  "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
+  "--container[Run inside a container providing a valid singularity image path]:container:"
+  {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
+  "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
+  {--genpipes_file,-g}"[Command file output path. This is the command used to process the data, or said otherwise, this command will \"run the Genpipes pipeline\". Will be redirected to stdout if the option is not provided.]:genpipes_file:"
+  {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
+  "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
+  {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
+  "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
+  {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
+  "(- : *)"{-v,--version}"[show the version information and exit]"
+  {-t,--type}"[Type of pipeline (default nanopore)]:protocol:(nanopore revio)"
 )
 
 _shtab_genpipes_methylseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
   "--container[Run inside a container providing a valid singularity image path]:container:"
   {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
   "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
@@ -127,44 +160,21 @@ _shtab_genpipes_methylseq_options=(
   {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
   "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
   {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
   "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
   {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
-  {-t,--type}"[Type of pipeline (default chipseq)]:protocol:(bismark gembs hybrid dragen)"
-)
-
-_shtab_genpipes_nanopore_options=(
-  "(- : *)"{-h,--help}"[show this help message and exit]"
-  "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
-  "--container[Run inside a container providing a valid singularity image path]:container:"
-  {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
-  "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
-  {--genpipes_file,-g}"[Command file output path. This is the command used to process the data, or said otherwise, this command will \"run the Genpipes pipeline\". Will be redirected to stdout if the option is not provided.]:genpipes_file:"
-  {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
-  "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
-  {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
-  "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
-  {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
-  "(- : *)"{-v,--version}"[show the version information and exit]"
+  {-t,--type}"[Type of pipeline (default bismark)]:protocol:(bismark gembs hybrid dragen)"
 )
 
 _shtab_genpipes_nanopore_covseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
   "--container[Run inside a container providing a valid singularity image path]:container:"
   {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
   "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
@@ -172,14 +182,13 @@ _shtab_genpipes_nanopore_covseq_options=(
   {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
   "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
   {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
   "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
   {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
   {-t,--type}"[Type of CoVSeQ analysis,basecalling on\/off (default without basecalling)]:protocol:(default basecalling)"
 )
@@ -187,7 +196,7 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
 _shtab_genpipes_rnaseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
   "--container[Run inside a container providing a valid singularity image path]:container:"
   {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
   "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
@@ -195,23 +204,22 @@ _shtab_genpipes_rnaseq_options=(
   {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
   "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
   {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
   "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
   {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
   {-t,--type}"[RNAseq analysis type]:protocol:(stringtie variants cancer)"
-  {-b,--batch}"[batch file (to peform batch effect correction]:batch:"
+  {-b,--batch}"[batch file (to peform batch effect correction]:batch:_files"
 )
 
 _shtab_genpipes_rnaseq_denovo_assembly_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
   "--container[Run inside a container providing a valid singularity image path]:container:"
   {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
   "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
@@ -219,23 +227,22 @@ _shtab_genpipes_rnaseq_denovo_assembly_options=(
   {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
   "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
   {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
   "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
   {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
   {-t,--type}"[RNAseq analysis type]:protocol:(trinity seq2fun)"
-  {-b,--batch}"[batch file (to peform batch effect correction]:batch:"
+  {-b,--batch}"[batch file (to peform batch effect correction]:batch:_files"
 )
 
 _shtab_genpipes_rnaseq_light_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
-  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:"
+  {-c,--config}"[config INI-style list of files\; config parameters are overwritten based on files order]:config:_files"
   "--container[Run inside a container providing a valid singularity image path]:container:"
   {-f,--force}"[force creation of jobs even if up to date (default\: false)]"
   "--force_mem_per_cpu[Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default\: None)]:force_mem_per_cpu:"
@@ -243,15 +250,72 @@ _shtab_genpipes_rnaseq_light_options=(
   {-j,--job-scheduler}"[job scheduler type (default\: slurm)]:job_scheduler:(pbs batch daemon slurm)"
   "--json-pt[create JSON file for project_tracking database ingestion (default\: false i.e. JSON file will NOT be created)]"
   {-l,--log}"[log level (default\: info)]:log:(debug info warning error critical)"
-  "--no-json[do not create JSON file per analysed sample to track the analysis status (default\: false i.e. JSON file will be created)]"
-  {-o,--output-dir}"[output directory (default\: current)]:output_dir:"
+  {-o,--output-dir}"[output directory (default\: current)]:output_dir:_files -/"
   "--sanity-check[run the pipeline in \`sanity check mode\` to verify that all the input files needed for the pipeline to run are available on the system (default\: false)]"
   {-s,--steps}"[step range e.g. \'1-5\', \'3,6,7\', \'2,4-8\']:steps:"
-  "--wrap[Path to the genpipe cvmfs wrapper script.
-Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience options for using genpipes in a container]:wrap:"
-  {-r,--readsets}"[readset file]:readsets_file:"
-  {-d,--design}"[design file]:design_file:"
+  "--wrap[Path to the genpipes cvmfs wrapper script.
+Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a convenience option for using genpipes in a container]:wrap:"
+  {-r,--readsets}"[readset file]:readsets_file:_files"
+  {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
+)
+
+_shtab_genpipes_tools_options=(
+  "(- : *)"{-h,--help}"[show this help message and exit]"
+)
+
+_shtab_genpipes_tools_chunk_genpipes_options=(
+  "(- : *)"{-h,--help}"[show this help message and exit]"
+  "-n[Maximum number of jobs in chunk]:n:"
+  ":Genpipes output script.:"
+  ":Folder where to store chunks.:"
+)
+
+_shtab_genpipes_tools_csvToreadset_options=(
+  "(- : *)"{-h,--help}"[show this help message and exit]"
+  ":It can be downloaded from nanuq\'s Readset page (not Libraries page).:"
+  ":Name of the output readset file.:"
+  ":Type of input. Either fastq for bam.:"
+  ":Relative path to the data from the project folder.:"
+)
+
+_shtab_genpipes_tools_get_wrapper_options=(
+  "(- : *)"{-h,--help}"[show this help message and exit]"
+  {--version,-v}"[Version of the container to get. Default\: 4.0.0]:version:"
+)
+
+_shtab_genpipes_tools_job2json_project_tracking_options=(
+  "(- : *)"{-h,--help}"[show this help message and exit]"
+  {-s,--sample_names}"[comma-separated list of names of the samples of the current job]:sample_names:"
+  {-r,--readset_names}"[comma-separated list of names of the readsets of the current job]:readset_names:"
+  {-j,--job_name}"[name of the current job]:job_name:"
+  {-m,--metrics}"[comma-separated list of metrics of the current job\: name\=value,name\=value,... With \<name\> \= metric name\; \<value\> \= metric value]:metrics:"
+  {-o,--json_outfile}"[name of json output file]:json_outfile:"
+  {-f,--status}"[status of job]:status:"
+)
+
+_shtab_genpipes_tools_log_report_options=(
+  "(- : *)"{-h,--help}"[show this help message and exit]"
+  "--loglevel[Standard Python log level. Default\: WARNING]:loglevel:(ERROR WARNING INFO CRITICAL)"
+  "--tsv[Output to tsv file]:tsv:"
+  {--quiet,-q}"[No report printed to terminal]"
+  ":Path to a GenPipes job list:"
+)
+
+_shtab_genpipes_tools_submit_genpipes_options=(
+  "(- : *)"{-h,--help}"[show this help message and exit]"
+  "-n[Maximum number of job in slurm queue. Default\: 500]:n:"
+  "-s[Number of second to sleep when queue is full. Default\: 120]:s:"
+  "-S[Scheduler running on the cluster. Default\: slurm]:S:(slurm pbs)"
+  "-l[Will retry N time(s) to resubmit a chunk if error occurs. Default\: 10]:l:"
+  ":The output folder from the chunk_genpipes.sh script.:"
+)
+
+_shtab_genpipes_tools_validate_genpipes_options=(
+  "(- : *)"{-h,--help}"[show this help message and exit]"
+  {-r,--readset}"[Readset file to validate]:readset:"
+  {-d,--design}"[Design file to validate]:design:"
+  {-p,--pipeline}"[Pipeline name to validate against]:pipeline:(ampliconseq chipseq covseq dnaseq methylseq longread_dnaseq nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light)"
 )
 
 
@@ -273,12 +337,38 @@ _shtab_genpipes() {
         chipseq) _arguments -C -s $_shtab_genpipes_chipseq_options ;;
         covseq) _arguments -C -s $_shtab_genpipes_covseq_options ;;
         dnaseq) _arguments -C -s $_shtab_genpipes_dnaseq_options ;;
+        longread_dnaseq) _arguments -C -s $_shtab_genpipes_longread_dnaseq_options ;;
         methylseq) _arguments -C -s $_shtab_genpipes_methylseq_options ;;
-        nanopore) _arguments -C -s $_shtab_genpipes_nanopore_options ;;
         nanopore_covseq) _arguments -C -s $_shtab_genpipes_nanopore_covseq_options ;;
         rnaseq) _arguments -C -s $_shtab_genpipes_rnaseq_options ;;
         rnaseq_denovo_assembly) _arguments -C -s $_shtab_genpipes_rnaseq_denovo_assembly_options ;;
         rnaseq_light) _arguments -C -s $_shtab_genpipes_rnaseq_light_options ;;
+        tools) _shtab_genpipes_tools ;;
+      esac
+  esac
+}
+
+_shtab_genpipes_tools() {
+  local context state line curcontext="$curcontext" one_or_more='(-)*' remainder='(*)'
+
+  if ((${_shtab_genpipes_tools_options[(I)${(q)one_or_more}*]} + ${_shtab_genpipes_tools_options[(I)${(q)remainder}*]} == 0)); then  # noqa: E501
+    _shtab_genpipes_tools_options+=(': :_shtab_genpipes_tools_commands' '*::: :->tools')
+  fi
+  _arguments -C -s $_shtab_genpipes_tools_options
+
+  case $state in
+    tools)
+      words=($line[1] "${words[@]}")
+      (( CURRENT += 1 ))
+      curcontext="${curcontext%:*:*}:_shtab_genpipes_tools-$line[1]:"
+      case $line[1] in
+        chunk_genpipes) _arguments -C -s $_shtab_genpipes_tools_chunk_genpipes_options ;;
+        csvToreadset) _arguments -C -s $_shtab_genpipes_tools_csvToreadset_options ;;
+        get_wrapper) _arguments -C -s $_shtab_genpipes_tools_get_wrapper_options ;;
+        job2json_project_tracking) _arguments -C -s $_shtab_genpipes_tools_job2json_project_tracking_options ;;
+        log_report) _arguments -C -s $_shtab_genpipes_tools_log_report_options ;;
+        submit_genpipes) _arguments -C -s $_shtab_genpipes_tools_submit_genpipes_options ;;
+        validate_genpipes) _arguments -C -s $_shtab_genpipes_tools_validate_genpipes_options ;;
       esac
   esac
 }
