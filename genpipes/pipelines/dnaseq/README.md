@@ -1,3 +1,96 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [DNA-Seq Pipeline](#dna-seq-pipeline)
+  - [The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
+Usage](#the-pipeline-is-designed-to-be-run-on-a-cluster-and-is-configured-using-a-configuration-file-the-pipeline-can-be-run-in-a-single-step-or-in-multiple-steps-the-pipeline-can-also-be-run-in-parallel-to-process-multiple-samples-simultaneously%0Ausage)
+  - [gatk_sam_to_fastq](#gatk_sam_to_fastq)
+  - [trim_fastp](#trim_fastp)
+  - [bwa_mem2_samtools_sort](#bwa_mem2_samtools_sort)
+  - [gatk_mark_duplicates](#gatk_mark_duplicates)
+  - [set_interval_list](#set_interval_list)
+  - [gatk_haplotype_caller](#gatk_haplotype_caller)
+  - [merge_and_call_individual_gvcf](#merge_and_call_individual_gvcf)
+  - [combine_gvcf](#combine_gvcf)
+  - [merge_and_call_combined_gvcf](#merge_and_call_combined_gvcf)
+  - [variant_recalibrator](#variant_recalibrator)
+  - [haplotype_caller_decompose_and_normalize](#haplotype_caller_decompose_and_normalize)
+  - [haplotype_caller_flag_mappability](#haplotype_caller_flag_mappability)
+  - [haplotype_caller_snp_id_annotation](#haplotype_caller_snp_id_annotation)
+  - [haplotype_caller_snp_effect](#haplotype_caller_snp_effect)
+  - [haplotype_caller_dbnsfp_annotation](#haplotype_caller_dbnsfp_annotation)
+  - [haplotype_caller_gemini_annotations](#haplotype_caller_gemini_annotations)
+  - [metrics_dna_picard_metrics](#metrics_dna_picard_metrics)
+  - [metrics_dna_sample_mosdepth](#metrics_dna_sample_mosdepth)
+  - [metrics_picard_calculate_hs](#metrics_picard_calculate_hs)
+  - [metrics_verify_bam_id](#metrics_verify_bam_id)
+  - [run_multiqc](#run_multiqc)
+  - [sym_link_fastq](#sym_link_fastq)
+  - [sym_link_final_bam](#sym_link_final_bam)
+  - [metrics_vcftools_missing_indiv](#metrics_vcftools_missing_indiv)
+  - [metrics_vcftools_depth_indiv](#metrics_vcftools_depth_indiv)
+  - [metrics_gatk_sample_fingerprint](#metrics_gatk_sample_fingerprint)
+  - [metrics_gatk_cluster_fingerprint](#metrics_gatk_cluster_fingerprint)
+  - [delly_call_filter](#delly_call_filter)
+  - [delly_sv_annotation](#delly_sv_annotation)
+  - [germline_manta](#germline_manta)
+  - [manta_sv_annotation](#manta_sv_annotation)
+  - [lumpy_paired_sv](#lumpy_paired_sv)
+  - [lumpy_sv_annotation](#lumpy_sv_annotation)
+  - [wham_call_sv](#wham_call_sv)
+  - [wham_sv_annotation](#wham_sv_annotation)
+  - [cnvkit_batch](#cnvkit_batch)
+  - [cnvkit_sv_annotation](#cnvkit_sv_annotation)
+  - [run_breakseq2](#run_breakseq2)
+  - [ensemble_metasv](#ensemble_metasv)
+  - [metasv_sv_annotation](#metasv_sv_annotation)
+  - [samtools_merge_files](#samtools_merge_files)
+  - [gatk_fixmate](#gatk_fixmate)
+  - [germline_varscan2](#germline_varscan2)
+  - [preprocess_vcf](#preprocess_vcf)
+  - [snp_effect](#snp_effect)
+  - [gemini_annotations](#gemini_annotations)
+  - [cram_output](#cram_output)
+  - [split_tumor_only](#split_tumor_only)
+  - [filter_tumor_only](#filter_tumor_only)
+  - [report_cpsr](#report_cpsr)
+  - [report_pcgr](#report_pcgr)
+  - [sequenza](#sequenza)
+  - [rawmpileup](#rawmpileup)
+  - [paired_varscan2](#paired_varscan2)
+  - [merge_varscan2](#merge_varscan2)
+  - [filter_germline](#filter_germline)
+  - [filter_somatic](#filter_somatic)
+  - [conpair_concordance_contamination](#conpair_concordance_contamination)
+  - [sym_link_report](#sym_link_report)
+  - [sym_link_fastq_pair](#sym_link_fastq_pair)
+  - [sym_link_panel](#sym_link_panel)
+  - [manta_sv_calls](#manta_sv_calls)
+  - [strelka2_paired_somatic](#strelka2_paired_somatic)
+  - [strelka2_paired_germline](#strelka2_paired_germline)
+  - [strelka2_paired_snpeff](#strelka2_paired_snpeff)
+  - [purple](#purple)
+  - [paired_mutect2](#paired_mutect2)
+  - [merge_mutect2](#merge_mutect2)
+  - [vardict_paired](#vardict_paired)
+  - [merge_filter_paired_vardict](#merge_filter_paired_vardict)
+  - [ensemble_somatic](#ensemble_somatic)
+  - [gatk_variant_annotator_somatic](#gatk_variant_annotator_somatic)
+  - [merge_gatk_variant_annotator_somatic](#merge_gatk_variant_annotator_somatic)
+  - [ensemble_germline_loh](#ensemble_germline_loh)
+  - [gatk_variant_annotator_germline](#gatk_variant_annotator_germline)
+  - [merge_gatk_variant_annotator_germline](#merge_gatk_variant_annotator_germline)
+  - [report_djerba](#report_djerba)
+  - [sym_link_ensemble](#sym_link_ensemble)
+  - [gridss_paired_somatic](#gridss_paired_somatic)
+  - [purple_sv](#purple_sv)
+  - [linx_annotations_somatic](#linx_annotations_somatic)
+  - [linx_annotations_germline](#linx_annotations_germline)
+  - [linx_plot](#linx_plot)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 [TOC]
 
 DNA-Seq Pipeline
@@ -18,15 +111,13 @@ usage: genpipes dnaseq [-h] [--clean] -c CONFIG [CONFIG ...]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                        [--genpipes_file GENPIPES_FILE]
                        [-j {pbs,batch,daemon,slurm}] [--json-pt]
-                       [-l {debug,info,warning,error,critical}] [--no-json]
+                       [-l {debug,info,warning,error,critical}]
                        [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
                        [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
                        [-p PAIRS] [--profyle]
                        [-t {germline_snv,germline_sv,germline_high_cov,somatic_tumor_only,somatic_fastpass,somatic_ensemble,somatic_sv}]
 
-Version: 5.1.0
-
-For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+For more documentation, visit our website: https://genpipes.readthedocs.io
 
 options:
   -h, --help            show this help message and exit
@@ -34,7 +125,7 @@ options:
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
-  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+  -c, --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
   --container {wrapper, singularity} <IMAGE PATH>
@@ -46,42 +137,37 @@ options:
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+  --genpipes_file, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+  -j, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: slurm)
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
+  -l, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+  -o, --output-dir OUTPUT_DIR
                         output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
-                        enpipes/ressources/container/bin/container_wrapper.sh.
-                        This is a convenience options for using genpipes in a
+  -s, --steps STEPS     step range e.g. '1-5', '3,6,7', '2,4-8'
+  --wrap [WRAP]         Path to the genpipes cvmfs wrapper script. Default is 
+                        genpipes/ressources/container/bin/container_wrapper.sh
+                        . This is a convenience option for using genpipes in a
                         container
-  -r READSETS_FILE, --readsets READSETS_FILE
+  -r, --readsets READSETS_FILE
                         readset file
-  -d DESIGN_FILE, --design DESIGN_FILE
+  -d, --design DESIGN_FILE
                         design file
   -v, --version         show the version information and exit
-  -p PAIRS, --pairs PAIRS
-                        pairs file
+  -p, --pairs PAIRS     pairs file
   --profyle             adjust deliverables to PROFYLE folder conventions
                         (Default: False)
-  -t {germline_snv,germline_sv,germline_high_cov,somatic_tumor_only,somatic_fastpass,somatic_ensemble,somatic_sv}, --type {germline_snv,germline_sv,germline_high_cov,somatic_tumor_only,somatic_fastpass,somatic_ensemble,somatic_sv}
+  -t, --type {germline_snv,germline_sv,germline_high_cov,somatic_tumor_only,somatic_fastpass,somatic_ensemble,somatic_sv}
                         DNAseq analysis type
 
 Steps:
@@ -241,12 +327,13 @@ Protocol somatic_ensemble
 30 report_cpsr
 31 filter_somatic
 32 report_pcgr
-33 run_multiqc
-34 sym_link_fastq_pair
-35 sym_link_final_bam
-36 sym_link_report
-37 sym_link_ensemble
-38 cram_output
+33 report_djerba
+34 run_multiqc
+35 sym_link_fastq_pair
+36 sym_link_final_bam
+37 sym_link_report
+38 sym_link_ensemble
+39 cram_output
 
 Protocol somatic_sv
 1 gatk_sam_to_fastq
@@ -403,7 +490,6 @@ Generates metrics with picard, including:
     [CollectQualityYieldMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectQualityYieldMetrics-Picard-)
     [CollectQualityByCycle](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectQualityByCycle-Picard-)
     [CollectBaseDistributionByCycle](https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectBaseDistributionByCycle-Picard-)
-
 
 metrics_dna_sample_mosdepth 
 ---------------------------
@@ -800,6 +886,11 @@ merge_gatk_variant_annotator_germline
 -------------------------------------
  
 Merge annotated germline and LOH vcfs.
+
+report_djerba 
+-------------
+ 
+Produce Djerba report.
 
 sym_link_ensemble 
 -----------------

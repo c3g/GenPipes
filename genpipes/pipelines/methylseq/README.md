@@ -1,3 +1,42 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Methyl-Seq Pipeline](#methyl-seq-pipeline)
+  - [The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
+Usage](#the-pipeline-is-designed-to-be-run-on-a-cluster-and-is-configured-using-a-configuration-file-the-pipeline-can-be-run-in-a-single-step-or-in-multiple-steps-the-pipeline-can-also-be-run-in-parallel-to-process-multiple-samples-simultaneously%0Ausage)
+  - [picard_sam_to_fastq](#picard_sam_to_fastq)
+  - [trimmomatic](#trimmomatic)
+  - [merge_trimmomatic_stats](#merge_trimmomatic_stats)
+  - [bismark_align](#bismark_align)
+  - [add_bam_umi](#add_bam_umi)
+  - [sambamba_merge_sam_files](#sambamba_merge_sam_files)
+  - [picard_remove_duplicates](#picard_remove_duplicates)
+  - [metrics](#metrics)
+  - [methylation_call](#methylation_call)
+  - [wiggle_tracks](#wiggle_tracks)
+  - [methylation_profile](#methylation_profile)
+  - [ihec_sample_metrics_report](#ihec_sample_metrics_report)
+  - [bis_snp](#bis_snp)
+  - [filter_snp_cpg](#filter_snp_cpg)
+  - [prepare_methylkit](#prepare_methylkit)
+  - [methylkit_differential_analysis](#methylkit_differential_analysis)
+  - [multiqc](#multiqc)
+  - [cram_output](#cram_output)
+  - [gembs_prepare](#gembs_prepare)
+  - [gembs_map](#gembs_map)
+  - [gembs_call](#gembs_call)
+  - [gembs_bcf_to_vcf](#gembs_bcf_to_vcf)
+  - [gembs_format_cpg_report](#gembs_format_cpg_report)
+  - [dragen_bedgraph](#dragen_bedgraph)
+  - [gembs_report](#gembs_report)
+  - [dragen_align](#dragen_align)
+  - [sort_dragen_sam](#sort_dragen_sam)
+  - [dragen_methylation_call](#dragen_methylation_call)
+  - [split_dragen_methylation_report](#split_dragen_methylation_report)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 [TOC]
 
 Methyl-Seq Pipeline
@@ -32,14 +71,12 @@ usage: genpipes methylseq [-h] [--clean] -c CONFIG [CONFIG ...]
                           [-f] [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                           [--genpipes_file GENPIPES_FILE]
                           [-j {pbs,batch,daemon,slurm}] [--json-pt]
-                          [-l {debug,info,warning,error,critical}] [--no-json]
+                          [-l {debug,info,warning,error,critical}]
                           [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
                           [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE]
                           [-v] [-t {bismark,gembs,hybrid,dragen}]
 
-Version: 5.1.0
-
-For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+For more documentation, visit our website: https://genpipes.readthedocs.io
 
 options:
   -h, --help            show this help message and exit
@@ -47,7 +84,7 @@ options:
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
-  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+  -c, --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
   --container {wrapper, singularity} <IMAGE PATH>
@@ -59,39 +96,35 @@ options:
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+  --genpipes_file, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+  -j, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: slurm)
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
+  -l, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+  -o, --output-dir OUTPUT_DIR
                         output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
-                        enpipes/ressources/container/bin/container_wrapper.sh.
-                        This is a convenience options for using genpipes in a
+  -s, --steps STEPS     step range e.g. '1-5', '3,6,7', '2,4-8'
+  --wrap [WRAP]         Path to the genpipes cvmfs wrapper script. Default is 
+                        genpipes/ressources/container/bin/container_wrapper.sh
+                        . This is a convenience option for using genpipes in a
                         container
-  -r READSETS_FILE, --readsets READSETS_FILE
+  -r, --readsets READSETS_FILE
                         readset file
-  -d DESIGN_FILE, --design DESIGN_FILE
+  -d, --design DESIGN_FILE
                         design file
   -v, --version         show the version information and exit
-  -t {bismark,gembs,hybrid,dragen}, --type {bismark,gembs,hybrid,dragen}
-                        Type of pipeline (default chipseq)
+  -t, --type {bismark,gembs,hybrid,dragen}
+                        Type of pipeline (default bismark)
 
 Steps:
 
