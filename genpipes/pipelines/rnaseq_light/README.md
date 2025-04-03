@@ -1,3 +1,20 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [RNA-Seq Light Pipeline](#rna-seq-light-pipeline)
+  - [Usage](#usage)
+  - [picard_sam_to_fastq](#picard_sam_to_fastq)
+  - [trimmomatic](#trimmomatic)
+  - [merge_trimmomatic_stats](#merge_trimmomatic_stats)
+  - [kallisto](#kallisto)
+  - [kallisto_count_matrix](#kallisto_count_matrix)
+  - [gq_seq_utils_exploratory_analysis_rnaseq_light](#gq_seq_utils_exploratory_analysis_rnaseq_light)
+  - [sleuth_differential_expression](#sleuth_differential_expression)
+  - [multiqc](#multiqc)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 [TOC]
 
 RNA-Seq Light Pipeline
@@ -18,13 +35,11 @@ usage: genpipes rnaseq_light [-h] [--clean] -c CONFIG [CONFIG ...]
                              [--genpipes_file GENPIPES_FILE]
                              [-j {pbs,batch,daemon,slurm}] [--json-pt]
                              [-l {debug,info,warning,error,critical}]
-                             [--no-json] [-o OUTPUT_DIR] [--sanity-check]
-                             [-s STEPS] [--wrap [WRAP]] -r READSETS_FILE
-                             [-d DESIGN_FILE] [-v]
+                             [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
+                             [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE]
+                             [-v]
 
-Version: 5.1.0
-
-For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+For more documentation, visit our website: https://genpipes.readthedocs.io
 
 options:
   -h, --help            show this help message and exit
@@ -32,7 +47,7 @@ options:
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
-  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+  -c, --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
   --container {wrapper, singularity} <IMAGE PATH>
@@ -44,35 +59,31 @@ options:
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+  --genpipes_file, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+  -j, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: slurm)
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
+  -l, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+  -o, --output-dir OUTPUT_DIR
                         output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
-                        enpipes/ressources/container/bin/container_wrapper.sh.
-                        This is a convenience options for using genpipes in a
+  -s, --steps STEPS     step range e.g. '1-5', '3,6,7', '2,4-8'
+  --wrap [WRAP]         Path to the genpipes cvmfs wrapper script. Default is 
+                        genpipes/ressources/container/bin/container_wrapper.sh
+                        . This is a convenience option for using genpipes in a
                         container
-  -r READSETS_FILE, --readsets READSETS_FILE
+  -r, --readsets READSETS_FILE
                         readset file
-  -d DESIGN_FILE, --design DESIGN_FILE
+  -d, --design DESIGN_FILE
                         design file
   -v, --version         show the version information and exit
 

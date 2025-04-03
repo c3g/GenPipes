@@ -1,3 +1,40 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [RNA-Seq De Novo Assembly Pipeline](#rna-seq-de-novo-assembly-pipeline)
+  - [Usage](#usage)
+  - [picard_sam_to_fastq](#picard_sam_to_fastq)
+  - [trimmomatic](#trimmomatic)
+  - [merge_trimmomatic_stats](#merge_trimmomatic_stats)
+  - [insilico_read_normalization_readsets](#insilico_read_normalization_readsets)
+  - [insilico_read_normalization_all](#insilico_read_normalization_all)
+  - [trinity](#trinity)
+  - [exonerate_fastasplit](#exonerate_fastasplit)
+  - [blastx_trinity_uniprot](#blastx_trinity_uniprot)
+  - [blastx_trinity_uniprot_merge](#blastx_trinity_uniprot_merge)
+  - [transdecoder](#transdecoder)
+  - [hmmer](#hmmer)
+  - [infernal_transcriptome](#infernal_transcriptome)
+  - [blastp_transdecoder_uniprot](#blastp_transdecoder_uniprot)
+  - [signalp](#signalp)
+  - [tmhmm](#tmhmm)
+  - [trinotate](#trinotate)
+  - [align_and_estimate_abundance_prep_reference](#align_and_estimate_abundance_prep_reference)
+  - [align_and_estimate_abundance](#align_and_estimate_abundance)
+  - [gq_seq_utils_exploratory_analysis_rnaseq_denovo](#gq_seq_utils_exploratory_analysis_rnaseq_denovo)
+  - [differential_expression](#differential_expression)
+  - [filter_annotated_components](#filter_annotated_components)
+  - [gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered](#gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered)
+  - [differential_expression_filtered](#differential_expression_filtered)
+  - [multiqc](#multiqc)
+  - [merge_fastq](#merge_fastq)
+  - [seq2fun](#seq2fun)
+  - [differential_expression_seq2fun](#differential_expression_seq2fun)
+  - [pathway_enrichment_seq2fun](#pathway_enrichment_seq2fun)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 [TOC]
 
 RNA-Seq De Novo Assembly Pipeline
@@ -73,15 +110,12 @@ usage: genpipes rnaseq_denovo_assembly [-h] [--clean] -c CONFIG [CONFIG ...]
                                        [-j {pbs,batch,daemon,slurm}]
                                        [--json-pt]
                                        [-l {debug,info,warning,error,critical}]
-                                       [--no-json] [-o OUTPUT_DIR]
-                                       [--sanity-check] [-s STEPS]
-                                       [--wrap [WRAP]] -r READSETS_FILE
-                                       [-d DESIGN_FILE] [-v]
+                                       [-o OUTPUT_DIR] [--sanity-check]
+                                       [-s STEPS] [--wrap [WRAP]]
+                                       -r READSETS_FILE [-d DESIGN_FILE] [-v]
                                        [-t {trinity,seq2fun}] [-b BATCH]
 
-Version: 5.1.0
-
-For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+For more documentation, visit our website: https://genpipes.readthedocs.io
 
 options:
   -h, --help            show this help message and exit
@@ -89,7 +123,7 @@ options:
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
-  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+  -c, --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
   --container {wrapper, singularity} <IMAGE PATH>
@@ -101,41 +135,36 @@ options:
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+  --genpipes_file, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+  -j, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: slurm)
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
+  -l, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+  -o, --output-dir OUTPUT_DIR
                         output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
-                        enpipes/ressources/container/bin/container_wrapper.sh.
-                        This is a convenience options for using genpipes in a
+  -s, --steps STEPS     step range e.g. '1-5', '3,6,7', '2,4-8'
+  --wrap [WRAP]         Path to the genpipes cvmfs wrapper script. Default is 
+                        genpipes/ressources/container/bin/container_wrapper.sh
+                        . This is a convenience option for using genpipes in a
                         container
-  -r READSETS_FILE, --readsets READSETS_FILE
+  -r, --readsets READSETS_FILE
                         readset file
-  -d DESIGN_FILE, --design DESIGN_FILE
+  -d, --design DESIGN_FILE
                         design file
   -v, --version         show the version information and exit
-  -t {trinity,seq2fun}, --type {trinity,seq2fun}
+  -t, --type {trinity,seq2fun}
                         RNAseq analysis type
-  -b BATCH, --batch BATCH
-                        batch file (to peform batch effect correction
+  -b, --batch BATCH     batch file (to peform batch effect correction
 
 Steps:
 

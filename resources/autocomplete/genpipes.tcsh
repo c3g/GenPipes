@@ -3,59 +3,150 @@
 
 
 complete genpipes \
-        'c/--/(batch clean config container design force force_mem_per_cpu genpipes_file help job-scheduler json-pt log no-json output-dir pairs profyle readsets sanity-check steps type version wrap)/' \
+        'c/--/(batch clean config container design force force_mem_per_cpu genpipes_file help job-scheduler json-pt log output-dir pairs print-completion profyle readsets sanity-check steps type version wrap)/' \
         'c/-/(- b c d f g h j l o p r s t v)/' \
+        'n/-s/(bash zsh tcsh)/' \
+        'n/--print-completion/(bash zsh tcsh)/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
         'n/-t/(chipseq atacseq)/' \
         'n/--type/(chipseq atacseq)/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
+        'n/-p/f/' \
+        'n/--pairs/f/' \
         'n/-t/(germline_snv germline_sv germline_high_cov somatic_tumor_only somatic_fastpass somatic_ensemble somatic_sv)/' \
         'n/--type/(germline_snv germline_sv germline_high_cov somatic_tumor_only somatic_fastpass somatic_ensemble somatic_sv)/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
+        'n/-t/(nanopore revio)/' \
+        'n/--type/(nanopore revio)/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
+        'n/-j/(pbs batch daemon slurm)/' \
+        'n/--job-scheduler/(pbs batch daemon slurm)/' \
+        'n/-l/(debug info warning error critical)/' \
+        'n/--log/(debug info warning error critical)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
         'n/-t/(bismark gembs hybrid dragen)/' \
         'n/--type/(bismark gembs hybrid dragen)/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
-        'n/-j/(pbs batch daemon slurm)/' \
-        'n/--job-scheduler/(pbs batch daemon slurm)/' \
-        'n/-l/(debug info warning error critical)/' \
-        'n/--log/(debug info warning error critical)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
         'n/-t/(default basecalling)/' \
         'n/--type/(default basecalling)/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
         'n/-t/(stringtie variants cancer)/' \
         'n/--type/(stringtie variants cancer)/' \
+        'n/-b/f/' \
+        'n/--batch/f/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
         'n/-t/(trinity seq2fun)/' \
         'n/--type/(trinity seq2fun)/' \
+        'n/-b/f/' \
+        'n/--batch/f/' \
+        'n/-c/f/' \
+        'n/--config/f/' \
         'n/-j/(pbs batch daemon slurm)/' \
         'n/--job-scheduler/(pbs batch daemon slurm)/' \
         'n/-l/(debug info warning error critical)/' \
         'n/--log/(debug info warning error critical)/' \
-        'p/1/(ampliconseq chipseq covseq dnaseq methylseq nanopore nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light)/' \
+        'n/-o/d/' \
+        'n/--output-dir/d/' \
+        'n/-r/f/' \
+        'n/--readsets/f/' \
+        'n/-d/f/' \
+        'n/--design/f/' \
+        'p/1/(ampliconseq chipseq covseq dnaseq longread_dnaseq methylseq nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light tools)/' \
+        'p/2/(chunk_genpipes csvToreadset job2json_project_tracking log_report submit_genpipes get_wrapper validate_genpipes)/' \
         'p/*/()/'

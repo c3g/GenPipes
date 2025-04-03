@@ -1,3 +1,54 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [RNA-Seq Pipeline](#rna-seq-pipeline)
+  - [Usage](#usage)
+  - [picard_sam_to_fastq](#picard_sam_to_fastq)
+  - [trimmomatic](#trimmomatic)
+  - [merge_trimmomatic_stats](#merge_trimmomatic_stats)
+  - [sortmerna](#sortmerna)
+  - [star](#star)
+  - [picard_merge_sam_files](#picard_merge_sam_files)
+  - [picard_sort_sam](#picard_sort_sam)
+  - [mark_duplicates](#mark_duplicates)
+  - [picard_rna_metrics](#picard_rna_metrics)
+  - [estimate_ribosomal_rna](#estimate_ribosomal_rna)
+  - [rnaseqc2](#rnaseqc2)
+  - [wiggle](#wiggle)
+  - [raw_counts](#raw_counts)
+  - [raw_counts_metrics](#raw_counts_metrics)
+  - [stringtie](#stringtie)
+  - [stringtie_merge](#stringtie_merge)
+  - [stringtie_abund](#stringtie_abund)
+  - [ballgown](#ballgown)
+  - [differential_expression](#differential_expression)
+  - [multiqc](#multiqc)
+  - [cram_output](#cram_output)
+  - [skewer_trimming](#skewer_trimming)
+  - [split_N_trim](#split_n_trim)
+  - [sambamba_merge_splitNtrim_files](#sambamba_merge_splitntrim_files)
+  - [gatk_indel_realigner](#gatk_indel_realigner)
+  - [sambamba_merge_realigned](#sambamba_merge_realigned)
+  - [recalibration](#recalibration)
+  - [gatk_haplotype_caller](#gatk_haplotype_caller)
+  - [merge_hc_vcf](#merge_hc_vcf)
+  - [run_vcfanno](#run_vcfanno)
+  - [variant_filtration](#variant_filtration)
+  - [decompose_and_normalize](#decompose_and_normalize)
+  - [compute_snp_effects](#compute_snp_effects)
+  - [gemini_annotations](#gemini_annotations)
+  - [gatk_callable_loci](#gatk_callable_loci)
+  - [filter_gatk](#filter_gatk)
+  - [report_cpsr](#report_cpsr)
+  - [report_pcgr](#report_pcgr)
+  - [run_star_fusion](#run_star_fusion)
+  - [run_arriba](#run_arriba)
+  - [run_annofuse](#run_annofuse)
+  - [rseqc](#rseqc)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 [TOC]
 
 RNA-Seq Pipeline
@@ -19,7 +70,7 @@ in the differential analyses. The design file format is described [here](https:/
 In addition, [Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential
 transcript and gene expression levels and test them for significant differences.
 It can also take a batch file (optional) which will be used to correct for batch effects
-in the differential analyses. The batch file format is described [here](https://bitbucket.org/mugqic/mugqic_pipelines/src#markdown-header-batch-file)
+in the differential analyses. The batch file format is described [here](https://github.com/c3g/GenPipes?tab=readme-ov-file#batch-file)
 
 The variants protocol is used when variant detection, is the main goal of the analysis. GATK best practices workflow
 is used for variant calling. It also contains a step for annotating genes using [gemini](https://gemini.readthedocs.io/en/latest/)
@@ -44,14 +95,12 @@ usage: genpipes rnaseq [-h] [--clean] -c CONFIG [CONFIG ...]
                        [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                        [--genpipes_file GENPIPES_FILE]
                        [-j {pbs,batch,daemon,slurm}] [--json-pt]
-                       [-l {debug,info,warning,error,critical}] [--no-json]
+                       [-l {debug,info,warning,error,critical}]
                        [-o OUTPUT_DIR] [--sanity-check] [-s STEPS]
                        [--wrap [WRAP]] -r READSETS_FILE [-d DESIGN_FILE] [-v]
                        [-t {stringtie,variants,cancer}] [-b BATCH]
 
-Version: 5.1.0
-
-For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+For more documentation, visit our website: https://genpipes.readthedocs.io
 
 options:
   -h, --help            show this help message and exit
@@ -59,7 +108,7 @@ options:
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
-  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+  -c, --config CONFIG [CONFIG ...]
                         config INI-style list of files; config parameters are
                         overwritten based on files order
   --container {wrapper, singularity} <IMAGE PATH>
@@ -71,41 +120,36 @@ options:
                         Take the mem input in the ini file and force to have a
                         minimum of mem_per_cpu by correcting the number of cpu
                         (default: None)
-  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+  --genpipes_file, -g GENPIPES_FILE
                         Command file output path. This is the command used to
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
-  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+  -j, --job-scheduler {pbs,batch,daemon,slurm}
                         job scheduler type (default: slurm)
   --json-pt             create JSON file for project_tracking database
                         ingestion (default: false i.e. JSON file will NOT be
                         created)
-  -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
+  -l, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  --no-json             do not create JSON file per analysed sample to track
-                        the analysis status (default: false i.e. JSON file
-                        will be created)
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+  -o, --output-dir OUTPUT_DIR
                         output directory (default: current)
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  -s STEPS, --steps STEPS
-                        step range e.g. '1-5', '3,6,7', '2,4-8'
-  --wrap [WRAP]         Path to the genpipe cvmfs wrapper script. Default is g
-                        enpipes/ressources/container/bin/container_wrapper.sh.
-                        This is a convenience options for using genpipes in a
+  -s, --steps STEPS     step range e.g. '1-5', '3,6,7', '2,4-8'
+  --wrap [WRAP]         Path to the genpipes cvmfs wrapper script. Default is 
+                        genpipes/ressources/container/bin/container_wrapper.sh
+                        . This is a convenience option for using genpipes in a
                         container
-  -r READSETS_FILE, --readsets READSETS_FILE
+  -r, --readsets READSETS_FILE
                         readset file
-  -d DESIGN_FILE, --design DESIGN_FILE
+  -d, --design DESIGN_FILE
                         design file
   -v, --version         show the version information and exit
-  -t {stringtie,variants,cancer}, --type {stringtie,variants,cancer}
+  -t, --type {stringtie,variants,cancer}
                         RNAseq analysis type
-  -b BATCH, --batch BATCH
-                        batch file (to peform batch effect correction
+  -b, --batch BATCH     batch file (to peform batch effect correction
 
 Steps:
 
