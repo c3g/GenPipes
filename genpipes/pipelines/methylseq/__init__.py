@@ -1241,7 +1241,10 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
         jobs = []
         
         for sample in self.samples:
-            bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.bam")
+            alignment_dir = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            bam = os.path.join(alignment_dir, sample.name + ".bam")
+            rename_bam = os.path.join(alignment_dir, sample.name + ".gembs.bam")
+            dedup_bam = os.path.join(alignment_dir, sample.name + ".sorted.dedup.bam")
             output_dir = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             output_prefix = os.path.join(output_dir, sample.name)
             config_dir = os.path.join(output_dir, ".gemBS")
@@ -1257,20 +1260,24 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                                 gembs_config,
                                 config_dir
                                 ),
+                            bash.mv(
+                                bam,
+                                rename_bam
+                            ),
                             bash.ln(
-                                os.path.relpath(bam, output_dir),
-                                os.path.join(output_dir, sample.name + ".bam"),
-                                bam
+                                os.path.relpath(dedup_bam, alignment_dir),
+                                bam,
+                                dedup_bam
                             ),
                             gembs.call(
                                 sample.name,
-                                bam,
+                                dedup_bam,
                                 output_prefix
                                 )
                             ],
                         name = "gembs_call." + sample.name,
                         samples = [sample],
-                        input_dependency=[bam,gembs_config]
+                        input_dependency=[bam,dedup_bam,gembs_config]
                         )
                     )
             
