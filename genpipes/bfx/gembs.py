@@ -70,6 +70,7 @@ merge_memory = {global_conf.global_get('gembs_map', 'merge_ram')}
 {"include " + global_conf.global_get('gembs_map', 'standard_IHEC') if global_conf.global_get('gembs_map', 'standard_IHEC', required = False) else ""}
  
 [calling]
+bam_dir = {genpipes_dir}/methylation_call/@BARCODE
 contig_pool_limit = {global_conf.global_get('gembs_call', 'contig_pool_limit')}
 cores = {global_conf.global_get('gembs_call', 'cores')}
 call_threads = {global_conf.global_get('gembs_call', 'threads')}

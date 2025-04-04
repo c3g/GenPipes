@@ -1257,6 +1257,11 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                                 gembs_config,
                                 config_dir
                                 ),
+                            bash.ln(
+                                os.path.relpath(bam, output_dir),
+                                os.path.join(output_dir, sample.name + ".bam"),
+                                bam
+                            ),
                             gembs.call(
                                 sample.name,
                                 bam,
