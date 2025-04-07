@@ -17,11 +17,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Git
-        run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-
       - name: Fetch all branches
         run: git fetch --all
 
@@ -39,8 +34,8 @@ jobs:
 
       - name: Push changes
         env:
-          GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}
+          PAT: ${{ secrets.BOT_ACCESS_TOKEN }}
         run: |
           git add genpipes/__version__.py
           git commit -m "Dev Version update"
-          git push --force-with-lease origin dev
+          git push --force-with-lease https://paulstretenowich:${PAT}@github.com/c3g/GenPipes.git origin dev
