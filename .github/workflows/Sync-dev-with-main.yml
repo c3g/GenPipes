@@ -19,6 +19,11 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.BOT_ACCESS_TOKEN }}
 
+      - name: Setup Git
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
       - name: Fetch all branches
         run: git fetch --all
 
@@ -38,8 +43,6 @@ jobs:
         run: |
           git add genpipes/__version__.py
           git commit -m "Dev Version update"
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
 
       - name: Push changes
         uses: ad-m/github-push-action@master
