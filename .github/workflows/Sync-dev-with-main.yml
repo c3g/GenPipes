@@ -19,8 +19,8 @@ jobs:
 
       - name: Setup Git
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
+          git config user.email "paul.stretenowich@gmail.com"
+          git config user.name "paulstretenowich"
 
       - name: Fetch all branches
         run: git fetch --all
