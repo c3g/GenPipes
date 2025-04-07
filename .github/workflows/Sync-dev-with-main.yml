@@ -44,4 +44,5 @@ jobs:
           git add genpipes/__version__.py
           git commit -m "Dev Version update"
           git status
-          git push --force-with-lease https://paulstretenowich:${PAT}@github.com/c3g/GenPipes.git
+          git remote set-url origin https://paulstretenowich:${PAT}@github.com/c3g/GenPipes.git
+          git push --force-with-lease
