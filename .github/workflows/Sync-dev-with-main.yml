@@ -43,7 +43,7 @@ jobs:
         run: |
           git add genpipes/__version__.py
           git commit -m "Dev Version update"
-          git push --force-with-lease https://oauth2:${{ secrets.BOT_ACCESS_TOKEN }}@${{ github.server_url }}/${{ github.repository }}.git
+          git push --force-with-lease https://oauth2:${{ secrets.BOT_ACCESS_TOKEN }}@github.com/${{ github.repository }}.git
 
       #- name: Push changes
       #  uses: ad-m/github-push-action@master
