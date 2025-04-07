@@ -15,7 +15,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.BOT_ACCESS_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Git
@@ -45,4 +44,4 @@ jobs:
           git add genpipes/__version__.py
           git commit -m "Dev Version update"
           git status
-          git push --verbose --force-with-lease https://paulstretenowich:${PAT}@github.com/c3g/GenPipes.git origin dev
+          git push --force-with-lease https://paulstretenowich:${PAT}@github.com/c3g/GenPipes.git
