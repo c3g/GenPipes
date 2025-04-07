@@ -15,12 +15,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
-
-      - name: Setup Git
-        run: |
-          git config user.email "paul.stretenowich@gmail.com"
-          git config user.name "paulstretenowich"
+          token: ${{ secrets.BOT_ACCESS_TOKEN }}
 
       - name: Fetch all branches
         run: git fetch --all
@@ -37,12 +34,16 @@ jobs:
           version_number=$(sed -n "s/__version__ = '\([^']*\)'/\1/p" $version_file)
           echo "__version__ = '${version_number}.dev'" > $version_file
 
-      - name: Push changes
-        env:
-          PAT: ${{ secrets.BOT_ACCESS_TOKEN }}
+      - name: Commit changes
         run: |
           git add genpipes/__version__.py
           git commit -m "Dev Version update"
-          git status
-          git remote set-url origin https://paulstretenowich:${PAT}@github.com/c3g/GenPipes.git
-          git push --force-with-lease
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.BOT_ACCESS_TOKEN }}
+          repository: c3g/GenPipes
+          force_with_lease: true
