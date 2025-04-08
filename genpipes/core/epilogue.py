@@ -90,7 +90,9 @@ def parse_slurm_job_info(job_info, job_id):
 
         # Extracting from the third line (line starting with ${JobID}.0)
         elif row['JobID'] == f"{job_id}.0":
-            if 'CANCELLED by ' in row['State']:
+            if job_details['State'] == 'RUNNING':
+                job_details['State'] = row['State']
+            elif 'CANCELLED by ' in row['State']:
                 job_details['State'] = 'OUT_OF_MEMORY'
             job_details['Start'] = row['Start']
             job_details['End'] = row['End']
