@@ -7041,7 +7041,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             linx_output_dir,
                             ini_section="linx_plot"
                         ),
-                        bash.touch(os.path.join(linx_output_dir, "linx_plot." + tumor_pair.name + ".Done")),
+                        bash.touch(os.path.join(linx_output_dir, "plot", "linx_plot." + tumor_pair.name + ".Done")),
                         bash.zip(
                             linx_plot_dir,
                             linx_zip,
@@ -7052,7 +7052,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets),
                     output_dependency=[
-                        os.path.join(linx_output_dir, "linx_plot." + tumor_pair.name + ".Done"),
+                        os.path.join(linx_output_dir, "plot", "linx_plot." + tumor_pair.name + ".Done"),
                         linx_zip
                         ]
                 )
