@@ -8164,6 +8164,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
         for tumor_pair in self.tumor_pairs.values():
             pair_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             linx_output_dir = os.path.join(pair_dir, "linx")
+            linx_plot_dir = os.path.join(linx_output_dir, "plot")
+            linx_zip = os.path.join(linx_output_dir, tumor_pair.tumor.name + ".linx_plot.zip")
+
             jobs.append(
                 concat_jobs(
                     [
@@ -8173,12 +8176,20 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                             linx_output_dir,
                             ini_section="linx_plot"
                         ),
-                        bash.touch(os.path.join(linx_output_dir, f"linx_plot.{tumor_pair.name}.Done"))
+                        bash.touch(os.path.join(linx_output_dir, "plot", f"linx_plot.{tumor_pair.name}.Done")),
+                        bash.zip(
+                            linx_plot_dir,
+                            linx_zip,
+                            recursive=True
+                        )
                     ],
                     name="linx_plot." + tumor_pair.name,
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets),
-                    output_dependency=[os.path.join(linx_output_dir, f"linx_plot.{tumor_pair.name}.Done")]
+                    output_dependency=[
+                        os.path.join(linx_output_dir, "plot", f"linx_plot.{tumor_pair.name}.Done"),
+                        linx_zip
+                        ]
                 )
             )
         return jobs
