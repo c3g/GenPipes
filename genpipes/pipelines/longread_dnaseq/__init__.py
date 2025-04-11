@@ -32,6 +32,7 @@ from ...bfx import (
     bash_cmd as bash,
     bcftools,
     bvatools,
+    clair3,
     cpsr,
     deepvariant,
     gatk4,
@@ -510,7 +511,7 @@ For information on the structure and contents of the LongRead readset file, plea
 
         return jobs
     
-    def set_deepvariant_regions(self):
+    def set_variant_calling_regions(self):
         """
         Create an interval list with ScatterIntervalsByNs from GATK: [GATK](https://gatk.broadinstitute.org/hc/en-us/articles/360041416072-ScatterIntervalsByNs-Picard).
         Used for creating a broken-up interval list that can be used for scattering a variant-calling pipeline in a way that will not cause problems at the edges of the intervals. 
@@ -521,11 +522,16 @@ For information on the structure and contents of the LongRead readset file, plea
         """
         jobs = []
 
-        reference = global_conf.global_get('deepvariant', 'genome_fasta', param_type='filepath')
-        scatter_jobs = global_conf.global_get('deepvariant', 'nb_jobs', param_type='posint')
+        caller = "clair3"
+
+        if self.protocol == "revio":
+            caller = "deepvariant"
+
+        reference = global_conf.global_get(caller, 'genome_fasta', param_type='filepath')
+        scatter_jobs = global_conf.global_get(caller, 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
-            interval_directory = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant", "regions")
+            interval_directory = os.path.join(self.output_dirs["variants_directory"], sample.name, caller, "regions")
             output = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.interval_list'))
             interval_list_acgt_noalt = os.path.join(interval_directory, os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list'))
 
@@ -765,6 +771,79 @@ For information on the structure and contents of the LongRead readset file, plea
             job.name = "svim." + sample.name
             job.samples = [sample]
             jobs.append(job)
+
+        return jobs
+    
+    def clair3(self):
+        """
+        Call germline small variants with clair3.
+        """
+
+        jobs = []
+
+        nb_jobs = global_conf.global_get('clair3', 'nb_jobs', param_type='posint')
+
+        for sample in self.samples:
+            align_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            input_bam = os.path.join(align_directory, f"{sample.name}.sorted.bam")
+            clair3_dir = os.path.join(self.output_dirs["variants_directory"], sample.name, "clair3")
+            region_directory = os.path.join(clair3_dir, "regions")
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            if coverage_bed:
+                region = coverage_bed
+            elif nb_jobs == 1:
+                region = global_conf.global_get('clair3', 'region') if global_conf.global_get('clair3', 'region') else None
+            
+            if nb_jobs == 1 or coverage_bed:
+                
+                output_vcf = os.path.join(clair3_dir, f"{sample.name}.clair3.vcf.gz")
+                #tmp_dir = os.path.join(clair3_dir, "tmp")
+                
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(tmp_dir),
+                            clair3.run(
+                                input_bam,
+                                output_vcf,
+                                sample.name,
+                                "ont",
+                                region
+                            )
+                        ],
+                        name=f"clair3.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
+                    )
+                )
+            else:
+                regions = [os.path.join(region_directory, f"{idx:04d}-region.bed") for idx in range(nb_jobs)]
+
+                for idx, region in enumerate(regions):
+
+                    output_vcf = os.path.join(clair3_dir, f"{sample.name}.clair3.{str(idx)}.vcf.gz")
+                    tmp_dir = os.path.join(clair3_dir, "tmp", str(idx))
+
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(tmp_dir),
+                                clair3.run(
+                                    input_bam,
+                                    output_vcf,
+                                    sample.name,
+                                    "ont",
+                                    region
+                                )
+                            ],
+                            name=f"deepvariant.{sample.name}.{str(idx)}",
+                            input_dependency=[input_bam, region],
+                            samples=[sample],
+                            readsets=[*list(sample.readsets)]
+                        )
+                    )
 
         return jobs
     
@@ -1139,9 +1218,13 @@ For information on the structure and contents of the LongRead readset file, plea
     def protocols(self):
         return { 'nanopore': [
                 self.blastqc,
+                self.metrics_nanoplot,
                 self.minimap2_align,
                 self.pycoqc,
                 self.picard_merge_sam_files,
+                self.metrics_mosdepth,
+                self.set_variant_calling_regions,
+                self.clair3,
                 self.svim
             ], 'revio':
             [
@@ -1149,7 +1232,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.pbmm2_align,
                 self.picard_merge_sam_files,
                 self.metrics_mosdepth,
-                self.set_deepvariant_regions,
+                self.set_variant_calling_regions,
                 self.deepvariant,
                 self.merge_filter_deepvariant,
                 self.hificnv,
