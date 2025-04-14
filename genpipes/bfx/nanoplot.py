@@ -29,6 +29,7 @@ def qc(
     output_prefix,
     input_bam=None,
     input_fastq=None,
+    input_summary=None,
     ini_section='nanoplot'
     ):
     """
@@ -50,13 +51,14 @@ def qc(
         ],
         command="""\
 NanoPlot {other_options} \\
-  {input_bam} {input_fastq} \\
+  {input_bam} {input_fastq} {input_summary} \\
   -o {output_dir} \\
   -p {output_prefix} \\
   --threads {threads}""".format(
             other_options=global_conf.global_get(ini_section, 'other_options', required=False),
             input_bam="--ubam " + input_bam if input_bam else "",
             input_fastq="--fastq " + input_fastq if input_fastq else "",
+            input_summary="--summary " + input_summary if input_summary else "",
             threads=global_conf.global_get(ini_section, 'threads'),
             output_dir=output_dir,
             output_prefix=output_prefix
