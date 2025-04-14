@@ -799,7 +799,6 @@ For information on the structure and contents of the LongRead readset file, plea
             if nb_jobs == 1 or coverage_bed:
                 
                 output_vcf = os.path.join(clair3_dir, f"{sample.name}.clair3.vcf.gz")
-                #tmp_dir = os.path.join(clair3_dir, "tmp")
                 
                 jobs.append(
                     concat_jobs(
