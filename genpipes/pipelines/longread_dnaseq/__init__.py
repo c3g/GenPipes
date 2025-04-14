@@ -911,7 +911,7 @@ For information on the structure and contents of the LongRead readset file, plea
             output_prefix = os.path.join(hificnv_directory, "hificnv")
 
             hificnv_out = os.path.join(hificnv_directory, f"hificnv.{sample.name}.vcf.gz")
-            hificnv_filtered = os.path.join(hificnv_directory, f"{sample.name}.filt.vcf.gz")
+            hificnv_filtered = os.path.join(hificnv_directory, f"{sample.name}.hificnv.filt.vcf.gz")
 
             jobs.append(
                 concat_jobs(
