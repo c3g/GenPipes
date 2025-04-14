@@ -816,7 +816,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             bash.mkdir(clair3_dir),
                             clair3.run(
                                 input_bam,
-                                output_dir,
+                                clair3_dir,
                                 sample.name,
                                 "ont",
                                 region
