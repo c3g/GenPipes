@@ -67,7 +67,7 @@ run_clair3.sh {other_options} \\
             genome_fasta=global_conf.global_get(ini_section, 'genome_fasta'),
             threads=global_conf.global_get(ini_section, 'threads'),
             platform=platform,
-            model_path=global_conf.global_get(ini_section, 'model', param_type='filepath'),
+            model_path=global_conf.global_get(ini_section, 'model_path', param_type='filepath'),
             region=region_param if region else "",
             sites_to_call="--vcf_fn=" + global_conf.global_get(ini_section, 'sites_to_call', required=False, param_type='filepath') if global_conf.global_get(ini_section, 'sites_to_call', required=False) else "",
             sample_name=sample_name,
