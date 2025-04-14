@@ -803,7 +803,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(tmp_dir),
+                            bash.mkdir(clair3_dir),
                             clair3.run(
                                 input_bam,
                                 output_vcf,
@@ -823,12 +823,11 @@ For information on the structure and contents of the LongRead readset file, plea
                 for idx, region in enumerate(regions):
 
                     output_vcf = os.path.join(clair3_dir, f"{sample.name}.clair3.{str(idx)}.vcf.gz")
-                    tmp_dir = os.path.join(clair3_dir, "tmp", str(idx))
 
                     jobs.append(
                         concat_jobs(
                             [
-                                bash.mkdir(tmp_dir),
+                                bash.mkdir(clair3_dir),
                                 clair3.run(
                                     input_bam,
                                     output_vcf,
@@ -837,7 +836,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                     region
                                 )
                             ],
-                            name=f"deepvariant.{sample.name}.{str(idx)}",
+                            name=f"clair3.{sample.name}.{str(idx)}",
                             input_dependency=[input_bam, region],
                             samples=[sample],
                             readsets=[*list(sample.readsets)]
