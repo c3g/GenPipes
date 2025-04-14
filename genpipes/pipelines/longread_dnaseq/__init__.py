@@ -189,7 +189,16 @@ For information on the structure and contents of the LongRead readset file, plea
             nanoplot_directory = os.path.join(metrics_directory, "nanoplot")
             nanoplot_prefix = f"{readset.name}."
 
-            if readset.fastq_files:
+            if readset.summary_file:
+                input_summary = os.path.join(nanoplot_directory, os.path.basename(readset.summary_file))
+                link_job = bash.ln(
+                    os.path.abspath(readset.summary_file),
+                    input_summary,
+                    readset.summary_file
+                    )
+                input_fastq = None
+                input_bam = None
+            elif readset.fastq_files:
                 input_fastq = os.path.join(nanoplot_directory, os.path.basename(readset.fastq_files))
                 link_job = bash.ln(
                     os.path.abspath(readset.fastq_files),
@@ -197,6 +206,7 @@ For information on the structure and contents of the LongRead readset file, plea
                     readset.fastq_files
                     )
                 input_bam = None
+                input_summary = None
             elif readset.bam:
                 input_bam = os.path.join(nanoplot_directory, os.path.basename(readset.bam))
                 link_job = bash.ln(
@@ -205,6 +215,7 @@ For information on the structure and contents of the LongRead readset file, plea
                     readset.bam
                     )
                 input_fastq = None
+                input_summary = None
             else:
                 _raise(SanitycheckError(f"Error: Neither BAM nor FASTQ file available for readset {readset.name} !"))
 
@@ -217,7 +228,8 @@ For information on the structure and contents of the LongRead readset file, plea
                             nanoplot_directory,
                             nanoplot_prefix,
                             input_bam,
-                            input_fastq
+                            input_fastq,
+                            input_summary
                         )
                     ],
                     name=f"nanoplot.{readset.name}",
@@ -797,16 +809,14 @@ For information on the structure and contents of the LongRead readset file, plea
                 region = global_conf.global_get('clair3', 'region') if global_conf.global_get('clair3', 'region') else None
             
             if nb_jobs == 1 or coverage_bed:
-                
-                output_vcf = os.path.join(clair3_dir, f"{sample.name}.clair3.vcf.gz")
-                
+                                
                 jobs.append(
                     concat_jobs(
                         [
                             bash.mkdir(clair3_dir),
                             clair3.run(
                                 input_bam,
-                                output_vcf,
+                                output_dir,
                                 sample.name,
                                 "ont",
                                 region
@@ -822,15 +832,15 @@ For information on the structure and contents of the LongRead readset file, plea
 
                 for idx, region in enumerate(regions):
 
-                    output_vcf = os.path.join(clair3_dir, f"{sample.name}.clair3.{str(idx)}.vcf.gz")
+                    output_dir = os.path.join(clair3_dir, str(idx))
 
                     jobs.append(
                         concat_jobs(
                             [
-                                bash.mkdir(clair3_dir),
+                                bash.mkdir(output_dir),
                                 clair3.run(
                                     input_bam,
-                                    output_vcf,
+                                    output_dir,
                                     sample.name,
                                     "ont",
                                     region
@@ -842,6 +852,67 @@ For information on the structure and contents of the LongRead readset file, plea
                             readsets=[*list(sample.readsets)]
                         )
                     )
+
+        return jobs
+    
+    def merge_filter_clair3(self):
+        """
+        Merge clair3 outputs, if applicable, and filter vcf.
+        """
+        jobs = []
+
+        nb_jobs = global_conf.global_get('clair3', 'nb_jobs', param_type='posint')
+
+        for sample in self.samples:
+            
+            clair3_dir = os.path.join(self.output_dirs["variants_directory"], sample.name, "clair3")
+            clair3_vcf = os.path.join(clair3_dir, "phased_merge_output.vcf.gz")
+            clair3_filtered = os.path.join(clair3_dir, f"{sample.name}.clair3.phased.flt.vcf.gz")
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            job = concat_jobs(
+                [
+                    bcftools.view(
+                        clair3_vcf,
+                        clair3_filtered,
+                        "-f PASS -Oz"
+                    ),
+                    htslib.tabix(
+                        clair3_filtered,
+                        "-f -pvcf"
+                    )
+                ]
+            )
+
+            if nb_jobs == 1 or coverage_bed:
+                job.name = f"merge_filter_clair3.{sample.name}"
+                job.samples = [sample]
+                job.readsets = [*list(sample.readsets)]
+                jobs.append(job)
+
+            else:
+                vcfs_to_merge = [os.path.join(clair3_dir, str(idx), "phased_merge_output.vcf.gz") for idx in range(nb_jobs)]
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bcftools.concat(
+                                vcfs_to_merge,
+                                clair3_vcf,
+                                "-a -oZ"
+                            ),
+                            htslib.tabix(
+                                clair3_vcf,
+                                "-f -pvcf"
+                            ),
+                            job
+                        ],
+                        name = f"merge_filter_clair3.{sample.name}",
+                        samples = [sample],
+                        readsets = [*list(sample.readsets)],
+                        removable_files=vcfs_to_merge
+                    )
+                )
 
         return jobs
     
@@ -1223,6 +1294,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.metrics_mosdepth,
                 self.set_variant_calling_regions,
                 self.clair3,
+                self.merge_filter_clair3,
                 self.svim
             ], 'revio':
             [
