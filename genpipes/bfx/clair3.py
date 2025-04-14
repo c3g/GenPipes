@@ -26,7 +26,7 @@ from ..core.job import Job
 
 def run(
     input_bam,
-    output_vcf,
+    output_dir,
     sample_name,
     platform,
     region=None,
@@ -37,8 +37,6 @@ def run(
 
     :return: a job for Clair3 variant calling
     """
-
-    # to do:
     # define region differently depending on if it's a bed filepath or a string
     if region:
         if os.path.isfile(region):
@@ -46,9 +44,16 @@ def run(
         else:
             region_param = f"--ctg_name={region}"
 
+    outputs = [
+        os.path.join(output_dir, "pileup.vcf.gz"),
+        os.path.join(output_dir, "full_alignment.vcf.gz"),
+        os.path.join(output_dir, "merge_output.vcf.gz"),
+        os.path.join(output_dir, "phased_merge_output.vcf.gz")
+    ]
+
     return Job(
         [input_bam],
-        [output_vcf],
+        outputs,
         [
             [ini_section, "module_clair3"],
         ],
@@ -71,6 +76,6 @@ run_clair3.sh {other_options} \\
             region=region_param if region else "",
             sites_to_call="--vcf_fn=" + global_conf.global_get(ini_section, 'sites_to_call', required=False, param_type='filepath') if global_conf.global_get(ini_section, 'sites_to_call', required=False) else "",
             sample_name=sample_name,
-            output=os.path.dirname(output_vcf)
+            output=output_dir
         )
     )
