@@ -1295,7 +1295,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.set_variant_calling_regions,
                 self.clair3,
                 self.merge_filter_clair3,
-                self.svim
+                self.svim,
+                self.multiqc
             ], 'revio':
             [
                 self.metrics_nanoplot,
