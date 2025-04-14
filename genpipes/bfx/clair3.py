@@ -17,6 +17,8 @@
 # along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+import os
+
 # MUGQIC Modules
 from ..core.config import global_conf
 from ..core.job import Job
@@ -24,7 +26,7 @@ from ..core.job import Job
 
 def run(
     input_bam,
-    output,
+    output_vcf,
     sample_name,
     platform,
     region=None,
@@ -38,15 +40,17 @@ def run(
 
     # to do:
     # define region differently depending on if it's a bed filepath or a string
-    # if region:
-    #   region_param = "--bed_fn=FILE" if region is file else region_param = "--ctg_name=STR"
+    if region:
+        if os.path.isfile(region):
+            region_param = f"--bed_fn={region}"
+        else:
+            region_param = f"--ctg_name={region}"
 
     return Job(
         [input_bam],
-        [output],
+        [output_vcf],
         [
             [ini_section, "module_clair3"],
-
         ],
         command="""\
 run_clair3.sh {other_options} \\
@@ -67,6 +71,6 @@ run_clair3.sh {other_options} \\
             region=region_param if region else "",
             sites_to_call="--vcf_fn=" + global_conf.global_get(ini_section, 'sites_to_call', required=False, param_type='filepath') if global_conf.global_get(ini_section, 'sites_to_call', required=False) else "",
             sample_name=sample_name,
-            output=output
+            output=os.path.dirname(output_vcf)
         )
     )
