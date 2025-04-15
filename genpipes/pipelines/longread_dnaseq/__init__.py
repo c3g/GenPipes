@@ -800,13 +800,20 @@ For information on the structure and contents of the LongRead readset file, plea
             input_bam = os.path.join(align_directory, f"{sample.name}.sorted.bam")
             clair3_dir = os.path.join(self.output_dirs["variants_directory"], sample.name, "clair3")
             region_directory = os.path.join(clair3_dir, "regions")
+            region_param = None
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
             if coverage_bed:
                 region = coverage_bed
+                region_param = f"--bed_fn={region}"
             elif nb_jobs == 1:
                 region = global_conf.global_get('clair3', 'region') if global_conf.global_get('clair3', 'region') else None
+                if region:
+                    if os.path.isfile(region):
+                        region_param = f"--bed_fn={region}"
+                    else:
+                        region_param = f"--ctg_name={region}"
             
             if nb_jobs == 1 or coverage_bed:
                                 
@@ -819,7 +826,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 clair3_dir,
                                 sample.name,
                                 "ont",
-                                region
+                                region_param
                             )
                         ],
                         name=f"clair3.{sample.name}",
@@ -843,7 +850,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                     output_dir,
                                     sample.name,
                                     "ont",
-                                    region
+                                    f"--bed_fn={region}"
                                 )
                             ],
                             name=f"clair3.{sample.name}.{str(idx)}",
