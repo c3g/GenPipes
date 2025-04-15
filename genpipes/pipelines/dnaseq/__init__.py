@@ -8165,7 +8165,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
             pair_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             linx_output_dir = os.path.join(pair_dir, "linx")
             linx_plot_dir = os.path.join(linx_output_dir, "plot")
-            linx_zip = os.path.join(linx_output_dir, tumor_pair.name + ".linx_plot.zip")
+            linx_zip = os.path.join(linx_output_dir, f"{tumor_pair.name}.linx_plot.zip")
 
             jobs.append(
                 concat_jobs(
