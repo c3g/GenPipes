@@ -7030,7 +7030,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             pair_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             linx_output_dir = os.path.join(pair_dir, "linx")
             linx_plot_dir = os.path.join(linx_output_dir, "plot")
-            linx_zip = os.path.join(linx_output_dir, tumor_pair.name + ".linx_plot.zip")
+            linx_zip = os.path.join(linx_output_dir, f"{tumor_pair.name}.linx_plot.zip")
 
             jobs.append(
                 concat_jobs(
@@ -7058,7 +7058,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 )
             )
         return jobs
-    
+
     def report_djerba(self):
         """
         Produce Djerba report.
@@ -7069,19 +7069,19 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             "ensemble"
             )
         assembly = config.param('report_pcgr', 'assembly')
-        
+
         for tumor_pair in self.tumor_pairs.values():
             djerba_dir = os.path.join(self.output_dirs['report'][tumor_pair.name], "djerba")
             purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
             purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
-            
+
             cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
             input_cpsr = os.path.join(cpsr_directory, tumor_pair.name + ".cpsr." + assembly + ".json.gz")
             input_vcf = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz")
             pcgr_directory = os.path.join(djerba_dir, "pcgr")
             input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")
             clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".clean.maf") # MAF from pcgr version 1.4.1 required, remove any empty t_depth lines, needs to be gzipped
-            
+
             provenance_decoy = os.path.join(djerba_dir, "provenance_subset.tsv.gz")
             config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
             djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
