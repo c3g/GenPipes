@@ -37,12 +37,6 @@ def run(
 
     :return: a job for Clair3 variant calling
     """
-    # define region differently depending on if it's a bed filepath or a string
-    if region:
-        if os.path.isfile(region):
-            region_param = f"--bed_fn={region}"
-        else:
-            region_param = f"--ctg_name={region}"
 
     outputs = [
         os.path.join(output_dir, "pileup.vcf.gz"),
@@ -73,7 +67,7 @@ run_clair3.sh {other_options} \\
             threads=global_conf.global_get(ini_section, 'threads'),
             platform=platform,
             model_path=global_conf.global_get(ini_section, 'model_path', param_type='dirpath'),
-            region=region_param if region else "",
+            region=region if region else "",
             sites_to_call="--vcf_fn=" + global_conf.global_get(ini_section, 'sites_to_call', required=False, param_type='filepath') if global_conf.global_get(ini_section, 'sites_to_call', required=False) else "",
             sample_name=sample_name,
             output=output_dir
