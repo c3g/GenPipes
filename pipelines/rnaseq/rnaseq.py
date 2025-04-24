@@ -148,7 +148,8 @@ class RnaSeqRaw(common.Illumina):
             'exploratory_directory': os.path.relpath(os.path.join(self.output_dir, 'exploratory'), self.output_dir),
             'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
-            'fusion_directory': os.path.relpath(os.path.join(self.output_dir, 'fusion'), self.output_dir)
+            'fusion_directory': os.path.relpath(os.path.join(self.output_dir, 'fusion'), self.output_dir),
+            'job_directory': os.path.relpath(os.path.join(self.output_dir, 'job_output'), self.output_dir)
         }
         return dirs
 
@@ -1975,42 +1976,68 @@ pandoc \\
         for sample in self.samples:
             output_dir = os.path.join(self.output_dirs["fusion_directory"], sample.name, "star_fusion")
 
-            star_fusion_job = concat_jobs(
-                [
-                    bash.mkdir(output_dir),
-                    bash.mkdir(link_directory),
-                    star_fusion.run(
-                        left_fastqs[sample.name],
-                        right_fastqs[sample.name],
-                        output_dir
-                    ),
-                    bash.ln(
-                        os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
-                        os.path.join(link_directory, sample.name + "_star_fusion.Log.final.out"),
-                        os.path.join(output_dir, "Log.final.out")
-                        )
-                ]
-                )
+            star_fusion_done_file = os.path.join(self.output_dirs["joboutput_directory"], 'checkpoints', f"run_star_fusion.{sample.name}.stepDone")
 
-            if config.param('run_star_fusion', 'force') == "True":
-                job = concat_jobs(
-                        [
-                            bash.rm(
-                                os.path.join(output_dir, "_starF_checkpoints")
-                            ),
-                            star_fusion_job
-                        ],
-                        input_dependency=left_fastqs[sample.name] + right_fastqs[sample.name]
-                    )
+            if os.path.exists(star_fusion_done_file) and not self.force_jobs:
+                log.info(f"Star Fusion done already... Skipping star fusion step for sample {sample.name}...")
+
             else:
-                job = star_fusion_job
 
-            job.name = f"run_star_fusion.{sample.name}"
-            job.samples = [sample]
-            job.readsets = list(sample.readsets)
-            jobs.append(job)
+                star_fusion_job = concat_jobs(
+                    [
+                        bash.mkdir(output_dir),
+                        bash.mkdir(link_directory),
+                        star_fusion.run(
+                            left_fastqs[sample.name],
+                            right_fastqs[sample.name],
+                            output_dir
+                        ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
+                            os.path.join(link_directory, sample.name + "_star_fusion.Log.final.out"),
+                            os.path.join(output_dir, "Log.final.out")
+                            )
+                    ]
+                    )
 
-            self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out"))
+                if config.param('run_star_fusion', 'force') == "True":
+                    job = concat_jobs(
+                            [
+                                bash.rm(
+                                    os.path.join(output_dir, "_starF_checkpoints")
+                                ),
+                                star_fusion_job
+                            ],
+                            input_dependency=left_fastqs[sample.name] + right_fastqs[sample.name]
+                        )
+                else:
+                    job = star_fusion_job
+
+                job.name = f"run_star_fusion.{sample.name}"
+                job.samples = [sample]
+                job.readsets = list(sample.readsets)
+                job.removable_files = [os.path.join(output_dir, "_starF_checkpoints")]
+                jobs.append(job)
+
+                self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out"))
+
+            checkpoint_job = bash.mkdir(
+                os.path.join(self.output_dirs['job_directory'], 'checkpoints')
+                )
+            for job in jobs:
+                checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"{job.name}.stepDone")
+                checkpoint_job = concat_jobs(
+                    [
+                        checkpoint_job,
+                        bash.touch(checkpoint_done_file),
+                        bash.rm(job.removable_files[0])
+                    ]
+                )
+            
+            checkpoint_job.name="run_star_fusion.checkpoint"
+
+            jobs.append(checkpoint_job)
+
         return jobs
 
     def run_arriba(self):
