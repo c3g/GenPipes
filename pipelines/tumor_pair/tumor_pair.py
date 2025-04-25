@@ -270,10 +270,10 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
 
-            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.name}.stepDone")
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"sambamba_mark_duplicates.{tumor_pair.name}.stepDone")
         
             if os.path.exists(checkpoint_done_file) and not self.force_jobs:
-                log.info(f"Realigning done already... Skipping gatk indel realigner step for sample {tumor_pair.name}...")
+                log.info(f"Realigning and duplicate marking done already... Skipping gatk indel realigner step for sample {tumor_pair.name}...")
 
             else:
                 quality_offsets = self.readsets[0].quality_offset
@@ -549,10 +549,10 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
 
-            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', "gatk_indel_realigner.stepDone")
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"sambamba_mark_duplicates.{tumor_pair.name}.stepDone")
 
             if os.path.exists(checkpoint_done_file) and not self.force_jobs:
-                log.info(f"Realigning done already... Skipping sambamba merge realigned step for sample {tumor_pair.name}...")
+                log.info(f"Realigning and marking duplicates done already... Skipping sambamba merge realigned step for sample {tumor_pair.name}...")
             
             else:
                 if tumor_pair.multiple_normal == 1:
@@ -619,13 +619,21 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     jobs.append(job)
 
                     # create realign checkpoint and remove intermediate files
+                    checkpoint_normal_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.normal.name}.stepDone")
+                    checkpoint_tumor_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.tumor.name}.stepDone")
+                    input_normal = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")
+                    input_tumor = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")
+                    
                     checkpoint_job = concat_jobs(
                         [
                             bash.mkdir(
                                 os.path.join(self.output_dirs['job_directory'], 'checkpoints')
                             ),
                             bash.touch(
-                                checkpoint_done_file
+                                checkpoint_normal_file
+                            ),
+                            bash.touch(
+                                checkpoint_tumor_file
                             ),
                             bash.rm(
                                 os.path.join(tumor_alignment_directory, "realign")
@@ -635,7 +643,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             ),
                             bash.rm(
                                 os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)
-                            )
+                            ),
+                            bash.rm(input_normal),
+                            bash.rm(f"{input_normal}.bai"),
+                            bash.rm(input_tumor),
+                            bash.rm(f"{input_tumor}.bai")
                         ],
                         name=f"checkpoint.gatk_indel_realigner.{tumor_pair.name}",
                         samples=[tumor_pair.tumor, tumor_pair.normal],
@@ -660,46 +672,73 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"recalibration.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Recalibration done already... Skipping mark duplicates step for sample {tumor_pair.name}...")
+
             else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                if tumor_pair.multiple_normal == 1:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+                else:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+                tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            [normal_input] = self.select_input_files([
-                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.realigned.bam")],
-                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")],
-            ])
-            normal_output = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")
+                [normal_input] = self.select_input_files([
+                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.realigned.bam")],
+                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")],
+                ])
+                normal_output = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")
 
-            [tumor_input] = self.select_input_files([
-                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")],
-                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")],
-            ])
-            tumor_output = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name  + ".sorted.dup.bam")
+                [tumor_input] = self.select_input_files([
+                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")],
+                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")],
+                ])
+                tumor_output = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name  + ".sorted.dup.bam")
 
-            job = sambamba.markdup(
-                normal_input,
-                normal_output,
-                config.param('sambamba_mark_duplicates', 'tmp_dir'),
-                other_options=config.param('sambamba_mark_duplicates', 'options')
-            )
-            job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.normal.name
-            job.samples = [tumor_pair.normal]
-            job.readsets = list(tumor_pair.normal.readsets)
-            jobs.append(job)
+                job = sambamba.markdup(
+                    normal_input,
+                    normal_output,
+                    config.param('sambamba_mark_duplicates', 'tmp_dir'),
+                    other_options=config.param('sambamba_mark_duplicates', 'options')
+                )
+                job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.normal.name
+                job.samples = [tumor_pair.normal]
+                job.readsets = list(tumor_pair.normal.readsets)
+                jobs.append(job)
 
-            job = sambamba.markdup(
-                tumor_input,
-                tumor_output,
-                config.param('sambamba_mark_duplicates', 'tmp_dir'),
-                other_options=config.param('sambamba_mark_duplicates', 'options')
-            )
-            job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.tumor.name
-            job.samples = [tumor_pair.tumor]
-            job.readsets = list(tumor_pair.tumor.readsets)
-            jobs.append(job)
+                job = sambamba.markdup(
+                    tumor_input,
+                    tumor_output,
+                    config.param('sambamba_mark_duplicates', 'tmp_dir'),
+                    other_options=config.param('sambamba_mark_duplicates', 'options')
+                )
+                job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.tumor.name
+                job.samples = [tumor_pair.tumor]
+                job.readsets = list(tumor_pair.tumor.readsets)
+                jobs.append(job)
+
+                # add checkpoint and remove input bam files
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"sambamba_mark_duplicates.{tumor_pair.name}.stepDone")
+            checkpoint_job = concat_jobs(
+                [
+                    bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
+                    bash.touch(checkpoint_done_file),
+                    bash.rm(normal_input),
+                    bash.rm(f"{normal_input}.bai"),
+                    bash.rm(tumor_input),
+                    bash.rm(f"{tumor_input}.bai")
+                ],
+                name=f"checkpoint.sambamba_mark_duplicates.{tumor_pair.name}",
+                samples=[tumor_pair.normal, tumor_pair.tumor],
+                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                input_dependency=[
+                    normal_output,
+                    tumor_output,
+                    ]
+                )
+
+            jobs.append(checkpoint_job)
 
         return jobs
 
@@ -843,6 +882,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             
             checkpoint_job = concat_jobs(
                 [
+                    bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
                     bash.touch(checkpoint_done_file),
                     bash.rm(normal_input),
                     bash.rm(f"{normal_input}.bai"),
