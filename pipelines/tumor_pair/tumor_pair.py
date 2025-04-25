@@ -871,39 +871,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
             job.readsets = list(tumor_pair.tumor.readsets)
             jobs.append(job)
 
-            # add checkpoint and remove input bam files
-            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"recalibration.{tumor_pair.name}.stepDone")
-            concordance_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".concordance.tsv")
-            contamination_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".contamination.tsv")
-            normal_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", normal_metrics, "fastqc")
-            tumor_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "fastqc")
-            tumor_output = os.path.join(tumor_fastqc_directory, tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")
-            normal_output = os.path.join(normal_fastqc_directory, tumor_pair.normal.name + ".sorted.dup_fastqc.zip")
-            
-            checkpoint_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
-                    bash.touch(checkpoint_done_file),
-                    bash.rm(normal_input),
-                    bash.rm(f"{normal_input}.bai"),
-                    bash.rm(tumor_input),
-                    bash.rm(f"{tumor_input}.bai")
-                ],
-                name=f"checkpoint.recalibration.{tumor_pair.name}",
-                samples=[tumor_pair.normal, tumor_pair.tumor],
-                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                input_dependency=[
-                    normal_print_reads_output,
-                    tumor_print_reads_output,
-                    concordance_out,
-                    contamination_out,
-                    tumor_output,
-                    normal_output
-                    ]
-                )
-
-            jobs.append(checkpoint_job)
-
         return jobs
 
     def sym_link_final_bam(self):
@@ -2487,6 +2454,38 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             for job in tumor_pair_jobs:
                 self.multiqc_inputs[tumor_pair.name].extend(job.output_files)
             jobs.extend(tumor_pair_jobs)
+
+            # add recalibration checkpoint here and remove input bam files (last step to use sorted.dup.bam)
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"recalibration.{tumor_pair.name}.stepDone")
+            concordance_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".concordance.tsv")
+            contamination_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".contamination.tsv")
+            normal_print_reads_output = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            tumor_print_reads_output = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            
+            checkpoint_job = concat_jobs(
+                [
+                    bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
+                    bash.touch(checkpoint_done_file),
+                    bash.rm(normal_input),
+                    bash.rm(f"{normal_input}.bai"),
+                    bash.rm(tumor_input),
+                    bash.rm(f"{tumor_input}.bai")
+                ],
+                name=f"checkpoint.recalibration.{tumor_pair.name}",
+                samples=[tumor_pair.normal, tumor_pair.tumor],
+                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                input_dependency=[
+                    normal_print_reads_output,
+                    tumor_print_reads_output,
+                    concordance_out,
+                    contamination_out,
+                    tumor_output,
+                    normal_output
+                    ]
+                )
+
+            jobs.append(checkpoint_job)
+
         return jobs
 
     def run_pair_multiqc(self):
