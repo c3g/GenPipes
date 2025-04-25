@@ -121,6 +121,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
             'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'pairedVariants'), self.output_dir),
             'sv_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir),
+            'job_directory': os.path.relpath(os.path.join(self.output_dir, 'job_output'), self.output_dir),
             'report': {}
         }
         for tumor_pair in self.tumor_pairs.values():
