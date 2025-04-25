@@ -478,74 +478,79 @@ pandoc \\
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
-            candidate_readset_bams = [
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
-            ]
-            candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
-            readset_bams = self.select_input_files(candidate_readset_bams)
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{sample.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Realigning done already... Skipping sambamba merge step for sample {sample.name}...")
+            
+            else:
+                alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+                # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+                # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
+                candidate_readset_bams = [
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+                ]
+                candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
+                readset_bams = self.select_input_files(candidate_readset_bams)
 
-            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
+                sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+                mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
 
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            if len(sample.readsets) == 1:
-                readset_bam = readset_bams[0]
-                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
+                # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+                if len(sample.readsets) == 1:
+                    readset_bam = readset_bams[0]
+                    readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
+                    sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
 
-                if alignment_directory in readset_bam:
-                    bam_link = os.path.relpath(readset_bam, alignment_directory)
-                    index_link = os.path.relpath(readset_index, alignment_directory)
+                    if alignment_directory in readset_bam:
+                        bam_link = os.path.relpath(readset_bam, alignment_directory)
+                        index_link = os.path.relpath(readset_index, alignment_directory)
 
-                else:
-                    bam_link = os.path.relpath(readset_bam, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
-                    index_link = os.path.relpath(readset_index, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
+                    else:
+                        bam_link = os.path.relpath(readset_bam, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
+                        index_link = os.path.relpath(readset_index, os.path.join(self.output_dir, self.output_dirs['alignment_directory'], sample.name))
 
-                jobs.append(
-                    concat_jobs(
-                        [
-                            mkdir_job,
-                            bash.ln(
-                                bam_link,
-                                sample_bam,
-                                input=readset_bam
-                            ),
-                            bash.ln(
-                                index_link,
-                                sample_index,
-                                input=readset_index
-                            )
-                        ],
-                        name="symlink_readset_sample_bam." + sample.name,
-                        samples=[sample],
-                        readsets=list(sample.readsets)
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                mkdir_job,
+                                bash.ln(
+                                    bam_link,
+                                    sample_bam,
+                                    input=readset_bam
+                                ),
+                                bash.ln(
+                                    index_link,
+                                    sample_index,
+                                    input=readset_index
+                                )
+                            ],
+                            name="symlink_readset_sample_bam." + sample.name,
+                            samples=[sample],
+                            readsets=list(sample.readsets)
+                        )
                     )
-                )
 
 
-            # Sambamba merge fails if a file/symlink with the merged sample name already exists. Remove any existing file before merging.
-            elif len(sample.readsets) > 1:
-                jobs.append(
-                    concat_jobs(
-                        [
-                            mkdir_job,
-                            bash.rm(sample_bam),
-                            bash.rm(re.sub("\.bam$", ".bam.bai", sample_bam)),
-                            sambamba.merge(
-                                readset_bams,
-                                sample_bam
-                            )
-                        ],
-                        name="sambamba_merge_sam_files." + sample.name,
-                        samples=[sample],
-                        readsets=list(sample.readsets),
-                        input_dependency=readset_bams
+                # Sambamba merge fails if a file/symlink with the merged sample name already exists. Remove any existing file before merging.
+                elif len(sample.readsets) > 1:
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                mkdir_job,
+                                bash.rm(sample_bam),
+                                bash.rm(re.sub("\.bam$", ".bam.bai", sample_bam)),
+                                sambamba.merge(
+                                    readset_bams,
+                                    sample_bam
+                                )
+                            ],
+                            name="sambamba_merge_sam_files." + sample.name,
+                            samples=[sample],
+                            readsets=list(sample.readsets),
+                            input_dependency=readset_bams
+                        )
                     )
-                )
 
         return jobs
 
