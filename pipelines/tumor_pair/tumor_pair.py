@@ -4476,10 +4476,11 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 # create checkpoint and remove tmp directory
                 checkpoint_job = concat_jobs(
                     [
+                        bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
                         bash.touch(checkpoint_done_file),
                         bash.rm(vardict_directory)
                     ],
-                    name=f"checkpoint.paired_mutect2.{tumor_pair.name}",
+                    name=f"checkpoint.vardict_paired.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[output_somatic, output_germline_loh, output_vt]
@@ -4630,56 +4631,85 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_variant_annotator.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Variant annotation done already... Skipping merge variant annotator germline step for sample {tumor_pair.name}...")
+
             else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                if tumor_pair.multiple_normal == 1:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+                else:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+                tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
-            [input_normal] = self.select_input_files(
-                [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
-                ]
-            )
-            [input_tumor] = self.select_input_files(
-                [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
-                ]
-            )
-            input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
-
-            if nb_jobs == 1:
-                output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
-
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                annot_directory,
-                                remove=True
-                            ),
-                            gatk.variant_annotator(
-                                input_normal,
-                                input_tumor,
-                                input_somatic_variants,
-                                output_somatic_variants,
-                                config.param('gatk_variant_annotator_somatic', 'other_options')
-                            )
-                        ],
-                        name="gatk_variant_annotator_somatic." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
+                annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
+                [input_normal] = self.select_input_files(
+                    [
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
+                    ]
                 )
+                [input_tumor] = self.select_input_files(
+                    [
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
+                    ]
+                )
+                input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
 
-            else:
-                unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
-                for idx, sequences in enumerate(unique_sequences_per_job):
-                    output_somatic_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) + ".vcf.gz")
+                if nb_jobs == 1:
+                    output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
+
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(
+                                    annot_directory,
+                                    remove=True
+                                ),
+                                gatk.variant_annotator(
+                                    input_normal,
+                                    input_tumor,
+                                    input_somatic_variants,
+                                    output_somatic_variants,
+                                    config.param('gatk_variant_annotator_somatic', 'other_options')
+                                )
+                            ],
+                            name="gatk_variant_annotator_somatic." + tumor_pair.name,
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
+                    )
+
+                else:
+                    unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                    for idx, sequences in enumerate(unique_sequences_per_job):
+                        output_somatic_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) + ".vcf.gz")
+
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    bash.mkdir(
+                                        annot_directory,
+                                        remove=True
+                                    ),
+                                    gatk.variant_annotator(
+                                        input_normal,
+                                        input_tumor,
+                                        input_somatic_variants,
+                                        output_somatic_variants,
+                                        config.param('gatk_variant_annotator_somatic', 'other_options'),
+                                        intervals=sequences
+                                    )
+                                ],
+                                name="gatk_variant_annotator_somatic." + str(idx) + "." + tumor_pair.name,
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
+                        )
+
+                    output_somatic_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz")
 
                     jobs.append(
                         concat_jobs(
@@ -4694,38 +4724,14 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     input_somatic_variants,
                                     output_somatic_variants,
                                     config.param('gatk_variant_annotator_somatic', 'other_options'),
-                                    intervals=sequences
+                                    exclude_intervals=unique_sequences_per_job_others
                                 )
                             ],
-                            name="gatk_variant_annotator_somatic." + str(idx) + "." + tumor_pair.name,
+                            name="gatk_variant_annotator_somatic.others." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
-
-                output_somatic_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz")
-
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                annot_directory,
-                                remove=True
-                            ),
-                            gatk.variant_annotator(
-                                input_normal,
-                                input_tumor,
-                                input_somatic_variants,
-                                output_somatic_variants,
-                                config.param('gatk_variant_annotator_somatic', 'other_options'),
-                                exclude_intervals=unique_sequences_per_job_others
-                            )
-                        ],
-                        name="gatk_variant_annotator_somatic.others." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
 
         return jobs
 
@@ -4743,56 +4749,35 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_variant_annotator.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Variant annotation done already... Skipping merge variant annotator germline step for sample {tumor_pair.name}...")
+
             else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                if tumor_pair.multiple_normal == 1:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+                else:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+                tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
-            [input_normal] = self.select_input_files(
-                [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
-                ]
-            )
-            [input_tumor] = self.select_input_files(
-                [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
-                ]
-            )
-            input_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
-
-            if nb_jobs == 1:
-                output_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
-
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                annot_directory,
-                                remove=True
-                            ),
-                            gatk.variant_annotator(
-                                input_normal,
-                                input_tumor,
-                                input_germline_variants,
-                                output_germline_variants,
-                                config.param('gatk_variant_annotator_germline', 'other_options'),
-                            )
-                        ],
-                        name="gatk_variant_annotator_germline." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
+                annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
+                [input_normal] = self.select_input_files(
+                    [
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
+                    ]
                 )
+                [input_tumor] = self.select_input_files(
+                    [
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
+                    ]
+                )
+                input_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
 
-            else:
-                unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
-                for idx, sequences in enumerate(unique_sequences_per_job):
-                    output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
+                if nb_jobs == 1:
+                    output_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
 
                     jobs.append(
                         concat_jobs(
@@ -4807,38 +4792,64 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     input_germline_variants,
                                     output_germline_variants,
                                     config.param('gatk_variant_annotator_germline', 'other_options'),
-                                    intervals=sequences
                                 )
                             ],
-                            name="gatk_variant_annotator_germline." + str(idx) + "." + tumor_pair.name,
+                            name="gatk_variant_annotator_germline." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
-                output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot.others.vcf.gz")
+                else:
+                    unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                    for idx, sequences in enumerate(unique_sequences_per_job):
+                        output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
 
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                annot_directory,
-                                remove=True
-                            ),
-                            gatk.variant_annotator(
-                                input_normal,
-                                input_tumor,
-                                input_germline_variants,
-                                output_germline_variants,
-                                config.param('gatk_variant_annotator_germline', 'other_options'),
-                                exclude_intervals=unique_sequences_per_job_others
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    bash.mkdir(
+                                        annot_directory,
+                                        remove=True
+                                    ),
+                                    gatk.variant_annotator(
+                                        input_normal,
+                                        input_tumor,
+                                        input_germline_variants,
+                                        output_germline_variants,
+                                        config.param('gatk_variant_annotator_germline', 'other_options'),
+                                        intervals=sequences
+                                    )
+                                ],
+                                name="gatk_variant_annotator_germline." + str(idx) + "." + tumor_pair.name,
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                             )
-                        ],
-                        name="gatk_variant_annotator_germline.others." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
+
+                    output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot.others.vcf.gz")
+
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(
+                                    annot_directory,
+                                    remove=True
+                                ),
+                                gatk.variant_annotator(
+                                    input_normal,
+                                    input_tumor,
+                                    input_germline_variants,
+                                    output_germline_variants,
+                                    config.param('gatk_variant_annotator_germline', 'other_options'),
+                                    exclude_intervals=unique_sequences_per_job_others
+                                )
+                            ],
+                            name="gatk_variant_annotator_germline.others." + tumor_pair.name,
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
                     )
-                )
 
         return jobs
 
@@ -4853,32 +4864,37 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
-            annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
-            output_somatic = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
-            if nb_jobs > 1:
-                unique_sequences_per_job, _ = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
-                vcfs_to_merge = [os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) +".vcf.gz")
-                                  for idx in range(len(unique_sequences_per_job))]
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_variant_annotator.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Variant annotation done already... Skipping merge variant annotator germline step for sample {tumor_pair.name}...")
 
-                vcfs_to_merge.append(os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz"))
+            else:
+                annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
+                output_somatic = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
+                if nb_jobs > 1:
+                    unique_sequences_per_job, _ = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                    vcfs_to_merge = [os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) +".vcf.gz")
+                                    for idx in range(len(unique_sequences_per_job))]
 
-                jobs.append(
-                    pipe_jobs(
-                        [
-                            bcftools.concat(
-                                vcfs_to_merge,
-                                None
-                            ),
-                            htslib.bgzip_tabix(
-                                None,
-                                output_somatic
-                            )
-                        ],
-                        name="merge_gatk_variant_annotator.somatic." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    vcfs_to_merge.append(os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz"))
+
+                    jobs.append(
+                        pipe_jobs(
+                            [
+                                bcftools.concat(
+                                    vcfs_to_merge,
+                                    None
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    output_somatic
+                                )
+                            ],
+                            name="merge_gatk_variant_annotator.somatic." + tumor_pair.name,
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
                     )
-                )
 
         return jobs
 
@@ -4893,33 +4909,54 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
-            annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
-            output_germline = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_variant_annotator.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Variant annotation done already... Skipping merge variant annotator germline step for sample {tumor_pair.name}...")
 
-            if nb_jobs > 1:
-                unique_sequences_per_job, _ = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
-                vcfs_to_merge = [os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation", tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
-                                 for idx in range(len(unique_sequences_per_job))]
+            else:
+                annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
+                output_germline = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
 
-                vcfs_to_merge.append(os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot.others.vcf.gz"))
+                if nb_jobs > 1:
+                    unique_sequences_per_job, _ = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                    vcfs_to_merge = [os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation", tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
+                                    for idx in range(len(unique_sequences_per_job))]
 
-                jobs.append(
-                    pipe_jobs(
-                        [
-                            bcftools.concat(
-                                vcfs_to_merge,
-                                None
-                            ),
-                            htslib.bgzip_tabix(
-                                None,
-                                output_germline
-                            )
-                        ],
-                        name="merge_gatk_variant_annotator.germline." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    vcfs_to_merge.append(os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot.others.vcf.gz"))
+
+                    jobs.append(
+                        pipe_jobs(
+                            [
+                                bcftools.concat(
+                                    vcfs_to_merge,
+                                    None
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    output_germline
+                                )
+                            ],
+                            name="merge_gatk_variant_annotator.germline." + tumor_pair.name,
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
                     )
-                )
+
+                    # add checkpoint and remove rawAnnotation directory
+                    output_somatic = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
+                    checkpoint_job = concat_jobs(
+                        [
+                            bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
+                            bash.touch(checkpoint_done_file),
+                            bash.rm(annot_directory)
+                        ],
+                        name=f"checkpoint.gatk_variant_annotator.{tumor_pair.name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        input_dependency=[output_somatic, output_germline]
+                    )
+
+                    jobs.append(checkpoint_job)
 
         return jobs
 
