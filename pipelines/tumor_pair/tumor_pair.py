@@ -3530,15 +3530,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 os.path.join(somatic_dir, "results/variants/somatic.snvs.vcf.gz"),
                 os.path.join(somatic_dir, "results/variants/somatic.indels.vcf.gz")
             ]
-
-            sed_cmd = Job(
-                    [os.path.join(somatic_dir, "runWorkflow.py")],
-                    [os.path.join(somatic_dir, "runWorkflow.py")],
-                    command="""\
-sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
-    input=os.path.join(somatic_dir, "runWorkflow.py")
-    )
-)
             
             jobs.append(
                 concat_jobs(
@@ -3551,7 +3542,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             bed_file,
                             manta_indels
                         ),
-                        sed_cmd,
                         strelka2.run(
                             somatic_dir,
                             output_dep=output_dep
@@ -3644,6 +3634,29 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 )
             )
 
+            # create checkpoint and remove tmp files
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"strelka2_paired_somatic.{tumor_pair.name}.stepDone")
+            checkpoint_job = concat_jobs(
+                [
+                    bash.mkdir(
+                        os.path.join(self.output_dirs["job_directory"], 'checkpoints')
+                    ),
+                    bash.touch(checkpoint_done_file),
+                    bash.rm(
+                        os.path.join(somatic_dir, "workspace")
+                    ),
+                    bash.rm(
+                        os.path.join(somatic_dir, "run*")
+                    )
+                ],
+                name=f"checkpoint.strelka2_paired_somatic.{tumor_pair.name}",
+                samples=[tumor_pair.normal, tumor_pair.tumor],
+                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                input_dependency=[f"{output_prefix}.strelka2.somatic.vt.vcf.gz"]
+            )
+
+            jobs.append(checkpoint_job)
+
         return jobs
 
     def strelka2_paired_germline(self):
@@ -3721,14 +3734,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             output_dep = [os.path.join(germline_dir, "results", "variants", "variants.vcf.gz")]
 
-            sed_cmd = Job(
-                    [os.path.join(germline_dir, "runWorkflow.py")],
-                    [os.path.join(germline_dir, "runWorkflow.py")],
-                    command="""\
-sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
-    input=os.path.join(germline_dir, "runWorkflow.py")
-    )
-)
             jobs.append(
                 concat_jobs(
                     [
@@ -3738,7 +3743,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             germline_dir,
                             bed_file,
                         ),
-                        sed_cmd,
                         strelka2.run(
                             germline_dir,
                             output_dep=output_dep
@@ -3825,6 +3829,29 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
+
+            # create checkpoint and remove tmp files
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"strelka2_paired_germline.{tumor_pair.name}.stepDone")
+            checkpoint_job = concat_jobs(
+                [
+                    bash.mkdir(
+                        os.path.join(self.output_dirs["job_directory"], 'checkpoints')
+                    ),
+                    bash.touch(checkpoint_done_file),
+                    bash.rm(
+                        os.path.join(germline_dir, "workspace")
+                    ),
+                    bash.rm(
+                        os.path.join(germline_dir, "run*")
+                    )
+                ],
+                name=f"checkpoint.strelka2_paired_germline.{tumor_pair.name}",
+                samples=[tumor_pair.normal, tumor_pair.tumor],
+                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                input_dependency=[f"{output_prefix}.strelka2.germline.vt.vcf.gz"]
+            )
+
+            jobs.append(checkpoint_job)
 
         return jobs
 
