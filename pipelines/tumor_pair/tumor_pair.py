@@ -4023,104 +4023,90 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"vardict_paired.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Vardict done already... Skipping paired vardict step for sample {tumor_pair.name}...")
+
             else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                if tumor_pair.multiple_normal == 1:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+                else:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+                tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
-            vardict_directory = os.path.join(pair_directory, "rawVardict")
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                vardict_directory = os.path.join(pair_directory, "rawVardict")
 
-            [input_normal] = self.select_input_files(
-                [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
-                ]
-            )
-
-            [input_tumor] = self.select_input_files(
-                [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
-                ]
-            )
-
-            if use_bed:
-                idx = 0
-                for interval in interval_list:
-                    bed = re.sub("interval_list$", "bed", interval)
-                    output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx).zfill(4) + ".vardict.vcf.gz")
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                bash.mkdir(
-                                    vardict_directory,
-                                    remove=True
-                                ),
-                                gatk4.interval_list2bed(
-                                    interval,
-                                    bed
-                                ),
-                                pipe_jobs(
-                                    [
-                                        vardict.paired_java(
-                                            input_normal,
-                                            input_tumor,
-                                            tumor_pair.name,
-                                            None,
-                                            bed
-                                        ),
-                                        vardict.testsomatic(
-                                            None,
-                                            None
-                                        ),
-                                        vardict.var2vcf(
-                                            None,
-                                            tumor_pair.normal.name,
-                                            tumor_pair.tumor.name,
-                                            None
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output
-                                        )
-                                    ]
-                                )
-                            ],
-                            name="vardict_paired." + tumor_pair.name + "." + str(idx).zfill(4),
-                            samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                        )
-                    )
-                    idx += 1
-            else:
-                beds = []
-                for idx in range(nb_jobs):
-                    beds.append(os.path.join(vardict_directory, "chr." + str(idx) + ".bed"))
-
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                vardict_directory,
-                                remove=True
-                            ),
-                            vardict.dict2beds(
-                                genome_dictionary,
-                                beds
-                            )
-                        ],
-                        name="vardict.genome.beds." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
+                [input_normal] = self.select_input_files(
+                    [
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    ]
                 )
-                for idx in range(nb_jobs):
-                    output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
+
+                [input_tumor] = self.select_input_files(
+                    [
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    ]
+                )
+
+                if use_bed:
+                    idx = 0
+                    for interval in interval_list:
+                        bed = re.sub("interval_list$", "bed", interval)
+                        output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx).zfill(4) + ".vardict.vcf.gz")
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    bash.mkdir(
+                                        vardict_directory,
+                                        remove=True
+                                    ),
+                                    gatk4.interval_list2bed(
+                                        interval,
+                                        bed
+                                    ),
+                                    pipe_jobs(
+                                        [
+                                            vardict.paired_java(
+                                                input_normal,
+                                                input_tumor,
+                                                tumor_pair.name,
+                                                None,
+                                                bed
+                                            ),
+                                            vardict.testsomatic(
+                                                None,
+                                                None
+                                            ),
+                                            vardict.var2vcf(
+                                                None,
+                                                tumor_pair.normal.name,
+                                                tumor_pair.tumor.name,
+                                                None
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output
+                                            )
+                                        ]
+                                    )
+                                ],
+                                name="vardict_paired." + tumor_pair.name + "." + str(idx).zfill(4),
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
+                        )
+                        idx += 1
+                else:
+                    beds = []
+                    for idx in range(nb_jobs):
+                        beds.append(os.path.join(vardict_directory, "chr." + str(idx) + ".bed"))
+
                     jobs.append(
                         concat_jobs(
                             [
@@ -4128,37 +4114,56 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     vardict_directory,
                                     remove=True
                                 ),
-                                pipe_jobs(
-                                    [
-                                        vardict.paired_java(
-                                            input_normal,
-                                            input_tumor,
-                                            tumor_pair.name,
-                                            None,
-                                            beds[idx]
-                                        ),
-                                        vardict.testsomatic(
-                                            None,
-                                            None
-                                        ),
-                                        vardict.var2vcf(
-                                            None,
-                                            tumor_pair.normal.name,
-                                            tumor_pair.tumor.name,
-                                            None
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output
-                                        )
-                                    ]
+                                vardict.dict2beds(
+                                    genome_dictionary,
+                                    beds
                                 )
                             ],
-                            name="vardict_paired." + tumor_pair.name + "." + str(idx),
+                            name="vardict.genome.beds." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
+                    for idx in range(nb_jobs):
+                        output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    bash.mkdir(
+                                        vardict_directory,
+                                        remove=True
+                                    ),
+                                    pipe_jobs(
+                                        [
+                                            vardict.paired_java(
+                                                input_normal,
+                                                input_tumor,
+                                                tumor_pair.name,
+                                                None,
+                                                beds[idx]
+                                            ),
+                                            vardict.testsomatic(
+                                                None,
+                                                None
+                                            ),
+                                            vardict.var2vcf(
+                                                None,
+                                                tumor_pair.normal.name,
+                                                tumor_pair.tumor.name,
+                                                None
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output
+                                            )
+                                        ]
+                                    )
+                                ],
+                                name="vardict_paired." + tumor_pair.name + "." + str(idx),
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
+                        )
 
         return jobs
 
@@ -4174,220 +4179,239 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         use_bed = config.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
-            vardict_directory = os.path.join(pair_directory, "rawVardict")
-            output_tmp = os.path.join(pair_directory, tumor_pair.name + ".vardict.tmp.vcf.gz")
-            output = os.path.join(pair_directory, tumor_pair.name + ".vardict.vcf.gz")
-            output_vt = os.path.join(pair_directory, tumor_pair.name + ".vardict.vt.vcf.gz")
-            output_somatic = os.path.join(pair_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
-            output_germline_loh = os.path.join(pair_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"vardict_paired.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Vardict done already... Skipping merge vardict step for sample {tumor_pair.name}...")
 
-            if nb_jobs == 1 and use_bed:
-                input = os.path.join(vardict_directory, tumor_pair.name + "." + str(0).zfill(4) + ".vardict.vcf.gz")
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.ln(
-                                os.path.relpath(input, os.path.dirname(output_tmp)),
-                                output_tmp,
-                                input=input
-                            ),
-                            pipe_jobs(
-                                [
-                                    bash.cat(
-                                        output_tmp,
-                                        None,
-                                        zip=True
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-Ev 'chrUn|random'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-v 'EBV'"
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        output
-                                    )
-                                ]
-                            ),
-                            pipe_jobs(
-                                [
-                                    vt.decompose_and_normalize_mnps(
-                                        output,
-                                        None
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        output_vt
-                                    )
-                                ]
-                            ),
-                            pipe_jobs(
-                                [
-                                    bcftools.view(
-                                        output_vt,
-                                        None,
-                                        config.param('merge_filter_paired_vardict', 'somatic_filter_options')
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        output_somatic
-                                    )
-                                ]
-                            ),
-                            pipe_jobs(
-                                [
-                                    bcftools.view(
-                                        output_vt,
-                                        None,
-                                        config.param('merge_filter_paired_vardict', 'germline_filter_options')
-                                    ),
-                                    bcftools.view(
-                                        None,
-                                        None,
-                                        config.param('merge_filter_paired_vardict', 'genotype_filter_options')
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        output_germline_loh
-                                    )
-                                ]
-                            )
-                        ],
-                        name="symlink_vardict_vcf." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
             else:
-                input_vcfs = []
-                for idx in range(nb_jobs):
-                    input_vcfs.append(
-                        os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz"))
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                vardict_directory = os.path.join(pair_directory, "rawVardict")
+                output_tmp = os.path.join(pair_directory, tumor_pair.name + ".vardict.tmp.vcf.gz")
+                output = os.path.join(pair_directory, tumor_pair.name + ".vardict.vcf.gz")
+                output_vt = os.path.join(pair_directory, tumor_pair.name + ".vardict.vt.vcf.gz")
+                output_somatic = os.path.join(pair_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
+                output_germline_loh = os.path.join(pair_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
 
-                for input_vcf in input_vcfs:
-                    if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
-                        log.error(f"Incomplete vardict vcf: {input_vcf}\n")
-
-                jobs.append(
-                    concat_jobs(
-                        [
-                            pipe_jobs(
-                                [
-                                    bcftools.concat(
-                                        input_vcfs,
-                                        None
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"
-                                    ),
-                                    bash.awk(
-                                        None,
-                                        None,
-                                        "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-v 'GL00'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-Ev 'chrUn|random'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-v 'EBV'"
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        output
-                                    )
-                                ]
-                            ),
-                            pipe_jobs(
-                                [
-                                    vt.decompose_and_normalize_mnps(
-                                        output,
-                                        None
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        output_vt
-                                    )
-                                ]
-                            ),
-                            pipe_jobs(
-                                [
-                                    bcftools.view(
-                                        output_vt,
-                                        None,
-                                        config.param('merge_filter_paired_vardict', 'somatic_filter_options')
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        output_somatic
-                                    )
-                                ]
-                            ),
-                            pipe_jobs(
-                                [
-                                    bcftools.view(
-                                        output_vt,
-                                        None,
-                                        config.param('merge_filter_paired_vardict', 'germline_filter_options')
-                                    ),
-                                    bcftools.view(
-                                        None,
-                                        None,
-                                        config.param('merge_filter_paired_vardict', 'genotype_filter_options')
-                                    ),
-                                    htslib.bgzip_tabix(
-                                        None,
-                                        output_germline_loh
-                                    )
-                                ]
-                            )
-                        ],
-                        name="merge_filter_paired_vardict." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                if nb_jobs == 1 and use_bed:
+                    input = os.path.join(vardict_directory, tumor_pair.name + "." + str(0).zfill(4) + ".vardict.vcf.gz")
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.ln(
+                                    os.path.relpath(input, os.path.dirname(output_tmp)),
+                                    output_tmp,
+                                    input=input
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bash.cat(
+                                            output_tmp,
+                                            None,
+                                            zip=True
+                                        ),
+                                        bash.awk(
+                                            None,
+                                            None,
+                                            "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"
+                                        ),
+                                        bash.awk(
+                                            None,
+                                            None,
+                                            "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"
+                                        ),
+                                        bash.awk(
+                                            None,
+                                            None,
+                                            "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            None,
+                                            "-v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            None,
+                                            "-Ev 'chrUn|random'"
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            None,
+                                            "-v 'EBV'"
+                                        ),
+                                        htslib.bgzip_tabix(
+                                            None,
+                                            output
+                                        )
+                                    ]
+                                ),
+                                pipe_jobs(
+                                    [
+                                        vt.decompose_and_normalize_mnps(
+                                            output,
+                                            None
+                                        ),
+                                        htslib.bgzip_tabix(
+                                            None,
+                                            output_vt
+                                        )
+                                    ]
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bcftools.view(
+                                            output_vt,
+                                            None,
+                                            config.param('merge_filter_paired_vardict', 'somatic_filter_options')
+                                        ),
+                                        htslib.bgzip_tabix(
+                                            None,
+                                            output_somatic
+                                        )
+                                    ]
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bcftools.view(
+                                            output_vt,
+                                            None,
+                                            config.param('merge_filter_paired_vardict', 'germline_filter_options')
+                                        ),
+                                        bcftools.view(
+                                            None,
+                                            None,
+                                            config.param('merge_filter_paired_vardict', 'genotype_filter_options')
+                                        ),
+                                        htslib.bgzip_tabix(
+                                            None,
+                                            output_germline_loh
+                                        )
+                                    ]
+                                )
+                            ],
+                            name="symlink_vardict_vcf." + tumor_pair.name,
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
                     )
+                else:
+                    input_vcfs = []
+                    for idx in range(nb_jobs):
+                        input_vcfs.append(
+                            os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz"))
+
+                    for input_vcf in input_vcfs:
+                        if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
+                            log.error(f"Incomplete vardict vcf: {input_vcf}\n")
+
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                pipe_jobs(
+                                    [
+                                        bcftools.concat(
+                                            input_vcfs,
+                                            None
+                                        ),
+                                        bash.awk(
+                                            None,
+                                            None,
+                                            "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"
+                                        ),
+                                        bash.awk(
+                                            None,
+                                            None,
+                                            "-F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"
+                                        ),
+                                        bash.awk(
+                                            None,
+                                            None,
+                                            "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            None,
+                                            "-v 'GL00'"
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            None,
+                                            "-Ev 'chrUn|random'"
+                                        ),
+                                        bash.grep(
+                                            None,
+                                            None,
+                                            "-v 'EBV'"
+                                        ),
+                                        htslib.bgzip_tabix(
+                                            None,
+                                            output
+                                        )
+                                    ]
+                                ),
+                                pipe_jobs(
+                                    [
+                                        vt.decompose_and_normalize_mnps(
+                                            output,
+                                            None
+                                        ),
+                                        htslib.bgzip_tabix(
+                                            None,
+                                            output_vt
+                                        )
+                                    ]
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bcftools.view(
+                                            output_vt,
+                                            None,
+                                            config.param('merge_filter_paired_vardict', 'somatic_filter_options')
+                                        ),
+                                        htslib.bgzip_tabix(
+                                            None,
+                                            output_somatic
+                                        )
+                                    ]
+                                ),
+                                pipe_jobs(
+                                    [
+                                        bcftools.view(
+                                            output_vt,
+                                            None,
+                                            config.param('merge_filter_paired_vardict', 'germline_filter_options')
+                                        ),
+                                        bcftools.view(
+                                            None,
+                                            None,
+                                            config.param('merge_filter_paired_vardict', 'genotype_filter_options')
+                                        ),
+                                        htslib.bgzip_tabix(
+                                            None,
+                                            output_germline_loh
+                                        )
+                                    ]
+                                )
+                            ],
+                            name="merge_filter_paired_vardict." + tumor_pair.name,
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
+                    )
+
+                # create checkpoint and remove tmp directory
+                checkpoint_job = concat_jobs(
+                    [
+                        bash.touch(checkpoint_done_file),
+                        bash.rm(vardict_directory)
+                    ],
+                    name=f"checkpoint.paired_mutect2.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    input_dependency=[output_somatic, output_germline_loh, output_vt]
                 )
+
+                jobs.append(checkpoint_job)
 
         return jobs
 
