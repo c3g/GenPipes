@@ -718,8 +718,10 @@ class TumorPair(dnaseq.DnaSeqRaw):
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+                normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                normal_metrics = os.path.join(tumor_pair.normal.name)
 
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
@@ -829,6 +831,38 @@ class TumorPair(dnaseq.DnaSeqRaw):
             job.samples = [tumor_pair.tumor]
             job.readsets = list(tumor_pair.tumor.readsets)
             jobs.append(job)
+
+            # add checkpoint and remove input bam files
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"recalibration.{tumor_pair.name}.stepDone")
+            concordance_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".concordance.tsv")
+            contamination_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".contamination.tsv")
+            normal_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", normal_metrics, "fastqc")
+            tumor_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "fastqc")
+            tumor_output = os.path.join(tumor_fastqc_directory, tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")
+            normal_output = os.path.join(normal_fastqc_directory, tumor_pair.normal.name + ".sorted.dup_fastqc.zip")
+            
+            checkpoint_job = concat_jobs(
+                [
+                    bash.touch(checkpoint_done_file),
+                    bash.rm(normal_input),
+                    bash.rm(f"{normal_input}.bai"),
+                    bash.rm(tumor_input),
+                    bash.rm(f"{tumor_input}.bai")
+                ],
+                name=f"checkpoint.recalibration.{tumor_pair.name}",
+                samples=[tumor_pair.normal, tumor_pair.tumor],
+                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                input_dependency=[
+                    normal_print_reads_output,
+                    tumor_print_reads_output,
+                    concordance_out,
+                    contamination_out,
+                    tumor_output,
+                    normal_output
+                    ]
+                )
+
+            jobs.append(checkpoint_job)
 
         return jobs
 
@@ -4461,7 +4495,10 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             inputs_somatic,
                             output_ensemble,
                             config.param('bcbio_ensemble_somatic', 'options')
-                        )
+                        ),
+                        bash.rm(
+                            os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt-work")
+                            )
                     ],
                     name="bcbio_ensemble_somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -4525,7 +4562,10 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             inputs_germline,
                             output_ensemble,
                             config.param('bcbio_ensemble_germline', 'options')
-                        )
+                        ),
+                        bash.rm(
+                            os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")
+                            )
                     ],
                     name="bcbio_ensemble_germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
