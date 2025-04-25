@@ -2966,88 +2966,62 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             log.warning("Number of mutect jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"paired_mutect2.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Mutect2 done already... Skipping paired mutect2 step for sample {tumor_pair.name}...")
+
             else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                if tumor_pair.multiple_normal == 1:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+                else:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+                tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
-            mutect_directory = os.path.join(pair_directory, "rawMuTect2")
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                mutect_directory = os.path.join(pair_directory, "rawMuTect2")
 
-            [input_normal] = self.select_input_files(
-                [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
-                ]
-            )
-
-            [input_tumor] = self.select_input_files(
-                [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
-                ]
-            )
-
-            interval_list = None
-
-            coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
-            if coverage_bed:
-                interval_list = os.path.join(mutect_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
-
-                if not interval_list in created_interval_lists:
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                bash.mkdir(mutect_directory),
-                                tools.bed2interval_list(
-                                    coverage_bed,
-                                    interval_list
-                                )
-                            ],
-                            name="interval_list." + tumor_pair.name,
-                            samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                        )
-                    )
-                    created_interval_lists.append(interval_list)
-
-            if nb_jobs == 1:
-
-                jobs.append(
-                    concat_jobs(
-                        [
-                            # Create output directory since it is not done by default by GATK tools
-                            bash.mkdir(
-                                mutect_directory,
-                                remove=True
-                            ),
-                            gatk4.mutect2(
-                                input_normal,
-                                tumor_pair.normal.name,
-                                input_tumor,
-                                tumor_pair.tumor.name,
-                                os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
-                                os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz"),
-                                interval_list=interval_list
-                            )
-                        ],
-                        name="gatk_mutect2." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
+                [input_normal] = self.select_input_files(
+                    [
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+                    ]
                 )
 
-            else:
-                unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                [input_tumor] = self.select_input_files(
+                    [
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    ]
+                )
 
-                # Create one separate job for each of the first sequences
-                for idx, sequences in enumerate(unique_sequences_per_job):
+                interval_list = None
 
-                    outprefix = tumor_pair.name + "." + str(idx) + ".mutect2"
+                coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
+                if coverage_bed:
+                    interval_list = os.path.join(mutect_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
+
+                    if not interval_list in created_interval_lists:
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    bash.mkdir(mutect_directory),
+                                    tools.bed2interval_list(
+                                        coverage_bed,
+                                        interval_list
+                                    )
+                                ],
+                                name="interval_list." + tumor_pair.name,
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
+                        )
+                        created_interval_lists.append(interval_list)
+
+                if nb_jobs == 1:
+
                     jobs.append(
                         concat_jobs(
                             [
@@ -3061,43 +3035,74 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     tumor_pair.normal.name,
                                     input_tumor,
                                     tumor_pair.tumor.name,
-                                    os.path.join(mutect_directory, outprefix + ".vcf.gz"),
-                                    os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"),
-                                    intervals=sequences,
+                                    os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
+                                    os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz"),
                                     interval_list=interval_list
                                 )
                             ],
-                            name="gatk_mutect2." + tumor_pair.name + "." + str(idx),
+                            name="gatk_mutect2." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
-                # Create one last job to process the last remaining sequences and 'others' sequences
-                jobs.append(
-                    concat_jobs(
-                        [
-                            # Create output directory since it is not done by default by GATK tools
-                            bash.mkdir(
-                                mutect_directory,
-                                remove=True
-                            ),
-                            gatk4.mutect2(
-                                input_normal,
-                                tumor_pair.normal.name,
-                                input_tumor,
-                                tumor_pair.tumor.name,
-                                os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"),
-                                os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"),
-                                exclude_intervals=unique_sequences_per_job_others,
-                                interval_list=interval_list
+                else:
+                    unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+
+                    # Create one separate job for each of the first sequences
+                    for idx, sequences in enumerate(unique_sequences_per_job):
+
+                        outprefix = tumor_pair.name + "." + str(idx) + ".mutect2"
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    # Create output directory since it is not done by default by GATK tools
+                                    bash.mkdir(
+                                        mutect_directory,
+                                        remove=True
+                                    ),
+                                    gatk4.mutect2(
+                                        input_normal,
+                                        tumor_pair.normal.name,
+                                        input_tumor,
+                                        tumor_pair.tumor.name,
+                                        os.path.join(mutect_directory, outprefix + ".vcf.gz"),
+                                        os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"),
+                                        intervals=sequences,
+                                        interval_list=interval_list
+                                    )
+                                ],
+                                name="gatk_mutect2." + tumor_pair.name + "." + str(idx),
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                             )
-                        ],
-                        name="gatk_mutect2." + tumor_pair.name + ".others",
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
+
+                    # Create one last job to process the last remaining sequences and 'others' sequences
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                # Create output directory since it is not done by default by GATK tools
+                                bash.mkdir(
+                                    mutect_directory,
+                                    remove=True
+                                ),
+                                gatk4.mutect2(
+                                    input_normal,
+                                    tumor_pair.normal.name,
+                                    input_tumor,
+                                    tumor_pair.tumor.name,
+                                    os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"),
+                                    os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"),
+                                    exclude_intervals=unique_sequences_per_job_others,
+                                    interval_list=interval_list
+                                )
+                            ],
+                            name="gatk_mutect2." + tumor_pair.name + ".others",
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
                     )
-                )
 
         return jobs
 
@@ -3113,342 +3118,361 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         nb_jobs = config.param('gatk_mutect2', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
-            mutect_directory = os.path.join(pair_directory, "rawMuTect2")
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            output_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz")
-            output_flt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.flt.vcf.gz")
-            output_vt_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vt.vcf.gz")
-            output_somatic_vt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"paired_mutect2.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Mutect2 done already... Skipping merge mutect2 step for sample {tumor_pair.name}...")
 
-            if nb_jobs == 1:
-                if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                gatk4.learn_read_orientation_model(
-                                    [os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz")],
-                                    os.path.join(pair_directory, tumor_pair.name + ".f1r2.tar.gz")
-                                ),
-                                gatk4.filter_mutect_calls(
-                                    os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
-                                    output_flt,
-                                    read_orientation=os.path.join(pair_directory, tumor_pair.name + ".f1r2.tar.gz")
-                                ),
-                                pipe_jobs(
-                                    [
-                                        vt.decompose_and_normalize_mnps(
-                                            output_flt,
-                                            None
-                                        ),
-                                        pipe_jobs(
-                                            [
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-v 'GL00'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-Ev 'chrUn|random'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-vE 'EBV|hs37d5'"
-                                                ),
-                                                bash.sed(
-                                                    None,
-                                                    None,
-                                                    "-e 's#/\.##g'"
-                                                )
-                                            ]
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output_vt_gz
-                                        )
-                                    ]
-                                ),
-                                pipe_jobs(
-                                    [
-                                        bcftools.view(
-                                            output_vt_gz,
-                                            None,
-                                            config.param('merge_filter_mutect2', 'filter_options')
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output_somatic_vt
-                                        )
-                                    ]
-                                )
-                            ],
-                            name="merge_filter_mutect2." + tumor_pair.name,
-                            samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+            else:
+                pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+                mutect_directory = os.path.join(pair_directory, "rawMuTect2")
+                # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+                output_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz")
+                output_flt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.flt.vcf.gz")
+                output_vt_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vt.vcf.gz")
+                output_somatic_vt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
+
+                if nb_jobs == 1:
+                    if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    gatk4.learn_read_orientation_model(
+                                        [os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz")],
+                                        os.path.join(pair_directory, tumor_pair.name + ".f1r2.tar.gz")
+                                    ),
+                                    gatk4.filter_mutect_calls(
+                                        os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
+                                        output_flt,
+                                        read_orientation=os.path.join(pair_directory, tumor_pair.name + ".f1r2.tar.gz")
+                                    ),
+                                    pipe_jobs(
+                                        [
+                                            vt.decompose_and_normalize_mnps(
+                                                output_flt,
+                                                None
+                                            ),
+                                            pipe_jobs(
+                                                [
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-v 'GL00'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-Ev 'chrUn|random'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-vE 'EBV|hs37d5'"
+                                                    ),
+                                                    bash.sed(
+                                                        None,
+                                                        None,
+                                                        "-e 's#/\.##g'"
+                                                    )
+                                                ]
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output_vt_gz
+                                            )
+                                        ]
+                                    ),
+                                    pipe_jobs(
+                                        [
+                                            bcftools.view(
+                                                output_vt_gz,
+                                                None,
+                                                config.param('merge_filter_mutect2', 'filter_options')
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output_somatic_vt
+                                            )
+                                        ]
+                                    )
+                                ],
+                                name="merge_filter_mutect2." + tumor_pair.name,
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
                         )
-                    )
 
-                else:
-                    input_vcf = os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz")
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                bash.ln(
-                                    os.path.relpath(input_vcf, os.path.dirname(output_gz)),
-                                    output_gz,
-                                    input=input_vcf
-                                ),
-                                #gatk4.filter_mutect_calls(output_gz, output_flt),
-                                pipe_jobs(
-                                    [
-                                        vt.decompose_and_normalize_mnps(
-                                            output_gz,
-                                            None
-                                        ),
-                                        pipe_jobs(
-                                            [
-                                                bash.sed(
-                                                    None,
-                                                    None,
-                                                    "'s/TUMOR/" + tumor_pair.tumor.name + "/g'"
-                                                ),
-                                                bash.sed(
-                                                    None,
-                                                    None,
-                                                    "'s/NORMAL/" + tumor_pair.normal.name + "/g'"
-                                                ),
-                                                bash.sed(
-                                                    None,
-                                                    None,
-                                                    "'s/Number=R/Number=./g'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-v 'GL00'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-Ev 'chrUn|random'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-vE 'EBV|hs37d5'"
-                                                ),
-                                                bash.sed(
-                                                    None,
-                                                    None,
-                                                    "-e 's#/\.##g'"
-                                                )
-                                            ]
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output_somatic_vt
-                                        )
-                                    ]
-                                )
-                            ],
-                            name="symlink_mutect_vcf." + tumor_pair.name,
-                            samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    else:
+                        input_vcf = os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz")
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    bash.ln(
+                                        os.path.relpath(input_vcf, os.path.dirname(output_gz)),
+                                        output_gz,
+                                        input=input_vcf
+                                    ),
+                                    #gatk4.filter_mutect_calls(output_gz, output_flt),
+                                    pipe_jobs(
+                                        [
+                                            vt.decompose_and_normalize_mnps(
+                                                output_gz,
+                                                None
+                                            ),
+                                            pipe_jobs(
+                                                [
+                                                    bash.sed(
+                                                        None,
+                                                        None,
+                                                        "'s/TUMOR/" + tumor_pair.tumor.name + "/g'"
+                                                    ),
+                                                    bash.sed(
+                                                        None,
+                                                        None,
+                                                        "'s/NORMAL/" + tumor_pair.normal.name + "/g'"
+                                                    ),
+                                                    bash.sed(
+                                                        None,
+                                                        None,
+                                                        "'s/Number=R/Number=./g'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-v 'GL00'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-Ev 'chrUn|random'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-vE 'EBV|hs37d5'"
+                                                    ),
+                                                    bash.sed(
+                                                        None,
+                                                        None,
+                                                        "-e 's#/\.##g'"
+                                                    )
+                                                ]
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output_somatic_vt
+                                            )
+                                        ]
+                                    )
+                                ],
+                                name="symlink_mutect_vcf." + tumor_pair.name,
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
                         )
-                    )
 
-            elif nb_jobs > 1:
-                unique_sequences_per_job, _ = sequence_dictionary.split_by_size(
-                    self.sequence_dictionary_variant(), nb_jobs - 1)
+                elif nb_jobs > 1:
+                    unique_sequences_per_job, _ = sequence_dictionary.split_by_size(
+                        self.sequence_dictionary_variant(), nb_jobs - 1)
 
-                # Create one separate job for each of the first sequences
-                inputs = []
-                for idx, _ in enumerate(unique_sequences_per_job):
-                    inputs.append(os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz"))
-                inputs.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"))
-
-                for input_vcf in inputs:
-                    if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
-                        log.error(f"Incomplete mutect2 vcf: {input_vcf}\n")
-
-                if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
-
-                    output_stats = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz.stats")
-                    stats = []
+                    # Create one separate job for each of the first sequences
+                    inputs = []
                     for idx, _ in enumerate(unique_sequences_per_job):
-                        stats.append(
-                            os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz.stats"))
-                    stats.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz.stats"))
+                        inputs.append(os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz"))
+                    inputs.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"))
 
-                    output_models = os.path.join(pair_directory, tumor_pair.name + ".read-orientation-model.tar.gz")
-                    models = []
-                    for idx, sequences in enumerate(unique_sequences_per_job):
-                        models.append(
-                            os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"))
-                    models.append(os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"))
+                    for input_vcf in inputs:
+                        if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
+                            log.error(f"Incomplete mutect2 vcf: {input_vcf}\n")
 
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                gatk4.learn_read_orientation_model(
-                                    models,
-                                    output_models
-                                ),
-                                gatk4.cat_variants(
-                                    inputs,
-                                    output_gz
-                                ),
-                                gatk4.merge_stats(
-                                    stats,
-                                    output_stats
-                                ),
-                                gatk4.filter_mutect_calls(
-                                    output_gz,
-                                    output_flt,
-                                    read_orientation=output_models
-                                ),
-                                pipe_jobs(
-                                    [
-                                        vt.decompose_and_normalize_mnps(
-                                            output_flt,
-                                            None
-                                        ),
-                                        pipe_jobs(
-                                            [
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-v 'GL00'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-Ev 'chrUn|random'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-vE 'EBV|hs37d5'"
-                                                ),
-                                                bash.sed(
-                                                    None,
-                                                    None,
-                                                    "-e 's#/\.##g'"
-                                                )
-                                            ]
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output_vt_gz
-                                        )
-                                    ]
-                                ),
-                                pipe_jobs(
-                                    [
-                                        bcftools.view(
-                                            output_vt_gz,
-                                            None,
-                                            config.param('merge_filter_mutect2', 'filter_options')
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output_somatic_vt
-                                        )
-                                    ]
-                                )
-                            ],
-                            name="merge_filter_mutect2." + tumor_pair.name,
-                            samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
+
+                        output_stats = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz.stats")
+                        stats = []
+                        for idx, _ in enumerate(unique_sequences_per_job):
+                            stats.append(
+                                os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz.stats"))
+                        stats.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz.stats"))
+
+                        output_models = os.path.join(pair_directory, tumor_pair.name + ".read-orientation-model.tar.gz")
+                        models = []
+                        for idx, sequences in enumerate(unique_sequences_per_job):
+                            models.append(
+                                os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"))
+                        models.append(os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"))
+
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    gatk4.learn_read_orientation_model(
+                                        models,
+                                        output_models
+                                    ),
+                                    gatk4.cat_variants(
+                                        inputs,
+                                        output_gz
+                                    ),
+                                    gatk4.merge_stats(
+                                        stats,
+                                        output_stats
+                                    ),
+                                    gatk4.filter_mutect_calls(
+                                        output_gz,
+                                        output_flt,
+                                        read_orientation=output_models
+                                    ),
+                                    pipe_jobs(
+                                        [
+                                            vt.decompose_and_normalize_mnps(
+                                                output_flt,
+                                                None
+                                            ),
+                                            pipe_jobs(
+                                                [
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-v 'GL00'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-Ev 'chrUn|random'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-vE 'EBV|hs37d5'"
+                                                    ),
+                                                    bash.sed(
+                                                        None,
+                                                        None,
+                                                        "-e 's#/\.##g'"
+                                                    )
+                                                ]
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output_vt_gz
+                                            )
+                                        ]
+                                    ),
+                                    pipe_jobs(
+                                        [
+                                            bcftools.view(
+                                                output_vt_gz,
+                                                None,
+                                                config.param('merge_filter_mutect2', 'filter_options')
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output_somatic_vt
+                                            )
+                                        ]
+                                    )
+                                ],
+                                name="merge_filter_mutect2." + tumor_pair.name,
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
                         )
-                    )
 
-                else:
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                pipe_jobs(
-                                    [
-                                        bcftools.concat(
-                                            inputs,
-                                            None,
-                                            config.param('merge_filter_mutect2', 'bcftools_options')
-                                        ),
-                                        pipe_jobs(
-                                            [
-                                                bash.sed(
-                                                    None,
-                                                    None,
-                                                    "'s/TUMOR/" + tumor_pair.tumor.name + "/g'"
-                                                ),
-                                                bash.sed(
-                                                    None,
-                                                    None,
-                                                    "'s/NORMAL/" + tumor_pair.normal.name + "/g'"
-                                                ),
-                                                bash.sed(
-                                                    None,
-                                                    None,
-                                                    "'s/Number=R/Number=./g'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-v 'GL00'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-Ev 'chrUn|random'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-v 'EBV'"
-                                                )
-                                            ]
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output_gz
-                                        )
-                                    ]
-                                ),
-                                #gatk4.filter_mutect_calls(output_gz, output_flt),
-                                pipe_jobs(
-                                    [
-                                        vt.decompose_and_normalize_mnps(
-                                            output_gz,
-                                            None
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output_vt_gz
-                                        )
-                                    ]
-                                ),
-                                pipe_jobs(
-                                    [
-                                        bcftools.view(
-                                            output_vt_gz,
-                                            None,
-                                            config.param('merge_filter_mutect2', 'filter_options')
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output_somatic_vt
-                                        )
-                                    ]
-                                )
-                            ],
-                            name="merge_filter_mutect2." + tumor_pair.name,
-                            samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    else:
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    pipe_jobs(
+                                        [
+                                            bcftools.concat(
+                                                inputs,
+                                                None,
+                                                config.param('merge_filter_mutect2', 'bcftools_options')
+                                            ),
+                                            pipe_jobs(
+                                                [
+                                                    bash.sed(
+                                                        None,
+                                                        None,
+                                                        "'s/TUMOR/" + tumor_pair.tumor.name + "/g'"
+                                                    ),
+                                                    bash.sed(
+                                                        None,
+                                                        None,
+                                                        "'s/NORMAL/" + tumor_pair.normal.name + "/g'"
+                                                    ),
+                                                    bash.sed(
+                                                        None,
+                                                        None,
+                                                        "'s/Number=R/Number=./g'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-v 'GL00'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-Ev 'chrUn|random'"
+                                                    ),
+                                                    bash.grep(
+                                                        None,
+                                                        None,
+                                                        "-v 'EBV'"
+                                                    )
+                                                ]
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output_gz
+                                            )
+                                        ]
+                                    ),
+                                    #gatk4.filter_mutect_calls(output_gz, output_flt),
+                                    pipe_jobs(
+                                        [
+                                            vt.decompose_and_normalize_mnps(
+                                                output_gz,
+                                                None
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output_vt_gz
+                                            )
+                                        ]
+                                    ),
+                                    pipe_jobs(
+                                        [
+                                            bcftools.view(
+                                                output_vt_gz,
+                                                None,
+                                                config.param('merge_filter_mutect2', 'filter_options')
+                                            ),
+                                            htslib.bgzip_tabix(
+                                                None,
+                                                output_somatic_vt
+                                            )
+                                        ]
+                                    )
+                                ],
+                                name="merge_filter_mutect2." + tumor_pair.name,
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
                         )
-                    )
+
+                # create checkpoint job and remove tmp files
+                checkpoint_job = concat_jobs(
+                    [
+                        bash.touch(checkpoint_done_file),
+                        bash.rm(mutect_directory)
+                    ],
+                    name=f"checkpoint.paired_mutect2.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    input_dependency=[output_somatic_vt]
+                )
+
+                jobs.append(checkpoint_job)
 
         return jobs
 
