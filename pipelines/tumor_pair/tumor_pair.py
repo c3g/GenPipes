@@ -672,9 +672,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"recalibration.{tumor_pair.name}.stepDone")
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"sambamba_mark_duplicates.{tumor_pair.name}.stepDone")
             if os.path.exists(checkpoint_done_file) and not self.force_jobs:
-                log.info(f"Recalibration done already... Skipping mark duplicates step for sample {tumor_pair.name}...")
+                log.info(f"Mark duplicates done already... Skipping mark duplicates step for sample {tumor_pair.name}...")
 
             else:
                 if tumor_pair.multiple_normal == 1:
@@ -719,7 +719,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 jobs.append(job)
 
                 # add checkpoint and remove input bam files
-            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"sambamba_mark_duplicates.{tumor_pair.name}.stepDone")
             checkpoint_job = concat_jobs(
                 [
                     bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
