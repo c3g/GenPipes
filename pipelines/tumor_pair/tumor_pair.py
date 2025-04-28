@@ -719,7 +719,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 jobs.append(job)
 
                 # add checkpoint and remove input bam files
-            checkpoint_job = concat_jobs(
+                checkpoint_job = concat_jobs(
                 [
                     bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
                     bash.touch(checkpoint_done_file),
@@ -737,7 +737,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     ]
                 )
 
-            jobs.append(checkpoint_job)
+                jobs.append(checkpoint_job)
 
         return jobs
 
