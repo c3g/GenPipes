@@ -6360,6 +6360,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             jobs.append(
                 concat_jobs(
                     [
+                        bash.mkdir(purple_dir),
                         purple.run(
                             amber_dir,
                             cobalt_dir,
