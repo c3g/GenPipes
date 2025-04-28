@@ -6048,6 +6048,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 jobs.append(
                     concat_jobs(
                         [
+                            bash.mkdir(sequenza_directory),
                             bash.mkdir(
                                 raw_sequenza_directory,
                                 remove=True
@@ -6128,6 +6129,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 jobs.append(
                     concat_jobs(
                         [
+                            bash.mkdir(sequenza_directory),
                             bash.mkdir(
                                 raw_sequenza_directory,
                                 remove=True
