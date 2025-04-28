@@ -623,7 +623,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     checkpoint_tumor_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.tumor.name}.stepDone")
                     input_normal = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")
                     input_tumor = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")
-                    
+
                     checkpoint_job = concat_jobs(
                         [
                             bash.mkdir(
@@ -5050,6 +5050,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 "cpsr"
             )
 
+            cpsr_zip = os.path.join(ensemble_directory, tumor_pair.name, f"{tumor_pair.name}.cpsr.zip")
+
             job_name = f"report_cpsr.{tumor_pair.name}"
             cpsr_job = concat_jobs(
                     [
@@ -5060,7 +5062,12 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             input,
                             cpsr_directory,
                             tumor_pair.name
-                        )
+                        ),
+                        bash.zip(
+                            cpsr_directory,
+                            cpsr_zip,
+                            recursive=True
+                        ),
                     ],
                     name=job_name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -5202,6 +5209,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 "pcgr"
             )
 
+            pcgr_zip = os.path.join(ensemble_directory, tumor_pair.name, f"{tumor_pair.name}.pcgr.zip")
+
             # PCGR does not accept sample IDs longer than 35 characters and uses the sample ID to name output files.
             # For samples that have longer sample IDs the output files will have non-matching names, so create symlinks with full-length names.
             if tumor_pair.name != tumor_pair.name[:35]:
@@ -5271,13 +5280,18 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         tumor_pair.name,
                         input_cna=output_cna
                     ),
-                    final_command
+                    final_command,
+                    bash.zip(
+                        pcgr_directory,
+                        pcgr_zip,
+                        recursive=True
+                    )
                 ],
                 name=job_name,
                 samples=[tumor_pair.normal, tumor_pair.tumor],
                 readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                 input_dependency=[header, input, input_cna, input_cpsr, output_cna_body],
-                output_dependency=[header, output_cna_body, output_cna] + output
+                output_dependency=[header, output_cna_body, output_cna, pcgr_zip] + output
             )
 
             if self.project_tracking_json:
@@ -6009,6 +6023,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             sequenza_directory = os.path.join(pair_directory, "sequenza")
+            sequenza_zip = os.path.join(pair_directory, f"{tumor_pair.name}.sequenza.zip")
             raw_sequenza_directory = os.path.join(sequenza_directory, "rawSequenza")
 
             [input_normal] = self.select_input_files(
@@ -6067,6 +6082,11 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 output + "all.binned.seqz.gz",
                                 sequenza_directory,
                                 tumor_pair.name
+                            ),
+                            bash.zip(
+                                sequenza_directory,
+                                sequenza_zip,
+                                recursive=True
                             )
                         ],
                         name="sequenza." + tumor_pair.name,
@@ -6150,6 +6170,11 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 output + "binned.merged.seqz.gz",
                                 sequenza_directory,
                                 tumor_pair.name
+                            ),
+                            bash.zip(
+                                sequenza_directory,
+                                sequenza_zip,
+                                recursive=True
                             )
                         ],
                         name="sequenza." + tumor_pair.name,
@@ -6313,6 +6338,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
             purple_purity_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
             purple_qc_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.qc")
+            purple_zip = os.path.join(pair_dir, f"{tumor_pair.name}.purple.zip")
             samples = [tumor_pair.normal, tumor_pair.tumor]
             job_name = f"purple.purity.{tumor_pair.name}"
             job_project_tracking_metrics = []
@@ -6359,6 +6385,11 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             os.path.relpath(purple_qc_output, self.output_dirs['report'][tumor_pair.name]),
                             os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(purple_qc_output)),
                             input=purple_qc_output
+                        ),
+                        bash.zip(
+                            purple_dir,
+                            purple_zip,
+                            recursive=True
                         ),
                         job_project_tracking_metrics
                     ],
@@ -7333,8 +7364,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
         for tumor_pair in self.tumor_pairs.values():
             djerba_dir = os.path.join(self.output_dirs['report'][tumor_pair.name], "djerba")
-            purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
-            purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
+            #purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
+            #purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
+            purple_zip = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, f"{tumor_pair.name}.purple.zip")
 
             cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
             input_cpsr = os.path.join(cpsr_directory, tumor_pair.name + ".cpsr." + assembly + ".json.gz")
@@ -7363,11 +7395,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             input_maf,
                             clean_maf
                             ),
-                        bash.zip(
-                            purple_dir,
-                            purple_zip,
-                            recursive=True
-                            ),
                         bash.touch(provenance_decoy),
                         djerba.make_config(
                             config_file,
@@ -7387,7 +7414,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="report_djerba." + tumor_pair.name,
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets),
-                    input_dependency=[input_vcf, os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")],
+                    input_dependency=[input_vcf, purple_zip],
                     output_dependency=[config_file, djerba_script]
                     )
                 )
