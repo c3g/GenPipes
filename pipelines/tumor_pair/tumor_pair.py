@@ -754,121 +754,125 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-                normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"recalibration.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Recalibration done already... Skipping recalibration step for sample {tumor_pair.name}...")
             else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-                normal_metrics = os.path.join(tumor_pair.normal.name)
+                if tumor_pair.multiple_normal == 1:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+                    normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
+                else:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                    normal_metrics = os.path.join(tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+                tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            normal_prefix = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.")
-            tumor_prefix = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.")
+                normal_prefix = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.")
+                tumor_prefix = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.")
 
-            normal_input = normal_prefix + "bam"
-            tumor_input = tumor_prefix + "bam"
+                normal_input = normal_prefix + "bam"
+                tumor_input = tumor_prefix + "bam"
 
-            normal_print_reads_output = normal_prefix + "recal.bam"
-            tumor_print_reads_output = tumor_prefix + "recal.bam"
+                normal_print_reads_output = normal_prefix + "recal.bam"
+                tumor_print_reads_output = tumor_prefix + "recal.bam"
 
-            normal_base_recalibrator_output = normal_prefix + "recalibration_report.grp"
-            tumor_base_recalibrator_output = tumor_prefix + "recalibration_report.grp"
+                normal_base_recalibrator_output = normal_prefix + "recalibration_report.grp"
+                tumor_base_recalibrator_output = tumor_prefix + "recalibration_report.grp"
 
-            interval_list = None
+                interval_list = None
 
-            coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsets[0]
-            )
-            if coverage_bed:
-                interval_list = os.path.join(tumor_alignment_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
+                coverage_bed = bvatools.resolve_readset_coverage_bed(
+                    tumor_pair.normal.readsets[0]
+                )
+                if coverage_bed:
+                    interval_list = os.path.join(tumor_alignment_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
 
-                if not os.path.isfile(interval_list):
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                bash.mkdir(tumor_alignment_directory),
-                                tools.bed2interval_list(
-                                    coverage_bed,
-                                    interval_list
-                                )
-                            ],
-                            name="interval_list." + tumor_pair.name,
-                            samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    if not os.path.isfile(interval_list):
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    bash.mkdir(tumor_alignment_directory),
+                                    tools.bed2interval_list(
+                                        coverage_bed,
+                                        interval_list
+                                    )
+                                ],
+                                name="interval_list." + tumor_pair.name,
+                                samples=[tumor_pair.normal, tumor_pair.tumor],
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            )
                         )
-                    )
 
-            job = gatk4.base_recalibrator(
-                normal_input,
-                normal_base_recalibrator_output,
-                intervals=interval_list
-            )
-            job.name = "gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.normal.name
-            job.samples = [tumor_pair.normal]
-            job.readsets = list(tumor_pair.normal.readsets)
-            jobs.append(job)
-            if config.param('gatk_print_reads', 'module_gatk').split("/")[2] > "4":
-                job = concat_jobs(
-                        [
-                            gatk4.print_reads(
-                                normal_input,
-                                normal_print_reads_output,
-                                normal_base_recalibrator_output
-                            ),
-                            deliverables.md5sum(
-                                normal_print_reads_output,
-                                normal_print_reads_output + ".md5",
-                                self.output_dir
-                            )
-                        ]
-                    )
-            else:
-                job = gatk4.print_reads(
+                job = gatk4.base_recalibrator(
                     normal_input,
-                    normal_print_reads_output,
-                    normal_base_recalibrator_output
+                    normal_base_recalibrator_output,
+                    intervals=interval_list
                 )
-            job.name = "gatk_print_reads." + tumor_pair.name + "." + tumor_pair.normal.name
-            job.samples = [tumor_pair.normal]
-            job.readsets = list(tumor_pair.normal.readsets)
-            jobs.append(job)
-
-            job = gatk4.base_recalibrator(
-                tumor_input,
-                tumor_base_recalibrator_output,
-                intervals=interval_list
-            )
-            job.name = "gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.tumor.name
-            job.samples = [tumor_pair.tumor]
-            job.readsets = list(tumor_pair.tumor.readsets)
-            jobs.append(job)
-
-            if config.param('gatk_print_reads', 'module_gatk').split("/")[2] > "4":
-                job = concat_jobs(
-                        [
-                            gatk4.print_reads(
-                                tumor_input,
-                                tumor_print_reads_output,
-                                tumor_base_recalibrator_output
-                            ),
-                            deliverables.md5sum(
-                                tumor_print_reads_output,
-                                tumor_print_reads_output + ".md5",
-                                self.output_dir
-                            )
-                        ]
+                job.name = "gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.normal.name
+                job.samples = [tumor_pair.normal]
+                job.readsets = list(tumor_pair.normal.readsets)
+                jobs.append(job)
+                if config.param('gatk_print_reads', 'module_gatk').split("/")[2] > "4":
+                    job = concat_jobs(
+                            [
+                                gatk4.print_reads(
+                                    normal_input,
+                                    normal_print_reads_output,
+                                    normal_base_recalibrator_output
+                                ),
+                                deliverables.md5sum(
+                                    normal_print_reads_output,
+                                    normal_print_reads_output + ".md5",
+                                    self.output_dir
+                                )
+                            ]
+                        )
+                else:
+                    job = gatk4.print_reads(
+                        normal_input,
+                        normal_print_reads_output,
+                        normal_base_recalibrator_output
                     )
-            else:
-                job = gatk4.print_reads(
+                job.name = "gatk_print_reads." + tumor_pair.name + "." + tumor_pair.normal.name
+                job.samples = [tumor_pair.normal]
+                job.readsets = list(tumor_pair.normal.readsets)
+                jobs.append(job)
+
+                job = gatk4.base_recalibrator(
                     tumor_input,
-                    tumor_print_reads_output,
-                    tumor_base_recalibrator_output
+                    tumor_base_recalibrator_output,
+                    intervals=interval_list
                 )
-            job.name = "gatk_print_reads." + tumor_pair.name + "." + tumor_pair.tumor.name
-            job.samples = [tumor_pair.tumor]
-            job.readsets = list(tumor_pair.tumor.readsets)
-            jobs.append(job)
+                job.name = "gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.tumor.name
+                job.samples = [tumor_pair.tumor]
+                job.readsets = list(tumor_pair.tumor.readsets)
+                jobs.append(job)
+
+                if config.param('gatk_print_reads', 'module_gatk').split("/")[2] > "4":
+                    job = concat_jobs(
+                            [
+                                gatk4.print_reads(
+                                    tumor_input,
+                                    tumor_print_reads_output,
+                                    tumor_base_recalibrator_output
+                                ),
+                                deliverables.md5sum(
+                                    tumor_print_reads_output,
+                                    tumor_print_reads_output + ".md5",
+                                    self.output_dir
+                                )
+                            ]
+                        )
+                else:
+                    job = gatk4.print_reads(
+                        tumor_input,
+                        tumor_print_reads_output,
+                        tumor_base_recalibrator_output
+                    )
+                job.name = "gatk_print_reads." + tumor_pair.name + "." + tumor_pair.tumor.name
+                job.samples = [tumor_pair.tumor]
+                job.readsets = list(tumor_pair.tumor.readsets)
+                jobs.append(job)
 
         return jobs
 
@@ -977,127 +981,131 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+            checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"recalibration.{tumor_pair.name}.stepDone")
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Recalibration done already... Skipping conpair step for sample {tumor_pair.name}...")
             else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                if tumor_pair.multiple_normal == 1:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+                else:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+                tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            metrics_directory = self.output_dirs['metrics_directory']
+                metrics_directory = self.output_dirs['metrics_directory']
 
-            input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")
-            input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")
-            pileup_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".gatkPileup")
-            pileup_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".gatkPileup")
+                input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")
+                input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")
+                pileup_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".gatkPileup")
+                pileup_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".gatkPileup")
 
-            concordance_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".concordance.tsv")
-            contamination_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".contamination.tsv")
+                concordance_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".concordance.tsv")
+                contamination_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".contamination.tsv")
 
-            samples = [tumor_pair.normal, tumor_pair.tumor]
-            job_name = f"conpair_concordance_contamination.{tumor_pair.name}"
-            job_project_tracking_metrics = []
-            if self.project_tracking_json:
-                job_project_tracking_metrics = concat_jobs(
-                    [
-                    conpair.parse_concordance_metrics_pt(concordance_out),
-                    job2json_project_tracking.run(
-                        input_file=concordance_out,
-                        pipeline=self,
-                        samples=",".join([sample.name for sample in samples]),
-                        readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
-                        job_name=job_name,
-                        metrics="concordance=$concordance"
-                        ),
-                    conpair.parse_contamination_normal_metrics_pt(contamination_out),
-                    job2json_project_tracking.run(
-                        input_file=contamination_out,
-                        pipeline=self,
-                        samples=tumor_pair.normal.name,
-                        readsets=",".join([readset.name for readset in tumor_pair.normal.readsets]),
-                        job_name=job_name,
-                        metrics="contamination=$contamination"
-                        ),
-                    conpair.parse_contamination_tumor_metrics_pt(contamination_out),
-                    job2json_project_tracking.run(
-                        input_file=contamination_out,
-                        pipeline=self,
-                        samples=tumor_pair.tumor.name,
-                        readsets=",".join([readset.name for readset in tumor_pair.tumor.readsets]),
-                        job_name=job_name,
-                        metrics="contamination=$contamination"
-                        )
-                    ])
+                samples = [tumor_pair.normal, tumor_pair.tumor]
+                job_name = f"conpair_concordance_contamination.{tumor_pair.name}"
+                job_project_tracking_metrics = []
+                if self.project_tracking_json:
+                    job_project_tracking_metrics = concat_jobs(
+                        [
+                        conpair.parse_concordance_metrics_pt(concordance_out),
+                        job2json_project_tracking.run(
+                            input_file=concordance_out,
+                            pipeline=self,
+                            samples=",".join([sample.name for sample in samples]),
+                            readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                            job_name=job_name,
+                            metrics="concordance=$concordance"
+                            ),
+                        conpair.parse_contamination_normal_metrics_pt(contamination_out),
+                        job2json_project_tracking.run(
+                            input_file=contamination_out,
+                            pipeline=self,
+                            samples=tumor_pair.normal.name,
+                            readsets=",".join([readset.name for readset in tumor_pair.normal.readsets]),
+                            job_name=job_name,
+                            metrics="contamination=$contamination"
+                            ),
+                        conpair.parse_contamination_tumor_metrics_pt(contamination_out),
+                        job2json_project_tracking.run(
+                            input_file=contamination_out,
+                            pipeline=self,
+                            samples=tumor_pair.tumor.name,
+                            readsets=",".join([readset.name for readset in tumor_pair.tumor.readsets]),
+                            job_name=job_name,
+                            metrics="contamination=$contamination"
+                            )
+                        ])
 
-            jobs.append(
-                concat_jobs(
-                    [
-                        conpair.pileup(
-                            input_normal,
-                            pileup_normal
-                        )
-                    ],
-                    name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal],
-                    readsets=list(tumor_pair.normal.readsets)
+                jobs.append(
+                    concat_jobs(
+                        [
+                            conpair.pileup(
+                                input_normal,
+                                pileup_normal
+                            )
+                        ],
+                        name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.normal.name,
+                        samples=[tumor_pair.normal],
+                        readsets=list(tumor_pair.normal.readsets)
+                    )
                 )
-            )
-            jobs.append(
-                concat_jobs(
-                    [
-                        conpair.pileup(
-                            input_tumor,
-                            pileup_tumor
-                        )
-                    ],
-                    name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor],
-                    readsets=list(tumor_pair.tumor.readsets)
+                jobs.append(
+                    concat_jobs(
+                        [
+                            conpair.pileup(
+                                input_tumor,
+                                pileup_tumor
+                            )
+                        ],
+                        name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.tumor.name,
+                        samples=[tumor_pair.tumor],
+                        readsets=list(tumor_pair.tumor.readsets)
+                    )
                 )
-            )
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            metrics_directory,
-                            remove=False
-                        ),
-                        bash.mkdir(
-                            self.output_dirs['report'][tumor_pair.name]
-                        ),
-                        conpair.concordance(
-                            pileup_normal,
-                            pileup_tumor,
-                            concordance_out
-                        ),
-                        conpair.contamination(
-                            pileup_normal,
-                            pileup_tumor,
-                            contamination_out
-                        ),
-                        bash.ln(
-                            os.path.relpath(concordance_out, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(concordance_out)),
-                            input=concordance_out
-                        ),
-                        bash.ln(
-                            os.path.relpath(contamination_out, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(contamination_out)),
-                            input=contamination_out
-                        ),
-                        job_project_tracking_metrics
-                    ],
-                    name=job_name,
-                    samples=samples,
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                metrics_directory,
+                                remove=False
+                            ),
+                            bash.mkdir(
+                                self.output_dirs['report'][tumor_pair.name]
+                            ),
+                            conpair.concordance(
+                                pileup_normal,
+                                pileup_tumor,
+                                concordance_out
+                            ),
+                            conpair.contamination(
+                                pileup_normal,
+                                pileup_tumor,
+                                contamination_out
+                            ),
+                            bash.ln(
+                                os.path.relpath(concordance_out, self.output_dirs['report'][tumor_pair.name]),
+                                os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(concordance_out)),
+                                input=concordance_out
+                            ),
+                            bash.ln(
+                                os.path.relpath(contamination_out, self.output_dirs['report'][tumor_pair.name]),
+                                os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(contamination_out)),
+                                input=contamination_out
+                            ),
+                            job_project_tracking_metrics
+                        ],
+                        name=job_name,
+                        samples=samples,
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    )
                 )
-            )
-            self.multiqc_inputs[tumor_pair.name].extend(
-                [
-                    concordance_out,
-                    contamination_out
-                ]
-            )
+                self.multiqc_inputs[tumor_pair.name].extend(
+                    [
+                        concordance_out,
+                        contamination_out
+                    ]
+                )
 
         return jobs
 
@@ -2338,152 +2346,156 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-                normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-                normal_metrics = os.path.join(tumor_pair.normal.name)
-
-            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
-            normal_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", normal_metrics, "fastqc")
-            tumor_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "fastqc")
-
-            [normal_input] = self.select_input_files(
-                [
-                    # [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.realigned.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
-                ]
-            )
-
-            normal_output_dir = normal_fastqc_directory
-            normal_file = re.sub(".bam", "", os.path.basename(normal_input))
-            normal_output = os.path.join(normal_fastqc_directory, normal_file + "_fastqc.zip")
-
-            [tumor_input] = self.select_input_files(
-                [
-                    # [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
-                ]
-            )
-
-            tumor_output_dir = tumor_fastqc_directory
-            tumor_file = re.sub(".bam", "", os.path.basename(tumor_input))
-            tumor_output = os.path.join(tumor_fastqc_directory, tumor_file + "_fastqc.zip")
-
-            adapter_file = config.param('fastqc', 'adapter_file', required=False, param_type='filepath')
-            normal_adapter_job = None
-            tumor_adapter_job = None
-
-            if not adapter_file:
-                normal_adapter_job = adapters.create(
-                    tumor_pair.normal.readsets[0],
-                    os.path.join(normal_output_dir, "adapter.tsv"),
-                    fastqc=True
-                )
-                tumor_adapter_job = adapters.create(
-                    tumor_pair.tumor.readsets[0],
-                    os.path.join(tumor_output_dir, "adapter.tsv"),
-                    fastqc=True
-                )
-
-            tumor_pair_jobs = []
-            tumor_pair_jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            normal_output_dir,
-                            remove=True
-                        ),
-                        normal_adapter_job,
-                        fastqc.fastqc(
-                            normal_input,
-                            None,
-                            normal_output_dir,
-                            normal_output,
-                            os.path.join(normal_output_dir, "adapter.tsv")
-                        ),
-                        bash.mkdir(
-                            self.output_dirs['report'][tumor_pair.name]
-                        ),
-                        bash.ln(
-                            os.path.relpath(normal_output, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(normal_output)),
-                            input=normal_output
-                        )
-                    ],
-                    name="fastqc." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal],
-                    readsets=list(tumor_pair.normal.readsets)
-                )
-            )
-            tumor_pair_jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            tumor_output_dir,
-                            remove=True
-                        ),
-                        tumor_adapter_job,
-                        fastqc.fastqc(
-                            tumor_input,
-                            None,
-                            tumor_output_dir,
-                            tumor_output,
-                            os.path.join(tumor_output_dir, "adapter.tsv")
-                        ),
-                        bash.mkdir(
-                            self.output_dirs['report'][tumor_pair.name]
-                        ),
-                        bash.ln(
-                            os.path.relpath(tumor_output, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(tumor_output)),
-                            input=tumor_output
-                        )
-                    ],
-                    name="fastqc." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor],
-                    readsets=list(tumor_pair.tumor.readsets)
-                )
-            )
-            for job in tumor_pair_jobs:
-                self.multiqc_inputs[tumor_pair.name].extend(job.output_files)
-            jobs.extend(tumor_pair_jobs)
-
-            # add recalibration checkpoint here and remove input bam files (last step to use sorted.dup.bam)
             checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"recalibration.{tumor_pair.name}.stepDone")
-            concordance_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".concordance.tsv")
-            contamination_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".contamination.tsv")
-            normal_print_reads_output = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            tumor_print_reads_output = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            
-            checkpoint_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
-                    bash.touch(checkpoint_done_file),
-                    bash.rm(normal_input),
-                    bash.rm(f"{normal_input}.bai"),
-                    bash.rm(tumor_input),
-                    bash.rm(f"{tumor_input}.bai")
-                ],
-                name=f"checkpoint.recalibration.{tumor_pair.name}",
-                samples=[tumor_pair.normal, tumor_pair.tumor],
-                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                input_dependency=[
-                    normal_print_reads_output,
-                    tumor_print_reads_output,
-                    concordance_out,
-                    contamination_out,
-                    tumor_output,
-                    normal_output
+            if os.path.exists(checkpoint_done_file) and not self.force_jobs:
+                log.info(f"Recalibration done already... Skipping metrics_dna_fastqc step for sample {tumor_pair.name}...")
+            else:
+                if tumor_pair.multiple_normal == 1:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
+                    normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
+                else:
+                    normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+                    normal_metrics = os.path.join(tumor_pair.normal.name)
+
+                tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+                normal_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", normal_metrics, "fastqc")
+                tumor_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "fastqc")
+
+                [normal_input] = self.select_input_files(
+                    [
+                        # [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.realigned.bam")],
+                        [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
                     ]
                 )
 
-            jobs.append(checkpoint_job)
+                normal_output_dir = normal_fastqc_directory
+                normal_file = re.sub(".bam", "", os.path.basename(normal_input))
+                normal_output = os.path.join(normal_fastqc_directory, normal_file + "_fastqc.zip")
+
+                [tumor_input] = self.select_input_files(
+                    [
+                        # [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")],
+                        [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+                    ]
+                )
+
+                tumor_output_dir = tumor_fastqc_directory
+                tumor_file = re.sub(".bam", "", os.path.basename(tumor_input))
+                tumor_output = os.path.join(tumor_fastqc_directory, tumor_file + "_fastqc.zip")
+
+                adapter_file = config.param('fastqc', 'adapter_file', required=False, param_type='filepath')
+                normal_adapter_job = None
+                tumor_adapter_job = None
+
+                if not adapter_file:
+                    normal_adapter_job = adapters.create(
+                        tumor_pair.normal.readsets[0],
+                        os.path.join(normal_output_dir, "adapter.tsv"),
+                        fastqc=True
+                    )
+                    tumor_adapter_job = adapters.create(
+                        tumor_pair.tumor.readsets[0],
+                        os.path.join(tumor_output_dir, "adapter.tsv"),
+                        fastqc=True
+                    )
+
+                tumor_pair_jobs = []
+                tumor_pair_jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                normal_output_dir,
+                                remove=True
+                            ),
+                            normal_adapter_job,
+                            fastqc.fastqc(
+                                normal_input,
+                                None,
+                                normal_output_dir,
+                                normal_output,
+                                os.path.join(normal_output_dir, "adapter.tsv")
+                            ),
+                            bash.mkdir(
+                                self.output_dirs['report'][tumor_pair.name]
+                            ),
+                            bash.ln(
+                                os.path.relpath(normal_output, self.output_dirs['report'][tumor_pair.name]),
+                                os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(normal_output)),
+                                input=normal_output
+                            )
+                        ],
+                        name="fastqc." + tumor_pair.name + "." + tumor_pair.normal.name,
+                        samples=[tumor_pair.normal],
+                        readsets=list(tumor_pair.normal.readsets)
+                    )
+                )
+                tumor_pair_jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                tumor_output_dir,
+                                remove=True
+                            ),
+                            tumor_adapter_job,
+                            fastqc.fastqc(
+                                tumor_input,
+                                None,
+                                tumor_output_dir,
+                                tumor_output,
+                                os.path.join(tumor_output_dir, "adapter.tsv")
+                            ),
+                            bash.mkdir(
+                                self.output_dirs['report'][tumor_pair.name]
+                            ),
+                            bash.ln(
+                                os.path.relpath(tumor_output, self.output_dirs['report'][tumor_pair.name]),
+                                os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(tumor_output)),
+                                input=tumor_output
+                            )
+                        ],
+                        name="fastqc." + tumor_pair.name + "." + tumor_pair.tumor.name,
+                        samples=[tumor_pair.tumor],
+                        readsets=list(tumor_pair.tumor.readsets)
+                    )
+                )
+                for job in tumor_pair_jobs:
+                    self.multiqc_inputs[tumor_pair.name].extend(job.output_files)
+                jobs.extend(tumor_pair_jobs)
+
+                # add recalibration checkpoint here and remove input bam files (last step to use sorted.dup.bam)
+                checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"recalibration.{tumor_pair.name}.stepDone")
+                concordance_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".concordance.tsv")
+                contamination_out = os.path.join(self.output_dirs["metrics_directory"], tumor_pair.tumor.name + ".contamination.tsv")
+                normal_print_reads_output = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+                tumor_print_reads_output = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+                
+                checkpoint_job = concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
+                        bash.touch(checkpoint_done_file),
+                        bash.rm(normal_input),
+                        bash.rm(f"{normal_input}.bai"),
+                        bash.rm(tumor_input),
+                        bash.rm(f"{tumor_input}.bai")
+                    ],
+                    name=f"checkpoint.recalibration.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    input_dependency=[
+                        normal_print_reads_output,
+                        tumor_print_reads_output,
+                        concordance_out,
+                        contamination_out,
+                        tumor_output,
+                        normal_output
+                        ]
+                    )
+
+                jobs.append(checkpoint_job)
 
         return jobs
 
