@@ -6074,7 +6074,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(sequenza_directory),
                             bash.mkdir(
                                 raw_sequenza_directory,
                                 remove=True
@@ -6117,7 +6116,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ],
                         name="sequenza." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        input_dependency=[f"{output}all.binned.seqz.gz"]
                     )
                 )
 
@@ -6155,7 +6155,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(sequenza_directory),
                             bash.mkdir(
                                 raw_sequenza_directory,
                                 remove=True
@@ -6206,7 +6205,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ],
                         name="sequenza." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        input_dependency=[f"{output}binned.merged.seqz.gz"]
                     )
                 )
 
