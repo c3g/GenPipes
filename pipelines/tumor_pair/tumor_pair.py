@@ -7428,7 +7428,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="report_djerba." + tumor_pair.name,
                     samples=[tumor_pair.tumor],
                     readsets=list(tumor_pair.tumor.readsets),
-                    input_dependency=[input_vcf, purple_zip],
+                    input_dependency=[input_vcf, purple_zip, input_cpsr],
                     output_dependency=[config_file, djerba_script]
                     )
                 )
