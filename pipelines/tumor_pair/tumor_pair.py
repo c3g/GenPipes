@@ -63,6 +63,7 @@ from bfx import (
     gripss,
     htslib,
     job2json_project_tracking,
+    job2json_project_tracking_rm,
     linx,
     manta,
     multiqc,
@@ -271,7 +272,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         for tumor_pair in self.tumor_pairs.values():
 
             checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"sambamba_mark_duplicates.{tumor_pair.name}.stepDone")
-        
+
             if os.path.exists(checkpoint_done_file) and not self.force_jobs:
                 log.info(f"Realigning and duplicate marking done already... Skipping gatk indel realigner step for sample {tumor_pair.name}...")
 
@@ -553,7 +554,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             if os.path.exists(checkpoint_done_file) and not self.force_jobs:
                 log.info(f"Realigning and marking duplicates done already... Skipping sambamba merge realigned step for sample {tumor_pair.name}...")
-            
+
             else:
                 if tumor_pair.multiple_normal == 1:
                     normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
@@ -638,16 +639,29 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             bash.rm(
                                 os.path.join(tumor_alignment_directory, "realign")
                             ),
+                            job2json_project_tracking_rm.run(
+                                os.path.join(tumor_alignment_directory, "realign")
+                            ),
                             bash.rm(
+                                os.path.join(normal_alignment_directory, "realign")
+                            ),
+                            job2json_project_tracking_rm.run(
                                 os.path.join(normal_alignment_directory, "realign")
                             ),
                             bash.rm(
                                 os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)
                             ),
+                            job2json_project_tracking_rm.run(
+                                os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)
+                            ),
                             bash.rm(input_normal),
+                            job2json_project_tracking_rm.run(input_normal),
                             bash.rm(f"{input_normal}.bai"),
+                            job2json_project_tracking_rm.run(f"{input_normal}.bai"),
                             bash.rm(input_tumor),
-                            bash.rm(f"{input_tumor}.bai")
+                            job2json_project_tracking_rm.run(input_tumor),
+                            bash.rm(f"{input_tumor}.bai"),
+                            job2json_project_tracking_rm.run(f"{input_tumor}.bai")
                         ],
                         name=f"checkpoint.gatk_indel_realigner.{tumor_pair.name}",
                         samples=[tumor_pair.tumor, tumor_pair.normal],
