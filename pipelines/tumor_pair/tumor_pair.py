@@ -6322,6 +6322,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             somatic_hotspots = None
             germline_hotspots = None
             driver_gene_panel = None
+            purple_zip = os.path.join(pair_dir, f"{tumor_pair.name}.purple_ensemble.zip")
 
             if sv:
                 pair_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
@@ -6331,6 +6332,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 somatic_hotspots = config.param('purple', 'somatic_hotspots', param_type='filepath')
                 germline_hotspots = config.param('purple', 'germline_hotspots', param_type='filepath')
                 driver_gene_panel = config.param('purple', 'driver_gene_panel', param_type='filepath')
+                purple_zip = os.path.join(pair_dir, f"{tumor_pair.name}.purple_sv.zip")
+
 
             purple_dir = os.path.join(pair_dir, "purple")
             amber_dir = os.path.join(purple_dir, "rawAmber")
@@ -6377,7 +6380,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
             purple_purity_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
             purple_qc_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.qc")
-            purple_zip = os.path.join(pair_dir, f"{tumor_pair.name}.purple.zip")
             samples = [tumor_pair.normal, tumor_pair.tumor]
             job_name = f"purple.purity.{tumor_pair.name}"
             job_project_tracking_metrics = []
