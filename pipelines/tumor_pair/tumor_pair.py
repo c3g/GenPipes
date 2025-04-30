@@ -732,6 +732,17 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 job.readsets = list(tumor_pair.tumor.readsets)
                 jobs.append(job)
 
+                tracking_rm_job = None
+                if self.project_tracking_json:
+                    tracking_rm_job = concat_jobs(
+                        [
+                            job2json_project_tracking_rm.run(normal_input),
+                            job2json_project_tracking_rm.run(f"{normal_input}.bai"),
+                            job2json_project_tracking_rm.run(tumor_input),
+                            job2json_project_tracking_rm.run(f"{tumor_input}.bai"),
+                        ]
+                    )
+
                 # add checkpoint and remove input bam files
                 checkpoint_job = concat_jobs(
                 [
@@ -740,7 +751,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     bash.rm(normal_input),
                     bash.rm(f"{normal_input}.bai"),
                     bash.rm(tumor_input),
-                    bash.rm(f"{tumor_input}.bai")
+                    bash.rm(f"{tumor_input}.bai"),
+                    tracking_rm_job
                 ],
                 name=f"checkpoint.sambamba_mark_duplicates.{tumor_pair.name}",
                 samples=[tumor_pair.normal, tumor_pair.tumor],
