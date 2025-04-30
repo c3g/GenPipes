@@ -1,4 +1,4 @@
-name: Rebase main and dev and add .dev to version
+name: Sync dev with main
 
 on:
   workflow_run:
@@ -37,9 +37,7 @@ jobs:
         run: |
           version_file="genpipes/__version__.py"
           version_number=$(sed -n "s/__version__ = '\([^']*\)'/\1/p" $version_file)
-          if [[ "$version_number" != *.dev ]]; then
-            echo "__version__ = '${version_number}.dev'" > $version_file
-          fi
+          echo "__version__ = '${version_number}.dev'" > $version_file
 
       - name: Commit changes
         run: |
