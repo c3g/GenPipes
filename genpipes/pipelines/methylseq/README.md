@@ -37,8 +37,6 @@ Usage](#the-pipeline-is-designed-to-be-run-on-a-cluster-and-is-configured-using-
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-[TOC]
-
 Methyl-Seq Pipeline
 ================
 
@@ -61,6 +59,7 @@ However, if you would like to setup and use dragen in own cluster please refer t
 A pipeline for processing and analyzing bisulfite sequencing data. The pipeline uses Bismark to align reads and extract methylation information, and Picard to remove duplicates, add read groups and index the BAM files. The pipeline also computes metrics and generates coverage tracks per sample. The pipeline currently supports the following protocols: bismark, hybrid and dragen.
 
 The pipeline is designed to be run on a cluster and is configured using a configuration file. The pipeline can be run in a single step or in multiple steps. The pipeline can also be run in parallel to process multiple samples simultaneously.
+
 Usage
 -----
 

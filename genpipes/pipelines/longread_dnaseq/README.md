@@ -25,8 +25,6 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-[TOC]
-
 LongRead DNA-Seq Pipeline
 ==============
 
@@ -61,7 +59,7 @@ collected with NanoPlot and mosdepth, respectively.
 
 Both protocols require as input a readset file, which provides sample metadata and paths to input data (FASTQ, FAST5 or BAM).
 For information on the structure and contents of the LongRead readset file, please consult [here](https://genpipes.readthedocs.io/en/latest/get-started/concepts/readset_file.html).
-    
+
 Usage
 -----
 

@@ -20,13 +20,11 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-[TOC]
-
 Nanopore CoVSeq Pipeline
 ==============
 
 For information on the structure and contents of the LongRead readset file used for this pipeline, please consult [here](https://genpipes.readthedocs.io/en/latest/get-started/concepts/readset_file.html#readset-file).
-    
+
 Usage
 -----
 

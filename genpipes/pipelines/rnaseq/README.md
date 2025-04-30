@@ -49,8 +49,6 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-[TOC]
-
 RNA-Seq Pipeline
 ================
 
@@ -84,7 +82,7 @@ are related to detection and annotation of gene fusions. For that, [Star-fusion]
 [Arriba](https://arriba.readthedocs.io/en/latest/) and [anno-Fuse](https://rdrr.io/github/d3b-center/annoFuse/) are
 used. Furthermore, [RSeQC](http://rseqc.sourceforge.net/) provides RNA-seq quality control metrics to asses the
 quality of the data.
-    
+
 Usage
 -----
 

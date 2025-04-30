@@ -35,8 +35,6 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-[TOC]
-
 RNA-Seq De Novo Assembly Pipeline
 =================================
 
@@ -96,7 +94,7 @@ summary statistics are included in the report and can be explored interactively.
     
 The Seq2Fun De Novo Assembly pipeline, selected using the "-t seq2fun" parameter directly starts with Seq2Fun
 software suit from fastq files.
-    
+
 Usage
 -----
 
