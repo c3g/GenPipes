@@ -63,9 +63,10 @@ jobs:
           $(pdm venv activate)
           npm install -g doctoc
           for pipeline in ampliconseq chipseq covseq dnaseq methylseq longread_dnaseq nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light; do
-            SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/, /^Steps:/' | sed '$d' | sed '1d' | sed '/Attributes:/,$d')
-            HELPTEXT=`genpipes $pipeline --help | sed -e '/Summary:/, /^Steps:/{/^Steps:/!d}' | sed -e '/Returns:/,+1d'`
-            echo -e "[TOC]\n${SUMMARY}\nUsage\n-----\n\n\`\`\`\n#!text\n${HELPTEXT}\n" > genpipes/pipelines/$pipeline/README.md
+            SUMMARY=$(genpipes $pipeline --help | awk '/Summary:/ {flag=1; next} /Steps:/ {exit} flag')
+            USAGE=$(genpipes ampliconseq --help | awk '/Summary:/ {exit} {print}')
+            HELPTEXT=$(genpipes $pipeline --help | awk '/Steps:/ {flag=1} flag')
+            echo -e "${SUMMARY}\n\nUsage\n-----\n\n\`\`\`text\n${USAGE}\n\n${HELPTEXT}\n" > genpipes/pipelines/$pipeline/README.md
             doctoc genpipes/pipelines/$pipeline/README.md
           done
       - name: Update autocomplete files
