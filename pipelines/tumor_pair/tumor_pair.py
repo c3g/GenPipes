@@ -7408,7 +7408,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             djerba_dir = os.path.join(self.output_dirs['report'][tumor_pair.name], "djerba")
             #purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
             #purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
-            purple_zip = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, f"{tumor_pair.name}.purple.zip")
+            purple_zip = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, f"{tumor_pair.name}.purple_ensemble.zip")
 
             cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
             input_cpsr = os.path.join(cpsr_directory, tumor_pair.name + ".cpsr." + assembly + ".json.gz")
