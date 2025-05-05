@@ -718,10 +718,10 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 if self.project_tracking_json:
                     tracking_rm_job = concat_jobs(
                         [
-                            job2json_project_tracking_rm.run(normal_input),
-                            job2json_project_tracking_rm.run(f"{normal_input}.bai"),
-                            job2json_project_tracking_rm.run(tumor_input),
-                            job2json_project_tracking_rm.run(f"{tumor_input}.bai"),
+                            job2json_project_tracking_rm.run(self, normal_input),
+                            job2json_project_tracking_rm.run(self, f"{normal_input}.bai"),
+                            job2json_project_tracking_rm.run(self, tumor_input),
+                            job2json_project_tracking_rm.run(self, f"{tumor_input}.bai"),
                         ]
                     )
 
