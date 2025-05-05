@@ -625,25 +625,33 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     input_normal = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")
                     input_tumor = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")
 
+                    tracking_rm_job = None
+                    if self.project_tracking_json:
+                        tracking_rm_job = concat_jobs(
+                            [
+                                job2json_project_tracking_rm.run(os.path.join(tumor_alignment_directory, "realign")),
+                                job2json_project_tracking_rm.run(os.path.join(normal_alignment_directory, "realign")),
+                                job2json_project_tracking_rm.run(os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)),
+                                job2json_project_tracking_rm.run(input_normal),
+                                job2json_project_tracking_rm.run(f"{input_normal}.bai"),
+                                job2json_project_tracking_rm.run(input_tumor),
+                                job2json_project_tracking_rm.run(f"{input_tumor}.bai")
+                            ]
+                        )
+
                     checkpoint_job = concat_jobs(
                         [
                             bash.mkdir(os.path.join(self.output_dirs['job_directory'], 'checkpoints')),
-                            bash.touch(checkpoint_normal_file),
-                            bash.touch(checkpoint_tumor_file),
                             bash.rm(os.path.join(tumor_alignment_directory, "realign")),
-                            job2json_project_tracking_rm.run(os.path.join(tumor_alignment_directory, "realign")),
                             bash.rm(os.path.join(normal_alignment_directory, "realign")),
-                            job2json_project_tracking_rm.run(os.path.join(normal_alignment_directory, "realign")),
                             bash.rm(os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)),
-                            job2json_project_tracking_rm.run(os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)),
                             bash.rm(input_normal),
-                            job2json_project_tracking_rm.run(input_normal),
                             bash.rm(f"{input_normal}.bai"),
-                            job2json_project_tracking_rm.run(f"{input_normal}.bai"),
                             bash.rm(input_tumor),
-                            job2json_project_tracking_rm.run(input_tumor),
                             bash.rm(f"{input_tumor}.bai"),
-                            job2json_project_tracking_rm.run(f"{input_tumor}.bai")
+                            tracking_rm_job,
+                            bash.touch(checkpoint_normal_file),
+                            bash.touch(checkpoint_tumor_file)
                         ],
                         name=f"checkpoint.gatk_indel_realigner.{tumor_pair.name}",
                         samples=[tumor_pair.tumor, tumor_pair.normal],
@@ -718,10 +726,10 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 if self.project_tracking_json:
                     tracking_rm_job = concat_jobs(
                         [
-                            job2json_project_tracking_rm.run(self, normal_input),
-                            job2json_project_tracking_rm.run(self, f"{normal_input}.bai"),
-                            job2json_project_tracking_rm.run(self, tumor_input),
-                            job2json_project_tracking_rm.run(self, f"{tumor_input}.bai"),
+                            job2json_project_tracking_rm.run(normal_input),
+                            job2json_project_tracking_rm.run(re.sub("\.bam$", ".bai", normal_input)),
+                            job2json_project_tracking_rm.run(tumor_input),
+                            job2json_project_tracking_rm.run(re.sub("\.bam$", ".bai", tumor_input)),
                         ]
                     )
 
@@ -729,12 +737,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 checkpoint_job = concat_jobs(
                 [
                     bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
-                    bash.touch(checkpoint_done_file),
                     bash.rm(normal_input),
-                    bash.rm(f"{normal_input}.bai"),
+                    bash.rm(re.sub("\.bam$", ".bai", normal_input)),
                     bash.rm(tumor_input),
-                    bash.rm(f"{tumor_input}.bai"),
-                    tracking_rm_job
+                    bash.rm(re.sub("\.bam$", ".bai", tumor_input)),
+                    tracking_rm_job,
+                    bash.touch(checkpoint_done_file)
                 ],
                 name=f"checkpoint.sambamba_mark_duplicates.{tumor_pair.name}",
                 samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -2468,14 +2476,26 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 normal_print_reads_output = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
                 tumor_print_reads_output = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
                 
+                tracking_rm_job = None
+                if self.project_tracking_json:
+                    tracking_rm_job = concat_jobs(
+                        [
+                            job2json_project_tracking_rm.run(normal_input),
+                            job2json_project_tracking_rm.run(f"{normal_input}.bai"),
+                            job2json_project_tracking_rm.run(tumor_input),
+                            job2json_project_tracking_rm.run(f"{tumor_input}.bai"),
+                        ]
+                    )
+                
                 checkpoint_job = concat_jobs(
                     [
                         bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
-                        bash.touch(checkpoint_done_file),
                         bash.rm(normal_input),
                         bash.rm(f"{normal_input}.bai"),
                         bash.rm(tumor_input),
-                        bash.rm(f"{tumor_input}.bai")
+                        bash.rm(f"{tumor_input}.bai"),
+                        tracking_rm_job,
+                        bash.touch(checkpoint_done_file),
                     ],
                     name=f"checkpoint.recalibration.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -3041,10 +3061,18 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     )
 
                     # create checkpoint job and remove tmp files
+                    tracking_rm_job = None
+                    if self.project_tracking_json:
+                        tracking_rm_job = concat_jobs(
+                            [
+                                job2json_project_tracking_rm.run(varscan_directory)
+                            ]
+                        )
                     checkpoint_job = concat_jobs(
                         [
-                            bash.touch(checkpoint_done_file),
-                            bash.rm(varscan_directory)
+                            bash.rm(varscan_directory),
+                            tracking_rm_job,
+                            bash.touch(checkpoint_done_file)
                         ],
                         name=f"checkpoint.paired_varscan2.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -3565,10 +3593,19 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         )
 
                 # create checkpoint job and remove tmp files
+                tracking_rm_job = None
+                if self.project_tracking_json:
+                    tracking_rm_job = concat_jobs(
+                        [
+                            job2json_project_tracking_rm.run(mutect_directory)
+                        ]
+                    )
+
                 checkpoint_job = concat_jobs(
                     [
-                        bash.touch(checkpoint_done_file),
-                        bash.rm(mutect_directory)
+                        bash.rm(mutect_directory),
+                        tracking_rm_job,
+                        bash.touch(checkpoint_done_file)
                     ],
                     name=f"checkpoint.paired_mutect2.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -3764,18 +3801,19 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             # create checkpoint and remove tmp files
             checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"strelka2_paired_somatic.{tumor_pair.name}.stepDone")
+
             checkpoint_job = concat_jobs(
                 [
                     bash.mkdir(
                         os.path.join(self.output_dirs["job_directory"], 'checkpoints')
                     ),
-                    bash.touch(checkpoint_done_file),
                     bash.rm(
                         os.path.join(somatic_dir, "workspace")
                     ),
                     bash.rm(
                         os.path.join(somatic_dir, "run*")
-                    )
+                    ),
+                    bash.touch(checkpoint_done_file),
                 ],
                 name=f"checkpoint.strelka2_paired_somatic.{tumor_pair.name}",
                 samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -3965,13 +4003,13 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     bash.mkdir(
                         os.path.join(self.output_dirs["job_directory"], 'checkpoints')
                     ),
-                    bash.touch(checkpoint_done_file),
                     bash.rm(
                         os.path.join(germline_dir, "workspace")
                     ),
                     bash.rm(
                         os.path.join(germline_dir, "run*")
-                    )
+                    ),
+                    bash.touch(checkpoint_done_file)
                 ],
                 name=f"checkpoint.strelka2_paired_germline.{tumor_pair.name}",
                 samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -4479,11 +4517,19 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     )
 
                 # create checkpoint and remove tmp directory
+                tracking_rm_job = None
+                if self.project_tracking_json:
+                    tracking_rm_job = concat_jobs(
+                        [
+                            job2json_project_tracking_rm.run(vardict_directory)
+                        ]
+                    )
                 checkpoint_job = concat_jobs(
                     [
                         bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
-                        bash.touch(checkpoint_done_file),
-                        bash.rm(vardict_directory)
+                        bash.rm(vardict_directory),
+                        tracking_rm_job,
+                        bash.touch(checkpoint_done_file)
                     ],
                     name=f"checkpoint.vardict_paired.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -4948,12 +4994,21 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     )
 
                     # add checkpoint and remove rawAnnotation directory
+                    tracking_rm_job = None
+                    if self.project_tracking_json:
+                        tracking_rm_job = concat_jobs(
+                            [
+                                job2json_project_tracking_rm.run(annot_directory)
+                            ]
+                        )
+
                     output_somatic = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
                     checkpoint_job = concat_jobs(
                         [
                             bash.mkdir(os.path.join(self.output_dirs["job_directory"], 'checkpoints')),
-                            bash.touch(checkpoint_done_file),
-                            bash.rm(annot_directory)
+                            bash.rm(annot_directory),
+                            tracking_rm_job,
+                            bash.touch(checkpoint_done_file)
                         ],
                         name=f"checkpoint.gatk_variant_annotator.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
