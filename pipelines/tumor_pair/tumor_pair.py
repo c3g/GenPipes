@@ -631,40 +631,19 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             bash.touch(checkpoint_normal_file),
                             bash.touch(checkpoint_tumor_file),
                             bash.rm(os.path.join(tumor_alignment_directory, "realign")),
-                            job2json_project_tracking_rm.run(
-                                pipeline=self,
-                                input_file=os.path.join(tumor_alignment_directory, "realign")
-                            ),
+                            job2json_project_tracking_rm.run(os.path.join(tumor_alignment_directory, "realign")),
                             bash.rm(os.path.join(normal_alignment_directory, "realign")),
-                            job2json_project_tracking_rm.run(
-                                pipeline=self,
-                                input_file=os.path.join(normal_alignment_directory, "realign")
-                            ),
+                            job2json_project_tracking_rm.run(os.path.join(normal_alignment_directory, "realign")),
                             bash.rm(os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)),
-                            job2json_project_tracking_rm.run(
-                                pipeline=self,
-                                input_file=os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)
-                            ),
+                            job2json_project_tracking_rm.run(os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)),
                             bash.rm(input_normal),
-                            job2json_project_tracking_rm.run(
-                                pipeline=self,
-                                input_file=input_normal
-                            ),
+                            job2json_project_tracking_rm.run(input_normal),
                             bash.rm(f"{input_normal}.bai"),
-                            job2json_project_tracking_rm.run(
-                                pipeline=self,
-                                input_file=f"{input_normal}.bai"
-                            ),
+                            job2json_project_tracking_rm.run(f"{input_normal}.bai"),
                             bash.rm(input_tumor),
-                            job2json_project_tracking_rm.run(
-                                pipeline=self,
-                                input_file=input_tumor
-                            ),
+                            job2json_project_tracking_rm.run(input_tumor),
                             bash.rm(f"{input_tumor}.bai"),
-                            job2json_project_tracking_rm.run(
-                                pipeline=self,
-                                input_file=f"{input_tumor}.bai"
-                            )
+                            job2json_project_tracking_rm.run(f"{input_tumor}.bai")
                         ],
                         name=f"checkpoint.gatk_indel_realigner.{tumor_pair.name}",
                         samples=[tumor_pair.tumor, tumor_pair.normal],
@@ -1040,7 +1019,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         conpair.parse_concordance_metrics_pt(concordance_out),
                         job2json_project_tracking.run(
                             input_file=concordance_out,
-                            pipeline=self,
                             samples=",".join([sample.name for sample in samples]),
                             readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                             job_name=job_name,
@@ -1049,7 +1027,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         conpair.parse_contamination_normal_metrics_pt(contamination_out),
                         job2json_project_tracking.run(
                             input_file=contamination_out,
-                            pipeline=self,
                             samples=tumor_pair.normal.name,
                             readsets=",".join([readset.name for readset in tumor_pair.normal.readsets]),
                             job_name=job_name,
@@ -1058,7 +1035,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         conpair.parse_contamination_tumor_metrics_pt(contamination_out),
                         job2json_project_tracking.run(
                             input_file=contamination_out,
-                            pipeline=self,
                             samples=tumor_pair.tumor.name,
                             readsets=",".join([readset.name for readset in tumor_pair.tumor.readsets]),
                             job_name=job_name,
@@ -1878,7 +1854,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     gatk4.parse_bases_over_q30_percent_metrics_pt(f"{normal_output_prefix}.quality_distribution_metrics"),
                     job2json_project_tracking.run(
                         input_file=f"{normal_output_prefix}.quality_distribution_metrics",
-                        pipeline=self,
                         samples=",".join([sample.name for sample in normal_samples]),
                         readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
                         job_name=normal_job_name,
@@ -2007,7 +1982,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     gatk4.parse_bases_over_q30_percent_metrics_pt(f"{tumor_output_prefix}.quality_distribution_metrics"),
                     job2json_project_tracking.run(
                         input_file=f"{tumor_output_prefix}.quality_distribution_metrics",
-                        pipeline=self,
                         samples=",".join([sample.name for sample in tumor_samples]),
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
                         job_name=tumor_job_name,
@@ -2227,7 +2201,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     qualimap.parse_median_insert_size_metrics_pt(normal_output),
                     job2json_project_tracking.run(
                         input_file=normal_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in normal_samples]),
                         readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
                         job_name=normal_job_name,
@@ -2236,7 +2209,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     qualimap.parse_mean_insert_size_metrics_pt(normal_output_histogram),
                     job2json_project_tracking.run(
                         input_file=normal_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in normal_samples]),
                         readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
                         job_name=normal_job_name,
@@ -2245,7 +2217,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     qualimap.parse_dedup_coverage_metrics_pt(normal_output),
                     job2json_project_tracking.run(
                         input_file=normal_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in normal_samples]),
                         readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
                         job_name=normal_job_name,
@@ -2254,7 +2225,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     qualimap.parse_aligned_reads_count_metrics_pt(normal_output),
                     job2json_project_tracking.run(
                         input_file=normal_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in normal_samples]),
                         readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
                         job_name=normal_job_name,
@@ -2301,7 +2271,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     qualimap.parse_median_insert_size_metrics_pt(tumor_output),
                     job2json_project_tracking.run(
                         input_file=tumor_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in tumor_samples]),
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
                         job_name=tumor_job_name,
@@ -2310,7 +2279,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     qualimap.parse_mean_insert_size_metrics_pt(tumor_output_histogram),
                     job2json_project_tracking.run(
                         input_file=tumor_output_histogram,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in tumor_samples]),
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
                         job_name=normal_job_name,
@@ -2319,7 +2287,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     qualimap.parse_dedup_coverage_metrics_pt(tumor_output),
                     job2json_project_tracking.run(
                         input_file=tumor_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in tumor_samples]),
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
                         job_name=tumor_job_name,
@@ -2328,7 +2295,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     qualimap.parse_aligned_reads_count_metrics_pt(tumor_output),
                     job2json_project_tracking.run(
                         input_file=tumor_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in tumor_samples]),
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
                         job_name=tumor_job_name,
@@ -5124,7 +5090,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             cpsr.parse_cpsr_passed_variants_pt(cpsr_output_file),
                             job2json_project_tracking.run(
                                 input_file=cpsr_output_file,
-                                pipeline=self,
                                 samples=",".join([sample.name for sample in samples]),
                                 readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                                 job_name=job_name,
@@ -5344,7 +5309,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
                             job2json_project_tracking.run(
                                 input_file=pcgr_output_file,
-                                pipeline=self,
                                 samples=",".join([sample.name for sample in samples]),
                                 readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                                 job_name=job_name,
@@ -6392,7 +6356,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     purple.parse_purity_metrics_pt(purple_purity_output),
                     job2json_project_tracking.run(
                         input_file=purple_purity_output,
-                        pipeline=self,
                         samples=",".join([sample.name for sample in samples]),
                         readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
                         job_name=job_name,
