@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ### Paul Stretenowich (2025/04/29)
 ### job2json
@@ -23,8 +23,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 def main():
 
     parser = argparse.ArgumentParser(prog='job2json_project_tracking_rm.py', description="Removes a JSON section to a JSON file which was pre-generated when the pipeline was launched. This script is usually launched in the context of cleaning GenPipes output files. /!\\ This version is for project tracking database only.")
-    parser.add_argument('-f', '--file_regex', required=True, help="regex to match the location_uri to be removed", type=unicode)
-    parser.add_argument('-o','--json_outfile', required=True, help="name of json output file")
+    parser.add_argument('-f', '--file_regex', required=True, help="regex to match the location_uri to be removed")
+    parser.add_argument('-o', '--json_outfile', required=True, help="name of json output file")
     args = parser.parse_args()
 
     # finally (unlock) will execute even if exceptions occur
