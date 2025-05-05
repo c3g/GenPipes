@@ -25,10 +25,18 @@ from core.job import *
 
 log = logging.getLogger(__name__)
 
-def run(input_file, file_regex=None):
+def run(pipeline, input_file, file_regex=None):
     """
     Calls job2json_project_tracking_rm to remove deleted files when cleaning up GenPipes output files.
     """
+    pipeline_output_dir = pipeline.output_dir
+    json_folder = os.path.join(pipeline_output_dir, "json")
+    timestamp = pipeline.timestamp
+
+    try:
+        json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{timestamp}.json")
+    except AttributeError:
+        json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}_{timestamp}.json")
 
     if not file_regex:
         file_regex = input_file
@@ -40,10 +48,11 @@ def run(input_file, file_regex=None):
 module load {module_python} && \\
 {job2json_project_tracking_rm_script} \\
   -f {file_regex} \\
-  -o $PT_JSON_OUTFILE && \\
+  -o {json_outfile} && \\
 module unload {module_python}""".format(
     module_python=config.param('DEFAULT', 'module_python'),
     job2json_project_tracking_rm_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking_rm.py"),
-    file_regex=file_regex
+    file_regex=file_regex,
+    json_outfile=json_outfile
     )
   )

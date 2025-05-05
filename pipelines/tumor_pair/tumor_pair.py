@@ -627,41 +627,44 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
                     checkpoint_job = concat_jobs(
                         [
-                            bash.mkdir(
-                                os.path.join(self.output_dirs['job_directory'], 'checkpoints')
-                            ),
-                            bash.touch(
-                                checkpoint_normal_file
-                            ),
-                            bash.touch(
-                                checkpoint_tumor_file
-                            ),
-                            bash.rm(
-                                os.path.join(tumor_alignment_directory, "realign")
-                            ),
+                            bash.mkdir(os.path.join(self.output_dirs['job_directory'], 'checkpoints')),
+                            bash.touch(checkpoint_normal_file),
+                            bash.touch(checkpoint_tumor_file),
+                            bash.rm(os.path.join(tumor_alignment_directory, "realign")),
                             job2json_project_tracking_rm.run(
-                                os.path.join(tumor_alignment_directory, "realign")
+                                pipeline=self,
+                                input_file=os.path.join(tumor_alignment_directory, "realign")
                             ),
-                            bash.rm(
-                                os.path.join(normal_alignment_directory, "realign")
-                            ),
+                            bash.rm(os.path.join(normal_alignment_directory, "realign")),
                             job2json_project_tracking_rm.run(
-                                os.path.join(normal_alignment_directory, "realign")
+                                pipeline=self,
+                                input_file=os.path.join(normal_alignment_directory, "realign")
                             ),
-                            bash.rm(
-                                os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)
-                            ),
+                            bash.rm(os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)),
                             job2json_project_tracking_rm.run(
-                                os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)
+                                pipeline=self,
+                                input_file=os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)
                             ),
                             bash.rm(input_normal),
-                            job2json_project_tracking_rm.run(input_normal),
+                            job2json_project_tracking_rm.run(
+                                pipeline=self,
+                                input_file=input_normal
+                            ),
                             bash.rm(f"{input_normal}.bai"),
-                            job2json_project_tracking_rm.run(f"{input_normal}.bai"),
+                            job2json_project_tracking_rm.run(
+                                pipeline=self,
+                                input_file=f"{input_normal}.bai"
+                            ),
                             bash.rm(input_tumor),
-                            job2json_project_tracking_rm.run(input_tumor),
+                            job2json_project_tracking_rm.run(
+                                pipeline=self,
+                                input_file=input_tumor
+                            ),
                             bash.rm(f"{input_tumor}.bai"),
-                            job2json_project_tracking_rm.run(f"{input_tumor}.bai")
+                            job2json_project_tracking_rm.run(
+                                pipeline=self,
+                                input_file=f"{input_tumor}.bai"
+                            )
                         ],
                         name=f"checkpoint.gatk_indel_realigner.{tumor_pair.name}",
                         samples=[tumor_pair.tumor, tumor_pair.normal],
