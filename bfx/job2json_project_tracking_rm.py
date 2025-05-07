@@ -40,7 +40,8 @@ def run(input_file, file_regex=None):
 module load {module_python} && \\
 {job2json_project_tracking_rm_script} \\
   -f {file_regex} \\
-  -o $PT_JSON_OUTFILE && \\
+  -o $PT_JSON_OUTFILE \\
+&& \\
 module unload {module_python}""".format(
     module_python=config.param('DEFAULT', 'module_python'),
     job2json_project_tracking_rm_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking_rm.py"),
