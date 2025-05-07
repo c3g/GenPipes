@@ -52,8 +52,6 @@ def main():
                             files_to_remove.append((job, file))
         for job, file in files_to_remove:
             job['file'].remove(file)
-            if len(job['file']) == 0:
-                job.pop('file')
         # Print to file
         with open(args.json_outfile, 'w') as out_json:
             json.dump(current_json, out_json, indent=4)
