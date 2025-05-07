@@ -45,13 +45,14 @@ def main():
         for sample in current_json['sample']:
             for readset in sample['readset']:
                 for job in readset['job']:
-                    for file in job['file']:
-                        # print("Checking ", file['location_uri'])
-                        if re.search(args.file_regex, file['location_uri'], re.UNICODE):
-                            # print("Removing ", file['location_uri'])
-                            files_to_remove.append((job, file))
+                    if 'file' in job:
+                        for file in job['file']:
+                            if re.search(args.file_regex, file['location_uri'], re.UNICODE):
+                                files_to_remove.append((job, file))
         for job, file in files_to_remove:
             job['file'].remove(file)
+            if len(job['file']) == 0:
+                job.pop('file')
         # Print to file
         with open(args.json_outfile, 'w') as out_json:
             json.dump(current_json, out_json, indent=4)
