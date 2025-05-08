@@ -25,29 +25,26 @@ from core.job import *
 
 log = logging.getLogger(__name__)
 
-def run(input_file, samples, readsets, job_name, metrics):
+def run(input_file, file_regex=None):
     """
-    Calls job2json_project_tracking within jobs to update metrics
+    Calls job2json_project_tracking_rm to remove deleted files when cleaning up GenPipes output files.
     """
 
+    if not file_regex:
+        file_regex = input_file
     return Job(
         [input_file],
         [],
         [],
         command="""\
 module load {module_python} && \\
-{job2json_project_tracking_script} \\
-  -s {samples} \\
-  -r {readsets} \\
-  -j {job_name} \\
+{job2json_project_tracking_rm_script} \\
+  -f {file_regex} \\
   -o $PT_JSON_OUTFILE \\
-  -m {metrics} && \\
+&& \\
 module unload {module_python}""".format(
     module_python=config.param('DEFAULT', 'module_python'),
-    job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking.py"),
-    samples=samples,
-    readsets=readsets,
-    job_name=job_name,
-    metrics=metrics
+    job2json_project_tracking_rm_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking_rm.py"),
+    file_regex=file_regex
     )
   )

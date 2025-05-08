@@ -134,7 +134,6 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                     kallisto.parse_mean_insert_size_metrics_pt(os.path.join(output_dir, "abundance.h5")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_dir, "abundance.h5"),
-                        pipeline=self,
                         samples=sample.name,
                         readsets=",".join([readset.name for readset in sample.readsets]),
                         job_name=job_name,
@@ -143,7 +142,6 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                     kallisto.parse_median_insert_size_metrics_pt(os.path.join(output_dir, "abundance.h5")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_dir, "abundance.h5"),
-                        pipeline=self,
                         samples=sample.name,
                         readsets=",".join([readset.name for readset in sample.readsets]),
                         job_name=job_name,
