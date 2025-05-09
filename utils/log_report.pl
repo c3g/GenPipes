@@ -220,7 +220,8 @@ sub getLogTextReport {
   # Retrieve job status, first job start date, last job end date, shortest/longest jobs, lowest/highest memory jobs
   my $successfulJobCount = 0;
   my $activeJobCount = 0;
-  my $inactiveJobCount = 0;
+  my $queuedJobCount = 0;
+  my $cancelledJobCount = 0;
   my $failedJobCount = 0;
   my $firstStartSecondsSinceEpoch;
   my $lastEndSecondsSinceEpoch;
@@ -242,9 +243,21 @@ sub getLogTextReport {
       $activeJobCount++;
       $jobLog->{'status'} = "ACTIVE";
     } else {
-      $inactiveJobCount++;
-      $jobLog->{'status'} = "INACTIVE";
+      my $full_job_id = $jobLog->{'jobId'};
+      if ($full_job_id =~ /^(\d+)\./) {
+          my $job_id = $1;  # Extract the numeric part of the job ID
+          my $status = `showq | grep $job_id`;
+
+          if ($status) {
+              $queuedJobCount++;
+              $jobLog->{'status'} = "QUEUED";
+          } else {
+              $cancelledJobCount++;
+              $jobLog->{'status'} = "CANCELLED";
+          }
+      }
     }
+
 
     if (exists $jobLog->{'startSecondsSinceEpoch'} and (not defined $firstStartSecondsSinceEpoch or $firstStartSecondsSinceEpoch > $jobLog->{'startSecondsSinceEpoch'})) {
       $firstStartSecondsSinceEpoch = $jobLog->{'startSecondsSinceEpoch'};
@@ -275,7 +288,8 @@ sub getLogTextReport {
   # Print out job status counts
   $logTextReport .= "# Number of successful jobs: " . $successfulJobCount . "\n";
   $logTextReport .= "# Number of active jobs: " . $activeJobCount . "\n";
-  $logTextReport .= "# Number of inactive jobs: " . $inactiveJobCount . "\n";
+  $logTextReport .= "# Number of queued jobs: " . $queuedJobCount . "\n";
+  $logTextReport .= "# Number of cancelled jobs: " . $cancelledJobCount . "\n";
   $logTextReport .= "# Number of failed jobs: " . $failedJobCount . "\n#\n";
 
   # Print out execution time
