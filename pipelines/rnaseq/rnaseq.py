@@ -1973,7 +1973,7 @@ pandoc \\
         for sample in self.samples:
             output_dir = os.path.join(self.output_dirs["fusion_directory"], sample.name, "star_fusion")
 
-            star_fusion_done_file = os.path.join(self.output_dirs["joboutput_directory"], 'checkpoints', f"run_star_fusion.{sample.name}.stepDone")
+            star_fusion_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"run_star_fusion.{sample.name}.stepDone")
 
             if os.path.exists(star_fusion_done_file) and not self.force_jobs:
                 log.info(f"Star Fusion done already... Skipping star fusion step for sample {sample.name}...")
