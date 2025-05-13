@@ -2013,6 +2013,7 @@ pandoc \\
                 job.name = f"run_star_fusion.{sample.name}"
                 job.samples = [sample]
                 job.readsets = list(sample.readsets)
+                job.input_dependency = left_fastqs[sample.name] + right_fastqs[sample.name]
                 job.removable_files = [os.path.join(output_dir, "_starF_checkpoints")]
                 jobs.append(job)
 
