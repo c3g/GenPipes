@@ -2013,7 +2013,6 @@ pandoc \\
                 job.name = f"run_star_fusion.{sample.name}"
                 job.samples = [sample]
                 job.readsets = list(sample.readsets)
-                job.input_dependency = left_fastqs[sample.name] + right_fastqs[sample.name]
                 job.removable_files = [os.path.join(output_dir, "_starF_checkpoints")]
                 jobs.append(job)
 
@@ -2029,6 +2028,12 @@ pandoc \\
                         checkpoint_job,
                         bash.touch(checkpoint_done_file),
                         bash.rm(job.removable_files[0])
+                    ],
+                    input_dependency=[
+                        os.path.join(output_dir, "star-fusion.fusion_predictions.abridged.coding_effect.tsv"),
+                        os.path.join(output_dir, "Chimeric.out.junction"),
+                        os.path.join(output_dir, "Aligned.out.bam"),
+                        os.path.join(output_dir, "Log.final.out")
                     ]
                 )
             
