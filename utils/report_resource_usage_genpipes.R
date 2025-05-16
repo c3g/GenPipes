@@ -46,6 +46,7 @@ option_list = list(
         default="SLURM",
         help="Choose the scheduler you are currently using : PBS or SLURM. [default %default]"
         ),
+
     make_option(c("-p", "--threads"),
         action="store",
         type = "integer",
@@ -100,7 +101,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
         name = opt$name,                 # name of document (if needed)
         verbose = opt$verbose,           # verbose option
         scheduler = opt$scheduler,       # scheduler option
-        threads = opt$threads,           # number of threads
+        threads = opt$threads            # number of threads
         ),
     output_dir = opt$out_path,
     output_file = file_name_html
