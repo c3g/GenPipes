@@ -45,6 +45,12 @@ option_list = list(
         action="store",
         default="SLURM",
         help="Choose the scheduler you are currently using : PBS or SLURM. [default %default]"
+        ),
+    make_option(c("-p", "--threads"),
+        action="store",
+        type = "integer",
+        default=1,
+        help="Number of threads used for the job. [default %default]"
         )
 )
 
@@ -93,7 +99,8 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
         output = opt$out_path,           # report output path
         name = opt$name,                 # name of document (if needed)
         verbose = opt$verbose,           # verbose option
-        scheduler = opt$scheduler        # scheduler option
+        scheduler = opt$scheduler,       # scheduler option
+        threads = opt$threads,           # number of threads
         ),
     output_dir = opt$out_path,
     output_file = file_name_html
@@ -109,5 +116,3 @@ if  (!file.exists(opt$in_path)){
 if  (!file.exists(opt$out_path)){
   cat(paste("The specified output path doesn't exist :", opt$out_path,"\n", sep = " "), file=stderr()) # print error messages to stderr
 }
-
-
