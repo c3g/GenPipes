@@ -761,8 +761,8 @@ highchart() %>%
  hc_chart(type = "bar")
 
 ```
-***
 
+***
 ## Memory plot
 
 ```{r p_Memory}
