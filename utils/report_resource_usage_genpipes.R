@@ -51,6 +51,13 @@ option_list = list(
 opt = parse_args(OptionParser(option_list=option_list))
 
 
+# Get the directory of the current script
+script_dir <- dirname(normalizePath(sys.frame(1)$ofile))
+
+# Construct the full path to the Rmd file
+rmd_path <- file.path(script_dir, "report_resource_usage_genpipes.Rmd")
+
+
 # output path not specified
 if(is.na(opt$out_path)){
   if(opt$verbose){
@@ -79,7 +86,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
   
   # call to Rmd file
   rmarkdown::render(
-    input = "report_resource_usage_genpipes.Rmd",
+    input = rmd_path,
     params = list(
         input = opt$in_path,             # joboutput path
         timestamp = opt$timestamp,       # timestamp of run
@@ -91,8 +98,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
     output_dir = opt$out_path,
     output_file = file_name_html
     )
-  
-} 
+}
 
 # Input folder problem
 if  (!file.exists(opt$in_path)){
