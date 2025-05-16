@@ -50,13 +50,13 @@ option_list = list(
 
 opt = parse_args(OptionParser(option_list=option_list))
 
-
-# Get the directory of the current script
-script_dir <- dirname(normalizePath(sys.frame(1)$ofile))
+# Get the path of the currently running script
+args <- commandArgs(trailingOnly = FALSE)
+script_path <- sub("--file=", "", args[grep("--file=", args)])
+script_dir <- dirname(normalizePath(script_path))
 
 # Construct the full path to the Rmd file
 rmd_path <- file.path(script_dir, "report_resource_usage_genpipes.Rmd")
-
 
 # output path not specified
 if(is.na(opt$out_path)){
