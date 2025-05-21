@@ -272,10 +272,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
         for tumor_pair in self.tumor_pairs.values():
 
             checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"sambamba_mark_duplicates.{tumor_pair.name}.stepDone")
+            checkpoint_normal_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.normal.name}.stepDone")
+            checkpoint_tumor_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.tumor.name}.stepDone")
 
             if os.path.exists(checkpoint_done_file) and not self.force_jobs:
                 log.info(f"Realigning and duplicate marking done already... Skipping gatk indel realigner step for sample {tumor_pair.name}...")
-
+            elif os.path.exists(checkpoint_normal_file) and os.path.exists(checkpoint_tumor_file) and not self.force_jobs:
+                log.info(f"Realigning of normal and tumor done already... Skipping sambamba merge realigned step for sample {tumor_pair.name}...")
             else:
                 quality_offsets = self.readsets[0].quality_offset
                 if tumor_pair.multiple_normal == 1:
@@ -551,10 +554,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
         for tumor_pair in self.tumor_pairs.values():
 
             checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"sambamba_mark_duplicates.{tumor_pair.name}.stepDone")
+            checkpoint_normal_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.normal.name}.stepDone")
+            checkpoint_tumor_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.tumor.name}.stepDone")
 
             if os.path.exists(checkpoint_done_file) and not self.force_jobs:
                 log.info(f"Realigning and marking duplicates done already... Skipping sambamba merge realigned step for sample {tumor_pair.name}...")
-
+            elif os.path.exists(checkpoint_normal_file) and os.path.exists(checkpoint_tumor_file) and not self.force_jobs:
+                log.info(f"Realigning of normal and tumor done already... Skipping sambamba merge realigned step for sample {tumor_pair.name}...")
             else:
                 if tumor_pair.multiple_normal == 1:
                     normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
@@ -620,8 +626,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     jobs.append(job)
 
                     # create realign checkpoint and remove intermediate files
-                    checkpoint_normal_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.normal.name}.stepDone")
-                    checkpoint_tumor_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"gatk_indel_realigner.{tumor_pair.tumor.name}.stepDone")
                     input_normal = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")
                     input_tumor = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")
 
