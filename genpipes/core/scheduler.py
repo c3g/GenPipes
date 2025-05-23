@@ -681,7 +681,8 @@ chmod 755 $SCIENTIFIC_FILE
                     cmd = f"""\
 # Create the submission file
 echo "#!/bin/bash
-#SBATCH {global_conf.global_get(job_name_prefix, 'cluster_other_arg')} {global_conf.global_get(job_name_prefix, 'cluster_queue')}
+{"#SBATCH " + global_conf.global_get(job_name_prefix, 'cluster_other_arg') if global_conf.global_get(job_name_prefix, 'cluster_other_arg') else ""} 
+{"#SBATCH " + global_conf.global_get(job_name_prefix, 'cluster_queue') if global_conf.global_get(job_name_prefix, 'cluster_queue') else ""}
 #SBATCH -D $OUTPUT_DIR
 #SBATCH -o $JOB_OUTPUT
 #SBATCH -J $JOB_NAME
