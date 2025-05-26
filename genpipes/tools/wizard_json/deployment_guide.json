@@ -1,0 +1,103 @@
+{
+    "_meta": {
+        "entry_point": "start_deployment_guide",
+        "version": 1.0,
+        "description": "Guide to help the user select the appropriate deployment method to run GenPipes"
+    },
+    "nodes": [
+        {
+            "id": "start_deployment_guide",
+            "type": "confirm", 
+            "question": "Do you have access to the Digital Research Alliance of Canada (DRAC), formerly Compute Canada?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "drac_deployment_selected"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "cloud_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "cloud_question",
+            "type" : "confirm",
+            "question": " Will you run large-scale genomic analyses using scalable computing resources (e.g cloud infrastructure)?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "cloud_deployment_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next":{
+                        "node": "container_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "container_question",
+            "type" : "confirm",
+            "question": "Will you run analyses in a local cluster (not Abacus nor DRAC) and need access to GenPipes and the CERN Virtual File System (CVMFS)?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "container_deployment_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next":{
+                        "node": "local_deployment_selected"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "drac_deployment_selected",
+            "type": "message",
+            "message": "Follow the tutorial here to deploy GenPipes in the DRAC infrastructure: https://genpipes.readthedocs.io/en/latest/deploy/access_gp_pre_installed.html",
+            "next": {
+                "external": "general_guide.json",
+                "entryPoint": "pipeline_help"
+            }
+        },
+        {
+            "id": "cloud_deployment_selected",
+            "type": "message",
+            "message": "Follow the tutorial here to deploy GenPipes in cloud: https://genpipes.readthedocs.io/en/latest/deploy/dep_gp_cloud_gcp.html",
+            "next": {
+                "external": "general_guide.json",
+                "entryPoint": "pipeline_help"
+            }
+        },
+        {
+            "id": "container_deployment_selected",
+            "type": "message",
+            "message": "Follow the tutorial here to deploy GenPipes in a container : https://genpipes.readthedocs.io/en/latest/deploy/dep_gp_container.html",
+            "next": {
+                "external": "general_guide.json",
+                "entryPoint": "pipeline_help"
+            }
+        },
+        {
+            "id": "local_deployment_selected",
+            "type": "message",
+            "message": "Follow the tutorial here to deploy GenPipes locally on your server:https://genpipes.readthedocs.io/en/latest/deploy/dep_gp_local.html",
+            "next":{
+                "external": "general_guide.json",
+                "entryPoint": "pipeline_help"
+            }
+        }
+    ]
+}
