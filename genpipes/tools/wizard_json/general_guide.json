@@ -49,71 +49,58 @@
             "id": "pipeline_selection",
             "type": "selection", 
             "question": "Select the pipeline you are using:",
+            "variable": "pipeline_selection",
             "choices": [
-                "ampliconseq",
-                "chipseq", 
-                "covseq", 
-                "dnaseq", 
-                "longread_dnaseq", 
-                "methylseq", 
-                "nanopore_covseq", 
-                "rnaseq", 
-                "rnaseq_denovo_assembly", 
-                "rnaseq_light"
+              "ampliconseq",
+              "chipseq", 
+              "covseq", 
+              "dnaseq", 
+              "longread_dnaseq", 
+              "methylseq", 
+              "nanopore_covseq", 
+              "rnaseq", 
+              "rnaseq_denovo_assembly", 
+              "rnaseq_light"
             ], 
             "next": {
-                "cases": [
-                    {
-                        "when": { "in": ["ampliconseq"] },
-                        "id": "ampliconseq_pipeline_selected",
-                        "node": "command_help"
-                    },
-                    {
-                        "when": { "in": ["chipseq"] },
-                        "id": "chipseq_pipeline_selected",
-                        "node": "protocol_help"
-                    },
-                    {
-                        "when": { "in": ["covseq"] },
-                        "id": "covseq_pipeline_selected",
-                        "node": "command_help"
-                    },
-                    {
-                        "when": { "in": ["dnaseq"] },
-                        "id": "dnaseq_pipeline_selected",
-                        "node": "protocol_help"
-                    },
-                    {
-                        "when": { "in": ["longread_dnaseq"] },
-                        "id": "longread_dnaseq_pipeline_selected",
-                        "node": "protocol_help"
-                    },
-                    {
-                        "when": { "in": ["methylseq"] },
-                        "id": "methylseq_pipeline_selected",
-                        "node": "protocol_help"
-                    },
-                    {
-                        "when": { "in": ["nanopore_covseq"] },
-                        "id": "nanopore_covseq_pipeline_selected",
-                        "node": "command_help"
-                    },
-                    {
-                        "when": { "in": ["rnaseq"] },
-                        "id": "rnaseq_pipeline_selected",
-                        "node": "protocol_help"
-                    },
-                    {
-                        "when": { "in": ["rnaseq_denovo_assembly"] },
-                        "id": "rnaseq_denovo_assembly_pipeline_selected",
-                        "node": "protocol_help"
-                    },
-                    {
-                        "when": { "in": ["rnaseq_light"] },
-                        "id": "rnaseq_light_pipeline_selected",
-                        "node": "command_help"
-                    }
-                ]
+              "node": "switch_pipeline"
+            }
+        },
+        {
+            "id": "switch_pipeline",
+            "type": "switch",
+            "variable": "pipeline_selection",
+            "cases": {
+              "ampliconseq": {
+                "node": "command_help"
+              },
+              "chipseq": {
+                "node": "protocol_help"
+              },
+              "covseq": {
+                "node": "command_help"
+              },
+              "dnaseq": {
+                "node": "protocol_help"
+              },
+              "longread_dnaseq": {
+                "node": "protocol_help"
+              },
+              "methylseq": {
+                "node": "protocol_help"
+              },
+              "nanopore_covseq": {
+                "node": "command_help"
+              },
+              "rnaseq": {
+                "node": "protocol_help"
+              },
+              "rnaseq_denovo_assembly": {
+                "node": "protocol_help"
+              },
+              "rnaseq_light": {
+                "node": "command_help"
+              }
             }
         },
         {

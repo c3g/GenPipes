@@ -214,6 +214,96 @@
                     }
                 }
             ]
+        },
+        {
+            "id": "ampliconseq_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "ampliconseq",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "chipseq_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "chipseq",
+            "next": {
+              "node": "protocol_help"
+            }
+        },
+        {
+            "id": "covseq_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "covseq",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "dnaseq_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "dnaseq",
+            "next": {
+              "node": "protocol_help"
+            }
+        },
+        {
+            "id": "longread_dnaseq_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "longread_dnaseq",
+            "next": {
+              "node": "protocol_help" 
+            }
+        },
+        {
+            "id": "methylseq_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "methylseq",
+            "next": {
+              "node": "protocol_help"
+            }
+        },
+        {
+            "id": "nanopore_covseq_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "nanopore_covseq",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "rnaseq_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "rnaseq",
+            "next": {
+              "node": "protocol_help"
+            }
+        },
+        {
+            "id": "rnaseq_denovo_assembly_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "rnaseq_denovo_assembly",
+            "next": {
+              "node": "protocol_help"
+            }
+        },
+        {
+            "id": "rnaseq_light_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_selection",
+            "value": "rnaseq_light",
+            "next": {
+              "node": "command_help"
+            }
         }
     ]
 }
