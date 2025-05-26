@@ -4,6 +4,7 @@
         "version": 1.0,
         "description": "Guide to help the user select the appropriate protocol to analyze their dataset on GenPipes"
     },
+
     "nodes":[
         {
             "id": "start_protocol_guide",
@@ -30,6 +31,9 @@
                 }
             }
         }, 
+
+
+
         {
             "id": "chipseq_protocol_help",
             "type": "confirm",
@@ -38,7 +42,8 @@
                 {
                     "label": "Yes",
                     "next": {
-                        "node": "nanopore/cov_seq_question"
+                        "external": "general_guide.json",
+                        "entryPoint": "chipseq_protocol_selected"
                         
                     }
                 },
@@ -46,7 +51,305 @@
                     "label": "No",
                     "next": {
                         "external": "general_guide.json",
-                        "entryPoint": "ampliconseq_pipeline_selected"
+                        "entryPoint": "atacseq_protocol_selected"
+                    }
+                }
+            ]
+        },
+
+
+
+        {
+            "id": "dnaseq_protocol_help",
+            "type": "confirm",
+            "question": "Will your analysis focus on detection of germline (inherited) DNA variants?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "germline_question"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "somatic_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "germline_question",
+            "type": "confirm",
+            "question": "Do you want to analyze structural variation?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "germline_sv_protocol_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "germline_snv_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "germline_snv_question",
+            "type": "confirm",
+            "question": "Does your dataset have high coverage (suitable for low-frequency variation)?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "germline_snv_protocol_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "germline_high_cov_selected"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "somatic_question",
+            "type": "confirm",
+            "question": "Do you have a matched tumor and normal samples?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "somatic_ensemble_protocol_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "tumor_only_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "tumor_only_question",
+            "type": "confirm",
+            "question": "Do you only have a tumor sample?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "somatic_tumor_only_protocol_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "somatic_sv_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "somatic_sv_question",
+            "type": "confirm",
+            "question": "Do you want to perform somatic structural variant (SV) detection?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "somatic_sv_protocol_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "somatic_fastpass_protocol_selected"
+                    }
+                }
+            ]
+        },
+
+
+
+
+        {
+            "id": "longread_dnaseq_protocol_help",
+            "type": "confirm",
+            "question": "Is your data generated on a Nanopore instrument?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "nanopore_protocol_selected"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "revio_protocol_selected"
+                    }
+                }
+            ]
+        },
+
+
+
+        {
+            "id": "methylseq_protocol_help",
+            "type": "confirm",
+            "question": "Do you have access to the Illumina Dragen Bio-IT platform?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "dragen_hybrid_protocol_help"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "bismark_gembs_protocol_help"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "dragen_hybrid_protocol_help",
+            "type": "selection",
+            "question": "Select between the Dragen and Hybrid protocol based on your preference:",
+            "choices": [
+              "dragen",
+              "hybrid"
+            ],
+            "variable": "protocol_selection",
+            "next": {
+              "node": "dragen_hybrid_selection"
+            }
+        }, 
+        {
+            "id": "dragen_hybrid_selection",
+            "type": "switch",
+            "variable": "protocol_selection",
+            "cases": {
+              "dragen": {
+                "external": "general_guide.json",
+                "entryPoint": "dragen_protocol_selected"
+              },
+              "hybrid": {
+                "external": "general_guide.json",
+                "entryPoint": "hybrid_protocol_selected"
+              }
+            }
+        },          
+        {
+            "id": "bismark_gembs_protocol_help",
+            "type": "selection",
+            "question": "Select between the Bismark and GemBS protocol based on your preference: ",
+            "choices": [
+                "bismark",
+                "gembs"
+            ],
+            "next": {
+                "node": "bismark_gembs_selection"
+            }
+        },
+        {
+            "id": "bismark_gembs_selection",
+            "type": "switch",
+            "variable": "protocol_selection",
+            "cases": {
+              "bismark": {
+                "external": "general_guide.json",
+                "entryPoint": "bismark_protocol_selected"
+              },
+              "gembs": {
+                "external": "general_guide.json",
+                "entryPoint": "gembs_protocol_selected"
+              }
+            }
+        },
+
+
+
+
+        {
+            "id": "rnaseq_protocol_help",
+            "type": "confirm",
+            "question": "Is your dataset from cancer samples?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "cancer_protocol_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "variant_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "variant_question",
+            "type": "confirm",
+            "question": "Do you want to perform variant detection?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "variants_protocol_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "stringtie_protocol_selected"
+                    }
+                }
+            ]
+        },
+
+
+
+        {
+            "id": "rnaseq_denovo_assembly",
+            "type": "confirm",
+            "question": "Did your RNA-seq datasets originate from an organism without any reference genome?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "seq2fun_protocol_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "trinity_protocol_selected"
                     }
                 }
             ]

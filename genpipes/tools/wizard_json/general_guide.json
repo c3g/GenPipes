@@ -25,6 +25,9 @@
                 }
             ]
         },
+
+
+
         {
             "id": "pipeline_help",
             "type": "confirm", 
@@ -47,61 +50,20 @@
         },
         {
             "id": "pipeline_selection",
-            "type": "selection", 
+            "type": "selection",
             "question": "Select the pipeline you are using:",
-            "variable": "pipeline_selection",
             "choices": [
-              "ampliconseq",
-              "chipseq", 
-              "covseq", 
-              "dnaseq", 
-              "longread_dnaseq", 
-              "methylseq", 
-              "nanopore_covseq", 
-              "rnaseq", 
-              "rnaseq_denovo_assembly", 
-              "rnaseq_light"
-            ], 
-            "next": {
-              "node": "switch_pipeline"
-            }
-        },
-        {
-            "id": "switch_pipeline",
-            "type": "switch",
-            "variable": "pipeline_selection",
-            "cases": {
-              "ampliconseq": {
-                "node": "command_help"
-              },
-              "chipseq": {
-                "node": "protocol_help"
-              },
-              "covseq": {
-                "node": "command_help"
-              },
-              "dnaseq": {
-                "node": "protocol_help"
-              },
-              "longread_dnaseq": {
-                "node": "protocol_help"
-              },
-              "methylseq": {
-                "node": "protocol_help"
-              },
-              "nanopore_covseq": {
-                "node": "command_help"
-              },
-              "rnaseq": {
-                "node": "protocol_help"
-              },
-              "rnaseq_denovo_assembly": {
-                "node": "protocol_help"
-              },
-              "rnaseq_light": {
-                "node": "command_help"
-              }
-            }
+              { "label": "ampliconseq", "node": "ampliconseq_pipeline_selected" },
+              { "label": "chipseq", "node": "chipseq_pipeline_selected" },
+              { "label": "covseq", "node": "covseq_pipeline_selected" },
+              { "label": "dnaseq", "node": "dnaseq_pipeline_selected" },
+              { "label": "longread_dnaseq", "node": "longread_dnaseq_pipeline_selected" },
+              { "label": "methylseq", "node": "methylseq_pipeline_selected" },
+              { "label": "nanopore_covseq", "node": "nanopore_covseq_pipeline_selected" },
+              { "label": "rnaseq", "node": "rnaseq_pipeline_selected" },
+              { "label": "rnaseq_denovo_assembly", "node": "rnaseq_denovo_assembly_pipeline_selected" },
+              { "label": "rnaseq_light", "node": "rnaseq_light_pipeline_selected" }
+            ]
         },
         {
             "id": "ampliconseq_pipeline_selected",
@@ -193,6 +155,9 @@
               "node": "command_help"
             }
         },
+
+
+
         {
             "id": "protocol_help",
             "type": "confirm",
@@ -219,60 +184,240 @@
             "question": "Select the protocol you are using:",
             "choices_cases": [
               {
-                "when":    { "equals":  { "pipeline_selection": "chipseq" } },
-                "choices": [ 
-                    {"id": "chipseq_protocol_selected", "label": "chipseq"},
-                    {"id": "atacseq_protocol_selected", "label": "atacseq"}
-                ]
-              },
-              {
-                "when":    { "equals":  { "pipeline_selection": "dnaseq" } },
+                "when": { "equals": { "pipeline_selection": "chipseq" } },
                 "choices": [
-                    {"id": "germline_snv_protocol_selected", "label": "germline_snv"},
-                    {"id": "germline_sv_protocol_selected", "label": "germline_sv"},
-                    {"id": "germline_high_cov_protocol_selected", "label": "germline_high_cov"},
-                    {"id": "somatic_tumor_only_protocol_selected", "label": "somatic_tumor_only"},
-                    {"id": "somatic_fastpass_protocol_selected", "label": "somatic_fastpass"},
-                    {"id": "somatic_ensemble_protocol_selected", "label": "somatic_ensemble"},
-                    {"id": "somatic_sv_protocol_selected", "label": "somatic_sv"}
+                  { "label": "chipseq", "node": "chipseq_protocol_selected" },
+                  { "label": "atacseq", "node": "atacseq_protocol_selected" }
                 ]
               },
               {
-                "when":    { "equals":  { "pipeline_selection": "longread_dnaseq" } },
+                "when": { "equals": { "pipeline_selection": "dnaseq" } },
                 "choices": [
-                    {"id": "nanopore_protocol_selected", "label": "nanopore"},
-                    {"id": "revio_protocol_selected", "label": "revio"}
+                  { "label": "germline_snv", "node": "germline_snv_protocol_selected" },
+                  { "label": "germline_sv", "node": "germline_sv_protocol_selected" },
+                  { "label": "germline_high_cov", "node": "germline_high_cov_protocol_selected" },
+                  { "label": "somatic_tumor_only", "node": "somatic_tumor_only_protocol_selected" },
+                  { "label": "somatic_fastpass", "node": "somatic_fastpass_protocol_selected" },
+                  { "label": "somatic_ensemble", "node": "somatic_ensemble_protocol_selected" },
+                  { "label": "somatic_sv", "node": "somatic_sv_protocol_selected" }
                 ]
               },
               {
-                "when":    { "equals":  { "pipeline_selection": "methylseq" } },
-                "choices": [ 
-                    {"id": "bismark_protocol_selected", "label": "bismark"},
-                    {"id": "gembs_protocol_selected", "label": "gembs"},
-                    {"id": "dragen_protocol_selected", "label": "dragen"},
-                    {"id": "hybrid_protocol_selected", "label": "hybrid"}
-                 ]
-              },
-              {
-                "when":    { "equals":  { "pipeline_selection": "rnaseq" } },
-                "choices": [ 
-                    {"id": "stringtie_protocol_selected", "label": "stringtie"},
-                    {"id": "variants_protocol_selected", "label": "variants"},
-                    {"id": "cancer_protocol_selected", "label": "cancer"}
+                "when": { "equals": { "pipeline_selection": "longread_dnaseq" } },
+                "choices": [
+                  { "label": "nanopore", "node": "nanopore_protocol_selected" },
+                  { "label": "revio", "node": "revio_protocol_selected" }
                 ]
               },
               {
-                "when":    { "equals":  { "pipeline_selection": "rnaseq_denovo_assembly" } },
-                "choices": [ 
-                    {"id": "trinity_protocol_selected", "label": "trinity"},
-                    {"id": "seq2fun_protocol_selected", "label": "seq2fun"}
+                "when": { "equals": { "pipeline_selection": "methylseq" } },
+                "choices": [
+                  { "label": "bismark", "node": "bismark_protocol_selected" },
+                  { "label": "gembs", "node": "gembs_protocol_selected" },
+                  { "label": "dragen", "node": "dragen_protocol_selected" },
+                  { "label": "hybrid", "node": "hybrid_protocol_selected" }
+                ]
+              },
+              {
+                "when": { "equals": { "pipeline_selection": "rnaseq" } },
+                "choices": [
+                  { "label": "stringtie", "node": "stringtie_protocol_selected" },
+                  { "label": "variants", "node": "variants_protocol_selected" },
+                  { "label": "cancer", "node": "cancer_protocol_selected" }
+                ]
+              },
+              {
+                "when": { "equals": { "pipeline_selection": "rnaseq_denovo_assembly" } },
+                "choices": [
+                  { "label": "trinity", "node": "trinity_protocol_selected" },
+                  { "label": "seq2fun", "node": "seq2fun_protocol_selected" }
                 ]
               }
-            ],
+            ]
+        },          
+        {
+            "id": "chipseq_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "chipseq",
             "next": {
               "node": "command_help"
             }
-        },        
+        },
+        {
+            "id": "atacseq_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "atacseq",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "germline_sv_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "germline_sv",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "germline_snv_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "germline_snv",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "germline_high_cov_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "germline_high_cov",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "somatic_ensemble_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "somatic_ensemble",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "somatic_tumor_only_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "somatic_tumor_only",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "somatic_sv_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "somatic_sv",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "somatic_fastpass_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "somatic_fastpass",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "nanopore_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "nanopore",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "revio_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "revio",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "bismark_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "bismark",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "gembs_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "gembs",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "dragen_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "dragen",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "hybrid_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "hybrid",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "cancer_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "cancer",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "variants_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "variants",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "stringtie_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "stringtie",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "seq2fun_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "seq2fun",
+            "next": {
+              "node": "command_help"
+            }
+        },
+        {
+            "id": "trinity_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_selection",
+            "value": "trinity",
+            "next": {
+              "node": "command_help"
+            }
+        },
+
+
+
         {
             "id": "command_help",
             "type": "confirm", 
