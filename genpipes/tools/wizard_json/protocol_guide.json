@@ -1,0 +1,55 @@
+{
+    "_meta": {
+        "entry_point": "start_protocol_guide",
+        "version": 1.0,
+        "description": "Guide to help the user select the appropriate protocol to analyze their dataset on GenPipes"
+    },
+    "nodes":[
+        {
+            "id": "start_protocol_guide",
+            "type": "switch",
+            "variable": "pipeline_selection",
+            "cases": {
+                "chipseq": {
+                "node": "chipseq_protocol_help"
+                },
+                "dnaseq": {
+                "node": "dnaseq_protocol_help"
+                },
+                "longread_dnaseq": {
+                "node": "longread_dnaseq_protocol_help"
+                },
+                "methylseq": {
+                "node": "methylseq_protocol_help"
+                },
+                "rnaseq": {
+                "node": "rnaseq_protocol_help"
+                },
+                "rnaseq_denovo_assembly": {
+                "node": "rnaseq_denovo_assembly_protocol_help"
+                }
+            }
+        }, 
+        {
+            "id": "chipseq_protocol_help",
+            "type": "confirm",
+            "question": "Do you want to analyze DNA-protein interactions using ChIP-seq data?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "nanopore/cov_seq_question"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "ampliconseq_pipeline_selected"
+                    }
+                }
+            ]
+        }
+    ]
+}
