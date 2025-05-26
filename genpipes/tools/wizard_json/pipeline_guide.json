@@ -1,0 +1,219 @@
+{
+    "_meta": {
+        "entry_point": "start_pipeline_guide",
+        "version": 1.0,
+        "description": "Guide to help the user select the appropriate pipeline to analyze their dataset on GenPipes"
+    },
+    "nodes": [
+        {
+            "id": "start_pipeline_guide",
+            "type": "confirm",
+            "question": "Did your dataset originate from DNA samples?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "chip/dna/longread/methyl_seq_question"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "rnaseq_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "chip/dna/longread/methyl_seq_question",
+            "type": "confirm",
+            "question": "Are you using long read option sequencing data?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "longread_methylseq_question"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "methylseq_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "longread_methylseq_question",
+            "type": "confirm",
+            "question": "Do you want to analyze DNA methylation?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "longread_methylseq_pipeline_selected"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "longread_dnaseq_pipeline_selected"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "methylseq_question",
+            "type": "confirm",
+            "question": "Do you want to analyze DNA methylation?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "methylseq_pipeline_selected"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "chip/dna_seq_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "chip/dna_seq_question",
+            "type": "confirm",
+            "question": "Do you want to study DNA-protein interactions, such as where transcription factors bind across the genome?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "chipseq_pipeline_selected"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "dnaseq_pipeline_selected"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "rnaseq_question",
+            "type": "confirm",
+            "question": "Did your dataset originate from RNA samples?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "3_rnaseq_question"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "covid_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "3_rnaseq_question",
+            "type": "confirm",
+            "question": "Did your dataset originate from a non-model organism?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "rnaseq_denovo_assembly_pipeline_selected"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "node": "2_rnaseq_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "2_rnaseq_question",
+            "type": "confirm",
+            "question": "Do you require a full alignment for your RNA-seq analysis, even if it's slower?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "rnaseq_pipeline_selected"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "rnaseq_light_pipeline_selected"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "covid_question",
+            "type": "confirm",
+            "question": "Do you want to analyze COVID samples?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "node": "nanopore/cov_seq_question"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "ampliconseq_pipeline_selected"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "nanopore/cov_seq_question",
+            "type": "confirm",
+            "question": "Are you using long read option sequencing data?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "nanopore_covseq_pipeline_selected"
+                        
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "covseq_pipeline_selected"
+                    }
+                }
+            ]
+        }
+    ]
+}
