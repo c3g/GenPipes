@@ -10,6 +10,44 @@ In cases where the user skips a guide, they will be asked to select their choice
 - Command guide  
   - Within this guide, the user can also follow the step guide if needed
 
+Legend of the node names and their function:
+
+- start_general_guide: Asks the user if they need help deploying GenPipes
+  - Yes → goes to the start of deployment_guide.json
+  - No → goes to pipeline_help
+
+- pipeline_help: Asks if the user needs help selecting the appropriate pipeline
+  - Yes → goes to the start of pipeline_guide.json
+  - No → goes to pipeline_selection
+
+- pipeline_selection: Lets the user select a pipeline
+  - Selection leads to <pipeline_name>_pipeline_selected
+
+- <pipeline_name>_pipeline_selected:
+  - Stores pipeline_name variable
+  - Goes to:
+      - protocol_help if pipeline requires a protocol
+      - command_help if pipeline does not require a protocol
+
+- protocol_help: Asks the user if they need help choosing a protocol
+  - Yes → goes to the start of protocol_guide.json
+  - No → goes to protocol_selection
+
+- protocol_selection: Presents protocol options based on the selected pipeline
+  - Uses "choices_cases" with "when" clauses to filter protocol list
+  - Selection leads to <protocol_name>_protocol_selected
+
+- <protocol_name>_protocol_selected:
+  - Stores protocol_name variable
+  - Goes to command_help
+
+- command_help: Asks if the user needs help constructing the command
+  - Yes → goes to the start of command_guide.json
+  - No → goes to end
+
+- end: Terminates the wizard with a final message
+  - Suggests running "genpipes -h" or visiting ReadTheDocs for more support
+
 
 ## `deployment_guide.JSON`
 This file contains the questions that help the user determine the appropriate pipeline based on their dataset and analysis goals.  

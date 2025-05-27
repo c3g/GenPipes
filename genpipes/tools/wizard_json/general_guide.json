@@ -2,7 +2,7 @@
     "_meta": {
         "entry_point": "start_general_guide",
         "version": 1.0,
-        "description": "General guide to determine if user needs selecting the appropriate deployment method, pipeline, protocol, and/or constructing the command to run GenPipes"
+        "description": "General guide to determine if user needs help selecting the appropriate deployment method, pipeline, protocol, and/or constructing the command to run GenPipes"
     },
     "nodes": [
         {
@@ -68,7 +68,7 @@
         {
             "id": "ampliconseq_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "ampliconseq",
             "next": {
               "node": "command_help"
@@ -77,7 +77,7 @@
         {
             "id": "chipseq_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "chipseq",
             "next": {
               "node": "protocol_help"
@@ -86,7 +86,7 @@
         {
             "id": "covseq_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "covseq",
             "next": {
               "node": "command_help"
@@ -95,7 +95,7 @@
         {
             "id": "dnaseq_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "dnaseq",
             "next": {
               "node": "protocol_help"
@@ -104,7 +104,7 @@
         {
             "id": "longread_dnaseq_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "longread_dnaseq",
             "next": {
               "node": "protocol_help" 
@@ -113,7 +113,7 @@
         {
             "id": "methylseq_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "methylseq",
             "next": {
               "node": "protocol_help"
@@ -122,7 +122,7 @@
         {
             "id": "nanopore_covseq_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "nanopore_covseq",
             "next": {
               "node": "command_help"
@@ -131,7 +131,7 @@
         {
             "id": "rnaseq_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "rnaseq",
             "next": {
               "node": "protocol_help"
@@ -140,7 +140,7 @@
         {
             "id": "rnaseq_denovo_assembly_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "rnaseq_denovo_assembly",
             "next": {
               "node": "protocol_help"
@@ -149,7 +149,7 @@
         {
             "id": "rnaseq_light_pipeline_selected",
             "type": "set_variable",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "value": "rnaseq_light",
             "next": {
               "node": "command_help"
@@ -184,14 +184,14 @@
             "question": "Select the protocol you are using:",
             "choices_cases": [
               {
-                "when": { "equals": { "pipeline_selection": "chipseq" } },
+                "when": { "equals": { "pipeline_name": "chipseq" } },
                 "choices": [
                   { "label": "chipseq", "node": "chipseq_protocol_selected" },
                   { "label": "atacseq", "node": "atacseq_protocol_selected" }
                 ]
               },
               {
-                "when": { "equals": { "pipeline_selection": "dnaseq" } },
+                "when": { "equals": { "pipeline_name": "dnaseq" } },
                 "choices": [
                   { "label": "germline_snv", "node": "germline_snv_protocol_selected" },
                   { "label": "germline_sv", "node": "germline_sv_protocol_selected" },
@@ -203,14 +203,14 @@
                 ]
               },
               {
-                "when": { "equals": { "pipeline_selection": "longread_dnaseq" } },
+                "when": { "equals": { "pipeline_name": "longread_dnaseq" } },
                 "choices": [
                   { "label": "nanopore", "node": "nanopore_protocol_selected" },
                   { "label": "revio", "node": "revio_protocol_selected" }
                 ]
               },
               {
-                "when": { "equals": { "pipeline_selection": "methylseq" } },
+                "when": { "equals": { "pipeline_name": "methylseq" } },
                 "choices": [
                   { "label": "bismark", "node": "bismark_protocol_selected" },
                   { "label": "gembs", "node": "gembs_protocol_selected" },
@@ -219,7 +219,7 @@
                 ]
               },
               {
-                "when": { "equals": { "pipeline_selection": "rnaseq" } },
+                "when": { "equals": { "pipeline_name": "rnaseq" } },
                 "choices": [
                   { "label": "stringtie", "node": "stringtie_protocol_selected" },
                   { "label": "variants", "node": "variants_protocol_selected" },
@@ -227,7 +227,7 @@
                 ]
               },
               {
-                "when": { "equals": { "pipeline_selection": "rnaseq_denovo_assembly" } },
+                "when": { "equals": { "pipeline_name": "rnaseq_denovo_assembly" } },
                 "choices": [
                   { "label": "trinity", "node": "trinity_protocol_selected" },
                   { "label": "seq2fun", "node": "seq2fun_protocol_selected" }
@@ -238,7 +238,7 @@
         {
             "id": "chipseq_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "chipseq",
             "next": {
               "node": "command_help"
@@ -247,7 +247,7 @@
         {
             "id": "atacseq_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "atacseq",
             "next": {
               "node": "command_help"
@@ -256,7 +256,7 @@
         {
             "id": "germline_sv_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "germline_sv",
             "next": {
               "node": "command_help"
@@ -265,16 +265,16 @@
         {
             "id": "germline_snv_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "germline_snv",
             "next": {
               "node": "command_help"
             }
         },
         {
-            "id": "germline_high_cov_selected",
+            "id": "germline_high_cov_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "germline_high_cov",
             "next": {
               "node": "command_help"
@@ -283,7 +283,7 @@
         {
             "id": "somatic_ensemble_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "somatic_ensemble",
             "next": {
               "node": "command_help"
@@ -292,7 +292,7 @@
         {
             "id": "somatic_tumor_only_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "somatic_tumor_only",
             "next": {
               "node": "command_help"
@@ -301,7 +301,7 @@
         {
             "id": "somatic_sv_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "somatic_sv",
             "next": {
               "node": "command_help"
@@ -310,7 +310,7 @@
         {
             "id": "somatic_fastpass_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "somatic_fastpass",
             "next": {
               "node": "command_help"
@@ -319,7 +319,7 @@
         {
             "id": "nanopore_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "nanopore",
             "next": {
               "node": "command_help"
@@ -328,7 +328,7 @@
         {
             "id": "revio_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "revio",
             "next": {
               "node": "command_help"
@@ -337,7 +337,7 @@
         {
             "id": "bismark_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "bismark",
             "next": {
               "node": "command_help"
@@ -346,7 +346,7 @@
         {
             "id": "gembs_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "gembs",
             "next": {
               "node": "command_help"
@@ -355,7 +355,7 @@
         {
             "id": "dragen_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "dragen",
             "next": {
               "node": "command_help"
@@ -364,7 +364,7 @@
         {
             "id": "hybrid_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "hybrid",
             "next": {
               "node": "command_help"
@@ -373,7 +373,7 @@
         {
             "id": "cancer_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "cancer",
             "next": {
               "node": "command_help"
@@ -382,7 +382,7 @@
         {
             "id": "variants_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "variants",
             "next": {
               "node": "command_help"
@@ -391,7 +391,7 @@
         {
             "id": "stringtie_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "stringtie",
             "next": {
               "node": "command_help"
@@ -400,7 +400,7 @@
         {
             "id": "seq2fun_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "seq2fun",
             "next": {
               "node": "command_help"
@@ -409,7 +409,7 @@
         {
             "id": "trinity_protocol_selected",
             "type": "set_variable",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "value": "trinity",
             "next": {
               "node": "command_help"
