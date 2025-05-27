@@ -10,14 +10,14 @@ In cases where the user skips a guide, they will be asked to select their choice
 - Command guide  
   - Within this guide, the user can also follow the step guide if needed
 
-Legend of the node names and their function:
+**Legend of the node names and their function:**
 - start_general_guide: Asks the user if they need help deploying GenPipes
-  - Yes → goes to the start of deployment_guide.json
-  - No → goes to pipeline_help
+  - Yes → start of deployment_guide.json
+  - No → pipeline_help
 
 - pipeline_help: Asks if the user needs help selecting the appropriate pipeline
-  - Yes → goes to the start of pipeline_guide.json
-  - No → goes to pipeline_selection
+  - Yes → start of pipeline_guide.json
+  - No → pipeline_selection
 
 - pipeline_selection: Lets the user select a pipeline
   - Selection leads to <pipeline_name>_pipeline_selected
@@ -29,8 +29,8 @@ Legend of the node names and their function:
       - command_help if pipeline does not require a protocol
 
 - protocol_help: Asks the user if they need help choosing a protocol
-  - Yes → goes to the start of protocol_guide.json
-  - No → goes to protocol_selection
+  - Yes → start of protocol_guide.json
+  - No → protocol_selection
 
 - protocol_selection: Presents protocol options based on the selected pipeline
   - Uses "choices_cases" with "when" clauses to filter protocol list
@@ -41,8 +41,8 @@ Legend of the node names and their function:
   - Goes to command_help
 
 - command_help: Asks if the user needs help constructing the command
-  - Yes → goes to the start of command_guide.json
-  - No → goes to end
+  - Yes → start of command_guide.json
+  - No → end
 
 - end: Terminates the wizard with a final message
   - Suggests running "genpipes -h" or visiting ReadTheDocs for more support
@@ -57,22 +57,28 @@ This file contains the questions that help the user determine the deployment met
 - `container`
 - `locally`
 
-Legend of the node names and their function:
+**Legend of the node names and their function:**
 - start_deployment_guide: Asks user if they have access to DRAC
   - Yes → drac_deployment_selected
-  - No → goes to cloud_question
+  - No → cloud_question
+
 - cloud_question: Asks user if they want to use cloud infrastructure
   - Yes → cloud_deployment_selected
-  - No → goes to container_question
+  - No → container_question
+
 - container_question: Asks user if they want to use a local cluster and need access the CVMFS
   - Yes → container_deployment_selected
   - No → local_deployment_selected
+
 - drac_deployment_selected: suggests to follow link for detailed deployment steps
   - goes to pipeline_help
+
 - cloud_deployment_selected: suggests to follow link for detailed deployment steps
   - goes to pipeline_help
+
 - container_deployment_selected: suggests to follow link for detailed deployment steps
   - goes to pipeline_help
+
 - local_deployment_selected: suggests to follow link for detailed deployment steps
   - goes to pipeline_help
 
@@ -92,6 +98,48 @@ This file contains the questions that help the user determine the appropriate pi
 - `rnaseq_denovo_assembly`
 - `rnaseq_light`
 
+**Legend of the node names and their functions:**
+- start_pipeline_guide: Asks whether the dataset originates from DNA samples or from RNA/COVID samples
+  - Yes → chip_dna_longread_methyl_seq_question  
+  - No → rnaseq_question
+
+- chip_dna_longread_methyl_seq_question: Distinguishes between long-read methylation/long-read DNA and methylation/ChIP/DNA sequencing pipelines
+  - Yes → longread_methylseq_question  
+  - No → methylseq_question
+
+- longread_methylseq_question: Determines whether the user wants to analyze long-read methylation vs long-read DNA 
+  - Yes → longread_methylseq_pipeline_selected  
+  - No → longread_dnaseq_pipeline_selected
+
+- methylseq_question: Determines whether the user wants to analyze DNA methylation or proceed to ChIP/DNA sequencing 
+  - Yes → methylseq_pipeline_selected  
+  - No → chip_dna_seq_question
+
+- chip_dna_seq_question: Chooses between ChIP-seq and DNA-seq pipelines
+  - Yes → chipseq_pipeline_selected  
+  - No → dnaseq_pipeline_selected
+
+- rnaseq_question: Distinguishes between RNA-seq pipelines and nanopore/cov/amplicon pipelines 
+  - Yes → 3_rnaseq_question  
+  - No → covid_question
+
+- 3_rnaseq_question: Determines whether the RNA dataset is from a non-model organism, selecting between the 3 RNA-seq options
+  - Yes → rnaseq_denovo_assembly_pipeline_selected  
+  - No → 2_rnaseq_question
+
+- 2_rnaseq_question: Chooses between the 2 remaining RNA-seq pipelines 
+  - Yes → rnaseq_pipeline_selected  
+  - No → rnaseq_light_pipeline_selected
+
+- covid_question: Distinguishes between nanopore/cov and amplicon sequencing pipelines  
+  - Yes → nanopore_cov_seq_question  
+  - No → ampliconseq_pipeline_selected
+
+- nanopore_cov_seq_question: Chooses between nanopore and cov sequencing pipelines  
+  - Yes → nanopore_covseq_pipeline_selected  
+  - No → covseq_pipeline_selected
+
+Note: All <pipeline_name>_pipeline_selected nodes jump to the appropriate entry point node in general_guide.json.
 
 
 ## `protocol_guide.JSON`

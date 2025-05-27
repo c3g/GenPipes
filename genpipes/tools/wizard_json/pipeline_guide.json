@@ -13,7 +13,7 @@
                 {
                     "label": "Yes",
                     "next": {
-                        "node": "chip/dna/longread/methyl_seq_question"
+                        "node": "chip_dna_longread_methyl_seq_question"
                         
                     }
                 },
@@ -26,7 +26,7 @@
             ]
         },
         {
-            "id": "chip/dna/longread/methyl_seq_question",
+            "id": "chip_dna_longread_methyl_seq_question",
             "type": "confirm",
             "question": "Are you using long read option sequencing data?",
             "options": [
@@ -82,13 +82,13 @@
                 {
                     "label": "No",
                     "next": {
-                        "node": "chip/dna_seq_question"
+                        "node": "chip_dna_seq_question"
                     }
                 }
             ]
         },
         {
-            "id": "chip/dna_seq_question",
+            "id": "chip_dna_seq_question",
             "type": "confirm",
             "question": "Do you want to study DNA-protein interactions, such as where transcription factors bind across the genome?",
             "options": [
@@ -180,7 +180,7 @@
                 {
                     "label": "Yes",
                     "next": {
-                        "node": "nanopore/cov_seq_question"
+                        "node": "nanopore_cov_seq_question"
                         
                     }
                 },
@@ -194,7 +194,7 @@
             ]
         },
         {
-            "id": "nanopore/cov_seq_question",
+            "id": "nanopore_cov_seq_question",
             "type": "confirm",
             "question": "Are you using long read option sequencing data?",
             "options": [
