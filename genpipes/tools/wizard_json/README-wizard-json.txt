@@ -11,7 +11,6 @@ In cases where the user skips a guide, they will be asked to select their choice
   - Within this guide, the user can also follow the step guide if needed
 
 Legend of the node names and their function:
-
 - start_general_guide: Asks the user if they need help deploying GenPipes
   - Yes → goes to the start of deployment_guide.json
   - No → goes to pipeline_help
@@ -50,6 +49,35 @@ Legend of the node names and their function:
 
 
 ## `deployment_guide.JSON`
+This file contains the questions that help the user determine the deployment method they want to use to deploy GenPipes
+
+**Deployment method options:**
+- `DRAC infrastucture`
+- `cloud`
+- `container`
+- `locally`
+
+Legend of the node names and their function:
+- start_deployment_guide: Asks user if they have access to DRAC
+  - Yes → drac_deployment_selected
+  - No → goes to cloud_question
+- cloud_question: Asks user if they want to use cloud infrastructure
+  - Yes → cloud_deployment_selected
+  - No → goes to container_question
+- container_question: Asks user if they want to use a local cluster and need access the CVMFS
+  - Yes → container_deployment_selected
+  - No → local_deployment_selected
+- drac_deployment_selected: suggests to follow link for detailed deployment steps
+  - goes to pipeline_help
+- cloud_deployment_selected: suggests to follow link for detailed deployment steps
+  - goes to pipeline_help
+- container_deployment_selected: suggests to follow link for detailed deployment steps
+  - goes to pipeline_help
+- local_deployment_selected: suggests to follow link for detailed deployment steps
+  - goes to pipeline_help
+
+
+## `pipeline_guide.JSON`
 This file contains the questions that help the user determine the appropriate pipeline based on their dataset and analysis goals.  
 
 **Pipeline options:**
@@ -65,7 +93,8 @@ This file contains the questions that help the user determine the appropriate pi
 - `rnaseq_light`
 
 
-## `pipeline_guide.JSON`
+
+## `protocol_guide.JSON`
 This file contains the questions used to determine the appropriate protocol based on the dataset and analysis goals.
 Note: if ampliconseq/nanopore_covseq/covseq/rnaseq_light then skip question asking user if they need pipeline guide.
 

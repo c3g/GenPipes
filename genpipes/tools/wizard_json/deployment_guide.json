@@ -28,7 +28,7 @@
         {
             "id": "cloud_question",
             "type" : "confirm",
-            "question": " Will you run large-scale genomic analyses using scalable computing resources (e.g cloud infrastructure)?",
+            "question": "Will you run large-scale genomic analyses using scalable computing resources (e.g cloud infrastructure)?",
             "options": [
                 {
                     "label": "Yes",
@@ -75,7 +75,7 @@
         {
             "id": "cloud_deployment_selected",
             "type": "message",
-            "message": "Follow the tutorial here to deploy GenPipes in cloud: https://genpipes.readthedocs.io/en/latest/deploy/dep_gp_cloud_gcp.html",
+            "message": "Follow the tutorial here to deploy GenPipes in the cloud: https://genpipes.readthedocs.io/en/latest/deploy/dep_gp_cloud_gcp.html",
             "next": {
                 "external": "general_guide.json",
                 "entryPoint": "pipeline_help"
@@ -84,7 +84,7 @@
         {
             "id": "container_deployment_selected",
             "type": "message",
-            "message": "Follow the tutorial here to deploy GenPipes in a container : https://genpipes.readthedocs.io/en/latest/deploy/dep_gp_container.html",
+            "message": "Follow the tutorial here to deploy GenPipes in a container: https://genpipes.readthedocs.io/en/latest/deploy/dep_gp_container.html",
             "next": {
                 "external": "general_guide.json",
                 "entryPoint": "pipeline_help"
@@ -93,7 +93,7 @@
         {
             "id": "local_deployment_selected",
             "type": "message",
-            "message": "Follow the tutorial here to deploy GenPipes locally on your server:https://genpipes.readthedocs.io/en/latest/deploy/dep_gp_local.html",
+            "message": "Follow the tutorial here to deploy GenPipes locally on your server: https://genpipes.readthedocs.io/en/latest/deploy/dep_gp_local.html",
             "next":{
                 "external": "general_guide.json",
                 "entryPoint": "pipeline_help"
