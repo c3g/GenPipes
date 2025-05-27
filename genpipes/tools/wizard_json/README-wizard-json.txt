@@ -248,3 +248,57 @@ specifically when the user does not have a design file and wants to run GenPipes
 - `rnaseq` → `stringtie`  
 - `rnaseq_denovo_assembly` → `trinity`, `seq2fun`  
 - `rnaseq_light`
+
+
+**Legend of the node names and their functions:**
+- start_step_guide: Entry point that branches based on the selected pipeline
+  - ampliconseq → ampliconseq_step_command  
+  - chipseq → chipseq_step_help  
+  - methylseq → methylseq_step_help  
+  - rnaseq → rnaseq_step_help  
+  - rnaseq_denovo_assembly → rnaseq_denovo_assembly_step_help  
+  - rnaseq_light → rnaseq_light_step_command
+
+- ampliconseq_step_command: Sets step range to "1-6, 8"
+  - goes to g_command_question in command_guide.json
+
+- chipseq_step_help: Entry point that branches based on selected protocol
+  - chipseq → chipseq_step_command  
+  - atacseq → atacseq_step_command
+
+- chipseq_step_command: Sets step range to "1-17, 19-23"
+  - goes to g_command_question in command_guide.json
+
+- atacseq_step_command: Sets step range to "1-18, 20-24"
+  - goes to g_command_question in command_guide.json
+
+- methylseq_step_help: Entry point that branches based on selected protocol
+  - bismark → bismark_hybrid_step_command  
+  - hybrid → bismark_hybrid_step_command  
+  - dragen → dragen_gembs_step_command  
+  - gembs → dragen_gembs_step_command
+
+- bismark_hybrid_step_command: Sets step range to "1-14, 17-18"
+  - goes to g_command_question in command_guide.json
+
+- dragen_gembs_step_command: Sets step range to "1-16, 19-20"
+  - goes to g_command_question in command_guide.json
+
+- rnaseq_step_help: Entry point that branches based on selected protocol
+  - stringtie → stringtie_step_command
+
+- stringtie_step_command: Sets step range to "1-18, 20-21"
+  - goes to g_command_question in command_guide.json
+
+- rnaseq_denovo_assembly_step_help: Entry point that branches based on selected protocol
+  - trinity → trinity_step_command  
+  - seq2fun → seq2fun_step_command
+
+- trinity_step_command: Sets step range to "1-19, 21-24"
+  - goes to g_command_question in command_guide.json
+
+- seq2fun_step_command: Sets step range to "1-3, 5"
+  - goes to g_command_question in command_guide.json
+
+- rnaseq_light_step_command: Sets step range to "1-6, 8"
+  - goes to g_command_question in command_guide.json
