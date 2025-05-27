@@ -11,29 +11,14 @@
             "type": "switch",
             "variable": "pipeline_selection",
             "cases": {
-                "chipseq": {
-                "node": "chipseq_protocol_help"
-                },
-                "dnaseq": {
-                "node": "dnaseq_protocol_help"
-                },
-                "longread_dnaseq": {
-                "node": "longread_dnaseq_protocol_help"
-                },
-                "methylseq": {
-                "node": "methylseq_protocol_help"
-                },
-                "rnaseq": {
-                "node": "rnaseq_protocol_help"
-                },
-                "rnaseq_denovo_assembly": {
-                "node": "rnaseq_denovo_assembly_protocol_help"
-                }
+                "chipseq": {"node": "chipseq_protocol_help"},
+                "dnaseq": {"node": "dnaseq_protocol_help"},
+                "longread_dnaseq": {"node": "longread_dnaseq_protocol_help"},
+                "methylseq": {"node": "methylseq_protocol_help"},
+                "rnaseq": {"node": "rnaseq_protocol_help"},
+                "rnaseq_denovo_assembly": {"node": "rnaseq_denovo_assembly_protocol_help"}
             }
         }, 
-
-
-
         {
             "id": "chipseq_protocol_help",
             "type": "confirm",
@@ -56,9 +41,6 @@
                 }
             ]
         },
-
-
-
         {
             "id": "dnaseq_protocol_help",
             "type": "confirm",
@@ -180,10 +162,6 @@
                 }
             ]
         },
-
-
-
-
         {
             "id": "longread_dnaseq_protocol_help",
             "type": "confirm",
@@ -206,9 +184,6 @@
                 }
             ]
         },
-
-
-
         {
             "id": "methylseq_protocol_help",
             "type": "confirm",
@@ -224,8 +199,7 @@
                 {
                     "label": "No",
                     "next": {
-                        "external": "general_guide.json",
-                        "entryPoint": "bismark_gembs_protocol_help"
+                        "node": "bismark_gembs_protocol_help"
                     }
                 }
             ]
@@ -266,6 +240,7 @@
                 "bismark",
                 "gembs"
             ],
+            "variable": "protocol_selection",
             "next": {
                 "node": "bismark_gembs_selection"
             }
@@ -285,10 +260,6 @@
               }
             }
         },
-
-
-
-
         {
             "id": "rnaseq_protocol_help",
             "type": "confirm",
@@ -330,11 +301,8 @@
                 }
             ]
         },
-
-
-
         {
-            "id": "rnaseq_denovo_assembly",
+            "id": "rnaseq_denovo_assembly_protocol_help",
             "type": "confirm",
             "question": "Did your RNA-seq datasets originate from an organism without any reference genome?",
             "options": [

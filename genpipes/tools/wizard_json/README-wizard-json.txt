@@ -156,6 +156,72 @@ Note: if ampliconseq/nanopore_covseq/covseq/rnaseq_light then skip question aski
 - `rnaseq` → `stringtie`, `variants`, `cancer`  
 - `rnaseq_denovo_assembly` → `trinity`, `seq2fun`
 
+**Legend of the node names and their functions:**
+- start_protocol_guide: Entry point that branches based on selected pipeline  
+  - chipseq → chipseq_protocol_help  
+  - dnaseq → dnaseq_protocol_help  
+  - longread_dnaseq → longread_dnaseq_protocol_help  
+  - methylseq → methylseq_protocol_help  
+  - rnaseq → rnaseq_protocol_help  
+  - rnaseq_denovo_assembly → rnaseq_denovo_assembly_protocol_help
+
+- chipseq_protocol_help: Asks whether the user wants to analyze DNA-protein interactions  
+  - Yes → chipseq_protocol_selected  
+  - No → atacseq_protocol_selected
+
+- dnaseq_protocol_help: Asks whether the analysis focuses on germline DNA variants  
+  - Yes → germline_question  
+  - No → somatic_question
+
+- germline_question: Asks if the user wants to analyze structural variation  
+  - Yes → germline_sv_protocol_selected  
+  - No → germline_snv_question
+
+- germline_snv_question: Asks whether dataset has high coverage for detecting low-frequency variation  
+  - Yes → germline_snv_protocol_selected  
+  - No → germline_high_cov_selected
+
+- somatic_question: Asks if dataset has matched tumor and normal samples
+  - Yes → somatic_ensemble_protocol_selected  
+  - No → tumor_only_question
+
+- tumor_only_question: Asks if dataset only has tumor
+  - Yes → somatic_tumor_only_protocol_selected  
+  - No → somatic_sv_question
+
+- somatic_sv_question: Asks if need to perform somatic structural variant detection  
+  - Yes → somatic_sv_protocol_selected  
+  - No → somatic_fastpass_protocol_selected
+
+- longread_dnaseq_protocol_help: Asks if data is generated on Nanopore instrument
+  - Yes → nanopore_protocol_selected  
+  - No → revio_protocol_selected
+
+- methylseq_protocol_help: Asks if user has access to Illumina Dragen  
+  - Yes → dragen_hybrid_protocol_help  
+  - No → bismark_gembs_protocol_help
+
+- dragen_hybrid_protocol_help: Lets user choose between Dragen and Hybrid protocols  
+  - dragen → dragen_protocol_selected  
+  - hybrid → hybrid_protocol_selected
+
+- bismark_gembs_protocol_help: Lets user choose between Bismark and GemBS protocols  
+  - bismark → bismark_protocol_selected  
+  - gembs → gembs_protocol_selected
+
+- rnaseq_protocol_help: Asks if the dataset comes from cancer samples  
+  - Yes → cancer_protocol_selected  
+  - No → variant_question
+
+- variant_question: Asks if variant detection is required  
+  - Yes → variants_protocol_selected  
+  - No → stringtie_protocol_selected
+
+- rnaseq_denovo_assembly_protocol_help: Asks if organism lacks a reference genome  
+  - Yes → seq2fun_protocol_selected  
+  - No → trinity_protocol_selected
+
+Note: All <protocol_name>_protocol_selected nodes jump to the appropriate entry point node in general_guide.json.
 
 ## `command_guide.JSON`
 This file contains the questions that the wizard will ask the user to construct the appropriate command based on their pipeline, 
