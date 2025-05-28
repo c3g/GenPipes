@@ -63,40 +63,39 @@
         {
             "id": "germline_question",
             "type": "confirm",
-            "question": "Do you want to analyze structural variation?",
-            "options": [
-                {
-                    "label": "Yes",
-                    "next": {
-                        "external": "general_guide.json",
-                        "entryPoint": "germline_sv_protocol_selected"
-                    }
-                },
-                {
-                    "label": "No",
-                    "next": {
-                        "node": "germline_snv_question"
-                    }
-                }
-            ]
-        },
-        {
-            "id": "germline_snv_question",
-            "type": "confirm",
             "question": "Does your dataset have high coverage (suitable for low-frequency variation)?",
             "options": [
                 {
                     "label": "Yes",
                     "next": {
                         "external": "general_guide.json",
-                        "entryPoint": "germline_snv_protocol_selected"
+                        "entryPoint": "germline_high_cov_selected"
                     }
                 },
                 {
                     "label": "No",
                     "next": {
+                        "node": "germline_sv_snv_question"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "germline_sv_snv_question",
+            "type": "selection",
+            "question": "Do you want to focus on structural variants (SV) or single nucleotide variants (SNV)?",
+            "choices": [
+                {   "label": "SV", 
+                    "next": {
                         "external": "general_guide.json",
-                        "entryPoint": "germline_high_cov_selected"
+                        "entryPoint": "germline_sv_protocol_selected"
+                    }
+                },
+                {
+                    "label": "SNV",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "germline_snv_protocol_selected"
                     }
                 }
             ]
