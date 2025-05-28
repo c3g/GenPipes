@@ -209,56 +209,42 @@
             "type": "selection",
             "question": "Select between the Dragen and Hybrid protocol based on your preference:",
             "choices": [
-              "dragen",
-              "hybrid"
-            ],
-            "variable": "protocol_selection",
-            "next": {
-              "node": "dragen_hybrid_selection"
-            }
-        }, 
-        {
-            "id": "dragen_hybrid_selection",
-            "type": "switch",
-            "variable": "protocol_selection",
-            "cases": {
-              "dragen": {
-                "external": "general_guide.json",
-                "entryPoint": "dragen_protocol_selected"
+              {
+                "label": "dragen",
+                "node": {
+                  "external": "general_guide.json",
+                  "entryPoint": "dragen_protocol_selected"
+                }
               },
-              "hybrid": {
-                "external": "general_guide.json",
-                "entryPoint": "hybrid_protocol_selected"
+              {
+                "label": "hybrid",
+                "node": {
+                  "external": "general_guide.json",
+                  "entryPoint": "hybrid_protocol_selected"
+                }
               }
-            }
-        },          
+            ]
+        },                 
         {
             "id": "bismark_gembs_protocol_help",
             "type": "selection",
-            "question": "Select between the Bismark and GemBS protocol based on your preference: ",
+            "question": "Select between the Bismark and GemBS protocol based on your preference:",
             "choices": [
-                "bismark",
-                "gembs"
-            ],
-            "variable": "protocol_selection",
-            "next": {
-                "node": "bismark_gembs_selection"
-            }
-        },
-        {
-            "id": "bismark_gembs_selection",
-            "type": "switch",
-            "variable": "protocol_selection",
-            "cases": {
-              "bismark": {
-                "external": "general_guide.json",
-                "entryPoint": "bismark_protocol_selected"
+              {
+                "label": "bismark",
+                "node": {
+                  "external": "general_guide.json",
+                  "entryPoint": "bismark_protocol_selected"
+                }
               },
-              "gembs": {
-                "external": "general_guide.json",
-                "entryPoint": "gembs_protocol_selected"
+              {
+                "label": "gembs",
+                "node": {
+                  "external": "general_guide.json",
+                  "entryPoint": "gembs_protocol_selected"
+                }
               }
-            }
+            ]
         },
         {
             "id": "rnaseq_protocol_help",
