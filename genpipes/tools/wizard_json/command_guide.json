@@ -1,0 +1,113 @@
+{
+    "_meta": {
+        "entry_point": "start_command_guide",
+        "version": 1.0,
+        "description": "Guide to help construct the command to run GenPipes"
+    },
+    "nodes":[
+        {
+            "id": "start_command_guide",
+            "type": "input",
+            "variable": "raw_readset_filename",
+            "prompt": "Enter the name of the readset file:", 
+            "next": "store_readset_filename"
+        },
+        {
+            "id": "store_readset_filename", 
+            "type": "set_variable",
+            "variable": "readset_filename",
+            "value": "TODO_IN_PYTHON",
+            "next": "slurm_job_scheduler_question"
+        },
+        {
+            "id": "slurm_job_scheduler_question", 
+            "type": "confirm",
+            "question": "Do you want to use the SLURM job scheduler?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": "slurm_j_command"
+                },
+                {
+                    "label": "No",
+                    "next": "general_job_scheduler_question"
+                }
+            ]
+        },
+        {
+            "id": "slurm_j_command", 
+            "type": "set_variable",
+            "variable": "j_command",
+            "value": "slurm",
+            "next": "slurm_server_question"
+        },
+        {
+            "id": "slurm_server_question",
+            "type": "selection",
+            "question": "Select the SLURM server you want to use:",
+            "choices": [
+                {"label": "Beluga", "node": "beluga_server_ini"},
+                {"label": "Cedar", "node": "cedar_server_ini"},
+                {"label": "Narval", "node": "narval_server_ini"}
+            ]
+        },
+        {
+            "id": "beluga_server_ini", 
+            "type": "set_variable",
+            "variable": "scheduler_server_name",
+            "value": "beluga",
+            "next": "store_server_for_custom_ini"
+        },
+        {
+            "id": "cedar_server_ini", 
+            "type": "set_variable",
+            "variable": "scheduler_server_name",
+            "value": "cedar",
+            "next": "store_server_for_custom_ini"
+        },
+        {
+            "id": "narval_server_ini", 
+            "type": "set_variable",
+            "variable": "scheduler_server_name",
+            "value": "narval",
+            "next": "store_server_for_custom_ini"
+        },
+        {
+            "id": "general_job_scheduler_question",
+            "type": "selection",
+            "question": "Which job scheduler do you want to use?",
+            "choices": [
+                {"label": "Abacus", "node": "abacus_j_command"},
+                {"label": "Batch", "node": "batch_j_command"}
+            ]
+        },
+        {
+            "id": "abacus_j_command",
+            "type": "set_variable",
+            "variable": "j_command",
+            "value": "abacus",
+            "next": "custom_ini_question"
+        },
+        {
+            "id": "batch_j_command",
+            "type": "set_variable",
+            "variable": "j_command",
+            "value": "batch",
+            "next": "batch_server_ini"
+        },
+        {
+            "id": "batch_server_ini",
+            "type": "set_variable",
+            "variable": "scheduler_server_name",
+            "value": "beluga",
+            "next": "store_server_for_custom_ini"
+        },
+        {
+            "id": "store_server_for_custom_ini",
+            "type": "set_variable",
+            "variable": "server_ini",
+            "value": "TODO_IN_PYTHON",
+            "next": "custom_ini_question"
+        }
+    ]
+}

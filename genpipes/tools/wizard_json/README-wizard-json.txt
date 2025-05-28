@@ -47,7 +47,7 @@ In cases where the user skips a guide, they will be asked to select their choice
 - end: Terminates the wizard with a final message
   - Suggests running "genpipes -h" or visiting ReadTheDocs for more support
 
-
+------------------------------------------------------------------------------------------------------------------------------------
 ## `deployment_guide.JSON`
 This file contains the questions that help the user determine the deployment method they want to use to deploy GenPipes
 
@@ -82,6 +82,7 @@ This file contains the questions that help the user determine the deployment met
 - local_deployment_selected: suggests to follow link for detailed deployment steps
   - goes to pipeline_help
 
+------------------------------------------------------------------------------------------------------------------------------------
 
 ## `pipeline_guide.JSON`
 This file contains the questions that help the user determine the appropriate pipeline based on their dataset and analysis goals.  
@@ -141,6 +142,7 @@ This file contains the questions that help the user determine the appropriate pi
 
 Note: All <pipeline_name>_pipeline_selected nodes jump to the appropriate entry point node in general_guide.json.
 
+------------------------------------------------------------------------------------------------------------------------------------
 
 ## `protocol_guide.JSON`
 This file contains the questions used to determine the appropriate protocol based on the dataset and analysis goals.
@@ -223,6 +225,8 @@ Note: if ampliconseq/nanopore_covseq/covseq/rnaseq_light then skip question aski
 
 Note: All <protocol_name>_protocol_selected nodes jump to the appropriate entry point node in general_guide.json.
 
+------------------------------------------------------------------------------------------------------------------------------------
+
 ## `command_guide.JSON`
 This file contains the questions that the wizard will ask the user to construct the appropriate command based on their pipeline, 
 protocol, readset file, job scheduler, design/pair file, directory, steps, etc.
@@ -235,6 +239,9 @@ protocol, readset file, job scheduler, design/pair file, directory, steps, etc.
 - Output directory  
 - Steps, etc.
 
+**Legend of the node names and their functions:**
+
+------------------------------------------------------------------------------------------------------------------------------------
 
 ## `step_guide.JSON`
 This file defines the step range to be added to the command based on the pipeline and protocol, 
@@ -248,7 +255,6 @@ specifically when the user does not have a design file and wants to run GenPipes
 - `rnaseq` → `stringtie`  
 - `rnaseq_denovo_assembly` → `trinity`, `seq2fun`  
 - `rnaseq_light`
-
 
 **Legend of the node names and their functions:**
 - start_step_guide: Entry point that branches based on the selected pipeline
