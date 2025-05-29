@@ -56,21 +56,21 @@
             "type": "set_variable",
             "variable": "scheduler_server_name",
             "value": "beluga",
-            "next": "store_server_for_custom_ini"
+            "next": "store_name_for_server_ini"
         },
         {
             "id": "cedar_server_ini", 
             "type": "set_variable",
             "variable": "scheduler_server_name",
             "value": "cedar",
-            "next": "store_server_for_custom_ini"
+            "next": "store_name_for_server_ini"
         },
         {
             "id": "narval_server_ini", 
             "type": "set_variable",
             "variable": "scheduler_server_name",
             "value": "narval",
-            "next": "store_server_for_custom_ini"
+            "next": "store_name_for_server_ini"
         },
         {
             "id": "general_job_scheduler_question",
@@ -86,6 +86,13 @@
             "type": "set_variable",
             "variable": "j_command",
             "value": "-j pbs",
+            "next": "abacus_server"
+        },
+        {
+            "id": "abacus_server",
+            "type": "set_variable",
+            "variable": "scheduler_server_name",
+            "value": "abacus",
             "next": "custom_ini_question"
         },
         {
@@ -114,16 +121,16 @@
             "type": "switch",
             "variable": "pipeline_name",
             "cases": {
-                "ampliconseq": {"node": "o_command_question"},
-                "chipseq": {"node": "o_command_question"},
-                "covseq": {"node": "o_command_question" },
+                "ampliconseq": {"node": "c_command_construction_no_custom_choice"},
+                "chipseq": {"node": "c_command_construction_no_custom_choice"},
+                "covseq": {"node": "c_command_construction_no_custom_choice" },
                 "dnaseq": {"node": "custom_ini_check_protocol"},
-                "longread_dnaseq": {"node": "o_command_question"},
-                "methylseq": {"node": "o_command_question"},
-                "nanopore_covseq": {"node": "path_custom_ini_question"},
-                "rnaseq": {"node": "o_command_question"},
-                "rnaseq_denovo_assembly": {"node": "o_command_question"},
-                "rnaseq_light": {"node": "o_command_question"}
+                "longread_dnaseq": {"node": "c_command_construction_no_custom_choice"},
+                "methylseq": {"node": "c_command_construction_no_custom_choice"},
+                "nanopore_covseq": {"node": "custom_ini_check_protocol"},
+                "rnaseq": {"node": "c_command_construction_no_custom_choice"},
+                "rnaseq_denovo_assembly": {"node": "c_command_construction_no_custom_choice"},
+                "rnaseq_light": {"node": "c_command_construction_no_custom_choice"}
             }
         },
         {
@@ -131,10 +138,10 @@
             "type": "switch",
             "variable": "protocol_name",
             "cases": {
-                "germline_snv": {"node": "o_command_question"},
+                "germline_snv": {"node": "c_command_construction_no_custom_choice"},
                 "germline_sv": {"node": "path_custom_ini_question"},
-                "germline_high_cov": {"node": "o_command_question"},
-                "somatic_tumor_only": {"node": "o_command_question"},
+                "germline_high_cov": {"node": "c_command_construction_no_custom_choice"},
+                "somatic_tumor_only": {"node": "c_command_construction_no_custom_choice"},
                 "somatic_fastpass": {"node": "path_custom_ini_question"},
                 "somatic_ensemble": {"node": "path_custom_ini_question"},
                 "somatic_sv": {"node": "path_custom_ini_question"}
@@ -152,6 +159,58 @@
             "type": "set_variable",
             "variable": "path_custom_ini",
             "value": "2_TODO_IN_PYTHON",
+            "next": "o_command_construction_with_custom_choice"
+        },
+        {
+            "id": "c_command_construction_no_custom_choice",
+            "type": "switch",
+            "variable": "scheduler_server_name",
+            "cases": {
+                "abacus": {"node": "c_command_construction_abacus_no_custom"},
+                "batch": {"node": "c_command_construction_no_custom"},
+                "beluga": {"node": "c_command_construction_no_custom" },
+                "cedar": {"node": "c_command_construction_no_custom"},
+                "narval": {"node": "c_command_construction_no_custom"}
+            }
+        },
+        {
+            "id": "c_command_construction_with_custom_choice",
+            "type": "switch",
+            "variable": "scheduler_server_name",
+            "cases": {
+                "abacus": {"node": "c_command_construction_abacus_with_custom"},
+                "batch": {"node": "c_command_construction_with_custom"},
+                "beluga": {"node": "c_command_construction_with_custom" },
+                "cedar": {"node": "c_command_construction_with_custom"},
+                "narval": {"node": "c_command_construction_with_custom"}
+            }
+        },
+        {
+            "id": "c_command_construction_abacus_no_custom",
+            "type": "set_variable",
+            "variable": "c_command",
+            "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini",
+            "next": "o_command_question"
+        },
+        {
+            "id": "c_command_construction_no_custom",
+            "type": "set_variable",
+            "variable": "c_command",
+            "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini",
+            "next": "o_command_question"
+        },
+        {
+            "id": "c_command_construction_abacus_with_custom",
+            "type": "set_variable",
+            "variable": "c_command",
+            "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini",
+            "next": "o_command_question"
+        },
+        {
+            "id": "c_command_construction_with_custom",
+            "type": "set_variable",
+            "variable": "c_command",
+            "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini",
             "next": "o_command_question"
         },
         {
@@ -322,7 +381,13 @@
             "id": "command_construction",
             "type": "set_variable",
             "variable": "final_command",
-            "value": "genpipes {pipeline_name} {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}"
-        }
+            "value": "genpipes {pipeline_name} {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}",
+            "next": "end"
+        },
+        {
+            "id": "end",
+            "type": "message",
+            "message": "Here is your full GenPipes command:\n\n{final_command}"
+          }
     ]
 }
