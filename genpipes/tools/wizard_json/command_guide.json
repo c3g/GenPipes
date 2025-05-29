@@ -16,7 +16,7 @@
             "id": "store_readset_filename", 
             "type": "set_variable",
             "variable": "readset_filename",
-            "value": "TODO_IN_PYTHON",
+            "value": "1_TODO_IN_PYTHON",
             "next": "slurm_job_scheduler_question"
         },
         {
@@ -38,7 +38,7 @@
             "id": "slurm_j_command", 
             "type": "set_variable",
             "variable": "j_command",
-            "value": "slurm",
+            "value": "-j slurm",
             "next": "slurm_server_question"
         },
         {
@@ -85,29 +85,103 @@
             "id": "abacus_j_command",
             "type": "set_variable",
             "variable": "j_command",
-            "value": "abacus",
+            "value": "-j pbs",
             "next": "custom_ini_question"
         },
         {
             "id": "batch_j_command",
             "type": "set_variable",
             "variable": "j_command",
-            "value": "batch",
+            "value": "-j batch",
             "next": "batch_server_ini"
         },
         {
             "id": "batch_server_ini",
             "type": "set_variable",
             "variable": "scheduler_server_name",
-            "value": "beluga",
-            "next": "store_server_for_custom_ini"
+            "value": "batch",
+            "next": "store_name_for_server_ini"
         },
         {
-            "id": "store_server_for_custom_ini",
+            "id": "store_name_for_server_ini",
             "type": "set_variable",
             "variable": "server_ini",
-            "value": "TODO_IN_PYTHON",
+            "value": "GENPIPES_INIS/common_ini/{scheduler_server_name}.ini",
             "next": "custom_ini_question"
+        },
+        {
+            "id": "custom_ini_question",
+            "type": "switch",
+            "variable": "pipeline_name",
+            "cases": {
+                "ampliconseq": {"node": "o_command_question"},
+                "chipseq": {"node": "o_command_question"},
+                "covseq": {"node": "o_command_question" },
+                "dnaseq": {"node": "custom_ini_check_protocol"},
+                "longread_dnaseq": {"node": "o_command_question"},
+                "methylseq": {"node": "o_command_question"},
+                "nanopore_covseq": {"node": "path_custom_ini_question"},
+                "rnaseq": {"node": "o_command_question"},
+                "rnaseq_denovo_assembly": {"node": "o_command_question"},
+                "rnaseq_light": {"node": "o_command_question"}
+            }
+        },
+        {
+            "id": "custom_ini_check_protocol",
+            "type": "switch",
+            "variable": "protocol_name",
+            "cases": {
+                "germline_snv": {"node": "o_command_question"},
+                "germline_sv": {"node": "path_custom_ini_question"},
+                "germline_high_cov": {"node": "o_command_question"},
+                "somatic_tumor_only": {"node": "o_command_question"},
+                "somatic_fastpass": {"node": "path_custom_ini_question"},
+                "somatic_ensemble": {"node": "path_custom_ini_question"},
+                "somatic_sv": {"node": "path_custom_ini_question"}
+            }
+        },
+        {
+            "id": "path_custom_ini_question",
+            "type": "input",
+            "variable": "raw_path_custom_ini",
+            "prompt": "Enter the path to your custom ini:",
+            "next": "store_path_custom_ini"
+        },
+        {
+            "id": "store_path_custom_ini",
+            "type": "set_variable",
+            "variable": "path_custom_ini",
+            "value": "2_TODO_IN_PYTHON",
+            "next": "o_command_question"
+        },
+        {
+            "id": "o_command_question",
+            "type": "confirm",
+            "question":"Do you want to run the pipeline somewhere other than your current directory ?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": "input_directory_name"
+                },
+                {
+                    "label": "No",
+                    "next": "pipeline_check_for_file_question"
+                }
+            ]
+        },
+        {
+            "id": "input_directory_name",
+            "type": "input",
+            "variable": "raw_directory_name",
+            "prompt": "Enter the name of the directory you want to run the pipeline in:", 
+            "next": "store_directory_name"
+        },
+        {
+            "id": "store_directory_name",
+            "type": "set_variable",
+            "variable": "o_command",
+            "value": "-o {raw_directory_name}",
+            "next": "pipeline_check_for_file_question"
         }
     ]
 }
