@@ -9,7 +9,7 @@
         {
             "id": "start_step_guide",
             "type": "switch",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "cases": {
                 "ampliconseq": {"node": "ampliconseq_step_command"},
                 "chipseq": {"node": "chipseq_step_help"},
@@ -32,7 +32,7 @@
         {
             "id": "chipseq_step_help",
             "type": "switch",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "cases": {
                 "chipseq": {"node": "chipseq_step_command"},
                 "atacseq": {"node": "atacseq_step_command"}
@@ -61,7 +61,7 @@
         {
             "id": "methylseq_step_help",
             "type": "switch",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "cases": {
                 "bismark": {"node": "bismark_hybrid_step_command"},
                 "hybrid": {"node": "bismark_hybrid_step_command"},
@@ -92,7 +92,7 @@
         {
             "id": "rnaseq_step_help",
             "type": "switch",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "cases": {
                 "stringtie": {"node": "stringtie_step_command"}
             }
@@ -110,7 +110,7 @@
         {
             "id": "rnaseq_denovo_assembly_step_help",
             "type": "switch",
-            "variable": "protocol_selection",
+            "variable": "protocol_name",
             "cases": {
                 "trinity": {"node": "trinity_step_command"},
                 "seq2fun": {"node": "seq2fun_step_command"}
