@@ -15,8 +15,8 @@
         {
             "id": "store_readset_filename", 
             "type": "set_variable",
-            "variable": "readset_filename",
-            "value": "1_TODO_IN_PYTHON",
+            "variable": "r_command",
+            "value": "-r {1_TODO_IN_PYTHON}",
             "next": "slurm_job_scheduler_question"
         },
         {
@@ -303,6 +303,26 @@
             "variable": "s_command",
             "value": "-s {step_range}",
             "next": "g_command_question"
+        },
+        {
+            "id": "g_command_question",
+            "type": "input",
+            "variable": "g_file_name",
+            "prompt": "Enter a file name to save the GenPipes run commands (leave blank to output to stdout):",
+            "next": "store_g_file_name"
+        },
+        {
+            "id": "store_g_file_name",
+            "type": "set_variable",
+            "variable": "g_command",
+            "value": "-g {3_TODO_IN_PYTHON}",
+            "next": "command_construction"
+        },
+        {
+            "id": "command_construction",
+            "type": "set_variable",
+            "variable": "final_command",
+            "value": "genpipes {pipeline_name} {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}"
         }
     ]
 }
