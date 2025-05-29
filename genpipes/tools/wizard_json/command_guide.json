@@ -257,7 +257,7 @@
                 },
                 {
                     "label": "No",
-                    "next": "check_protocol_pair_file"
+                    "next": "step_question"
                 }
             ]
         },
