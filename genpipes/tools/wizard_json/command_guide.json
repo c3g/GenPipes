@@ -172,7 +172,7 @@
         {
             "id": "input_directory_name",
             "type": "input",
-            "variable": "raw_directory_name",
+            "variable": "directory_name",
             "prompt": "Enter the name of the directory you want to run the pipeline in:", 
             "next": "store_directory_name"
         },
@@ -180,8 +180,129 @@
             "id": "store_directory_name",
             "type": "set_variable",
             "variable": "o_command",
-            "value": "-o {raw_directory_name}",
+            "value": "-o {directory_name}",
             "next": "pipeline_check_for_file_question"
+        },
+        {
+            "id": "pipeline_check_for_file_question",
+            "type": "switch",
+            "variable": "pipeline_name",
+            "cases": {
+                "ampliconseq": {"node": "design_file_question"},
+                "chipseq": {"node": "design_file_question"},
+                "covseq": {"node": "step_question" },
+                "dnaseq": {"node": "check_protocol_pair_file"},
+                "longread_dnaseq": {"node": "step_question"},
+                "methylseq": {"node": "design_file_question"},
+                "nanopore_covseq": {"node": "step_question"},
+                "rnaseq": {"node": "design_file_question"},
+                "rnaseq_denovo_assembly": {"node": "design_file_question"},
+                "rnaseq_light": {"node": "design_file_question"}
+            }
+        },
+        {
+            "id": "design_file_question",
+            "type": "confirm",
+            "question": "Do you have a design file?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": "input_design_file_name"
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "step_guide.json",
+                        "entryPoint": "start_step_guide"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "input_design_file_name",
+            "type": "input",
+            "variable": "design_file_name",
+            "prompt": "Enter the name of the design file:",
+            "next": "store_design_file_name"
+        },
+        {
+            "id": "store_design_file_name",
+            "type": "set_variable",
+            "variable": "d_command",
+            "value": "-d {design_file_name}.{pipeline_name}.txt",
+            "next": "step_question"
+        },
+        {
+            "id": "check_protocol_pair_file",
+            "type": "switch",
+            "variable": "protocol_name",
+            "cases": {
+                "germline_snv": {"node": "step_question"},
+                "germline_sv": {"node": "step_question"},
+                "germline_high_cov": {"node": "step_question"},
+                "somatic_tumor_only": {"node": "pair_file_question"},
+                "somatic_fastpass": {"node": "step_question"},
+                "somatic_ensemble": {"node": "step_question"},
+                "somatic_sv": {"node": "step_question"}
+            }
+        },
+        {
+            "id": "pair_file_question",
+            "type": "confirm",
+            "question": "Do you have a pair file?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": "input_pair_file_name"
+                },
+                {
+                    "label": "No",
+                    "next": "check_protocol_pair_file"
+                }
+            ]
+        },
+        {
+            "id": "input_pair_file_name",
+            "type": "input",
+            "variable": "pair_file_name",
+            "prompt": "Enter the name of the pair file:",
+            "next": "store_pair_file_name"
+        },
+        {
+            "id": "store_pair_file_name",
+            "type": "set_variable",
+            "variable": "p_command",
+            "value": "-d {pair_file_name}.dnaseq.txt",
+            "next": "step_question"
+        },
+        {
+            "id": "step_question",
+            "type": "confirm",
+            "question": "Do you want to run all the steps of the pipeline?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": "g_command_question"
+                },
+                {
+                    "label": "No",
+                    "next": "input_step_range"
+                }
+            ]
+        },
+        {
+            "id": "input_step_range",
+            "type": "input",
+            "variable": "step_range",
+            "prompt": "Enter the step range (e.g '1-5', '3,6,7', '2,4-8'): ",
+            "next": "store_step_range"
+        },
+        {
+            "id": "store_step_range",
+            "type": "set_variable",
+            "variable": "s_command",
+            "value": "-s {step_range}",
+            "next": "g_command_question"
         }
     ]
 }
