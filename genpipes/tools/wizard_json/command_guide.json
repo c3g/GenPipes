@@ -392,13 +392,6 @@
             "next": "g_command_question"
         },
         {
-            "id": "initialize_g_command",
-            "type": "set_variable",
-            "variable": "g_command",
-            "value": "",
-            "next": "g_command_question"
-        },  
-        {
             "id": "g_command_question",
             "type": "input",
             "variable": "g_file_name",
