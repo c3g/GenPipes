@@ -190,29 +190,36 @@
             "type": "set_variable",
             "variable": "c_command",
             "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini",
-            "next": "o_command_question"
+            "next": "initialize_o_command"
         },
         {
             "id": "c_command_construction_no_custom",
             "type": "set_variable",
             "variable": "c_command",
             "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini",
-            "next": "o_command_question"
+            "next": "initialize_o_command"
         },
         {
             "id": "c_command_construction_abacus_with_custom",
             "type": "set_variable",
             "variable": "c_command",
             "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini",
-            "next": "o_command_question"
+            "next": "initialize_o_command"
         },
         {
             "id": "c_command_construction_with_custom",
             "type": "set_variable",
             "variable": "c_command",
             "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini",
-            "next": "o_command_question"
+            "next": "initialize_o_command"
         },
+        {
+            "id": "initialize_o_command",
+            "type": "set_variable",
+            "variable": "o_command",
+            "value": "",
+            "next": "o_command_question"
+        },          
         {
             "id": "o_command_question",
             "type": "confirm",
@@ -240,8 +247,22 @@
             "type": "set_variable",
             "variable": "o_command",
             "value": "-o {directory_name}",
-            "next": "pipeline_check_for_file_question"
+            "next": "initialize_d_command"
         },
+        {
+            "id": "initialize_d_command",
+            "type": "set_variable",
+            "variable": "d_command",
+            "value": "",
+            "next": "initialize_p_command"
+        },
+        {
+            "id": "initialize_p_command",
+            "type": "set_variable",
+            "variable": "p_command",
+            "value": "",
+            "next": "pipeline_check_for_file_question"
+        },          
         {
             "id": "pipeline_check_for_file_question",
             "type": "switch",
@@ -332,8 +353,15 @@
             "type": "set_variable",
             "variable": "p_command",
             "value": "-d {pair_file_name}.dnaseq.txt",
-            "next": "step_question"
+            "next": "initialize_s_command"
         },
+        {
+            "id": "initialize_s_command",
+            "type": "set_variable",
+            "variable": "s_command",
+            "value": "",
+            "next": "step_question"
+        },  
         {
             "id": "step_question",
             "type": "confirm",
@@ -363,6 +391,13 @@
             "value": "-s {step_range}",
             "next": "g_command_question"
         },
+        {
+            "id": "initialize_g_command",
+            "type": "set_variable",
+            "variable": "g_command",
+            "value": "",
+            "next": "g_command_question"
+        },  
         {
             "id": "g_command_question",
             "type": "input",
