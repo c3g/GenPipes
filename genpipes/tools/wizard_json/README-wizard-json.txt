@@ -1,6 +1,33 @@
 # Organization of Wizard JSON Files (refer to GenPipes_Wizard.drawio)
 
-##List of set_variables
+##List of variables in nodes
+- id
+- type
+- question
+- options
+- label
+- next
+- external
+- entryPoint
+- node
+- message
+- variable
+- value
+- choices_cases
+- when ... equals ... pipeline_name
+- choices 
+- cases
+- prompt
+
+##List of types 
+- confirm: yes/no questions
+- selection: multi-select questions
+- set_variable: store variable
+- message: output message for user
+- switch
+- input: input from user 
+
+##List of set_variable
 From general_guide.JSON:
 - pipeline_name: ampliconseq, chipseq, covseq, dnaseq, longread_dnaseq, methylseq, nanopore_covseq, rnaseq, 
                   rnaseq_denovo_assembly, rnaseq_light
@@ -21,20 +48,17 @@ From command_guide.JSON:
 - o_command: {empty placeholder}, -o {directory_name}
 - d_command: {empty placeholder}, -d {design_file_name}.{pipeline_name}.txt
 - p_command: {empty placeholder}, -p {pair_file_name}.dnaseq.txt
-- s_command:  {empty placeholder}, -s {step_range}
+- s_command: {empty placeholder}, -s {step_range}
 - g_command: -g {3_TODO_IN_PYTHON}
 - final_command: genpipes {pipeline_name} {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}
 
 From step_guide.JSON:
 - step_range: 1-6, 8 ; 1-17, 19-23 ; 1-18, 20-24 ; 1-14, 17-18 ; 1-16, 19-20 ; 1-18, 20-21 ; 1-19, 21-24 ; 1-3, 5 ; 1-6, 8
 
-##List of types 
-- confirm: yes/no questions
-- selection: multi-select questions
-- set_variable: store variable
-- message: output message for user
-- switch
-- input: input from user 
+##TODO_IN_PYTHON
+- 1_TODO_IN_PYTHON: insert the readset filename (depending if input contains .txt)
+- 2_TODO_IN_PYTHON: insert the path to custom ini (depending if input contains .ini)
+- 3_TODO_IN_PYTHON: insert the genpipes filename (depending if input contains .sh)
 
 ## `general_guide.JSON`
 This file contains the general questions that the wizard will ask the user to determine which guide they need help with. 
@@ -384,7 +408,7 @@ protocol, readset file, job scheduler, design/pair file, directory, steps, etc.
     - ampliconseq
     - chipseq
     - methylseq
-    - rnaseq
+    - rnaseq (protocol: stringtie)
     - rnaseq_denovo_assembly
     - rnaseq_light
   - Pipeline has pair file:
@@ -492,10 +516,7 @@ specifically when the user does not have a design file and wants to run GenPipes
 - dragen_gembs_step_command: Sets step range to "1-16, 19-20"
   - goes to initialize_g_command in command_guide.json
 
-- rnaseq_step_help: Entry point that branches based on selected protocol
-  - stringtie → stringtie_step_command
-
-- stringtie_step_command: Sets step range to "1-18, 20-21"
+- rnaseq_step_command: Sets step range to "1-18, 20-21"
   - goes to initialize_g_command in command_guide.json
 
 - rnaseq_denovo_assembly_step_help: Entry point that branches based on selected protocol

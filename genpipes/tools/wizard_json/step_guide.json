@@ -14,7 +14,7 @@
                 "ampliconseq": {"node": "ampliconseq_step_command"},
                 "chipseq": {"node": "chipseq_step_help"},
                 "methylseq": {"node": "methylseq_step_help"},
-                "rnaseq": {"node": "rnaseq_step_help"},
+                "rnaseq": {"node": "rnaseq_step_command"},
                 "rnaseq_denovo_assembly": {"node": "rnaseq_denovo_assembly_step_help"},
                 "rnaseq_light": {"node": "rnaseq_light_step_command"}
             }
@@ -90,15 +90,7 @@
             }
         },
         {
-            "id": "rnaseq_step_help",
-            "type": "switch",
-            "variable": "protocol_name",
-            "cases": {
-                "stringtie": {"node": "stringtie_step_command"}
-            }
-        },
-        {
-            "id": "stringtie_step_command",
+            "id": "rnaseq_step_command",
             "type": "set_variable",
             "variable": "step_range",
             "value": "1-18, 20-21",

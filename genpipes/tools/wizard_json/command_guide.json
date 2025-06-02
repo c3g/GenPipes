@@ -275,7 +275,7 @@
                 "longread_dnaseq": {"node": "step_question"},
                 "methylseq": {"node": "design_file_question"},
                 "nanopore_covseq": {"node": "step_question"},
-                "rnaseq": {"node": "design_file_question"},
+                "rnaseq": {"node": "check_protocol_pair_file"},
                 "rnaseq_denovo_assembly": {"node": "design_file_question"},
                 "rnaseq_light": {"node": "design_file_question"}
             }
@@ -323,7 +323,10 @@
                 "somatic_tumor_only": {"node": "pair_file_question"},
                 "somatic_fastpass": {"node": "step_question"},
                 "somatic_ensemble": {"node": "step_question"},
-                "somatic_sv": {"node": "step_question"}
+                "somatic_sv": {"node": "step_question"},
+                "stringite": {"node": "step_question"},
+                "variants": {"node": "g_command_question"},
+                "cancer": {"node": "g_command_question"}
             }
         },
         {
