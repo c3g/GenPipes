@@ -1,5 +1,41 @@
 # Organization of Wizard JSON Files (refer to GenPipes_Wizard.drawio)
 
+##List of set_variables
+From general_guide.JSON:
+- pipeline_name: ampliconseq, chipseq, covseq, dnaseq, longread_dnaseq, methylseq, nanopore_covseq, rnaseq, 
+                  rnaseq_denovo_assembly, rnaseq_light
+- protocol_name: chipseq, atacseq, germline_snv, germline_sv, germline_high_cov, somatic_tumor_only, somatic_fastpass,
+                 somatic_ensemble, somatic_sv, nanopore, revio, bismark, gembs, dragen, hybrid, stringtie, variants, cancer, 
+                 trinity, seq2fun
+
+From command_guide.JSON:
+- r_command: -r {1_TODO_IN_PYTHON}
+- j_command: -j slurm, -j pbs, -j batch
+- scheduler_server_name: beluga, cedar, narval, abacus, batch 
+- server_in: GENPIPES_INIS/common_ini/{scheduler_server_name}.ini
+- path_custom_ini: 2_TODO_IN_PYTHON
+- c_command: -c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini
+             -c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini
+             -c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini
+             -c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini
+- o_command: {empty placeholder}, -o {directory_name}
+- d_command: {empty placeholder}, -d {design_file_name}.{pipeline_name}.txt
+- p_command: {empty placeholder}, -p {pair_file_name}.dnaseq.txt
+- s_command:  {empty placeholder}, -s {step_range}
+- g_command: -g {3_TODO_IN_PYTHON}
+- final_command: genpipes {pipeline_name} {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}
+
+From step_guide.JSON:
+- step_range: 1-6, 8 ; 1-17, 19-23 ; 1-18, 20-24 ; 1-14, 17-18 ; 1-16, 19-20 ; 1-18, 20-21 ; 1-19, 21-24 ; 1-3, 5 ; 1-6, 8
+
+##List of types 
+- confirm: yes/no questions
+- selection: multi-select questions
+- set_variable: store variable
+- message: output message for user
+- switch
+- input: input from user 
+
 ## `general_guide.JSON`
 This file contains the general questions that the wizard will ask the user to determine which guide they need help with. 
 In cases where the user skips a guide, they will be asked to select their choice of deployment method/pipeline/protocol.
@@ -175,13 +211,13 @@ Note: if ampliconseq/nanopore_covseq/covseq/rnaseq_light then skip question aski
   - Yes → germline_question  
   - No → somatic_question
 
-- germline_question: Asks if the user wants to analyze structural variation  
-  - Yes → germline_sv_protocol_selected  
-  - No → germline_snv_question
+- germline_question: Asks whether dataset has high coverage for detecting low-frequency variation  
+  - Yes →  germline_snv_protocol_selected  
+  - No → germline_sv_snv_question
 
-- germline_snv_question: Asks whether dataset has high coverage for detecting low-frequency variation  
-  - Yes → germline_snv_protocol_selected  
-  - No → germline_high_cov_selected
+- germline_sv_snv_question: Asks whether to focus on structural variants (SV) or single nucleotide variants (SNV)
+  - SV → germline_sv_protocol_selected  
+  - SNV → germline_snv_protocol_selected  
 
 - somatic_question: Asks if dataset has matched tumor and normal samples
   - Yes → somatic_ensemble_protocol_selected  
@@ -241,6 +277,172 @@ protocol, readset file, job scheduler, design/pair file, directory, steps, etc.
 
 **Legend of the node names and their functions:**
 
+- start_command_guide: Asks the user to enter the readset file name
+  - store_readset_filename
+
+- store_readset_filename: Stores readset filename as part of r_command
+  - slurm_job_scheduler_question
+
+- slurm_job_scheduler_question: Asks if the user wants to use SLURM
+  - Yes → slurm_j_command
+  - No → general_job_scheduler_question
+
+- slurm_j_command: Sets SLURM as the job scheduler (-j slurm)
+  - slurm_server_question
+
+- slurm_server_question: Asks user to select SLURM server
+  - Beluga → beluga_server_ini
+  - Cedar → cedar_server_ini
+  - Narval → narval_server_ini
+
+- beluga_server_ini: Stores 'beluga' as the scheduler_server_name
+  - store_name_for_server_ini
+
+- cedar_server_ini: Stores 'cedar' as the scheduler_server_name
+  - store_name_for_server_ini
+
+- narval_server_ini: Stores 'narval' as the scheduler_server_name
+  - store_name_for_server_ini
+
+- general_job_scheduler_question: Asks user to select a general job scheduler
+  - Abacus → abacus_j_command
+  - Batch → batch_j_command
+
+- abacus_j_command: Sets PBS for Abacus cluster (-j pbs)
+  -  abacus_server
+
+- abacus_server: Sets scheduler_server_name to 'abacus'
+  - custom_ini_question
+
+- batch_j_command: Sets Batch scheduler (-j batch)
+  - batch_server_ini
+
+- batch_server_ini: Sets scheduler_server_name to 'batch'
+  - store_name_for_server_ini
+
+- store_name_for_server_ini: Constructs path to server-specific ini file
+  - custom_ini_question
+
+- custom_ini_question: Branches based on pipeline_name
+  - pipeline where certain protcols have custom ini:
+    - dnaseq → custom_ini_check_protocol
+  - pipeline with custom ini:
+     - nanopore_covseq → o_command_construction_with_custom_choice
+  - other pipelines : c_command_construction_no_custom_choice
+
+- custom_ini_check_protocol: Checks protocol_name for pipelines that support custom ini's
+  - protocols_with_custom:
+    - germline_sv → o_command_construction_with_custom_choice
+    - somatic_fastpass  → o_command_construction_with_custom_choice
+    - somatic_ensemble  → o_command_construction_with_custom_choice
+    - somatic_sv  → o_command_construction_with_custom_choice
+  - other protocols → c_command_construction_no_custom_choice
+
+- path_custom_ini_question: Asks user for path to custom ini
+  - store_path_custom_ini
+
+- store_path_custom_ini: Stores and formats path to custom ini
+  - o_command_construction_with_custom_choice
+
+- c_command_construction_no_custom_choice: Sets default -c command based on scheduler_server_name
+  - abacus → c_command_construction_abacus_no_custom
+  - other scheduler servers → c_command_construction_no_custom
+
+- c_command_construction_abacus_no_custom: Uses only pipeline base ini (no server ini)
+  - initialize_o_command
+
+- c_command_construction_no_custom: Includes both pipeline and server ini paths
+  - initialize_o_command
+
+- c_command_construction_abacus_with_custom: Sets -c using pipeline base ini and custom ini (abacus)
+  - initialize_o_command
+
+- c_command_construction_with_custom: Sets -c using base ini, server ini, and custom ini
+  - initialize_o_command
+
+- initialize_o_command: Initializes o_command
+  - o_command_question
+
+- o_command_question: Asks if user wants to change working directory
+  - Yes → input_directory_name
+  - No → pipeline_check_for_file_question
+
+- input_directory_name: Asks user for new directory name
+  - store_directory_name
+
+- store_directory_name: Sets -o with user directory
+  - initialize_d_command
+
+- initialize_d_command: Initializes d_command
+  - initialize_p_command
+
+- initialize_p_command: Initializes p_command
+  - pipeline_check_for_file_question
+
+- pipeline_check_for_file_question: Based on pipeline_name, determine next input requirement
+  - Pipeline has design file:
+    - ampliconseq
+    - chipseq
+    - methylseq
+    - rnaseq
+    - rnaseq_denovo_assembly
+    - rnaseq_light
+  - Pipeline has pair file:
+    - dnaseq (somatic_tumor_only protocol has no pair file )
+  - Pipeline has no design/pair file:
+    - covseq
+    - longread_dnaseq
+    - nanopore_covseq
+
+- design_file_question: Asks if the user has a design file
+  - Yes → input_design_file_name
+  - No → start_step_guide in step_guide.json
+
+- input_design_file_name: Prompts for design file name
+  - store_design_file_name
+
+- store_design_file_name: Formats and sets -d using design file
+  - step_question
+
+- check_protocol_pair_file: Checks protocol_name to determine if pair file is required
+  - tumor_only → pair_file_question
+  - others → step_question
+
+- pair_file_question: Asks if user has a pair file
+  - Yes → input_pair_file_name
+  - No → step_question
+
+- input_pair_file_name: Prompts for pair file name
+  - store_pair_file_name
+
+- store_pair_file_name: Formats and sets -d with pair file for dnaseq
+  - initialize_s_command
+
+- initialize_s_command: Initializes s_command
+  - step_question
+
+- step_question: Asks if user wants to run all pipeline steps
+  - Yes → g_command_question
+  - No → input_step_range
+
+- input_step_range: Prompts for specific steps to run
+  - store_step_range
+
+- store_step_range: Sets the -s argument with the provided step range
+  - g_command_question
+
+- g_command_question: Asks user to enter file name to run GenPipes
+  - store_g_file_name
+
+- store_g_file_name: Sets -g with g command file name 
+  - command_construction
+
+- command_construction: Construst full command to run GenPipes
+  - Replaces placeholders: "genpipes {pipeline_name} {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}
+  - goes to end 
+
+- end: Displays command
+
 ------------------------------------------------------------------------------------------------------------------------------------
 
 ## `step_guide.JSON`
@@ -266,17 +468,17 @@ specifically when the user does not have a design file and wants to run GenPipes
   - rnaseq_light → rnaseq_light_step_command
 
 - ampliconseq_step_command: Sets step range to "1-6, 8"
-  - goes to g_command_question in command_guide.json
+  - goes to initialize_g_command in command_guide.json
 
 - chipseq_step_help: Entry point that branches based on selected protocol
   - chipseq → chipseq_step_command  
   - atacseq → atacseq_step_command
 
 - chipseq_step_command: Sets step range to "1-17, 19-23"
-  - goes to g_command_question in command_guide.json
+  - goes to initialize_g_command in command_guide.json
 
 - atacseq_step_command: Sets step range to "1-18, 20-24"
-  - goes to g_command_question in command_guide.json
+  - goes to initialize_g_command in command_guide.json
 
 - methylseq_step_help: Entry point that branches based on selected protocol
   - bismark → bismark_hybrid_step_command  
@@ -285,26 +487,26 @@ specifically when the user does not have a design file and wants to run GenPipes
   - gembs → dragen_gembs_step_command
 
 - bismark_hybrid_step_command: Sets step range to "1-14, 17-18"
-  - goes to g_command_question in command_guide.json
+  - goes to initialize_g_command in command_guide.json
 
 - dragen_gembs_step_command: Sets step range to "1-16, 19-20"
-  - goes to g_command_question in command_guide.json
+  - goes to initialize_g_command in command_guide.json
 
 - rnaseq_step_help: Entry point that branches based on selected protocol
   - stringtie → stringtie_step_command
 
 - stringtie_step_command: Sets step range to "1-18, 20-21"
-  - goes to g_command_question in command_guide.json
+  - goes to initialize_g_command in command_guide.json
 
 - rnaseq_denovo_assembly_step_help: Entry point that branches based on selected protocol
   - trinity → trinity_step_command  
   - seq2fun → seq2fun_step_command
 
 - trinity_step_command: Sets step range to "1-19, 21-24"
-  - goes to g_command_question in command_guide.json
+  - goes to initialize_g_command in command_guide.json
 
 - seq2fun_step_command: Sets step range to "1-3, 5"
-  - goes to g_command_question in command_guide.json
+  - goes to initialize_g_command in command_guide.json
 
 - rnaseq_light_step_command: Sets step range to "1-6, 8"
-  - goes to g_command_question in command_guide.json
+  - goes to initialize_g_command in command_guide.json
