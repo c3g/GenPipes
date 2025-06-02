@@ -352,7 +352,7 @@
             "id": "store_pair_file_name",
             "type": "set_variable",
             "variable": "p_command",
-            "value": "-d {pair_file_name}.dnaseq.txt",
+            "value": "-p {pair_file_name}.dnaseq.txt",
             "next": "initialize_s_command"
         },
         {
