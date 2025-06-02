@@ -324,7 +324,7 @@
                 "somatic_fastpass": {"node": "input_pair_file_name"},
                 "somatic_ensemble": {"node": "input_pair_file_name"},
                 "somatic_sv": {"node": "input_pair_file_name"},
-                "stringite": {"node": "step_question"},
+                "stringtie": {"node": "step_question"},
                 "variants": {"node": "g_command_question"},
                 "cancer": {"node": "g_command_question"}
             }
