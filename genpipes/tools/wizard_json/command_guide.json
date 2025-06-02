@@ -321,9 +321,9 @@
                 "germline_sv": {"node": "step_question"},
                 "germline_high_cov": {"node": "step_question"},
                 "somatic_tumor_only": {"node": "pair_file_question"},
-                "somatic_fastpass": {"node": "step_question"},
-                "somatic_ensemble": {"node": "step_question"},
-                "somatic_sv": {"node": "step_question"},
+                "somatic_fastpass": {"node": "input_pair_file_name"},
+                "somatic_ensemble": {"node": "input_pair_file_name"},
+                "somatic_sv": {"node": "input_pair_file_name"},
                 "stringite": {"node": "step_question"},
                 "variants": {"node": "g_command_question"},
                 "cancer": {"node": "g_command_question"}
