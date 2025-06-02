@@ -462,7 +462,7 @@ protocol, readset file, job scheduler, design/pair file, directory, steps, etc.
   - command_construction
 
 - command_construction: Construst full command to run GenPipes
-  - Replaces placeholders: "genpipes {pipeline_name} {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}
+  - Replaces placeholders: "genpipes {pipeline_name} -t {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}
   - goes to end 
 
 - end: Displays command

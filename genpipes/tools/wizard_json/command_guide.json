@@ -412,7 +412,7 @@
             "id": "command_construction",
             "type": "set_variable",
             "variable": "final_command",
-            "value": "genpipes {pipeline_name} {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}",
+            "value": "genpipes {pipeline_name} -t {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}",
             "next": "end"
         },
         {
