@@ -2018,15 +2018,14 @@ pandoc \\
 
                 self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out"))
 
-            checkpoint_job = bash.mkdir(
-                os.path.join(self.output_dirs['job_directory'], 'checkpoints')
-                )
-            for job in jobs:
-                checkpoint_done_file = os.path.join(self.output_dirs["job_directory"], 'checkpoints', f"{job.name}.stepDone")
+                checkpoint_job = bash.mkdir(
+                    os.path.join(self.output_dirs['job_directory'], 'checkpoints')
+                    )
+                    
                 checkpoint_job = concat_jobs(
                     [
                         checkpoint_job,
-                        bash.touch(checkpoint_done_file),
+                        bash.touch(star_fusion_done_file),
                         bash.rm(job.removable_files[0])
                     ],
                     input_dependency=[
@@ -2037,9 +2036,9 @@ pandoc \\
                     ]
                 )
             
-            checkpoint_job.name="checkpoint.run_star_fusion"
+                checkpoint_job.name="checkpoint.run_star_fusion"
 
-            jobs.append(checkpoint_job)
+                jobs.append(checkpoint_job)
 
         return jobs
 
