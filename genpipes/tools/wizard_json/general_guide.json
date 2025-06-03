@@ -19,9 +19,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "pipeline_help"
-                    }
+                    "next": "pipeline_help"
                 }
             ]
         },
@@ -42,9 +40,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "pipeline_selection"
-                    }
+                    "next": "pipeline_selection"
                 }
             ] 
         },
@@ -70,90 +66,70 @@
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "ampliconseq",
-            "next": {
-              "node": "pipeline_choice_message_next_command"
-            }
+            "next": "pipeline_choice_message_next_command"
         },
         {
             "id": "chipseq_pipeline_selected",
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "chipseq",
-            "next": {
-              "node": "pipeline_choice_message_next_protocol"
-            }
+            "next": "pipeline_choice_message_next_protocol"
         },
         {
             "id": "covseq_pipeline_selected",
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "covseq",
-            "next": {
-              "node": "pipeline_choice_message_next_command"
-            }
+            "next": "pipeline_choice_message_next_command"
         },
         {
             "id": "dnaseq_pipeline_selected",
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "dnaseq",
-            "next": {
-              "node": "pipeline_choice_message_next_protocol"
-            }
+            "next": "pipeline_choice_message_next_protocol"
         },
         {
             "id": "longread_dnaseq_pipeline_selected",
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "longread_dnaseq",
-            "next": {
-              "node": "pipeline_choice_message_next_protocol" 
-            }
+            "next": "pipeline_choice_message_next_protocol" 
         },
         {
             "id": "methylseq_pipeline_selected",
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "methylseq",
-            "next": {
-              "node": "pipeline_choice_message_next_protocol"
-            }
+            "next": "pipeline_choice_message_next_protocol"
         },
         {
             "id": "nanopore_covseq_pipeline_selected",
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "nanopore_covseq",
-            "next": {
-              "node": "pipeline_choice_message_next_command"
-            }
+            "next": "pipeline_choice_message_next_command"
         },
         {
             "id": "rnaseq_pipeline_selected",
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "rnaseq",
-            "next": {
-              "node": "pipeline_choice_message_next_protocol"
-            }
+            "next": "pipeline_choice_message_next_protocol"
         },
         {
             "id": "rnaseq_denovo_assembly_pipeline_selected",
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "rnaseq_denovo_assembly",
-            "next": {
-              "node": "pipeline_choice_message_next_protocol"
-            }
+            "next": "pipeline_choice_message_next_protocol"
         },
         {
             "id": "rnaseq_light_pipeline_selected",
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "rnaseq_light",
-            "next": {
-              "node": "pipeline_choice_message_next_command"
-            }
+            "next": "pipeline_choice_message_next_command"
         },
         {
             "id": "pipeline_choice_message_next_protocol",
@@ -184,9 +160,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "protocol_selection"
-                    }
+                    "next": "protocol_selection"
                 }
             ]
         },
@@ -252,180 +226,140 @@
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "chipseq",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "atacseq_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "atacseq",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "germline_sv_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "germline_sv",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "germline_snv_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "germline_snv",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "germline_high_cov_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "germline_high_cov",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "somatic_ensemble_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "somatic_ensemble",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "somatic_tumor_only_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "somatic_tumor_only",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "somatic_sv_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "somatic_sv",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "somatic_fastpass_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "somatic_fastpass",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "nanopore_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "nanopore",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "revio_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "revio",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "bismark_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "bismark",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "gembs_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "gembs",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "dragen_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "dragen",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "hybrid_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "hybrid",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "cancer_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "cancer",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "variants_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "variants",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "stringtie_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "stringtie",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "seq2fun_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "seq2fun",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "trinity_protocol_selected",
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "trinity",
-            "next": {
-              "node": "protocol_choice_message"
-            }
+            "next": "protocol_choice_message"
         },
         {
             "id": "protocol_choice_message",
@@ -450,9 +384,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "end"
-                    }
+                    "next": "end"
                 }
             ] 
         },
