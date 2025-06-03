@@ -84,10 +84,15 @@ In cases where the user skips a guide, they will be asked to select their choice
 
 - <pipeline_name>_pipeline_selected:
   - Stores pipeline_name variable
-  - Display message saying which pipeline was chosen 
   - Goes to:
-      - protocol_help if pipeline requires a protocol
-      - command_help if pipeline does not require a protocol
+      - pipeline_choice_message_next_protocol if pipeline requires a protocol
+      - pipeline_choice_message_next_command if pipeline does not require a protocol
+
+- pipeline_choice_message_next_protocol: Display pipeline choice
+  - goes to protocol_help
+
+- pipeline_choice_message_next_command: Display pipeline choice
+  - goes to command_help
 
 - protocol_help: Asks the user if they need help choosing a protocol
   - Yes → start of protocol_guide.json
@@ -99,8 +104,11 @@ In cases where the user skips a guide, they will be asked to select their choice
 
 - <protocol_name>_protocol_selected:
   - Stores protocol_name variable
-  - Goes to command_help
+  - goes to protocol_choice_message
 
+- protocol_choice_message: Display protocol choice
+  - goes to command_help
+  
 - command_help: Asks if the user needs help constructing the command
   - Yes → start of command_guide.json
   - No → end
