@@ -253,7 +253,7 @@
             "variable": "protocol_name",
             "value": "chipseq",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -262,7 +262,7 @@
             "variable": "protocol_name",
             "value": "atacseq",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -271,7 +271,7 @@
             "variable": "protocol_name",
             "value": "germline_sv",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -280,7 +280,7 @@
             "variable": "protocol_name",
             "value": "germline_snv",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -289,7 +289,7 @@
             "variable": "protocol_name",
             "value": "germline_high_cov",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -298,7 +298,7 @@
             "variable": "protocol_name",
             "value": "somatic_ensemble",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -307,7 +307,7 @@
             "variable": "protocol_name",
             "value": "somatic_tumor_only",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -316,7 +316,7 @@
             "variable": "protocol_name",
             "value": "somatic_sv",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -325,7 +325,7 @@
             "variable": "protocol_name",
             "value": "somatic_fastpass",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -334,7 +334,7 @@
             "variable": "protocol_name",
             "value": "nanopore",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -343,7 +343,7 @@
             "variable": "protocol_name",
             "value": "revio",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -352,7 +352,7 @@
             "variable": "protocol_name",
             "value": "bismark",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -361,7 +361,7 @@
             "variable": "protocol_name",
             "value": "gembs",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -370,7 +370,7 @@
             "variable": "protocol_name",
             "value": "dragen",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -379,7 +379,7 @@
             "variable": "protocol_name",
             "value": "hybrid",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -388,7 +388,7 @@
             "variable": "protocol_name",
             "value": "cancer",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -397,7 +397,7 @@
             "variable": "protocol_name",
             "value": "variants",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -406,7 +406,7 @@
             "variable": "protocol_name",
             "value": "stringtie",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -415,7 +415,7 @@
             "variable": "protocol_name",
             "value": "seq2fun",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
         },
         {
@@ -424,8 +424,14 @@
             "variable": "protocol_name",
             "value": "trinity",
             "next": {
-              "node": "command_help"
+              "node": "protocol_choice_message"
             }
+        },
+        {
+            "id": "protocol_choice_message",
+            "type": "message",
+            "message": "Your choice of protocol to run GenPipes is: {protocol_name}",
+            "next": "command_help"
         },
 
 
@@ -453,7 +459,7 @@
         {
             "id": "end",
             "type": "message",
-            "message": "Thank you for using the GenPipes Wizard. Best of luck with your analysis! For additional support, run genpipes -h or consult the readthedocs."
+            "message": "Thank you for using the GenPipes Wizard. Best of luck with your analysis! For additional support, run genpipes -h or consult the readthedocs: https://genpipes.readthedocs.io/en/latest/index.html."
           }
           
     ]
