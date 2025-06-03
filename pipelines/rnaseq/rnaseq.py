@@ -2036,7 +2036,7 @@ pandoc \\
                     ]
                 )
             
-                checkpoint_job.name="checkpoint.run_star_fusion"
+                checkpoint_job.name=f"checkpoint.run_star_fusion.{sample.name}"
 
                 jobs.append(checkpoint_job)
 
