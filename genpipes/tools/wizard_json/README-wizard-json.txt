@@ -7,17 +7,17 @@
 - options
 - label
 - next
-- external
-- entryPoint
-- node
+- external: name of json file to enter
+- entryPoint: id of node to enter
+- node: id of node to go to next
 - message
-- variable
-- value
+- variable: name of variable 
+- value: information stored in variable
 - choices_cases
 - when ... equals ... pipeline_name
 - choices 
 - cases
-- prompt
+- prompt: text to ask user for input
 
 ##List of types 
 - confirm: yes/no questions
@@ -45,12 +45,12 @@ From command_guide.JSON:
              -c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini
              -c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini
              -c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini
-- o_command: {empty placeholder}, -o {directory_name}
-- d_command: {empty placeholder}, -d {design_file_name}.{pipeline_name}.txt
-- p_command: {empty placeholder}, -p {pair_file_name}.dnaseq.txt
-- s_command: {empty placeholder}, -s {step_range}
+- o_command: {empty placeholder if user skips}, -o {directory_name}
+- d_command: {empty placeholder if user skips}, -d {design_file_name}.{pipeline_name}.txt
+- p_command: {empty placeholder if user skips}, -p {pair_file_name}.dnaseq.txt
+- s_command: {empty placeholder if user skips}, -s {step_range}
 - g_command: -g {3_TODO_IN_PYTHON}
-- final_command: genpipes {pipeline_name} {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}
+- final_command: genpipes {pipeline_name} -t {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}
 
 From step_guide.JSON:
 - step_range: 1-6, 8 ; 1-17, 19-23 ; 1-18, 20-24 ; 1-14, 17-18 ; 1-16, 19-20 ; 1-18, 20-21 ; 1-19, 21-24 ; 1-3, 5 ; 1-6, 8
@@ -60,6 +60,7 @@ From step_guide.JSON:
 - 2_TODO_IN_PYTHON: insert the path to custom ini (depending if input contains .ini)
 - 3_TODO_IN_PYTHON: insert the genpipes filename (depending if input contains .sh)
 
+------------------------------------------------------------------------------------------------------------------------------------
 ## `general_guide.JSON`
 This file contains the general questions that the wizard will ask the user to determine which guide they need help with. 
 In cases where the user skips a guide, they will be asked to select their choice of deployment method/pipeline/protocol.
@@ -67,8 +68,7 @@ In cases where the user skips a guide, they will be asked to select their choice
 - Deployment guide  
 - Pipeline guide  
 - Protocol guide  
-- Command guide  
-  - Within this guide, the user can also follow the step guide if needed
+- Command guide (within this guide, the user can also follow the step guide if needed)
 
 **Legend of the node names and their function:**
 - start_general_guide: Asks the user if they need help deploying GenPipes
@@ -84,6 +84,7 @@ In cases where the user skips a guide, they will be asked to select their choice
 
 - <pipeline_name>_pipeline_selected:
   - Stores pipeline_name variable
+  - Display message saying which pipeline was chosen 
   - Goes to:
       - protocol_help if pipeline requires a protocol
       - command_help if pipeline does not require a protocol
@@ -430,6 +431,7 @@ protocol, readset file, job scheduler, design/pair file, directory, steps, etc.
 
 - check_protocol_pair_file: Checks protocol_name to determine if pair file is required
   - tumor_only → pair_file_question
+  - somatic_fastpass, somatic_ensemble, somatic_sv → input_pair_file_name
   - others → step_question
 
 - pair_file_question: Asks if user has a pair file

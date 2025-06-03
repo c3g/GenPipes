@@ -71,7 +71,7 @@
             "variable": "pipeline_name",
             "value": "ampliconseq",
             "next": {
-              "node": "command_help"
+              "node": "pipeline_choice_message_next_command"
             }
         },
         {
@@ -80,7 +80,7 @@
             "variable": "pipeline_name",
             "value": "chipseq",
             "next": {
-              "node": "protocol_help"
+              "node": "pipeline_choice_message_next_protocol"
             }
         },
         {
@@ -89,7 +89,7 @@
             "variable": "pipeline_name",
             "value": "covseq",
             "next": {
-              "node": "command_help"
+              "node": "pipeline_choice_message_next_command"
             }
         },
         {
@@ -98,7 +98,7 @@
             "variable": "pipeline_name",
             "value": "dnaseq",
             "next": {
-              "node": "protocol_help"
+              "node": "pipeline_choice_message_next_protocol"
             }
         },
         {
@@ -107,7 +107,7 @@
             "variable": "pipeline_name",
             "value": "longread_dnaseq",
             "next": {
-              "node": "protocol_help" 
+              "node": "pipeline_choice_message_next_protocol" 
             }
         },
         {
@@ -116,7 +116,7 @@
             "variable": "pipeline_name",
             "value": "methylseq",
             "next": {
-              "node": "protocol_help"
+              "node": "pipeline_choice_message_next_protocol"
             }
         },
         {
@@ -125,7 +125,7 @@
             "variable": "pipeline_name",
             "value": "nanopore_covseq",
             "next": {
-              "node": "command_help"
+              "node": "pipeline_choice_message_next_command"
             }
         },
         {
@@ -134,7 +134,7 @@
             "variable": "pipeline_name",
             "value": "rnaseq",
             "next": {
-              "node": "protocol_help"
+              "node": "pipeline_choice_message_next_protocol"
             }
         },
         {
@@ -143,7 +143,7 @@
             "variable": "pipeline_name",
             "value": "rnaseq_denovo_assembly",
             "next": {
-              "node": "protocol_help"
+              "node": "pipeline_choice_message_next_protocol"
             }
         },
         {
@@ -152,8 +152,20 @@
             "variable": "pipeline_name",
             "value": "rnaseq_light",
             "next": {
-              "node": "command_help"
+              "node": "pipeline_choice_message_next_command"
             }
+        },
+        {
+            "id": "pipeline_choice_message_next_protocol",
+            "type": "message",
+            "message": "Your choice of pipeline to run GenPipes is: {pipeline_name}",
+            "next": "protocol_help"
+        },
+        {
+            "id": "pipeline_choice_message_next_command",
+            "type": "message",
+            "message": "Your choice of pipeline to run GenPipes is: {pipeline_name}",
+            "next": "command_help"
         },
 
 
