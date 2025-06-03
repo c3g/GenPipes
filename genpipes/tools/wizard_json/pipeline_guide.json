@@ -42,7 +42,10 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": "longread_methylseq_pipeline_selected"
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "longread_methylseq_pipeline_selected"
+                    }
                 },
                 {
                     "label": "No",
