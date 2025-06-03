@@ -9,7 +9,7 @@ from jinja2 import Environment
 
 def load_guide (file_path):
     """
-    Load wizard JSON files by filename: {general,deployment,pipeline,protocol,command,step}_guide.json
+    Load wizard JSON files by filename: {general, deployment, pipeline, protocol, command, step}_guide.json
     """
     full_file_path = os.path.join(os.path.dirname(__file__), "wizard_json", file_path)
     with open(full_file_path) as file:
@@ -33,3 +33,9 @@ class Wizard:
 
         #determines starting node based on node id
         self.current_node_id = self.current_guide["_meta"]["entry_point"]
+
+    def apply_variables (self, message):
+        """
+        Fill the placeholder {{...}} in the message with the data from the current variable
+        """
+        return self.env.from_string(message).render(**self.variables)
