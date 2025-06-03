@@ -12,16 +12,11 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "drac_deployment_selected"
-                        
-                    }
+                    "next": "drac_deployment_selected"
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "cloud_question"
-                    }
+                    "next": "cloud_question"
                 }
             ]
         },
@@ -32,15 +27,11 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "cloud_deployment_selected"
-                    }
+                    "next": "cloud_deployment_selected"
                 },
                 {
                     "label": "No",
-                    "next":{
-                        "node": "container_question"
-                    }
+                    "next": "container_question"
                 }
             ]
         },
@@ -51,15 +42,11 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "container_deployment_selected"
-                    }
+                    "next": "container_deployment_selected"
                 },
                 {
                     "label": "No",
-                    "next":{
-                        "node": "local_deployment_selected"
-                    }
+                    "next": "local_deployment_selected"
                 }
             ]
         },
