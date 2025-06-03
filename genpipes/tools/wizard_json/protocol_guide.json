@@ -48,15 +48,11 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "germline_question"
-                    }
+                    "next": "germline_question"
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "somatic_question"
-                    }
+                    "next": "somatic_question"
                 }
             ]
         },
@@ -74,9 +70,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "germline_sv_snv_question"
-                    }
+                    "next": "germline_sv_snv_question"
                 }
             ]
         },
@@ -114,9 +108,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "tumor_only_question"
-                    }
+                    "next": "tumor_only_question"
                 }
             ]
         },
@@ -134,9 +126,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "somatic_sv_question"
-                    }
+                    "next": "somatic_sv_question"
                 }
             ]
         },
@@ -190,16 +180,11 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "dragen_hybrid_protocol_help"
-                        
-                    }
+                    "next": "dragen_hybrid_protocol_help"
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "bismark_gembs_protocol_help"
-                    }
+                    "next": "bismark_gembs_protocol_help"
                 }
             ]
         },
@@ -259,9 +244,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "variant_question"
-                    }
+                    "next": "variant_question"
                 }
             ]
         },
