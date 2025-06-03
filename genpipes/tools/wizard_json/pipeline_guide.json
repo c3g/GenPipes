@@ -12,16 +12,11 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "chip_dna_longread_methyl_seq_question"
-                        
-                    }
+                    "next": "chip_dna_longread_methyl_seq_question"
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "rnaseq_question"
-                    }
+                    "next": "rnaseq_question"
                 }
             ]
         },
@@ -32,16 +27,11 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "longread_methylseq_question"
-                        
-                    }
+                    "next": "longread_methylseq_question"
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "methylseq_question"
-                    }
+                    "next": "methylseq_question"
                 }
             ]
         },
@@ -52,10 +42,7 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "longread_methylseq_pipeline_selected"
-                        
-                    }
+                    "next": "longread_methylseq_pipeline_selected"
                 },
                 {
                     "label": "No",
@@ -81,9 +68,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "chip_dna_seq_question"
-                    }
+                    "next": "chip_dna_seq_question"
                 }
             ]
         },
@@ -116,16 +101,11 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "3_rnaseq_question"
-                        
-                    }
+                    "next": "3_rnaseq_question"
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "covid_question"
-                    }
+                    "next": "covid_question"
                 }
             ]
         },
@@ -144,9 +124,7 @@
                 },
                 {
                     "label": "No",
-                    "next": {
-                        "node": "2_rnaseq_question"
-                    }
+                    "next": "2_rnaseq_question"
                 }
             ]
         },
@@ -179,10 +157,7 @@
             "options": [
                 {
                     "label": "Yes",
-                    "next": {
-                        "node": "nanopore_cov_seq_question"
-                        
-                    }
+                    "next": "nanopore_cov_seq_question"
                 },
                 {
                     "label": "No",
