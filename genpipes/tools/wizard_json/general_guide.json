@@ -140,7 +140,7 @@
         {
             "id": "pipeline_choice_message_next_command",
             "type": "message",
-            "message": "Your choice of pipeline to run GenPipes is: {pipeline_name}",
+            "message": "Your choice of pipeline to run GenPipes is: {pipeline_name}. Note: this pipeline does not require protocol selection.",
             "next": "command_help"
         },
 
