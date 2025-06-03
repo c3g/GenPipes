@@ -18,20 +18,18 @@ def load_guide (file_path):
 class Wizard:
 
     def __init__ (self, start_file):
-        #hold variables: pipeline_name, protocol_name, 
+        #store variables: pipeline_name, protocol_name, {r,j,c,o,d,p,s,g}_command, scheduler_server_name, 
+        #server_in, path_custom_ini, final_command, step_range
         self.variables = {}
-        self.env = Environment()
-        self.current_guide = load_guide(start_file)
-        self.current_file = start_file
-        self.current_node_id = self.current_guide["_meta"]["entry_point"]
 
-
-class WizardEngine:
-    def __init__(self, start_file):
-        # state will hold variables like pipeline_name, c_command, etc.
-        self.state = {}
+        #for rendering
         self.env = Environment()
+
+        #load initial tree
         self.current_guide = load_guide(start_file)
+
+        #for json file switching
         self.current_file = start_file
-        # entry_point is a node ID (string)
+
+        #determines starting node based on node id
         self.current_node_id = self.current_guide["_meta"]["entry_point"]
