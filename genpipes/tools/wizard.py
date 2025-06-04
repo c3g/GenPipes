@@ -109,3 +109,15 @@ class Wizard:
                 updated_value = self.apply_variables(raw_value)
                 self.variables[variable] = updated_value
                 self.goto(node["next"])
+
+            #Message: output message for user, if no next node then end of wizard
+            elif node_type == "message":
+                print (self.apply_variables(node["message"]))
+                next_node = node.get("next")
+
+                #end of wizard 
+                if not next_node:
+                    break
+
+                self.goto(next_node)
+            
