@@ -82,3 +82,22 @@ class Wizard:
                         next_info = option["next"]
                         break
                 self.goto(next_info)
+
+            #Selection: single-select question from list 
+            elif node_type == "selection":
+                #choices
+                if "choices" in node:
+                    labels = [c["label"] for c in node["choices"]]
+                    choice = questionary.select(self.apply_variables(node["question"]), choices = labels).ask()
+                    next_node = next(c for c in node["choices"] if c["label"] == choice)
+                    self.goto(next_node["node"])
+
+                #choices_cases
+                else:
+                    for case_block in node ["choices_cases"]:
+                        variable_name, value = next(iter(case_block["when"]["equals"].items()))
+                        if self.variables.get(variable_name) == value:
+                            labels = [current_choice["label"] for current_choice in case_block["choices"]]
+                            choice = questionary.select(self.apply_variables(node["question"]), choices = labels).ask()
+                            next_node = next(current_choice for current_choice in case_block["choices"] if current_choice["label"] == choice)
+                            self.goto(next_node["node"])
