@@ -113,7 +113,7 @@
             "id": "store_name_for_server_ini",
             "type": "set_variable",
             "variable": "server_ini",
-            "value": "GENPIPES_INIS/common_ini/{scheduler_server_name}.ini",
+            "value": "GENPIPES_INIS/common_ini/{{scheduler_server_name}}.ini",
             "next": "custom_ini_question"
         },
         {
@@ -189,28 +189,28 @@
             "id": "c_command_construction_abacus_no_custom",
             "type": "set_variable",
             "variable": "c_command",
-            "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini",
+            "value": "-c $GENPIPES_INIS/{{pipeline_name}}/{{pipeline_name}}.base.ini",
             "next": "initialize_o_command"
         },
         {
             "id": "c_command_construction_no_custom",
             "type": "set_variable",
             "variable": "c_command",
-            "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini",
+            "value": "-c $GENPIPES_INIS/{{pipeline_name}}/{{pipeline_name}}.base.ini $GENPIPES_INIS/common_ini/{{scheduler_server_name}}.ini",
             "next": "initialize_o_command"
         },
         {
             "id": "c_command_construction_abacus_with_custom",
             "type": "set_variable",
             "variable": "c_command",
-            "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini",
+            "value": "-c $GENPIPES_INIS/{{pipeline_name}}/{{pipeline_name}}.base.ini $GENPIPES_INIS/{{pipeline_name}}/{{path_custom_ini}}.ini",
             "next": "initialize_o_command"
         },
         {
             "id": "c_command_construction_with_custom",
             "type": "set_variable",
             "variable": "c_command",
-            "value": "-c $GENPIPES_INIS/{pipeline_name}/{pipeline_name}.base.ini $GENPIPES_INIS/common_ini/{scheduler_server_name}.ini $GENPIPES_INIS/{pipeline_name}/{path_custom_ini}.ini",
+            "value": "-c $GENPIPES_INIS/{{pipeline_name}}/{{pipeline_name}}.base.ini $GENPIPES_INIS/common_ini/{{scheduler_server_name}}.ini $GENPIPES_INIS/{{pipeline_name}}/{{path_custom_ini}}.ini",
             "next": "initialize_o_command"
         },
         {
@@ -246,7 +246,7 @@
             "id": "store_directory_name",
             "type": "set_variable",
             "variable": "o_command",
-            "value": "-o {directory_name}",
+            "value": "-o {{directory_name}}",
             "next": "initialize_d_command"
         },
         {
@@ -309,7 +309,7 @@
             "id": "store_design_file_name",
             "type": "set_variable",
             "variable": "d_command",
-            "value": "-d {design_file_name}.{pipeline_name}.txt",
+            "value": "-d {{design_file_name}}.{{pipeline_name}}.txt",
             "next": "step_question"
         },
         {
@@ -355,7 +355,7 @@
             "id": "store_pair_file_name",
             "type": "set_variable",
             "variable": "p_command",
-            "value": "-p {pair_file_name}.dnaseq.txt",
+            "value": "-p {{pair_file_name}}.dnaseq.txt",
             "next": "initialize_s_command"
         },
         {
@@ -391,7 +391,7 @@
             "id": "store_step_range",
             "type": "set_variable",
             "variable": "s_command",
-            "value": "-s {step_range}",
+            "value": "-s {{step_range}}",
             "next": "g_command_question"
         },
         {
@@ -412,13 +412,13 @@
             "id": "command_construction",
             "type": "set_variable",
             "variable": "final_command",
-            "value": "genpipes {pipeline_name} -t {protocol_name} {c_command} {r_command} {d_command} {p_command} {j_command} {s_command} {o_command} {g_command}",
+            "value": "genpipes {{pipeline_name}} -t {{protocol_name}} {{c_command}} {{r_command}} {{d_command}} {{p_command}} {{j_command}} {{s_command}} {{o_command}} {{g_command}}",
             "next": "end"
         },
         {
             "id": "end",
             "type": "message",
-            "message": "Here is your full GenPipes command:\n\n{final_command}"
+            "message": "Here is your full GenPipes command:\n\n{{final_command}}"
         }
     ]
 }
