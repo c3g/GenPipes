@@ -48,6 +48,19 @@ class Wizard:
             if n["id"] == node_id:
                 return n
         raise RuntimeError(f"Node '{node_id}' not found in {self.current_file}")
+    
+    def goto(self, next_node):
+        """
+        Move to the next node in the tree 
+        """
+        # when next node is in the current JSON file
+        if isinstance(next_node, str):
+            self.current_node_id = next_node
+        else:
+            #when next node is in another JSON file
+            self.current_file = next_node["external"]
+            self.current_guide = load_guide(self.current_file)
+            self.current_node_id = next_node["entryPoint"]
 
     def tree_traversal(self):
         """
