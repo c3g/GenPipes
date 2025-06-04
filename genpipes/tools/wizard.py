@@ -127,5 +127,12 @@ class Wizard:
                 if value in cases:
                     self.goto(cases[value]["node"])
                 else:
-                    print(f"[ERROR] No matching case for {variable} ='{value}' in switch at node {node['id']}")
+                    print(f"[ERROR] No matching case for {variable} ='{value}' at node {node['id']}")
                     sys.exit(1)
+
+            #Input: Prompt the user for input and store it as a variable 
+            elif node_type == "input":
+                variable = node["variable"]
+                input = questionary.text(self.apply_variables(node["prompt"])).ask()
+                self.variables[variable] = input
+                self.goto(node["next"])
