@@ -101,3 +101,11 @@ class Wizard:
                             choice = questionary.select(self.apply_variables(node["question"]), choices = labels).ask()
                             next_node = next(current_choice for current_choice in case_block["choices"] if current_choice["label"] == choice)
                             self.goto(next_node["node"])
+
+            #Set_variable: set and store variable 
+            elif node_type == "set_variable":
+                variable = node["variable"]
+                raw_value = node["value"]
+                updated_value = self.apply_variables(raw_value)
+                self.variables[variable] = updated_value
+                self.goto(node["next"])
