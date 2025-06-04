@@ -39,3 +39,12 @@ class Wizard:
         Fill the placeholder {{...}} in the message with the data from the current variable
         """
         return self.env.from_string(message).render(**self.variables)
+    
+    def find_node (self, node_id):
+        """
+        Find and return the node dictionary with the given id of the node
+        """
+        for n in self.current_guide["nodes"]:
+            if n["id"] == node_id:
+                return n
+        raise RuntimeError(f"Node '{node_id}' not found in {self.current_file}")
