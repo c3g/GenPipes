@@ -48,3 +48,24 @@ class Wizard:
             if n["id"] == node_id:
                 return n
         raise RuntimeError(f"Node '{node_id}' not found in {self.current_file}")
+
+    def tree_traversal(self):
+        """
+        Traverse through the JSON files to prompt the user questions
+        """
+
+        #Keep asking questions/traversing the tree until reach the end
+        while True:
+            node = self.find_node(self.current_node_id)
+            node_type = node.get("type")
+
+            #Confirm: yes/no questions
+            if node_type == "confirm":
+                answer = questionary.confirm(self.apply_variables(node["question"])).ask()
+                chosen = "Yes" if answer else "No"
+                next_info = None
+                for option in node["options"]:
+                    if option["label"] == chosen:
+                        next_info = option["next"]
+                        break
+                self.goto(next_info)
