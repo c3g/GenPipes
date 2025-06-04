@@ -419,6 +419,6 @@
             "id": "end",
             "type": "message",
             "message": "Here is your full GenPipes command:\n\n{final_command}"
-          }
+        }
     ]
 }
