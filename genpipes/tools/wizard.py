@@ -136,3 +136,7 @@ class Wizard:
                 input = questionary.text(self.apply_variables(node["prompt"])).ask()
                 self.variables[variable] = input
                 self.goto(node["next"])
+
+            else:
+                print(f"[ERROR] Unknown node type: {node_type} in {self.current_file}")
+                sys.exit(1)
