@@ -114,10 +114,18 @@ class Wizard:
             elif node_type == "message":
                 print (self.apply_variables(node["message"]))
                 next_node = node.get("next")
-
                 #end of wizard 
                 if not next_node:
                     break
-
                 self.goto(next_node)
-            
+
+            #Switch: determine the next node based on cases (e.g pipeline/protocol name)
+            elif node_type == "switch":
+                variable = node["variable"]
+                value = self.variables.get(variable)
+                cases = node["cases"]
+                if value in cases:
+                    self.goto(cases[value]["node"])
+                else:
+                    print(f"[ERROR] No matching case for {variable} ='{value}' in switch at node {node['id']}")
+                    sys.exit(1)
