@@ -140,3 +140,12 @@ class Wizard:
             else:
                 print(f"[ERROR] Unknown node type: {node_type} in {self.current_file}")
                 sys.exit(1)
+
+    #for testing
+    def main():
+        start_json_file = "general_guide.json"
+        start = Wizard(start_json_file)
+        start.run()
+
+    if __name__ == "__main__":
+        main()
