@@ -141,11 +141,11 @@ class Wizard:
                 print(f"[ERROR] Unknown node type: {node_type} in {self.current_file}")
                 sys.exit(1)
 
-    #for testing
-    def main():
-        start_json_file = "general_guide.json"
-        start = Wizard(start_json_file)
-        start.run()
+#for testing
+def main():
+    start_json_file = "general_guide.json"
+    start = Wizard(start_json_file)
+    start.tree_traversal()
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
