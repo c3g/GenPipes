@@ -106,6 +106,10 @@ class Wizard:
             elif node_type == "set_variable":
                 variable = node["variable"]
                 raw_value = node["value"]
+
+                if "{TODO_IN_PYTHON}" in raw_value:
+                    self.fix_filenames()
+
                 updated_value = self.apply_variables(raw_value)
                 self.variables[variable] = updated_value
                 self.goto(node["next"])
@@ -140,6 +144,22 @@ class Wizard:
             else:
                 print(f"[ERROR] Unknown node type: {node_type} in {self.current_file}")
                 sys.exit(1)
+    
+    def fix_filenames(self):
+        readset_filename = self.variables.get("raw_readset_filename", "")
+        if not readset_filename.endswith(".txt"):
+            readset_filename += ".txt"
+        self.variables["raw_readset_filename"] = readset_filename
+
+        path_custom_ini = self.variables.get("raw_path_custom_ini", "")
+        if not path_custom_ini.endswith(".ini"):
+            path_custom_ini += ".ini"
+        self.variables["raw_path_custom_ini"] = path_custom_ini
+
+        genpipes_filename = self.variables.get("g_filename", "")
+        if not genpipes_filename.endswith(".sh"):
+            genpipes_filename += ".sh"
+        self.variables["g_filename"] = genpipes_filename
 
 #for testing
 def main():

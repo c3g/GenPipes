@@ -16,7 +16,7 @@
             "id": "store_readset_filename", 
             "type": "set_variable",
             "variable": "r_command",
-            "value": "-r {1_TODO_IN_PYTHON}",
+            "value": "-r {TODO_IN_PYTHON}",
             "next": "slurm_job_scheduler_question"
         },
         {
@@ -158,7 +158,7 @@
             "id": "store_path_custom_ini",
             "type": "set_variable",
             "variable": "path_custom_ini",
-            "value": "2_TODO_IN_PYTHON",
+            "value": "{TODO_IN_PYTHON}",
             "next": "o_command_construction_with_custom_choice"
         },
         {
@@ -405,7 +405,7 @@
             "id": "store_g_file_name",
             "type": "set_variable",
             "variable": "g_command",
-            "value": "-g {3_TODO_IN_PYTHON}",
+            "value": "-g {TODO_IN_PYTHON}",
             "next": "command_construction"
         },
         {
