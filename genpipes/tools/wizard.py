@@ -173,6 +173,9 @@ class Wizard:
 
 #for testing
 def main():
+    print("\nWelcome to the GenPipes Wizard!")
+    print("This tool will help you select the appropriate deployment method, pipeline, protocol, and/or constructing the command to run GenPipes.")
+    print ("Let’s begin!\n")
     start_json_file = "general_guide.json"
     start = Wizard(start_json_file)
     start.tree_traversal()
