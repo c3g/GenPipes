@@ -56,9 +56,9 @@ From step_guide.JSON:
 - step_range: 1-6, 8 ; 1-17, 19-23 ; 1-18, 20-24 ; 1-14, 17-18 ; 1-16, 19-20 ; 1-18, 20-21 ; 1-19, 21-24 ; 1-3, 5 ; 1-6, 8
 
 ##TODO_IN_PYTHON
-- 1_TODO_IN_PYTHON: insert the readset filename (depending if input contains .txt)
-- 2_TODO_IN_PYTHON: insert the path to custom ini (depending if input contains .ini)
-- 3_TODO_IN_PYTHON: insert the genpipes filename (depending if input contains .sh)
+- 1st TODO_IN_PYTHON: insert the readset filename (depending if input contains .txt)
+- 2nd TODO_IN_PYTHON: insert the path to custom ini (depending if input contains .ini)
+- 3rd TODO_IN_PYTHON: insert the genpipes filename (depending if input contains .sh)
 
 ------------------------------------------------------------------------------------------------------------------------------------
 ## `general_guide.JSON`

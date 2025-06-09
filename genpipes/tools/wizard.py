@@ -146,18 +146,18 @@ class Wizard:
                 sys.exit(1)
     
     def fix_filenames(self):
-        readset_filename = self.variables.get("raw_readset_filename", "")
-        if not readset_filename.endswith(".txt"):
+        readset_filename = self.variables.get("raw_readset_filename", "").strip()
+        if readset_filename and not readset_filename.endswith(".txt"):
             readset_filename += ".txt"
         self.variables["raw_readset_filename"] = readset_filename
 
-        path_custom_ini = self.variables.get("raw_path_custom_ini", "")
-        if not path_custom_ini.endswith(".ini"):
+        path_custom_ini = self.variables.get("raw_path_custom_ini", "").strip()
+        if path_custom_ini and not path_custom_ini.endswith(".ini"):
             path_custom_ini += ".ini"
         self.variables["raw_path_custom_ini"] = path_custom_ini
 
-        genpipes_filename = self.variables.get("g_filename", "")
-        if not genpipes_filename.endswith(".sh"):
+        genpipes_filename = self.variables.get("g_filename", "").strip()
+        if genpipes_filename and not genpipes_filename.endswith(".sh"):
             genpipes_filename += ".sh"
         self.variables["g_filename"] = genpipes_filename
 
