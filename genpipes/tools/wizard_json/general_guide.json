@@ -58,7 +58,8 @@
               { "label": "nanopore_covseq", "node": "nanopore_covseq_pipeline_selected" },
               { "label": "rnaseq", "node": "rnaseq_pipeline_selected" },
               { "label": "rnaseq_denovo_assembly", "node": "rnaseq_denovo_assembly_pipeline_selected" },
-              { "label": "rnaseq_light", "node": "rnaseq_light_pipeline_selected" }
+              { "label": "rnaseq_light", "node": "rnaseq_light_pipeline_selected" },
+              { "label": "longread_methylseq", "node": "longread_methylseq_pipeline_selected"}
             ]
         },
         {
@@ -129,6 +130,13 @@
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "rnaseq_light",
+            "next": "pipeline_choice_message_next_command"
+        },
+        {
+            "id": "longread_methylseq_pipeline_selected",
+            "type": "set_variable",
+            "variable": "pipeline_name",
+            "value": "longread_methylseq",
             "next": "pipeline_choice_message_next_command"
         },
         {

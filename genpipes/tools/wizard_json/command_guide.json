@@ -130,7 +130,8 @@
                 "nanopore_covseq": {"node": "custom_ini_check_protocol"},
                 "rnaseq": {"node": "c_command_construction_no_custom_choice"},
                 "rnaseq_denovo_assembly": {"node": "c_command_construction_no_custom_choice"},
-                "rnaseq_light": {"node": "c_command_construction_no_custom_choice"}
+                "rnaseq_light": {"node": "c_command_construction_no_custom_choice"},
+                "longread_methylseq": {"node": "c_command_construction_no_custom_choice" }
             }
         },
         {
@@ -277,7 +278,8 @@
                 "nanopore_covseq": {"node": "step_question"},
                 "rnaseq": {"node": "check_protocol_pair_file"},
                 "rnaseq_denovo_assembly": {"node": "design_file_question"},
-                "rnaseq_light": {"node": "design_file_question"}
+                "rnaseq_light": {"node": "design_file_question"},
+                "longread_methylseq": {"node": "step_question"}
             }
         },
         {
