@@ -110,6 +110,9 @@ class Wizard:
                 if "{TODO_IN_PYTHON}" in raw_value:
                     self.fix_filenames()
 
+                if "o_command" in variable:
+                    self.fix_filenames()
+
                 updated_value = self.apply_variables(raw_value)
                 self.variables[variable] = updated_value
                 self.goto(node["next"])
@@ -146,6 +149,7 @@ class Wizard:
                 sys.exit(1)
     
     def fix_filenames(self):
+        #Handle cases where user includes/doesn't include .txt/ini/sh to their input
         readset_filename = self.variables.get("raw_readset_filename", "").strip()
         if readset_filename and not readset_filename.endswith(".txt"):
             readset_filename += ".txt"
@@ -160,6 +164,12 @@ class Wizard:
         if genpipes_filename and not genpipes_filename.endswith(".sh"):
             genpipes_filename += ".sh"
         self.variables["g_filename"] = genpipes_filename
+
+        #If user skips o command --> dont want -o in the final command
+        o_command = self.variables.get("o_command", "").strip()
+        if not self.variables.get("directory_name"):
+            o_command = ""
+        self.variables["o_command"] = o_command
 
 #for testing
 def main():
