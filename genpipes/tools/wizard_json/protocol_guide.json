@@ -9,7 +9,7 @@
         {
             "id": "start_protocol_guide",
             "type": "switch",
-            "variable": "pipeline_selection",
+            "variable": "pipeline_name",
             "cases": {
                 "chipseq": {"node": "chipseq_protocol_help"},
                 "dnaseq": {"node": "dnaseq_protocol_help"},
