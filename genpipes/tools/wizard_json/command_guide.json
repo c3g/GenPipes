@@ -167,7 +167,7 @@
             "type": "set_variable",
             "variable": "path_custom_ini",
             "value": "{{raw_path_custom_ini}}",
-            "next": "o_command_construction_with_custom_choice"
+            "next": "c_command_construction_with_custom_choice"
         },
         {
             "id": "c_command_construction_no_custom_choice",
@@ -211,14 +211,14 @@
             "id": "c_command_construction_abacus_with_custom",
             "type": "set_variable",
             "variable": "c_command",
-            "value": "-c $GENPIPES_INIS/{{pipeline_name}}/{{pipeline_name}}.base.ini $GENPIPES_INIS/{{pipeline_name}}/{{path_custom_ini}}.ini",
+            "value": "-c $GENPIPES_INIS/{{pipeline_name}}/{{pipeline_name}}.base.ini $GENPIPES_INIS/{{pipeline_name}}/{{path_custom_ini}}",
             "next": "initialize_o_command"
         },
         {
             "id": "c_command_construction_with_custom",
             "type": "set_variable",
             "variable": "c_command",
-            "value": "-c $GENPIPES_INIS/{{pipeline_name}}/{{pipeline_name}}.base.ini $GENPIPES_INIS/common_ini/{{scheduler_server_name}}.ini $GENPIPES_INIS/{{pipeline_name}}/{{path_custom_ini}}.ini",
+            "value": "-c $GENPIPES_INIS/{{pipeline_name}}/{{pipeline_name}}.base.ini $GENPIPES_INIS/common_ini/{{scheduler_server_name}}.ini $GENPIPES_INIS/{{pipeline_name}}/{{path_custom_ini}}",
             "next": "initialize_o_command"
         },
         {
