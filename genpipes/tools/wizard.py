@@ -107,7 +107,7 @@ class Wizard:
                 variable = node["variable"]
                 raw_value = node["value"]
 
-                if "{TODO_IN_PYTHON}" in raw_value:
+                if variable in ("r_command", "path_custom_ini", "g_command"):
                     self.fix_filenames()
 
                 if "o_command" in variable:

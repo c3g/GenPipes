@@ -23,7 +23,7 @@
             "id": "store_readset_filename", 
             "type": "set_variable",
             "variable": "r_command",
-            "value": "-r {TODO_IN_PYTHON}",
+            "value": "-r {{raw_readset_filename}}",
             "next": "slurm_job_scheduler_question"
         },
         {
@@ -166,7 +166,7 @@
             "id": "store_path_custom_ini",
             "type": "set_variable",
             "variable": "path_custom_ini",
-            "value": "{TODO_IN_PYTHON}",
+            "value": "{{raw_path_custom_ini}}",
             "next": "o_command_construction_with_custom_choice"
         },
         {
@@ -414,7 +414,7 @@
             "id": "store_g_file_name",
             "type": "set_variable",
             "variable": "g_command",
-            "value": "-g {TODO_IN_PYTHON}",
+            "value": "-g {{g_filename}}",
             "next": "command_construction"
         },
         {
