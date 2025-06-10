@@ -406,7 +406,7 @@
         {
             "id": "g_command_question",
             "type": "input",
-            "variable": "g_file_name",
+            "variable": "g_filename",
             "prompt": "Enter a file name to save the GenPipes run commands (leave blank to output to stdout):",
             "next": "store_g_file_name"
         },
