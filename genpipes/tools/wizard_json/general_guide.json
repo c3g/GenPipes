@@ -399,7 +399,7 @@
         {
             "id": "end",
             "type": "message",
-            "message": "Thank you for using the GenPipes Wizard. Best of luck with your analysis! For additional support, run genpipes -h or consult the readthedocs: https://genpipes.readthedocs.io/en/latest/index.html."
+            "message": "\n Thank you for using the GenPipes Wizard. Best of luck with your analysis! \n For additional support, run genpipes -h or consult the readthedocs: https://genpipes.readthedocs.io/en/latest/index.html."
           }
           
     ]
