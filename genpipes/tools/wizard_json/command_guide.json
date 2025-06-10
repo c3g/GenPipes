@@ -7,6 +7,13 @@
     "nodes":[
         {
             "id": "start_command_guide",
+            "type": "set_variable",
+            "variable": "t_command",
+            "value": "-t {{protocol_name}}",
+            "next": "readset_file_question"
+        },
+        {
+            "id": "readset_file_question",
             "type": "input",
             "variable": "raw_readset_filename",
             "prompt": "Enter the name of the readset file:", 
@@ -414,7 +421,7 @@
             "id": "command_construction",
             "type": "set_variable",
             "variable": "final_command",
-            "value": "genpipes {{pipeline_name}} -t{{protocol_name}} {{c_command}} {{r_command}} {{d_command}} {{p_command}} {{j_command}} {{s_command}} {{o_command}} {{g_command}}",
+            "value": "genpipes {{pipeline_name}} {{t_command}} {{c_command}} {{r_command}} {{d_command}} {{p_command}} {{j_command}} {{s_command}} {{o_command}} {{g_command}}",
             "next": "end"
         },
         {

@@ -165,6 +165,12 @@ class Wizard:
             genpipes_filename += ".sh"
         self.variables["g_filename"] = genpipes_filename
 
+        #If pipeline has no protocol--> dont want -t in the final command
+        t_command = self.variables.get("t_command", "").strip()
+        if not self.variables.get("directory_name"):
+            t_command = ""
+        self.variables["t_command"] = t_command
+
         #If user skips o command --> dont want -o in the final command
         o_command = self.variables.get("o_command", "").strip()
         if not self.variables.get("directory_name"):
