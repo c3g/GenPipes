@@ -180,14 +180,14 @@
               {
                 "when": { "equals": { "pipeline_name": "chipseq" } },
                 "choices": [
-                  { "label": "chipseq", "node": "chipseq_protocol_selected" },
+                  { "label": "chipseq (default)", "node": "chipseq_protocol_selected" },
                   { "label": "atacseq", "node": "atacseq_protocol_selected" }
                 ]
               },
               {
                 "when": { "equals": { "pipeline_name": "dnaseq" } },
                 "choices": [
-                  { "label": "germline_snv", "node": "germline_snv_protocol_selected" },
+                  { "label": "germline_snv (default)", "node": "germline_snv_protocol_selected" },
                   { "label": "germline_sv", "node": "germline_sv_protocol_selected" },
                   { "label": "germline_high_cov", "node": "germline_high_cov_protocol_selected" },
                   { "label": "somatic_tumor_only", "node": "somatic_tumor_only_protocol_selected" },
@@ -199,14 +199,14 @@
               {
                 "when": { "equals": { "pipeline_name": "longread_dnaseq" } },
                 "choices": [
-                  { "label": "nanopore", "node": "nanopore_protocol_selected" },
+                  { "label": "nanopore (default)", "node": "nanopore_protocol_selected" },
                   { "label": "revio", "node": "revio_protocol_selected" }
                 ]
               },
               {
                 "when": { "equals": { "pipeline_name": "methylseq" } },
                 "choices": [
-                  { "label": "bismark", "node": "bismark_protocol_selected" },
+                  { "label": "bismark (default)", "node": "bismark_protocol_selected" },
                   { "label": "gembs", "node": "gembs_protocol_selected" },
                   { "label": "dragen", "node": "dragen_protocol_selected" },
                   { "label": "hybrid", "node": "hybrid_protocol_selected" }
@@ -215,7 +215,7 @@
               {
                 "when": { "equals": { "pipeline_name": "rnaseq" } },
                 "choices": [
-                  { "label": "stringtie", "node": "stringtie_protocol_selected" },
+                  { "label": "stringtie (default)", "node": "stringtie_protocol_selected" },
                   { "label": "variants", "node": "variants_protocol_selected" },
                   { "label": "cancer", "node": "cancer_protocol_selected" }
                 ]
@@ -223,7 +223,7 @@
               {
                 "when": { "equals": { "pipeline_name": "rnaseq_denovo_assembly" } },
                 "choices": [
-                  { "label": "trinity", "node": "trinity_protocol_selected" },
+                  { "label": "trinity (default)", "node": "trinity_protocol_selected" },
                   { "label": "seq2fun", "node": "seq2fun_protocol_selected" }
                 ]
               }
