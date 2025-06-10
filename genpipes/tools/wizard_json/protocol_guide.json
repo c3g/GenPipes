@@ -80,14 +80,14 @@
             "question": "Do you want to focus on structural variants (SV) or single nucleotide variants (SNV)?",
             "choices": [
                 {   "label": "SV", 
-                    "next": {
+                    "node": {
                         "external": "general_guide.json",
                         "entryPoint": "germline_sv_protocol_selected"
                     }
                 },
                 {
                     "label": "SNV",
-                    "next": {
+                    "node": {
                         "external": "general_guide.json",
                         "entryPoint": "germline_snv_protocol_selected"
                     }
