@@ -173,7 +173,7 @@ class Wizard:
 
         #If pipeline has no protocol--> dont want -t in the final command
         t_command = self.variables.get("t_command", "").strip()
-        if not self.variables.get("directory_name"):
+        if not self.variables.get("protocol_name"):
             t_command = ""
         self.variables["t_command"] = t_command
 
