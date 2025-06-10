@@ -114,6 +114,12 @@ class Wizard:
                     self.fix_filenames()
 
                 updated_value = self.apply_variables(raw_value)
+
+                #Clean up extra spaces in final command
+                if variable == "final_command":
+                    updated_value = " ".join(updated_value.split())
+
+                #updated_value = self.apply_variables(raw_value)
                 self.variables[variable] = updated_value
                 self.goto(node["next"])
 
