@@ -26,7 +26,7 @@
             "value": "1-6, 8",
             "next": {
                 "external": "command_guide.json",
-                "entryPoint": "g_command_question"
+                "entryPoint": "store_step_range"
             }
         },
         {
@@ -45,7 +45,7 @@
             "value": "1-17, 19-23",
             "next": {
                 "external": "command_guide.json",
-                "entryPoint": "g_command_question"
+                "entryPoint": "store_step_range"
             }
         },
         {
@@ -55,7 +55,7 @@
             "value": "1-18, 20-24",
             "next": {
                 "external": "command_guide.json",
-                "entryPoint": "g_command_question"
+                "entryPoint": "store_step_range"
             }
         },
         {
@@ -76,7 +76,7 @@
             "value": "1-14, 17-18",
             "next": {
                 "external": "command_guide.json",
-                "entryPoint": "g_command_question"
+                "entryPoint": "store_step_range"
             }
         },
         {
@@ -86,7 +86,7 @@
             "value": "1-16, 19-20",
             "next": {
                 "external": "command_guide.json",
-                "entryPoint": "g_command_question"
+                "entryPoint": "store_step_range"
             }
         },
         {
@@ -96,7 +96,7 @@
             "value": "1-18, 20-21",
             "next": {
                 "external": "command_guide.json",
-                "entryPoint": "g_command_question"
+                "entryPoint": "store_step_range"
             }
         },
         {
@@ -115,7 +115,7 @@
             "value": "1-19, 21-24",
             "next": {
                 "external": "command_guide.json",
-                "entryPoint": "g_command_question"
+                "entryPoint": "store_step_range"
             }
         },
         {
@@ -125,7 +125,7 @@
             "value": "1-3, 5",
             "next": {
                 "external": "command_guide.json",
-                "entryPoint": "g_command_question"
+                "entryPoint": "store_step_range"
             }
         },
         {
@@ -135,7 +135,7 @@
             "value": "1-6, 8",
             "next": {
                 "external": "command_guide.json",
-                "entryPoint": "g_command_question"
+                "entryPoint": "store_step_range"
             }
         }
     ]
