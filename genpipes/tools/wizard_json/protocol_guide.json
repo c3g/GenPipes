@@ -65,7 +65,7 @@
                     "label": "Yes",
                     "next": {
                         "external": "general_guide.json",
-                        "entryPoint": "germline_high_cov_selected"
+                        "entryPoint": "germline_high_cov_protocol_selected"
                     }
                 },
                 {
