@@ -96,7 +96,7 @@ class Wizard:
                 variable = node["variable"]
                 raw_value = node["value"]
 
-                if variable in ("r_command", "path_custom_ini", "g_command"):
+                if variable in ("r_command", "path_custom_ini", "g_command", "d_command", "p_command"):
                     self.fix_filenames()
 
                 if "o_command" in variable:
@@ -160,6 +160,17 @@ class Wizard:
         if readset_filename and not readset_filename.endswith(".txt"):
             readset_filename += ".txt"
         self.variables["raw_readset_filename"] = readset_filename
+
+        design_filename = self.variables.get("design_file_name", "").strip()
+        if design_filename and not design_filename.endswith(".txt"):
+            design_filename += ".txt"
+        self.variables["design_file_name"] = design_filename
+
+        pair_filename = self.variables.get("pair_file_name", "").strip()
+        if pair_filename and not pair_filename.endswith(".txt"):
+            pair_filename += ".txt"
+        self.variables["pair_file_name"] = pair_filename
+
 
         path_custom_ini = self.variables.get("raw_path_custom_ini", "").strip()
         if path_custom_ini and not path_custom_ini.endswith(".ini"):

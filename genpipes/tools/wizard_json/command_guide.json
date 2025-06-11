@@ -328,7 +328,7 @@
             "id": "store_design_file_name",
             "type": "set_variable",
             "variable": "d_command",
-            "value": "-d {{design_file_name}}.{{pipeline_name}}.txt",
+            "value": "-d {{design_file_name}}",
             "next": "step_question"
         },
         {
@@ -371,7 +371,7 @@
             "id": "store_pair_file_name",
             "type": "set_variable",
             "variable": "p_command",
-            "value": "-p {{pair_file_name}}.dnaseq.txt",
+            "value": "-p {{pair_file_name}}",
             "next": "initialize_s_command"
         },
         {
