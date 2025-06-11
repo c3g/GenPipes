@@ -18,20 +18,10 @@ def load_guide (file_path):
 class Wizard:
 
     def __init__ (self, start_file):
-        #store variables: pipeline_name, protocol_name, {r,j,c,o,d,p,s,g}_command, scheduler_server_name, 
-        #server_in, path_custom_ini, final_command, step_range
         self.variables = {}
-
-        #for rendering
         self.env = Environment()
-
-        #load initial tree
         self.current_guide = load_guide(start_file)
-
-        #for json file switching
         self.current_file = start_file
-
-        #determines starting node based on node id
         self.current_node_id = self.current_guide["_meta"]["entry_point"]
 
     def apply_variables (self, message):
@@ -66,7 +56,6 @@ class Wizard:
         """
         Traverse through the JSON files to prompt the user questions
         """
-
         #Keep asking questions/traversing the tree until reach the end
         while True:
             node = self.find_node(self.current_node_id)
@@ -146,8 +135,17 @@ class Wizard:
             #Input: Prompt the user for input and store it as a variable 
             elif node_type == "input":
                 variable = node["variable"]
-                input = questionary.text(self.apply_variables(node["prompt"])).ask()
-                self.variables[variable] = input
+                while True:
+                    input = questionary.text(self.apply_variables(node["prompt"])).ask()
+
+                    self.variables[variable] = input
+
+                    if variable == "step_range":
+                        self.variables[variable] = input
+                        if not self.valid_step_range():
+                            continue
+                    break
+                
                 self.goto(node["next"])
 
             else:
@@ -155,7 +153,9 @@ class Wizard:
                 sys.exit(1)
     
     def fix_filenames(self):
-        #Handle cases where user includes/doesn't include .txt/ini/sh to their input
+        """
+        Handle cases where user includes/doesn't include .txt/ini/sh to their input
+        """
         readset_filename = self.variables.get("raw_readset_filename", "").strip()
         if readset_filename and not readset_filename.endswith(".txt"):
             readset_filename += ".txt"
@@ -182,6 +182,83 @@ class Wizard:
         if not self.variables.get("directory_name"):
             o_command = ""
         self.variables["o_command"] = o_command
+
+    def valid_step_range(self):
+        """
+        Ensure that inputted step range is valid
+        """
+        pipeline = self.variables.get("pipeline_name")
+        protocol = self.variables.get("protocol_name", "no_protocol")
+        step_range = self.variables.get("step_range", "")
+
+        valid_steps = {
+            "ampliconseq": {"no_protocol": (1,8)},
+            "chipseq": {
+                "chipseq": (1,23),
+                "atacseq": (1,24)
+            },
+            "covseq": {"no_protocol": (1, 21)},
+            "dnaseq": {
+                "germline_snv": (1,27),
+                "germline_sv": (1,25),
+                "germline_high_cov": (1,15),
+                "somatic_tumor_only": (1,22),
+                "somatic_fastpass": (1,23),
+                "somatic_ensemble": (1,38),
+                "somatic_sv": (1,14)
+            },
+            "longread_dnaseq": {
+                "nanopore": (1,5),
+                "revio": (1,14)
+            },
+            "methylseq": {
+                "bismark": (1,18),
+                "gembs": (1,20),
+                "dragen": (1,18),
+                "hybrid": (1,20)
+            },
+            "nanopore_covseq": {
+                "default": (1,5),
+                "basecalling": (1,14)
+            },
+            "rnaseq":{
+                "stringtie": (1,21),
+                "variants": (1,25),
+                "cancer": (1,30)
+            },
+            "rnaseq_denovo_assembly": {
+                "trinity": (1,24),
+                "seq2fun": (1,5)
+            },
+            "rnaseq_light":{"no_protocol":(1,8)}
+        }
+
+        pipeline_data = valid_steps.get(pipeline, {})
+        valid_range = pipeline_data.get(protocol, pipeline_data.get("default"))
+        valid_start, valid_end = valid_range
+
+        for part in step_range.split(','):
+            part = part.strip()
+            if '-' in part:
+                try:
+                    start, end = map(int, part.split('-', 1))
+                except ValueError:
+                    print(f"[ERROR] '{part}' not in the correct step range format.")
+                    return False
+                if start > end or start < valid_start or end > valid_end:
+                    print(f"[ERROR] Range '{part}' is out of bounds.\nPlease enter a valid step range within these bounds: ({valid_start}-{valid_end}).")
+                    return False
+            else:
+                try:
+                    step = int(part)
+                except ValueError:
+                    print(f"[ERROR] '{part}' is not a number.")
+                    return False
+                if step < valid_start or step > valid_end:
+                    print(f"[ERROR] Step '{step}' is out of bounds.\nPlease enter a valid step range within these bounds: ({valid_start}-{valid_end}).")
+                    return False
+
+        return True
 
 #for testing
 def main():
