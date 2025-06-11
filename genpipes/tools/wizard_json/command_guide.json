@@ -134,7 +134,7 @@
                 "dnaseq": {"node": "custom_ini_check_protocol"},
                 "longread_dnaseq": {"node": "c_command_construction_no_custom_choice"},
                 "methylseq": {"node": "c_command_construction_no_custom_choice"},
-                "nanopore_covseq": {"node": "custom_ini_check_protocol"},
+                "nanopore_covseq": {"node": "path_custom_ini_question"},
                 "rnaseq": {"node": "c_command_construction_no_custom_choice"},
                 "rnaseq_denovo_assembly": {"node": "c_command_construction_no_custom_choice"},
                 "rnaseq_light": {"node": "c_command_construction_no_custom_choice"},
