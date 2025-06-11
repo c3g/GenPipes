@@ -334,8 +334,8 @@
                 "somatic_ensemble": {"node": "input_pair_file_name"},
                 "somatic_sv": {"node": "input_pair_file_name"},
                 "stringtie": {"node": "step_question"},
-                "variants": {"node": "g_command_question"},
-                "cancer": {"node": "g_command_question"}
+                "variants": {"node": "step_question"},
+                "cancer": {"node": "step_question"}
             }
         },
         {
