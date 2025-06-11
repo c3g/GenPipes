@@ -2013,7 +2013,11 @@ pandoc \\
                 job.name = f"run_star_fusion.{sample.name}"
                 job.samples = [sample]
                 job.readsets = list(sample.readsets)
-                job.removable_files = [os.path.join(output_dir, "_starF_checkpoints")]
+                job.removable_files = [
+                    os.path.join(output_dir, "_starF_checkpoints"),
+                    os.path.join(output_dir, "_STARgenome"),
+                    os.path.join(output_dir, "star-fusion.preliminary")    
+                ]
                 jobs.append(job)
 
                 self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out"))
@@ -2026,7 +2030,9 @@ pandoc \\
                     [
                         checkpoint_job,
                         bash.touch(star_fusion_done_file),
-                        bash.rm(job.removable_files[0])
+                        bash.rm(job.removable_files[0]),
+                        bash.rm(job.removable_files[1]),
+                        bash.rm(job.removable_files[2])
                     ],
                     input_dependency=[
                         os.path.join(output_dir, "star-fusion.fusion_predictions.abridged.coding_effect.tsv"),
