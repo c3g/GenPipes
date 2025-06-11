@@ -159,7 +159,7 @@
             "id": "path_custom_ini_question",
             "type": "input",
             "variable": "raw_path_custom_ini",
-            "prompt": "Enter the path to your custom ini:",
+            "prompt": "Enter the name of the custom ini:",
             "next": "store_path_custom_ini"
         },
         {
