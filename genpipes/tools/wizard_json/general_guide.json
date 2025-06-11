@@ -109,7 +109,7 @@
             "type": "set_variable",
             "variable": "pipeline_name",
             "value": "nanopore_covseq",
-            "next": "pipeline_choice_message_next_command"
+            "next": "pipeline_choice_message_next_protocol"
         },
         {
             "id": "rnaseq_pipeline_selected",
@@ -210,6 +210,13 @@
                   { "label": "GemBS", "node": "gembs_protocol_selected" },
                   { "label": "Dragen", "node": "dragen_protocol_selected" },
                   { "label": "Hybrid", "node": "hybrid_protocol_selected" }
+                ]
+              },
+              {
+                "when": { "equals": { "pipeline_name": "nanopore_covseq" } },
+                "choices": [
+                  { "label": "Default", "node": "default_protocol_selected" },
+                  { "label": "Basecalling", "node": "basecalling_protocol_selected" }
                 ]
               },
               {
@@ -332,6 +339,20 @@
             "type": "set_variable",
             "variable": "protocol_name",
             "value": "hybrid",
+            "next": "protocol_choice_message"
+        },
+        {
+            "id": "basecalling_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_name",
+            "value": "basecalling",
+            "next": "protocol_choice_message"
+        },
+        {
+            "id": "default_protocol_selected",
+            "type": "set_variable",
+            "variable": "protocol_name",
+            "value": "default",
             "next": "protocol_choice_message"
         },
         {

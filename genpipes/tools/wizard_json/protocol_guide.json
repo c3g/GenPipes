@@ -15,6 +15,7 @@
                 "dnaseq": {"node": "dnaseq_protocol_help"},
                 "longread_dnaseq": {"node": "longread_dnaseq_protocol_help"},
                 "methylseq": {"node": "methylseq_protocol_help"},
+                "nanopore_covseq": {"node": "nanopore_covseq_protocol_help"},
                 "rnaseq": {"node": "rnaseq_protocol_help"},
                 "rnaseq_denovo_assembly": {"node": "rnaseq_denovo_assembly_protocol_help"}
             }
@@ -228,6 +229,27 @@
                   "entryPoint": "gembs_protocol_selected"
                 }
               }
+            ]
+        },
+        {
+            "id": "nanopore_covseq_protocol_help",
+            "type": "confirm",
+            "question": "Do you want to do basecalling?",
+            "options": [
+                {
+                    "label": "Yes",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "basecalling_protocol_selected"
+                    }
+                },
+                {
+                    "label": "No",
+                    "next": {
+                        "external": "general_guide.json",
+                        "entryPoint": "default_protocol_selected"
+                    }
+                }
             ]
         },
         {
