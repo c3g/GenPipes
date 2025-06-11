@@ -283,10 +283,20 @@
                 "longread_dnaseq": {"node": "step_question"},
                 "methylseq": {"node": "design_file_question"},
                 "nanopore_covseq": {"node": "step_question"},
-                "rnaseq": {"node": "check_protocol_pair_file"},
+                "rnaseq": {"node": "check_protocol_design_file"},
                 "rnaseq_denovo_assembly": {"node": "design_file_question"},
                 "rnaseq_light": {"node": "design_file_question"},
                 "longread_methylseq": {"node": "step_question"}
+            }
+        },
+        {
+            "id": "check_protocol_design_file",
+            "type": "switch",
+            "variable": "protocol_name",
+            "cases": {
+                "stringtie": {"node": "design_file_question"},
+                "variants": {"node": "step_question"},
+                "cancer": {"node": "step_question"}
             }
         },
         {
@@ -332,10 +342,7 @@
                 "somatic_tumor_only": {"node": "pair_file_question"},
                 "somatic_fastpass": {"node": "input_pair_file_name"},
                 "somatic_ensemble": {"node": "input_pair_file_name"},
-                "somatic_sv": {"node": "input_pair_file_name"},
-                "stringtie": {"node": "step_question"},
-                "variants": {"node": "step_question"},
-                "cancer": {"node": "step_question"}
+                "somatic_sv": {"node": "input_pair_file_name"}
             }
         },
         {
