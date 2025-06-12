@@ -140,6 +140,11 @@ class Wizard:
 
                     self.variables[variable] = input
 
+                    if variable == "raw_readset_filename":
+                        if not input.strip():
+                            print("[ERROR] You must enter a readset filename. Please try again.")
+                            continue
+
                     if variable == "step_range":
                         self.variables[variable] = input
                         if not self.valid_step_range():
