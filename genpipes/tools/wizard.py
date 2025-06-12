@@ -229,8 +229,8 @@ class Wizard:
                 "hybrid": (1,20)
             },
             "nanopore_covseq": {
-                "default": (1,5),
-                "basecalling": (1,14)
+                "default": (1,9),
+                "basecalling": (1,12)
             },
             "rnaseq":{
                 "stringtie": (1,21),
