@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 
 import json
 import os
@@ -52,6 +52,28 @@ class Wizard:
             self.current_guide = load_guide(self.current_file)
             self.current_node_id = next_node["entryPoint"]
 
+    def exit_text (self, prompt):
+        answer = questionary.text(prompt).ask()
+        if answer is None:
+            print("Exiting GenPipes wizard.")
+            sys.exit(0)
+        return answer
+    
+    def exit_confirm(self, prompt):
+        answer = questionary.confirm(prompt).ask()
+        if answer is None:
+            print("Exiting GenPipes wizard.")
+            sys.exit(0)
+        return answer
+    
+    def exit_select (self, prompt, choices):
+        answer = questionary.select(prompt, choices=choices).ask()
+        if answer is None:
+            print("Exiting GenPipes wizard.")
+            
+            sys.exit(0)
+        return answer
+
     def tree_traversal(self):
         """
         Traverse through the JSON files to prompt the user questions
@@ -63,7 +85,7 @@ class Wizard:
 
             #Confirm: yes/no questions
             if node_type == "confirm":
-                answer = questionary.confirm(self.apply_variables(node["question"])).ask()
+                answer = self.exit_confirm(self.apply_variables(node["question"]))
                 chosen = "Yes" if answer else "No"
                 next_info = None
                 for option in node["options"]:
@@ -77,7 +99,7 @@ class Wizard:
                 #choices
                 if "choices" in node:
                     labels = [c["label"] for c in node["choices"]]
-                    choice = questionary.select(self.apply_variables(node["question"]), choices = labels).ask()
+                    choice = self.exit_select(self.apply_variables(node["question"]), labels)
                     next_node = next(c for c in node["choices"] if c["label"] == choice)
                     self.goto(next_node["node"])
 
@@ -87,7 +109,7 @@ class Wizard:
                         variable_name, value = next(iter(case_block["when"]["equals"].items()))
                         if self.variables.get(variable_name) == value:
                             labels = [current_choice["label"] for current_choice in case_block["choices"]]
-                            choice = questionary.select(self.apply_variables(node["question"]), choices = labels).ask()
+                            choice = self.exit_select(self.apply_variables(node["question"]), labels)
                             next_node = next(current_choice for current_choice in case_block["choices"] if current_choice["label"] == choice)
                             self.goto(next_node["node"])
 
@@ -136,7 +158,7 @@ class Wizard:
             elif node_type == "input":
                 variable = node["variable"]
                 while True:
-                    input = questionary.text(self.apply_variables(node["prompt"])).ask()
+                    input = self.exit_text(self.apply_variables(node["prompt"])).strip()
 
                     self.variables[variable] = input
 
