@@ -4260,6 +4260,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                         vardict_directory,
                                         remove=True
                                     ),
+                                    bash.cp(bed, bed_tmp),
                                     samtools.view(input_normal, input_normal_tmp_chr, f"-b -h -L {bed} -@ {config.param('vardict_paired', 'samtools_threads')}"),
                                     samtools.view(input_tumor, input_tumor_tmp_chr, f"-b -h -L {bed} -@ {config.param('vardict_paired', 'samtools_threads')}"),
                                     pipe_jobs(
