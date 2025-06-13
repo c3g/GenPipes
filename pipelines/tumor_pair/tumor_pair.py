@@ -4106,6 +4106,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
         ##TO DO - the BED system needs to be revisted !!
         jobs = []
+        tmp_dir = config.param('vardict_paired', 'tmp_dir')
 
         nb_jobs = config.param('vardict_paired', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
@@ -4215,7 +4216,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                                 output
                                             )
                                         ]
-                                    )
+                                    ),
                                 ],
                                 name="vardict_paired." + tumor_pair.name + "." + str(idx).zfill(4),
                                 samples=[tumor_pair.normal, tumor_pair.tumor],
@@ -4226,7 +4227,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 else:
                     beds = []
                     for idx in range(nb_jobs):
-                        beds.append(os.path.join(vardict_directory, "chr." + str(idx) + ".bed"))
+                        beds.append(os.path.join(vardict_directory, f"chr.{str(idx)}.bed"))
 
                     jobs.append(
                         concat_jobs(
@@ -4246,7 +4247,12 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         )
                     )
                     for idx in range(nb_jobs):
+                        input_normal_tmp_chr = os.path.join(tmp_dir, os.path.basename(input_normal).replace(".bam", f".chr{idx}.bam"))
+                        input_tumor_tmp_chr = os.path.join(tmp_dir, os.path.basename(input_tumor).replace(".bam", f".chr{idx}.bam"))
+                        bed = beds[idx]
+                        bed_tmp = os.path.join(tmp_dir, os.path.basename(bed))
                         output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
+                        output_tmp = os.path.join(tmp_dir, os.path.basename(output))
                         jobs.append(
                             concat_jobs(
                                 [
@@ -4254,14 +4260,17 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                         vardict_directory,
                                         remove=True
                                     ),
+                                    bash.cp(bed, bed_tmp),
+                                    samtools.view(input_normal, input_normal_tmp_chr, f"-b -h -L {bed} -@ {config.param('vardict_paired', 'samtools_threads')}"),
+                                    samtools.view(input_tumor, input_tumor_tmp_chr, f"-b -h -L {bed} -@ {config.param('vardict_paired', 'samtools_threads')}"),
                                     pipe_jobs(
                                         [
                                             vardict.paired_java(
-                                                input_normal,
-                                                input_tumor,
+                                                input_normal_tmp_chr,
+                                                input_tumor_tmp_chr,
                                                 tumor_pair.name,
                                                 None,
-                                                beds[idx]
+                                                bed_tmp
                                             ),
                                             vardict.testsomatic(
                                                 None,
@@ -4275,10 +4284,12 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                             ),
                                             htslib.bgzip_tabix(
                                                 None,
-                                                output
+                                                output_tmp
                                             )
                                         ]
-                                    )
+                                    ),
+                                    bash.cp(output_tmp, output),
+                                    bash.cp(f"{output_tmp}.tbi", f"{output}.tbi")
                                 ],
                                 name="vardict_paired." + tumor_pair.name + "." + str(idx),
                                 samples=[tumor_pair.normal, tumor_pair.tumor],
