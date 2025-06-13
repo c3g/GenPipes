@@ -4288,7 +4288,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                             )
                                         ]
                                     ),
-                                    bash.cp(bed_tmp, bed),
                                     bash.cp(output_tmp, output),
                                     bash.cp(f"{output_tmp}.tbi", f"{output}.tbi")
                                 ],
