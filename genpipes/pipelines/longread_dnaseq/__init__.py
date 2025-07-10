@@ -51,7 +51,8 @@ from ...bfx import (
     sawfish,
     svim,
     tools,
-    trgt
+    trgt,
+    whatshap
     )
 
 log = logging.getLogger(__name__)
@@ -929,6 +930,32 @@ For information on the structure and contents of the LongRead readset file, plea
 
         return jobs
     
+    def whatshap(self):
+        """
+        Create a haplotagged file using Whatshap.
+        """
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
+            clair3_dir = os.path.join(self.output_dirs["variants_directory"], sample.name, "clair3")
+            clair3_filtered = os.path.join(clair3_dir, f"{sample.name}.clair3.phased.flt.vcf.gz")
+            output_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.haplotag.bam")
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(alignment_directory),
+                        whatshap.haplotag(
+                            input_bam,
+                            clair3_filtered,
+                            output_bam
+                        )
+                    ]
+                )
+            )
+    
     def sawfish(self):
         """
         Call structural variants from mapped HiFi sequencing reads with Sawfish.
@@ -1337,6 +1364,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.set_variant_calling_regions,
                 self.clair3,
                 self.merge_filter_clair3,
+                self.whatsap,
                 self.svim,
                 self.multiqc,
                 self.modkit
