@@ -472,6 +472,28 @@ samtools bam2fq {other_options} \\
           )
         )
 
+def fastq(
+        input,
+        output=None,
+        options=None,
+        ini_section='samtools'
+):
+    return Job(
+        [input],
+        [output],
+        [
+                [ini_section, 'module_samtools'],
+        ],
+        command="""\
+samtools fastq {options} \\
+  {input} {output}""".format(
+      options=options if options else "",
+      input=input,
+      output="> " + output if output else ""
+      )
+  )
+
+
 def quickcheck(
         input,
         output=None,

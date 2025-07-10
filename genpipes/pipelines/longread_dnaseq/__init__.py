@@ -257,11 +257,6 @@ For information on the structure and contents of the LongRead readset file, plea
             out_bam = os.path.join(alignment_directory, readset.name + ".sorted.bam")
             out_bai = re.sub(r"\.bam$", ".bam.bai", out_bam)
 
-            if readset.fastq_files:
-                reads_fastq_dir = readset.fastq_files
-            else:
-                _raise(SanitycheckError("Error: FASTQ file not available for readset \"" + readset.name + "\"!"))
-
             read_group = "'@RG" + \
                          "\\tID:" + readset.name + \
                          "\\tSM:" + readset.sample.name + \
@@ -269,39 +264,49 @@ For information on the structure and contents of the LongRead readset file, plea
                          ("\\tPU:run" + readset.run if readset.run else "") + \
                          "\\tPL:Nanopore" + \
                          "'"
+            
+            if readset.fastq_files:
+                minimap2_input = readset.fastq_files
+                bam2fq_job = None
+            elif readset.bam_files:
+                minimap2_input = None
+                bam2fq_job = samtools.fastq(
+                        readset.bam_files,
+                        "-TMM,ML"
+                        )
+
+            else:
+                _raise(SanitycheckError("Error: FASTQ file not available for readset \"" + readset.name + "\"!"))
+
+
             job = concat_jobs(
                 [
+                    bash.mkdir(os.path.dirname(out_bam)),
                     pipe_jobs(
                         [
-                            bash.mkdir(os.path.dirname(out_bam)),
+                            bam2fq_job,
                             minimap2.minimap2_ont(
-                                reads_fastq_dir,
+                                minimap2_input,
                                 read_group,
                                 ini_section= "minimap2_align"
                             ),
-                            sambamba.view(
-                                "/dev/stdin",
-                                None,
-                                options="-S -f bam"
-                            ),
-                            sambamba.sort(
-                                "/dev/stdin",
+                            samtools.sort(
+                                "-",
                                 out_bam,
-                                tmp_dir=global_conf.global_get('minimap2_align', 'tmp_dir', required=True),
+                                ini_section = 'minimap2_align'
                             )
                         ]
                     ),
                     samtools.quickcheck(
                         out_bam
                     ),
-                    sambamba.index(
+                    samtools.index(
                         out_bam,
-                        out_bai,
                     )
                 ],
                 name="minimap2_align." + readset.name,
                 samples=[readset.sample],
-                input_dependency=[reads_fastq_dir]
+                input_dependency=[readset.fastq_files, readset.bam_files]
             )
             jobs.append(job)
 

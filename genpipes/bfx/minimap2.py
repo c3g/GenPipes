@@ -23,7 +23,7 @@ from ..core.job import Job
 
 
 def minimap2_ont(
-    read_fastq_dir,
+    input,
     read_group,
     out_sam=None,
     ini_section='minimap2_ont'
@@ -37,21 +37,23 @@ def minimap2_ont(
     genome_fasta = global_conf.global_get(ini_section, 'genome_fasta', required=True)
 
     return Job(
-        [read_fastq_dir],
+        [input],
         [out_sam],
-        [[ini_section, "module_minimap2"]],
+        [
+            [ini_section, "module_minimap2"]
+        ],
         command="""\
 minimap2 \\
-  -ax {minimap_preset} \\
+  -t {threads} \\
+  -ax {minimap_preset} {other_options} \\
   -R {read_group} \\
-  {other_options} \\
   {genome_fasta} \\
-  {read_fastq_dir}/*.fastq*{out_sam}""".format(
+  {input}{out_sam}""".format(
             minimap_preset=global_conf.global_get(ini_section, 'preset'),
             read_group=read_group,
-            other_options=global_conf.global_get(ini_section, 'other_options', required=False),
+            other_options=global_conf.global_get(ini_section, 'minimap2_other_options', required=False),
             genome_fasta=genome_fasta,
-            read_fastq_dir=read_fastq_dir,
+            input=input + "/*.fastq*" if input else "-",
             out_sam=" \\\n  > " + out_sam if out_sam else ""
         ),
         removable_files=[out_sam]
