@@ -41,12 +41,12 @@ from ...bfx import (
     htslib,
     job2json_project_tracking,
     minimap2,
+    modkit,
     mosdepth,
     multiqc,
     nanoplot,
     pbmm2,
     pycoqc,
-    sambamba,
     samtools,
     sawfish,
     svim,
@@ -124,6 +124,7 @@ For information on the structure and contents of the LongRead readset file, plea
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
             'annotsv_directory': os.path.relpath(os.path.join(self.output_dir, 'annotSV'), self.output_dir),
             'hiphase_directory': os.path.relpath(os.path.join(self.output_dir, 'hiphase'), self.output_dir),
+            'methylation_directory': os.path.relpath(os.path.join(self.output_dir, 'methylation'), self.output_dir)
         }
         return dirs
     
@@ -449,7 +450,7 @@ For information on the structure and contents of the LongRead readset file, plea
                         gatk4.merge_sam_files(readset_bams, sample_bam)
                     ],
                     samples=[sample],
-                    name="picard_merge_sam_files." + sample.name
+                    name=f"picard_merge_sam_files.{sample.name}"
                 )
 
             jobs.append(job)
@@ -1291,6 +1292,35 @@ For information on the structure and contents of the LongRead readset file, plea
         jobs.append(job)
 
         return jobs
+    
+    def modkit(self):
+        """
+        Methylation analysis for nanopore data.
+        """
+        
+        jobs = []
+
+        for sample in self.samples:
+            alignment_dir = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            input_bam = os.path.join(alignment_dir, f"{sample.name}.sorted.bam")
+            output_dir = os.path.join(self.output_dirs['methylation_directory'], sample.name)
+            output_bed = os.path.join(output_dir, f"{sample.name}.cpg.pileup.bed")
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(output_dir),
+                        modkit.pileup(
+                            input_bam,
+                            output_bed
+                        )
+                    ],
+                    name=f"modkit.{sample.name}",
+                    samples=[sample]
+                )
+            )
+
+        return jobs
 
     @property
     def step_list(self):
@@ -1308,7 +1338,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.clair3,
                 self.merge_filter_clair3,
                 self.svim,
-                self.multiqc
+                self.multiqc,
+                self.modkit
             ], 'revio':
             [
                 self.metrics_nanoplot,
