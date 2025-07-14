@@ -952,9 +952,47 @@ For information on the structure and contents of the LongRead readset file, plea
                             clair3_filtered,
                             output_bam
                         )
-                    ]
+                    ],
+                    name=f"whatshap.{sample.name}",
+                    samples=[sample],
+                    readsets = [*list(sample.readsets)]
                 )
             )
+
+        return jobs
+    
+    def qdnaseq(self):
+        """
+        Run QDNAseq R script.
+        """
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
+            output_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "QDNAseq")
+            bin_size = global_conf.global_get("qdnaseq", "bin_size")
+            reference = global_conf.global_get("qdnaseq", "reference")
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(output_dir),
+                        tools.r_qdna_seq(
+                            input_bam,
+                            output_dir,
+                            sample.name,
+                            bin_size,
+                            reference
+                        )
+                    ],
+                    name=f"qdnaseq.{sample.name}",
+                    samples=[sample],
+                    readsets = [*list(sample.readsets)]
+                )
+            )
+
+        return jobs
     
     def sawfish(self):
         """
@@ -1364,7 +1402,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.set_variant_calling_regions,
                 self.clair3,
                 self.merge_filter_clair3,
-                self.whatsap,
+                self.whatshap,
+                self.qdnaseq,
                 self.svim,
                 self.multiqc,
                 self.modkit
