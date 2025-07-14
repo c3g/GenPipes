@@ -1362,6 +1362,50 @@ Rscript $R_TOOLS/somaticSignatureAlexandrov.R \\
         ),removable_files=remove_file
     )
 
+def r_qdna_seq(
+        input,
+        output_dir,
+        sample,
+        size=15,
+        reference="hg38",
+        ini_section='qdna_seq'
+    ):
+
+    outputs = [
+        os.path.join(output_dir, f"{sample}.copy_number_calls.{chr(size)}k.pdf"),
+        os.path.join(output_dir, f"{sample}.copy_number_segmented.{chr(size)}k.pdf"),
+        os.path.join(output_dir, f"{sample}.copy_number_smooth.{chr(size)}k.pdf"),
+        os.path.join(output_dir, f"{sample}.noise_plot.{chr(size)}k.pdf"),
+        os.path.join(output_dir, f"{sample}.isobarPlot.{chr(size)}k.pdf"),
+        os.path.join(output_dir, f"{sample}.read_counts_per_bin.{chr(size)}k.pdf"),
+        os.path.join(output_dir, f"{sample}.CNV.{chr(size)}k.bed"),
+        os.path.join(output_dir, f"{sample}.CNV.{chr(size)}k.tsv"),
+        os.path.join(output_dir, f"{sample}.CNV.{chr(size)}k.igv"),
+        os.path.join(output_dir, f"{sample}.CNV_calls.{chr(size)}k.vcf"),
+        os.path.join(output_dir, f"{sample}.CNV_calls.{chr(size)}k.seg")
+    ]
+
+    return Job(
+        [input],
+        [outputs],
+        [
+            [ini_section, 'module_R']
+        ],
+        command="""
+Rscript $R_TOOLS/runQDNAseq.R \\
+    --input_bam {input} \\
+    --outdir {output_dir} \\
+    --binsize {size} \\
+    --reference {reference} \\
+    --sample {sample}""".format(
+        input=input,
+        output_dir=output_dir,
+        size=size,
+        reference=reference,
+        sample=sample
+        )
+    )
+
 def design_report(
         input,
         output):
