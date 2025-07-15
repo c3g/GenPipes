@@ -35,6 +35,7 @@ from ...bfx import (
     clair3,
     cpsr,
     deepvariant,
+    dysgu,
     gatk4,
     hificnv,
     hiphase,
@@ -972,7 +973,6 @@ For information on the structure and contents of the LongRead readset file, plea
             input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
             output_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "QDNAseq")
             bin_size = global_conf.global_get("qdnaseq", "bin_size")
-            reference = global_conf.global_get("qdnaseq", "reference")
 
             jobs.append(
                 concat_jobs(
@@ -982,8 +982,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             input_bam,
                             output_dir,
                             sample.name,
-                            bin_size,
-                            reference
+                            bin_size
                         )
                     ],
                     name=f"qdnaseq.{sample.name}",
@@ -994,6 +993,44 @@ For information on the structure and contents of the LongRead readset file, plea
 
         return jobs
     
+    def dysgu(self):
+        """
+        Call structural variants with dysgu.
+        """
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.haplotag.bam")
+            output_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "dysgu")
+            output_vcf = os.path.join(output_dir, f"{sample.name}.dysgu.vcf")
+            
+            region = None
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            if coverage_bed:
+                region = coverage_bed
+            elif global_conf.global_get('dysgu', 'region'):
+                region = global_conf.global_get('dysgu', 'region')
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(output_dir),
+                        dysgu.call(
+                            input_bam,
+                            output_vcf,
+                            sample.name,
+                            region
+                        )
+                    ],
+                    name=f"dysgu.{sample.name}",
+                    samples=[sample],
+                    readsets = [*list(sample.readsets)]
+                )
+            )
+
+        return jobs
+
     def sawfish(self):
         """
         Call structural variants from mapped HiFi sequencing reads with Sawfish.
