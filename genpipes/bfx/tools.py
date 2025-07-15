@@ -1367,8 +1367,7 @@ def r_qdna_seq(
         output_dir,
         sample,
         size=15,
-        reference="hg38",
-        ini_section='qdna_seq'
+        ini_section='qdnaseq'
     ):
 
     outputs = [
@@ -1401,7 +1400,7 @@ Rscript $R_TOOLS/runQDNAseq.R \\
         input=input,
         output_dir=output_dir,
         size=size,
-        reference=reference,
+        reference=global_conf.global_get(ini_section, "reference"),
         sample=sample
         )
     )
