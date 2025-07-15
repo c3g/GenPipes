@@ -973,6 +973,8 @@ For information on the structure and contents of the LongRead readset file, plea
             input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
             output_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "QDNAseq")
             bin_size = global_conf.global_get("qdnaseq", "bin_size")
+            qdnaseq_vcf = os.path.join(output_dir, f"{sample.name}.CNV_calls.{chr(bin_size)}k.vcf")
+            qdnaseq_filtered =  os.path.join(output_dir, f"{sample.name}.CNV_calls.{chr(bin_size)}k.filtered.vcf.gz")
 
             jobs.append(
                 concat_jobs(
@@ -983,11 +985,21 @@ For information on the structure and contents of the LongRead readset file, plea
                             output_dir,
                             sample.name,
                             bin_size
+                        ),
+                        bcftools.view(
+                            qdnaseq_vcf,
+                            qdnaseq_filtered,
+                        "-f PASS -Oz"
+                        ),
+                        htslib.tabix(
+                            qdnaseq_filtered,
+                            "-f -pvcf"
                         )
                     ],
                     name=f"qdnaseq.{sample.name}",
                     samples=[sample],
-                    readsets = [*list(sample.readsets)]
+                    readsets = [*list(sample.readsets)],
+                    removable_files=[qdnaseq_vcf]
                 )
             )
 
@@ -1004,6 +1016,7 @@ For information on the structure and contents of the LongRead readset file, plea
             input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.haplotag.bam")
             output_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "dysgu")
             output_vcf = os.path.join(output_dir, f"{sample.name}.dysgu.vcf")
+            dysgu_filtered = os.path.join(output_dir, f"{sample.name}.dysgu.filtered.vcf.gz")
             
             region = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
@@ -1021,11 +1034,21 @@ For information on the structure and contents of the LongRead readset file, plea
                             output_vcf,
                             sample.name,
                             region
+                        ),
+                        bcftools.view(
+                            output_vcf,
+                            dysgu_filtered,
+                            "-f PASS -Oz"
+                        ),
+                        htslib.tabix(
+                            dysgu_filtered,
+                            "-f -pvcf"
                         )
                     ],
                     name=f"dysgu.{sample.name}",
                     samples=[sample],
-                    readsets = [*list(sample.readsets)]
+                    readsets = [*list(sample.readsets)],
+                    removable_files=[output_vcf]
                 )
             )
 
