@@ -36,8 +36,6 @@ def make_config(
 
     config_content = f"""\
 [core]
-archive_name = djerba
-archive_url = http://$username:$password@$address:$port
 attributes = research 
 author = C3G Author
 configure_priority = 100
@@ -48,18 +46,6 @@ extract_priority = 100
 render_priority = 100
 report_id = {tumor_pair_name}
 report_version = 1
-
-[provenance_helper]
-attributes = research
-assay = {assay}
-tumour_id = {tumor_id}
-normal_id = {normal_id}
-sample_name_tumour = None
-sample_name_normal = None
-sample_name_aux = None
-project = {global_conf.global_get(ini_section, 'project_name', required = False)}
-donor = {tumor_pair_name}
-provenance_input_path = provenance_input.tsv.gz
 
 [case_overview]
 assay = {assay}

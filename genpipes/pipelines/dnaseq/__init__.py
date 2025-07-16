@@ -3012,7 +3012,6 @@ END
                 input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")
                 clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".clean.maf") # MAF from pcgr version 1.4.1 required, remove any empty t_depth lines, needs to be gzipped
             
-                provenance_decoy = os.path.join(djerba_dir, "provenance_subset.tsv.gz")
                 config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
                 djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
 
@@ -3037,7 +3036,6 @@ END
                                 purple_zip,
                                 recursive=True
                                 ),
-                            bash.touch(provenance_decoy),
                             djerba.make_config(
                                 config_file,
                                 tumor_pair.name,
