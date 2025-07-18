@@ -1366,22 +1366,22 @@ def r_qdna_seq(
         input,
         output_dir,
         sample,
-        size=15,
+        size='15',
         ini_section='qdnaseq'
     ):
 
     outputs = [
-        os.path.join(output_dir, f"{sample}.copy_number_calls.{chr(size)}k.pdf"),
-        os.path.join(output_dir, f"{sample}.copy_number_segmented.{chr(size)}k.pdf"),
-        os.path.join(output_dir, f"{sample}.copy_number_smooth.{chr(size)}k.pdf"),
-        os.path.join(output_dir, f"{sample}.noise_plot.{chr(size)}k.pdf"),
-        os.path.join(output_dir, f"{sample}.isobarPlot.{chr(size)}k.pdf"),
-        os.path.join(output_dir, f"{sample}.read_counts_per_bin.{chr(size)}k.pdf"),
-        os.path.join(output_dir, f"{sample}.CNV.{chr(size)}k.bed"),
-        os.path.join(output_dir, f"{sample}.CNV.{chr(size)}k.tsv"),
-        os.path.join(output_dir, f"{sample}.CNV.{chr(size)}k.igv"),
-        os.path.join(output_dir, f"{sample}.CNV_calls.{chr(size)}k.vcf"),
-        os.path.join(output_dir, f"{sample}.CNV_calls.{chr(size)}k.seg")
+        os.path.join(output_dir, f"{sample}.copy_number_calls.{size}k.pdf"),
+        os.path.join(output_dir, f"{sample}.copy_number_segmented.{size}k.pdf"),
+        os.path.join(output_dir, f"{sample}.copy_number_smooth.{size}k.pdf"),
+        os.path.join(output_dir, f"{sample}.noise_plot.{size}k.pdf"),
+        os.path.join(output_dir, f"{sample}.isobarPlot.{size}k.pdf"),
+        os.path.join(output_dir, f"{sample}.read_counts_per_bin.{size}k.pdf"),
+        os.path.join(output_dir, f"{sample}.CNV.{size)k.bed"),
+        os.path.join(output_dir, f"{sample}.CNV.{size}k.tsv"),
+        os.path.join(output_dir, f"{sample}.CNV.{size}k.igv"),
+        os.path.join(output_dir, f"{sample}.CNV_calls.{size}k.vcf"),
+        os.path.join(output_dir, f"{sample}.CNV_calls.{size}k.seg")
     ]
 
     return Job(
