@@ -51,6 +51,7 @@ dysgu call {other_options} \\
             other_options=global_conf.global_get(ini_section, 'other_options', required=False),
             threads=global_conf.global_get(ini_section, 'threads'),
             mode=global_conf.global_get(ini_section, 'mode'),
+            output=output,
             region="--search " + {region} if region else "",
             region_setting=global_conf.global_get(ini_section, 'region_strategy') if region and global_conf.global_get(ini_section, 'region_strategy', required=False) else "",
             genome_fasta=global_conf.global_get(ini_section, 'genome_fasta'),
