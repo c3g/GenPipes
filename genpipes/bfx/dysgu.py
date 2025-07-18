@@ -17,19 +17,15 @@
 # along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-import os
-
 # MUGQIC Modules
 from ..core.config import global_conf
 from ..core.job import Job
-
 
 def call(
     input_bam,
     output_vcf,
     region,
-    ini_section='dysgu'
-    ):
+    ini_section="dysgu"):
     """
     Call structural variants with dysgu.
 
