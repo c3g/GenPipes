@@ -27,7 +27,7 @@ from ..core.job import Job
 def call(
     input_bam,
     output_vcf,
-    region=None,
+    region,
     ini_section='dysgu'
     ):
     """
@@ -52,13 +52,13 @@ dysgu call {other_options} \\
     {genome_fasta} \\
     {tmp} \\
     {input}""".format(
-            other_options=global_conf.global_get(ini_section, "other_options", required=False),
-            threads=global_conf.global_get(ini_section, "threads"),
-            mode=global_conf.global_get(ini_section, "mode"),
+            other_options=global_conf.global_get(ini_section, 'other_options', required=False),
+            threads=global_conf.global_get(ini_section, 'threads'),
+            mode=global_conf.global_get(ini_section, 'mode'),
             region="--search " + {region} if region else "",
-            region_setting=global_conf.global_get(ini_section, "region_strategy") if region and global_conf.global_get(ini_section, "region_strategy", required=False) else "",
-            genome_fasta=global_conf.global_get(ini_section, "genome_fasta"),
-            tmp=global_conf.global_get(ini_section, "tmp_dir"),
+            region_setting=global_conf.global_get(ini_section, 'region_strategy') if region and global_conf.global_get(ini_section, 'region_strategy', required=False) else "",
+            genome_fasta=global_conf.global_get(ini_section, 'genome_fasta'),
+            tmp=global_conf.global_get(ini_section, 'tmp_dir'),
             input=input_bam
         )
     )
