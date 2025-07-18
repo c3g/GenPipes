@@ -1034,7 +1034,6 @@ For information on the structure and contents of the LongRead readset file, plea
                         dysgu.call(
                             input_bam,
                             output_vcf,
-                            sample.name,
                             region
                         ),
                         bcftools.view(
