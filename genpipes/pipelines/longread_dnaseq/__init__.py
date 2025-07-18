@@ -270,9 +270,11 @@ For information on the structure and contents of the LongRead readset file, plea
             
             if readset.fastq_files:
                 minimap2_input = readset.fastq_files
+                input_dependency = readset.fastq_files
                 bam2fq_job = None
             elif readset.bam_files:
                 minimap2_input = None
+                input_dependency = readset.bam_files
                 bam2fq_job = samtools.fastq(
                         readset.bam_files,
                         "-TMM,ML"
@@ -309,7 +311,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 ],
                 name="minimap2_align." + readset.name,
                 samples=[readset.sample],
-                input_dependency=[readset.fastq_files, readset.bam_files]
+                input_dependency=[input_dependency]
             )
             jobs.append(job)
 
