@@ -49,6 +49,7 @@ minimap2 \\
   -R {read_group} \\
   {genome_fasta} \\
   {input}{out_sam}""".format(
+            threads=global_conf.global_get(ini_section, 'threads'),
             minimap_preset=global_conf.global_get(ini_section, 'preset'),
             read_group=read_group,
             other_options=global_conf.global_get(ini_section, 'minimap2_other_options', required=False),
