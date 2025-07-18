@@ -1377,7 +1377,7 @@ def r_qdna_seq(
         os.path.join(output_dir, f"{sample}.noise_plot.{size}k.pdf"),
         os.path.join(output_dir, f"{sample}.isobarPlot.{size}k.pdf"),
         os.path.join(output_dir, f"{sample}.read_counts_per_bin.{size}k.pdf"),
-        os.path.join(output_dir, f"{sample}.CNV.{size)k.bed"),
+        os.path.join(output_dir, f"{sample}.CNV.{size}k.bed"),
         os.path.join(output_dir, f"{sample}.CNV.{size}k.tsv"),
         os.path.join(output_dir, f"{sample}.CNV.{size}k.igv"),
         os.path.join(output_dir, f"{sample}.CNV_calls.{size}k.vcf"),
