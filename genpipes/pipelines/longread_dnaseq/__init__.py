@@ -1464,6 +1464,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.merge_filter_clair3,
                 self.whatshap,
                 self.qdnaseq,
+                self.dysgu,
                 self.svim,
                 self.multiqc,
                 self.modkit
