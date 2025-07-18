@@ -1386,7 +1386,7 @@ def r_qdna_seq(
 
     return Job(
         [input],
-        [outputs],
+        outputs,
         [
             [ini_section, 'module_R']
         ],
