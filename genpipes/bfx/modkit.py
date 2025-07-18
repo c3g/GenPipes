@@ -44,7 +44,7 @@ def pileup(
         command="""\
 modkit pileup \\
   {input_bam} \\
-  {output_bed}
+  {output_bed} \\
   --ref {genome_fasta} \\
   {other_options}""".format(
             input_bam=input_bam,

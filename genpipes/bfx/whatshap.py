@@ -44,7 +44,7 @@ def haplotag(
 whatshap haplotag \\
   -o {output_bam} \\
   {other_options} \\
-  --reference {genome_fasta}
+  --reference {genome_fasta} \\
   {input_vcf} \\
   {input_bam}""".format(
             input_bam=input_bam,
