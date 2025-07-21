@@ -1388,9 +1388,10 @@ def r_qdna_seq(
         [input],
         outputs,
         [
+            [ini_section, 'module_c3g_tools'],
             [ini_section, 'module_R']
         ],
-        command="""
+        command="""\
 Rscript $R_TOOLS/runQDNAseq.R \\
     --input_bam {input} \\
     --outdir {output_dir} \\
