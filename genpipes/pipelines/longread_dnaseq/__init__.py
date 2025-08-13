@@ -397,10 +397,10 @@ For information on the structure and contents of the LongRead readset file, plea
 
         return jobs
 
-    def picard_merge_sam_files(self):
+    def samtools_merge_bam_files(self):
         """
         BAM readset files are merged into one file per sample.
-        Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+        Merge is done using [Samtools](https://www.htslib.org/doc/samtools-merge.html).
 
         This step takes as input files:
         Aligned and sorted BAM output files from previous minimap2_align or pbmm2_align step
@@ -451,10 +451,14 @@ For information on the structure and contents of the LongRead readset file, plea
                 job = concat_jobs(
                     [
                         mkdir_job,
-                        gatk4.merge_sam_files(readset_bams, sample_bam)
+                        samtools.merge(
+                            sample_bam,
+                            readset_bams,
+                            ini_section='samtools_merge_bam_files'
+                            )
                     ],
                     samples=[sample],
-                    name=f"picard_merge_sam_files.{sample.name}"
+                    name=f"samtools_merge_bam_files.{sample.name}"
                 )
 
             jobs.append(job)
@@ -1458,7 +1462,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.metrics_nanoplot,
                 self.minimap2_align,
                 self.pycoqc,
-                self.picard_merge_sam_files,
+                self.samtools_merge_bam_files,
                 self.metrics_mosdepth,
                 self.set_variant_calling_regions,
                 self.clair3,
@@ -1473,7 +1477,7 @@ For information on the structure and contents of the LongRead readset file, plea
             [
                 self.metrics_nanoplot,
                 self.pbmm2_align,
-                self.picard_merge_sam_files,
+                self.samtools_merge_bam_files,
                 self.metrics_mosdepth,
                 self.set_variant_calling_regions,
                 self.deepvariant,
