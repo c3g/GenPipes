@@ -472,7 +472,7 @@ For information on the structure and contents of the LongRead readset file, plea
         jobs =[]
 
         for sample in self.samples:
-            metrics_directory = os.path.join(self.output_dirs['metrics_directory'], readset.sample.name)
+            metrics_directory = os.path.join(self.output_dirs['metrics_directory'], sample.name)
             nanoplot_directory = os.path.join(metrics_directory, "nanoplot")
             nanoplot_prefix = f"{sample.name}.aligned."
 
