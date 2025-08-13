@@ -464,6 +464,42 @@ For information on the structure and contents of the LongRead readset file, plea
             jobs.append(job)
 
         return jobs
+    
+    def metrics_nanoplot_aligned(self):
+        """
+        Collect QC metrics on aligned bam file with nanoplot.
+        """
+        jobs =[]
+
+        for sample in self.samples:
+            metrics_directory = os.path.join(self.output_dirs['metrics_directory'], readset.sample.name)
+            nanoplot_directory = os.path.join(metrics_directory, "nanoplot")
+            nanoplot_prefix = f"{sample.name}.aligned."
+
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(nanoplot_directory),
+                        nanoplot.qc(
+                            nanoplot_directory,
+                            nanoplot_prefix,
+                            input_bam
+                        )
+                    ],
+                    name=f"nanoplot.aligned.{sample.name}",
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)]
+                )
+            )
+
+            self.multiqc_inputs.append(
+                os.path.join(nanoplot_directory, f"{nanoplot_prefix}NanoStats.txt")
+                )
+
+        return jobs
 
     def metrics_mosdepth(self):
         """
@@ -1463,6 +1499,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.minimap2_align,
                 self.pycoqc,
                 self.samtools_merge_bam_files,
+                self.metrics_nanoplot_aligned,
                 self.metrics_mosdepth,
                 self.set_variant_calling_regions,
                 self.clair3,
@@ -1478,6 +1515,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.metrics_nanoplot,
                 self.pbmm2_align,
                 self.samtools_merge_bam_files,
+                self.metrics_nanoplot_aligned,
                 self.metrics_mosdepth,
                 self.set_variant_calling_regions,
                 self.deepvariant,
