@@ -1393,11 +1393,11 @@ def r_qdna_seq(
         ],
         command="""\
 Rscript $R_TOOLS/runQDNAseq.R \\
-    --input_bam {input} \\
-    --outdir {output_dir} \\
-    --binsize {size} \\
-    --reference {reference} \\
-    --sample {sample}""".format(
+    -i {input} \\
+    -o {output_dir} \\
+    -b {size} \\
+    -r {reference} \\
+    -s {sample}""".format(
         input=input,
         output_dir=output_dir,
         size=size,
