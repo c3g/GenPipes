@@ -486,7 +486,8 @@ For information on the structure and contents of the LongRead readset file, plea
                         nanoplot.qc(
                             nanoplot_directory,
                             nanoplot_prefix,
-                            input_bam
+                            input_bam,
+                            aligned=True
                         )
                     ],
                     name=f"nanoplot.aligned.{sample.name}",

@@ -30,6 +30,7 @@ def qc(
     input_bam=None,
     input_fastq=None,
     input_summary=None,
+    aligned = False,
     ini_section='nanoplot'
     ):
     """
@@ -42,6 +43,8 @@ def qc(
         os.path.join(output_dir, output_prefix + "NanoPlot-report.html"),
         os.path.join(output_dir, output_prefix + "NanoStats.txt")
     ]
+
+    bam_flag = "--ubam " if aligned==False else "--bam "
 
     return Job(
         [input_bam, input_fastq],
@@ -56,7 +59,7 @@ NanoPlot {other_options} \\
   -p {output_prefix} \\
   --threads {threads}""".format(
             other_options=global_conf.global_get(ini_section, 'other_options', required=False),
-            input_bam="--ubam " + input_bam if input_bam else "",
+            input_bam=bam_flag + input_bam if input_bam else "",
             input_fastq="--fastq " + input_fastq if input_fastq else "",
             input_summary="--summary " + input_summary if input_summary else "",
             threads=global_conf.global_get(ini_section, 'threads'),
