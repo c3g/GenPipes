@@ -455,6 +455,9 @@ For information on the structure and contents of the LongRead readset file, plea
                             sample_bam,
                             readset_bams,
                             ini_section='samtools_merge_bam_files'
+                            ),
+                            samtools.index(
+                                sample_bam
                             )
                     ],
                     samples=[sample],
