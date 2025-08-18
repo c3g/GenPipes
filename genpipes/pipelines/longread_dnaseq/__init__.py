@@ -25,6 +25,7 @@ import re
 # GenPipes Modules
 from ...core.config import global_conf, SanitycheckError, _raise
 from ...core.job import Job, concat_jobs, pipe_jobs
+from ...core.sample_tumor_pairs import parse_tumor_pair_file
 from .. import common
 
 from ...bfx import (
@@ -33,6 +34,7 @@ from ...bfx import (
     bcftools,
     bvatools,
     clair3,
+    clairS,
     cpsr,
     deepvariant,
     dysgu,
@@ -96,7 +98,8 @@ Both protocols require as input a readset file, which provides sample metadata a
 For information on the structure and contents of the LongRead readset file, please consult [here](https://genpipes.readthedocs.io/en/latest/get-started/concepts/readset_file.html).
     """
 
-    def __init__(self, *args, protocol='nanopore', **kwargs):
+    def __init__(self, *args, pairs_file=None, protocol='nanopore', **kwargs):
+        self.pairs = pairs_file
         self.protocol = protocol
         super(LongReadDnaSeq, self).__init__(*args, **kwargs)
 
@@ -106,9 +109,9 @@ For information on the structure and contents of the LongRead readset file, plea
         cls._argparser.add_argument(
             "-t",
             "--type",
-            help="Type of pipeline (default nanopore)",
+            help="Type of protocol (default nanopore)",
             dest='protocol',
-            choices=["nanopore", "revio"],
+            choices=["nanopore", "nanopore_paired_somatic", "revio"],
             default="nanopore"
             )
         return cls._argparser
@@ -139,6 +142,12 @@ For information on the structure and contents of the LongRead readset file, plea
         """
         if not hasattr(self, "_multiqc_inputs"):
             self._multiqc_inputs = []
+
+            if 'somatic' in self.protocol and 'tumor_only' not in self.protocol:
+                self._multiqc_inputs = {}
+                for tumor_pair in self.tumor_pairs.values():
+                    self._multiqc_inputs[tumor_pair.name] = []
+
         return self._multiqc_inputs
 
     @multiqc_inputs.setter
@@ -977,6 +986,227 @@ For information on the structure and contents of the LongRead readset file, plea
 
         return jobs
     
+    def clairS(self):
+        """
+        Call somatic small variants with clairS.
+        """
+
+        jobs = []
+
+        nb_jobs = global_conf.global_get('clairS', 'nb_jobs', param_type='posint')
+
+        for tumor_pair in self.tumor_pairs.values():
+            normal_align_directory = os.path.join(self.output_dirs["alignment_directory"], tumor_pair.normal.name)
+            tumor_align_directory = os.path.join(self.output_dirs["alignment_directory"], tumor_pair.tumor.name)
+            normal_bam = os.path.join(normal_align_directory, f"{tumor_pair.normal.name}.sorted.bam")
+            tumor_bam = os.path.join(tumor_align_directory, f"{tumor_pair.tumor.name}.sorted.bam")
+            clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            region_directory = os.path.join(clairS_dir, "regions")
+            region_param = None
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
+
+            if coverage_bed:
+                region = coverage_bed
+                region_param = f"--bed_fn={region}"
+            elif nb_jobs == 1:
+                region = global_conf.global_get('clairS', 'region') if global_conf.global_get('clairS', 'region') else None
+                if region:
+                    if os.path.isfile(region):
+                        region_param = f"--bed_fn={region}"
+                    else:
+                        region_param = f"--ctg_name={region}"
+            
+            if nb_jobs == 1 or coverage_bed:
+                                
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(clairS_dir),
+                            clairS.run(
+                                normal_bam,
+                                tumor_bam,
+                                clairS_dir,
+                                tumor_pair.name,
+                                "ont_r10_dorado_sup_5khz_ssrs",
+                                region_param
+                            )
+                        ],
+                        name=f"clairS.{tumor_pair.name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.readsets)]
+                    )
+                )
+            else:
+                regions = [os.path.join(region_directory, f"{idx:04d}-region.bed") for idx in range(nb_jobs)]
+
+                for idx, region in enumerate(regions):
+
+                    output_dir = os.path.join(clairS_dir, str(idx))
+
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(output_dir),
+                                clairS.run(
+                                    normal_bam,
+                                    tumor_bam,
+                                    output_dir,
+                                    tumor_pair.name,
+                                    "ont",
+                                    f"--bed_fn={region}"
+                                )
+                            ],
+                            name=f"clairS.{tumor_pair.name}.{str(idx)}",
+                            input_dependency=[normal_bam, tumor_bam, region],
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        )
+                    )
+
+        return jobs
+    
+    def merge_filter_clairS(self):
+        """
+        Merge clairS outputs and filter vcf.
+        Germline and somatic outputs are merged for downstream use in CPSR/PCGR, respectively.
+        """
+        jobs = []
+
+        nb_jobs = global_conf.global_get('clairS', 'nb_jobs', param_type='posint')
+
+        for tumor_pair in self.tumor_pairs.values():
+            
+            clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            clairS_germline_vcf = os.path.join(clairS_dir, "clair3_normal_germline_output.vcf.gz")
+            clairS_germline_filtered = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
+            clairS_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.vcf.gz")
+            clairS_somatic_filtered = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
+
+            if nb_jobs == 1 or coverage_bed:
+
+                clairS_indel = os.path.join(clairS_dir, "indel.vcf.gz")
+                clairS_snv = os.path.join(clairS_dir, "snv.vcf.gz")
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            pipe_jobs(
+                                [
+                                    bcftools.reheader(
+                                        clairS_germline_vcf
+                                    ),
+                                    bcftools.view(
+                                        None,
+                                        clairS_germline_filtered,
+                                        "-f PASS -Oz"
+                                    )
+                                ]
+                            ),
+                            htslib.tabix(
+                                clairS_germline_filtered,
+                                "-f -pvcf"
+                            ),
+                        ],
+                        name=f"merge_filter_clairS.germline.{tumor_pair.name}",
+                        samples=[tumor_pair.normal],
+                        readsets=[*list(tumor_pair.normal.readsets)]
+                    )
+                )
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bcftools.concat(
+                                [clairS_indel, clairS_snv],
+                                clairS_somatic_vcf
+                            ),
+                            htslib.tabix(
+                                clairS_somatic_vcf
+                            ),
+                            bcftools.view(
+                                clairS_somatic_vcf,
+                                clairS_somatic_filtered,
+                                "-f PASS -Oz"
+                            ),
+                            htslib.tabix(
+                                clairS_somatic_filtered,
+                                "-f -pvcf"
+                            )
+                        ],
+                        name = f"merge_filter_clairS.somatic.{tumor_pair.name}",
+                        samples=[tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.tumor.readsets)]
+                    )
+                )
+
+            else:
+                germline_vcfs_to_merge = [os.path.join(clairS_dir, str(idx), "clair3_normal_germline_output.vcf.gz") for idx in range(nb_jobs)]
+                somatic_vcfs_to_merge = [os.path.join(clairS_dir, str(idx), "indel.vcf.gz") for idx in range(nb_jobs)]
+                somatic_vcfs_to_merge.extend = [os.path.join(clairS_dir, str(idx), "snv.vcf.gz") for idx in range(nb_jobs)]
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bcftools.concat(
+                                germline_vcfs_to_merge,
+                                clairS_germline_vcf,
+                                "-a -oZ"
+                            ),
+                            htslib.tabix(
+                                clairS_germline_vcf,
+                                "-f -pvcf"
+                            ),
+                            bcftools.view(
+                                clairS_germline_vcf,
+                                clairS_germline_filtered,
+                                "-f PASS -Oz"
+                            ),
+                            htslib.tabix(
+                                clairS_germline_filtered,
+                                "-f -pvcf"
+                            )
+                        ],
+                        name = f"merge_filter_clairS.germline.{tumor_pair.name}",
+                        samples = [tumor_pair.normal],
+                        readsets = [*list(tumor_pair.normal.readsets)],
+                        removable_files=germline_vcfs_to_merge
+                    )
+                )
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bcftools.concat(
+                                somatic_vcfs_to_merge,
+                                clairS_somatic_vcf,
+                                "-a -oZ"
+                            ),
+                            htslib.tabix(
+                                clairS_somatic_vcf,
+                                "-f -pvcf"
+                            ),
+                            bcftools.view(
+                                clairS_somatic_vcf,
+                                clairS_somatic_filtered,
+                                "-f PASS -Oz"
+                            ),
+                            htslib.tabix(
+                                clairS_somatic_filtered,
+                                "-f -pvcf"
+                            )
+                        ],
+                        name = f"merge_filter_clairS.somatic.{tumor_pair.name}",
+                        samples = [tumor_pair.tumor],
+                        readsets = [*list(tumor_pair.tumor.readsets)],
+                        removable_files=somatic_vcfs_to_merge
+                    )
+                )
+
+        return jobs
+    
     def whatshap(self):
         """
         Create a haplotagged file using Whatshap.
@@ -1514,6 +1744,21 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.svim,
                 self.multiqc,
                 self.modkit
+            ], 'nanopore_paired_somatic': [
+                self.blastqc,
+                self.metrics_nanoplot,
+                self.minimap2_align,
+                self.pycoqc,
+                self.samtools_merge_bam_files,
+                self.metrics_nanoplot_aligned,
+                self.metrics_mosdepth,
+                self.set_variant_calling_regions,
+                self.clairS,
+                self.merge_filter_clairS,
+                self.savana,
+                self.cpsr,
+                self.pcgr,
+                self.multiqc
             ], 'revio':
             [
                 self.metrics_nanoplot,
@@ -1555,7 +1800,8 @@ def main(parsed_args):
     readset_file = parsed_args.readsets_file
     protocol = parsed_args.protocol
     design_file = parsed_args.design_file
+    pairs_file = parsed_args.pairs
 
-    pipeline = LongReadDnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, json_pt=json_pt, container=container)
+    pipeline = LongReadDnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file, clean=clean, force=force, force_mem_per_cpu=force_mem_per_cpu, job_scheduler=job_scheduler, output_dir=output_dir, protocol=protocol, design_file=design_file, json_pt=json_pt, container=container, pairs_file=pairs_file)
 
     pipeline.submit_jobs()
