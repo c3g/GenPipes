@@ -141,11 +141,12 @@ def merge(
             [ini_section, 'module_samtools']
         ],
         command="""\
-samtools merge -f --write-index \\
+samtools merge -f {other_options} \\
   --output-fmt {output_format} \\
   {threads} \\
   -o {sample_output} \\
   {input_bams}""".format(
+            other_options=global_conf.global_get(ini_section, 'other_options'),
             output_format=postfix,
             threads="--threads " + global_conf.global_get(ini_section, 'threads'),
             sample_output=sample_output,
