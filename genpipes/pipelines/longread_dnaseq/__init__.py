@@ -51,6 +51,7 @@ from ...bfx import (
     pbmm2,
     pycoqc,
     samtools,
+    savana,
     sawfish,
     svim,
     tools,
@@ -1096,7 +1097,9 @@ For information on the structure and contents of the LongRead readset file, plea
                             pipe_jobs(
                                 [
                                     bcftools.reheader(
-                                        clairS_germline_vcf
+                                        clairS_germline_vcf,
+                                        None,
+                                        f"-n {tumor_pair.normal.name} -Ou"
                                     ),
                                     bcftools.view(
                                         None,
@@ -1159,10 +1162,19 @@ For information on the structure and contents of the LongRead readset file, plea
                                 clairS_germline_vcf,
                                 "-f -pvcf"
                             ),
-                            bcftools.view(
-                                clairS_germline_vcf,
-                                clairS_germline_filtered,
-                                "-f PASS -Oz"
+                            pipe_jobs(
+                                [
+                                    bcftools.reheader(
+                                        clairS_germline_vcf,
+                                        None,
+                                        f"-n {tumor_pair.normal.name} -Ou"
+                                    ),
+                                    bcftools.view(
+                                        None,
+                                        clairS_germline_filtered,
+                                        "-f PASS -Oz"
+                                    )
+                                ]
                             ),
                             htslib.tabix(
                                 clairS_germline_filtered,
@@ -1207,6 +1219,41 @@ For information on the structure and contents of the LongRead readset file, plea
 
         return jobs
     
+    def savana(self):
+        """
+        Call somatic structural variants and copy number aberrations with Savana.
+        """
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            normal_align_directory = os.path.join(self.output_dirs["alignment_directory"], tumor_pair.normal.name)
+            tumor_align_directory = os.path.join(self.output_dirs["alignment_directory"], tumor_pair.tumor.name)
+            normal_bam = os.path.join(normal_align_directory, f"{tumor_pair.normal.name}.sorted.bam")
+            tumor_bam = os.path.join(tumor_align_directory, f"{tumor_pair.tumor.name}.sorted.bam")
+            clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            clairS_germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
+            output_directory = os.path.join(self.output_dirs['SVariants_directory'], tumor_pair.name, 'savana')
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(output_directory),
+                        savana.run(
+                            normal_bam,
+                            tumor_bam,
+                            output_directory,
+                            tumor_pair.name,
+                            clairS_germline_vcf
+                        )
+                    ],
+                    name=f"savana.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+
+        return jobs
+
     def whatshap(self):
         """
         Create a haplotagged file using Whatshap.

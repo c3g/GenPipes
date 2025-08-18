@@ -31,7 +31,7 @@ def run(
     sample_name,
     platform,
     region=None,
-    ini_section='clair3'
+    ini_section='clairS'
     ):
     """
     Call somatic small variants with ClairS
@@ -41,16 +41,16 @@ def run(
 
     outputs = [
         os.path.join(output_dir, f"{sample_name}.vcf.gz"),
-        os.path.join(output_dir, "full_alignment.vcf.gz"),
-        os.path.join(output_dir, "merge_output.vcf.gz"),
-        os.path.join(output_dir, "phased_merge_output.vcf.gz")
+        os.path.join(output_dir, "indel.vcf.gz"),
+        os.path.join(output_dir, "clair3_germline_output.vcf.gz"),
+        os.path.join(output_dir, "snv.vcf.gz")
     ]
 
     return Job(
         [normal_bam, tumor_bam],
         outputs,
         [
-            [ini_section, "module_clair3"],
+            [ini_section, "module_clairS"],
         ],
         command="""\
 run_clairs {other_options} \\
