@@ -1,0 +1,77 @@
+################################################################################
+# Copyright (C) 2025 C3G, The Victor Phillip Dahdaleh Institute of Genomic Medicine at McGill University
+#
+# This file is part of GenPipes.
+#
+# GenPipes is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GenPipes is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with GenPipes.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+import os
+
+# MUGQIC Modules
+from ..core.config import global_conf
+from ..core.job import Job
+
+
+def run(
+    normal_bam,
+    tumor_bam,
+    output_dir,
+    sample_name,
+    germline_vcf,
+    ini_section='savana'
+    ):
+    """
+    Call somatic structural variants and CNAs with Savana
+
+    :return: a job for Savana somatic SV and CNA calling
+    """
+
+    outputs = [
+        os.path.join(output_dir, f"{sample_name}.vcf.gz"),
+        os.path.join(output_dir, "full_alignment.vcf.gz"),
+        os.path.join(output_dir, "merge_output.vcf.gz"),
+        os.path.join(output_dir, "phased_merge_output.vcf.gz")
+    ]
+
+    return Job(
+        [normal_bam, tumor_bam, germline_vcf],
+        outputs,
+        [
+            [ini_section, "module_savana"],
+        ],
+        command="""\
+savana {other_options} \\
+  --normal {normal_bam} \\
+  --tumor {tumor_bam} \\
+  --sample {sample_name} \\
+  --ref {genome_fasta} \\
+  --threads {threads} \\
+  --cna_threads {cna_threads} \\
+  {mapq} {cn_step_change} \\
+  {contigs} \\
+  --outdir {output}""".format(
+            other_options=global_conf.global_get(ini_section, 'other_options', required=False),
+            normal_bam=normal_bam,
+            tumor_bam=tumor_bam,
+            sample_name=sample_name,
+            genome_fasta=global_conf.global_get(ini_section, 'genome_fasta'),
+            threads=global_conf.global_get(ini_section, 'threads'),
+            cna_threads=global_conf.global_get(ini_section, 'cna_threads'),
+            mapq="--mapq " + global_conf.global_get(ini_section, 'mapq'),
+            cn_step_change=global_conf.global_get(ini_section, 'cn_step_change', required=False),
+            contigs="--contigs " + global_conf.global_get(ini_section, 'contigs') if global_conf.global_get(ini_section, 'contigs') else "",            
+            output=output_dir
+        )
+    )
