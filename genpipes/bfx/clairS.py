@@ -41,8 +41,8 @@ def run(
 
     outputs = [
         os.path.join(output_dir, f"{sample_name}.vcf.gz"),
+        os.path.join(output_dir, "clair3_normal_germline_output.vcf.gz"),
         os.path.join(output_dir, "indel.vcf.gz"),
-        os.path.join(output_dir, "clair3_germline_output.vcf.gz"),
         os.path.join(output_dir, "snv.vcf.gz")
     ]
 
