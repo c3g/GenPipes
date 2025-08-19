@@ -625,10 +625,12 @@ For information on the structure and contents of the LongRead readset file, plea
         """
         jobs = []
 
-        caller = "clair3"
-
         if self.protocol == "revio":
             caller = "deepvariant"
+        elif self.protocol == "nanopore_paired_somatic":
+            caller = "clairS"
+        else:
+            caller = "clair3"
 
         reference = global_conf.global_get(caller, 'genome_fasta', param_type='filepath')
         scatter_jobs = global_conf.global_get(caller, 'nb_jobs', param_type='posint')
