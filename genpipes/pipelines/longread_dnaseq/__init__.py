@@ -22,6 +22,7 @@ import argparse
 import os
 import logging
 import re
+import shtab
 
 # GenPipes Modules
 from ...core.config import global_conf, SanitycheckError, _raise
