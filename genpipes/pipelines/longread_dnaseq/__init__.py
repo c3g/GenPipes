@@ -37,6 +37,7 @@ from ...bfx import (
     clairS,
     cpsr,
     deepvariant,
+    djerba,
     dysgu,
     gatk4,
     hificnv,
@@ -49,6 +50,7 @@ from ...bfx import (
     multiqc,
     nanoplot,
     pbmm2,
+    pcgr,
     pycoqc,
     samtools,
     savana,
@@ -1080,9 +1082,9 @@ For information on the structure and contents of the LongRead readset file, plea
             
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
             clairS_germline_vcf = os.path.join(clairS_dir, "clair3_normal_germline_output.vcf.gz")
-            clairS_germline_filtered = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
-            clairS_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.vcf.gz")
-            clairS_somatic_filtered = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+            clairS_germline_filtered = os.path.join(clairS_dir, f"{tumor_pair.normal.name}.clairS.germline.flt.vcf.gz")
+            clairS_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.tumor.name}.clairS.somatic.vcf.gz")
+            clairS_somatic_filtered = os.path.join(clairS_dir, f"{tumor_pair.tumor.name}.clairS.somatic.flt.vcf.gz")
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
 
@@ -1231,7 +1233,7 @@ For information on the structure and contents of the LongRead readset file, plea
             normal_bam = os.path.join(normal_align_directory, f"{tumor_pair.normal.name}.sorted.bam")
             tumor_bam = os.path.join(tumor_align_directory, f"{tumor_pair.tumor.name}.sorted.bam")
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
-            clairS_germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
+            clairS_germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.normal.name}.clairS.germline.flt.vcf.gz")
             output_directory = os.path.join(self.output_dirs['SVariants_directory'], tumor_pair.name, 'savana')
 
             jobs.append(
@@ -1689,27 +1691,318 @@ For information on the structure and contents of the LongRead readset file, plea
         """
         jobs = []
 
-        for sample in self.samples:
-            hiphase_directory = os.path.join(self.output_dirs["hiphase_directory"], sample.name)
-            deepvariant_phased = os.path.join(hiphase_directory, f"{sample.name}.deepvariant.hiphase.vcf.gz")
-            cpsr_directory = os.path.join(self.output_dirs["report_directory"], sample.name, "cpsr")
+        # Set directory, ini_section, job and sample name for nanopore tumor only protocol
+        if 'tumor_only' in self.protocol:
+            output_directory = os.path.join(self.output_dirs['variants_directory'], "split")
+            ini_section = 'report_cpsr_tumor_only'
 
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(cpsr_directory),
-                        cpsr.report(
-                            deepvariant_phased,
-                            cpsr_directory,
-                            sample.name,
-                            "report_cpsr"
-                        )
-                    ],
-                    name=f"report_cpsr.{sample.name}",
-                    samples=[sample],
-                    readsets=[*list(sample.readsets)]
+            for sample in self.samples:
+                job_name = f"report_cpsr_tumor_only.{sample.name}"
+                samples = [sample]
+
+                input_file = os.path.join(
+                    output_directory,
+                    sample.name,
+                    f"{sample.name}.annot.vcf.gz"
                 )
-            )
+                cpsr_directory = os.path.join(output_directory, sample.name, "cpsr")
+                
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                cpsr_directory,
+                            ),
+                            cpsr.report(
+                                input_file,
+                                cpsr_directory,
+                                sample.name,
+                                ini_section=ini_section
+                            )
+                        ],
+                        name=job_name,
+                        samples=samples,
+                        readsets=[*list(sample.readsets)],
+                    )
+                )
+
+        elif 'somatic' in self.protocol:
+            for tumor_pair in self.tumor_pairs.values():
+                clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+                input_file = os.path.join(clairS_dir, f"{tumor_pair.normal.name}.clairS.germline.flt.vcf.gz")
+                cpsr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "cpsr")
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                cpsr_directory,
+                            ),
+                            cpsr.report(
+                                input_file,
+                                cpsr_directory,
+                                tumor_pair.normal.name,
+                                "report_cpsr"
+                            )
+                        ],
+                        name=f"report_cpsr.{tumor_pair.name}",
+                        samples=[tumor_pair.normal],
+                        readsets=[*list(tumor_pair.normal.readsets)],
+                    )
+                )
+                
+        #Set directory, ini_section, job and sample name for revio protocol
+        else:
+            for sample in self.samples:
+                hiphase_directory = os.path.join(self.output_dirs["hiphase_directory"], sample.name)
+                deepvariant_phased = os.path.join(hiphase_directory, f"{sample.name}.deepvariant.hiphase.vcf.gz")
+                cpsr_directory = os.path.join(self.output_dirs["report_directory"], sample.name, "cpsr")
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(cpsr_directory),
+                            cpsr.report(
+                                deepvariant_phased,
+                                cpsr_directory,
+                                sample.name,
+                                "report_cpsr"
+                            )
+                        ],
+                        name=f"report_cpsr.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
+                    )
+                )
+
+        return jobs
+    
+    def report_pcgr(self):
+        """
+        Creates a PCGR somatic + germline report (https://sigven.github.io/cpsr/)
+        input: filtered somatic vcf
+        output: html report and addtional flat files
+        Returns:
+            list: A list of pcgr report jobs.
+        """
+        jobs = []
+
+        # Set directory, ini_section, job and sample name for dnaseq tumor only protocol
+        if 'tumor_only' in self.protocol:
+            output_directory = os.path.join(self.output_dirs['variants_directory'], "split")
+            ini_section = 'report_pcgr_tumor_only'
+            assembly = global_conf.global_get(ini_section, 'assembly')
+
+            for sample in self.samples:
+                cpsr_directory = os.path.join(
+                    output_directory,
+                    sample.name,
+                    "cpsr"
+                )
+                input_cpsr = os.path.join(
+                    cpsr_directory,
+                    f"{sample.name}.cpsr.{assembly}.json.gz"
+                )
+                input_file = os.path.join(
+                    output_directory,
+                    sample.name,
+                    f"{sample.name}.annot.vcf.gz"
+                )
+
+                input_cna = os.path.join(
+                    self.output_dirs['sv_variants_directory'],
+                    f"{sample.name}.cnvkit.cna.tsv"
+                )
+
+                pcgr_directory = os.path.join(
+                    output_directory,
+                    sample.name,
+                    "pcgr"
+                )
+
+                input_cpsr = os.path.join(
+                        cpsr_directory,
+                        f"{sample.name}.cpsr.{assembly}"
+                    )
+                output = os.path.join(
+                        pcgr_directory,
+                        f"{sample.name}.pcgr.{assembly}.html"
+                    )
+                input_dependencies = [input_file, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", input_cna]
+                job_name = f"report_pcgr_tumor_only.{sample.name}"
+
+                pcgr_job = concat_jobs(
+                    [
+                        bash.mkdir(
+                            pcgr_directory,
+                        ),
+                        pcgr.report(
+                            input_file,
+                            input_cpsr,
+                            pcgr_directory,
+                            sample.name,
+                            input_cna,
+                            ini_section=ini_section
+                        ),
+                        bash.ls(output)
+                    ],
+                    name=job_name,
+                    samples=[sample],
+                    readsets=[*list(sample.readsets)],
+                    input_dependency=input_dependencies,
+                    output_dependency=[output]
+                )
+
+                if self.project_tracking_json:
+                    samples = [sample]
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                pcgr_job,
+                                pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
+                                job2json_project_tracking.run(
+                                    input_file=pcgr_output_file,
+                                    samples=",".join([sample.name for sample in samples]),
+                                    readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                                    job_name=job_name,
+                                    metrics="pcgr_passed_variants=$pcgr_passed_variants"
+                                )
+                            ],
+                            name=job_name,
+                            samples=[sample],
+                            readsets=[*list(sample.readsets)],
+                            input_dependency=input_dependencies,
+                            output_dependency=[output]
+                        )
+                    )
+                else:
+                    jobs.append(pcgr_job)
+
+        else:
+            for tumor_pair in self.tumor_pairs.values():
+                # Set directory, ini_section, job and sample name for nanopore somatic protocol
+ 
+                ini_section = 'report_pcgr'
+                assembly = global_conf.global_get(ini_section, 'assembly')
+                job_name = f"report_pcgr.{tumor_pair.name}"
+
+                cpsr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "cpsr")
+                input_cpsr = os.path.join(cpsr_directory, f"{tumor_pair.normal.name}.cpsr.{assembly}")
+                pcgr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "pcgr")
+
+                savana_directory = os.path.join(self.output_dirs['SVariants_directory'], tumor_pair.name, 'savana')
+                input_cna = os.path.join(savana_directory, f"{tumor_pair.name}.savana.cna.tsv")
+                clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+                input_file = os.path.join(clairS_dir, f"{tumor_pair.tumor.name}.clairS.somatic.flt.vcf.gz")
+
+                output = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.html")
+                input_dependencies = [input_file, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", input_cna]
+
+                pcgr_job = concat_jobs(
+                    [
+                        bash.mkdir(
+                            pcgr_directory,
+                        ),
+                        pcgr.report(
+                            input_file,
+                            input_cpsr,
+                            pcgr_directory,
+                            tumor_pair.name,
+                            input_cna,
+                            ini_section=ini_section
+                        ),
+                        bash.ls(output)
+                    ],
+                    name=job_name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    input_dependency=input_dependencies,
+                    output_dependency=[output]
+                )
+
+                samples = [tumor_pair.normal, tumor_pair.tumor]
+
+                if self.project_tracking_json:
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                pcgr_job,
+                                pcgr.parse_pcgr_passed_variants_pt(pcgr_output_file),
+                                job2json_project_tracking.run(
+                                    input_file=pcgr_output_file,
+                                    samples=",".join([sample.name for sample in samples]),
+                                    readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                                    job_name=job_name,
+                                    metrics="pcgr_passed_variants=$pcgr_passed_variants"
+                                )
+                            ],
+                            name=job_name,
+                            samples=[tumor_pair.normal, tumor_pair.tumor],
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                            input_dependency=input_dependencies,
+                            output_dependency=[output]
+                        )
+                    )
+                else:
+                    jobs.append(pcgr_job)
+
+        return jobs
+    
+    def report_djerba(self):
+        """
+        Produce Djerba report.
+        """
+        jobs = []
+        
+        token = global_conf.global_get('report_djerba', 'oncokb_token', param_type='filepath', required=False)
+
+        if token:
+            assembly = global_conf.global_get('report_pcgr', 'assembly')
+        
+            for tumor_pair in self.tumor_pairs.values():
+                djerba_dir = os.path.join(self.output_dirs['report_directory'], tumor_pair.name, "djerba")
+                pcgr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "pcgr")
+                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".maf")
+                clean_maf =  os.path.join(djerba_dir, tumor_pair.name + ".pcgr." + assembly + ".clean.maf")
+                config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
+                djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(djerba_dir),
+                            djerba.clean_maf(
+                                input_maf,
+                                clean_maf
+                                ),
+                            djerba.make_config(
+                                config_file,
+                                tumor_pair.name,
+                                tumor_pair.tumor.name,
+                                tumor_pair.normal.name,
+                                clean_maf + ".gz",
+                                None,
+                                "Nanopore"
+                                ),
+                            # djerba report requires internet connection. Script is produced but must be executed locally.
+                            djerba.make_script(
+                                config_file,
+                                djerba_dir,
+                                djerba_script
+                                )
+                        ],
+                        name="report_djerba." + tumor_pair.name,
+                        samples=[tumor_pair.tumor],
+                        readsets=list(tumor_pair.tumor.readsets),
+                        input_dependency=[input_maf],
+                        output_dependency=[config_file, djerba_script]
+                        )
+                    )
+
+        else:
+            log.debug("No OncoKB token provided in config file, skipping djerba report step.")
 
         return jobs
     
@@ -1803,8 +2096,9 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.clairS,
                 self.merge_filter_clairS,
                 self.savana,
-                self.cpsr,
-                self.pcgr,
+                self.report_cpsr,
+                self.report_pcgr,
+                self.report_djerba,
                 self.multiqc
             ], 'revio':
             [
