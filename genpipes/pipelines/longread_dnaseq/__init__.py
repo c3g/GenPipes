@@ -168,10 +168,11 @@ For information on the structure and contents of the LongRead readset file, plea
             list: List of MultiQC input files.
         """
         if not hasattr(self, "_multiqc_inputs"):
-            self._multiqc_inputs = []
+            self._multiqc_inputs = {}
+            for sample in self.samples:
+                self._multiqc_inputs[sample.name] = []
 
             if 'somatic' in self.protocol and 'tumor_only' not in self.protocol:
-                self._multiqc_inputs = {}
                 for tumor_pair in self.tumor_pairs.values():
                     self._multiqc_inputs[tumor_pair.name] = []
 
@@ -277,7 +278,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 )
             )
 
-            self.multiqc_inputs.append(
+            self.multiqc_inputs[readset.sample.name].append(
                 os.path.join(nanoplot_directory, f"{nanoplot_prefix}NanoStats.txt")
                 )
 
@@ -535,7 +536,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 )
             )
 
-            self.multiqc_inputs.append(
+            self.multiqc_inputs[sample.name].append(
                 os.path.join(nanoplot_directory, f"{nanoplot_prefix}NanoStats.txt")
                 )
 
@@ -604,7 +605,7 @@ For information on the structure and contents of the LongRead readset file, plea
                     removable_files=[]
                 )
             )
-            self.multiqc_inputs.extend(
+            self.multiqc_inputs[sample.name].extend(
                 [
                     os.path.join(mosdepth_directory, os.path.basename(output_dist)),
                     os.path.join(mosdepth_directory, os.path.basename(output_summary))
@@ -2041,18 +2042,19 @@ For information on the structure and contents of the LongRead readset file, plea
         jobs = []
 
         output = os.path.join(self.output_dirs['report_directory'], f"LongRead_DnaSeq.{self.protocol}.multiqc")
+        multiqc_files_paths = [item for sample in self.samples for item in self.multiqc_inputs[sample.name]]
 
         job = concat_jobs(
             [
                 bash.mkdir(os.path.join(self.output_dirs['report_directory'])),
                 multiqc.run(
-                    self.multiqc_inputs,
+                    multiqc_files_paths,
                     output
                 )
             ]
         )
         job.name = "multiqc"
-        job.input_files = self.multiqc_inputs
+        job.input_files = multiqc_files_paths
         jobs.append(job)
 
         return jobs
