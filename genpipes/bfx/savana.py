@@ -39,10 +39,7 @@ def run(
     """
 
     outputs = [
-        os.path.join(output_dir, f"{sample_name}.vcf.gz"),
-        os.path.join(output_dir, "full_alignment.vcf.gz"),
-        os.path.join(output_dir, "merge_output.vcf.gz"),
-        os.path.join(output_dir, "phased_merge_output.vcf.gz")
+        os.path.join(output_dir, f"{sample_name}.savana.cna.tsv")
     ]
 
     return Job(
