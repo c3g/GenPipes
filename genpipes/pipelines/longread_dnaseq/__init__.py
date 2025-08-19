@@ -18,6 +18,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import os
 import logging
 import re
@@ -117,8 +118,30 @@ For information on the structure and contents of the LongRead readset file, plea
             choices=["nanopore", "nanopore_paired_somatic", "revio"],
             default="nanopore"
             )
+        cls._argparser.add_argument(
+            "-p",
+            "--pairs",
+            help="pairs file",
+            type=argparse.FileType('r')
+            ).complete = shtab.FILE
         return cls._argparser
 
+    @property
+    def tumor_pairs(self):
+        """
+        The tumor_pairs attribute is a property that returns a parsed tumor pairs file.
+        Returns:
+            dict: A dictionary of tumor pairs.
+        """
+        # Create property only if somatic protocols called
+        if 'somatic' in self.protocol:
+            if not hasattr(self, "_tumor_pairs"):
+                self._tumor_pairs = parse_tumor_pair_file(
+                    self.pairs.name,
+                    self.samples
+                )
+            return self._tumor_pairs
+    
     @property
     def output_dirs(self):
         dirs = {
