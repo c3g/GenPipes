@@ -1177,7 +1177,9 @@ For information on the structure and contents of the LongRead readset file, plea
             else:
                 germline_vcfs_to_merge = [os.path.join(clairS_dir, str(idx), "clair3_normal_germline_output.vcf.gz") for idx in range(nb_jobs)]
                 somatic_vcfs_to_merge = [os.path.join(clairS_dir, str(idx), "indel.vcf.gz") for idx in range(nb_jobs)]
-                somatic_vcfs_to_merge.extend = [os.path.join(clairS_dir, str(idx), "snv.vcf.gz") for idx in range(nb_jobs)]
+                somatic_vcfs_to_merge.extend(
+                    [os.path.join(clairS_dir, str(idx), "snv.vcf.gz") for idx in range(nb_jobs)]
+                    )
 
                 jobs.append(
                     concat_jobs(
