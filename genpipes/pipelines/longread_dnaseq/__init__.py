@@ -1031,7 +1031,7 @@ For information on the structure and contents of the LongRead readset file, plea
             normal_bam = os.path.join(normal_align_directory, f"{tumor_pair.normal.name}.sorted.bam")
             tumor_bam = os.path.join(tumor_align_directory, f"{tumor_pair.tumor.name}.sorted.bam")
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
-            region_directory = os.path.join(clairS_dir, "regions")
+            region_directory = os.path.join(self.output_dirs["variants_directory"], tumor_pair.normal.name, "clairS", "regions")
             region_param = None
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
