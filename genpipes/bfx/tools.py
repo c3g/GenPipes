@@ -369,6 +369,28 @@ python3 $PYTHON_TOOLS/format2pcgr.py \\
         )
     )
 
+def savana2cnvkit(
+        input,
+        output,
+        ini_section="savana2cnvkit"
+        ):
+    
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, "module_c3g_tools"],
+            [ini_section, "module_python"]
+        ],
+        command="""\
+python $PYTHON_TOOLS/savana2cnvkit.py \\
+    -i {input} \\
+    -o {output}""".format(
+        input=input,
+        output=output
+        )
+    )
+
 def chunkBedbyFileNumber(
         input,
         output,

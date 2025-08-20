@@ -1758,7 +1758,7 @@ For information on the structure and contents of the LongRead readset file, plea
         elif 'somatic' in self.protocol:
             for tumor_pair in self.tumor_pairs.values():
                 clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
-                input_file = os.path.join(clairS_dir, f"{tumor_pair.normal.name}.clairS.germline.flt.vcf.gz")
+                input_file = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
                 cpsr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "cpsr")
 
                 jobs.append(
@@ -1921,20 +1921,46 @@ For information on the structure and contents of the LongRead readset file, plea
                 pcgr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "pcgr")
 
                 savana_directory = os.path.join(self.output_dirs['SVariants_directory'], tumor_pair.name, 'savana')
+                output_savana = os.path.join(savana_directory, f"{tumor_pair.name}_segmented_absolute_copy_number.tsv")
                 input_cna = os.path.join(savana_directory, f"{tumor_pair.name}.savana.cna.tsv")
                 clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
-                input_file = os.path.join(clairS_dir, f"{tumor_pair.tumor.name}.clairS.somatic.flt.vcf.gz")
+                output_clairS = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+                input_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.pcgr.vcf.gz")
 
                 output = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.html")
-                input_dependencies = [input_file, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", input_cna]
+                input_dependencies = [input_vcf, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", input_cna]
 
+                format_savana_job = tools.savana2cnvkit(
+                    output_savana,
+                    input_cna
+                )
+
+                format_savana_job.name = "savana2cnvkit.{tumor_pair.name}"
+                format_savana_job.samples = [tumor_pair.normal, tumor_pair.tumor]
+                format_savana_job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                jobs.append(format_savana_job)
+                
+                format_clairS_job = tools.format2pcgr(
+                    output_clairS,
+                    input_vcf,
+                    1,
+                    "somatic",
+                    tumor_pair.tumor.name,
+                    ini_section="format2pcgr"
+                )
+
+                format_clairS_job.name = "format2pcgr.{tumor_pair.name}"
+                format_clairS_job.samples = [tumor_pair.normal, tumor_pair.tumor]
+                format_clairS_job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                jobs.append(format_clairS_job)
+                
                 pcgr_job = concat_jobs(
                     [
                         bash.mkdir(
-                            pcgr_directory,
+                            pcgr_directory
                         ),
                         pcgr.report(
-                            input_file,
+                            input_vcf,
                             input_cpsr,
                             pcgr_directory,
                             tumor_pair.name,
