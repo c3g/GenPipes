@@ -1057,7 +1057,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 normal_bam,
                                 tumor_bam,
                                 clairS_dir,
-                                tumor_pair.name,
+                                tumor_pair.tumor.name,
                                 "ont_r10_dorado_sup_5khz_ssrs",
                                 region_param
                             )
@@ -1082,7 +1082,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                     normal_bam,
                                     tumor_bam,
                                     output_dir,
-                                    tumor_pair.name,
+                                    tumor_pair.tumor.name,
                                     "ont",
                                     f"--bed_fn={region}"
                                 )
@@ -1109,9 +1109,9 @@ For information on the structure and contents of the LongRead readset file, plea
             
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
             clairS_germline_vcf = os.path.join(clairS_dir, "clair3_normal_germline_output.vcf.gz")
-            clairS_germline_filtered = os.path.join(clairS_dir, f"{tumor_pair.normal.name}.clairS.germline.flt.vcf.gz")
-            clairS_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.tumor.name}.clairS.somatic.vcf.gz")
-            clairS_somatic_filtered = os.path.join(clairS_dir, f"{tumor_pair.tumor.name}.clairS.somatic.flt.vcf.gz")
+            clairS_germline_filtered = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
+            clairS_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.vcf.gz")
+            clairS_somatic_filtered = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
 
@@ -1262,7 +1262,7 @@ For information on the structure and contents of the LongRead readset file, plea
             normal_bam = os.path.join(normal_align_directory, f"{tumor_pair.normal.name}.sorted.bam")
             tumor_bam = os.path.join(tumor_align_directory, f"{tumor_pair.tumor.name}.sorted.bam")
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
-            clairS_germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.normal.name}.clairS.germline.flt.vcf.gz")
+            clairS_germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
             output_directory = os.path.join(self.output_dirs['SVariants_directory'], tumor_pair.name, 'savana')
 
             jobs.append(

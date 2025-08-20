@@ -28,7 +28,7 @@ def run(
     normal_bam,
     tumor_bam,
     output_dir,
-    sample_name,
+    tumor_name,
     platform,
     region=None,
     ini_section='clairS'
@@ -40,7 +40,7 @@ def run(
     """
 
     outputs = [
-        os.path.join(output_dir, f"{sample_name}.vcf.gz"),
+        os.path.join(output_dir, "output.vcf.gz"),
         os.path.join(output_dir, "clair3_normal_germline_output.vcf.gz"),
         os.path.join(output_dir, "indel.vcf.gz"),
         os.path.join(output_dir, "snv.vcf.gz")
@@ -61,8 +61,7 @@ run_clairs {other_options} \\
   --platform="{platform}" \\
   --clair3_model_path={model_path} \\
   {region} {sites_to_call} \\
-  --sample_name={sample_name} \\
-  --output_prefix={sample_name} \\
+  --sample_name={tumor_name} \\
   --output_dir={output}""".format(
             other_options=global_conf.global_get(ini_section, 'other_options', required=False),
             normal_bam=normal_bam,
@@ -73,7 +72,7 @@ run_clairs {other_options} \\
             model_path=global_conf.global_get(ini_section, 'model_path', param_type='dirpath'),
             region=region if region else "",
             sites_to_call="--vcf_fn=" + global_conf.global_get(ini_section, 'sites_to_call', required=False, param_type='filepath') if global_conf.global_get(ini_section, 'sites_to_call', required=False) else "",
-            sample_name=sample_name,
+            tumor_name=tumor_name,
             output=output_dir
         )
     )
