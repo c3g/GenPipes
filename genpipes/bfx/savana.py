@@ -39,7 +39,20 @@ def run(
     """
 
     outputs = [
-        os.path.join(output_dir, f"{sample_name}.savana.cna.tsv")
+        os.path.join(output_dir, f"{sample_name}_segmented_absolute_copy_number.tsv"),
+        os.path.join(output_dir, f"{sample_name}.classified.somatic.vcf"),
+        os.path.join(output_dir, f"{sample_name}.classified.somatic.bedpe"),
+        os.path.join(output_dir, f"{sample_name}.classified.vcf"),
+        os.path.join(output_dir, f"{sample_name}_fitted_purity_ploidy.tsv"),
+        os.path.join(output_dir, f"{sample_name}.inserted_sequences.fa"),
+        os.path.join(output_dir, f"{sample_name}_raw_read_counts.tsv"),
+        os.path.join(output_dir, f"{sample_name}.sv_breakpoints.vcf"),
+        os.path.join(output_dir, f"{sample_name}.sv_breakpoints.bedpe"),
+        os.path.join(output_dir, f"{sample_name}.sv_breakpoints_read_support.tsv"),
+        os.path.join(output_dir, f"{sample_name}_ranked_solutions.tsv"),
+        os.path.join(output_dir, f"{sample_name}_raw_read_counts.tsv"),
+        os.path.join(output_dir, f"{sample_name}_read_counts_mnorm_log2r_segmented.tsv"),
+        os.path.join(output_dir, f"{sample_name}_allele_counts_hetSNPs.bed")
     ]
 
     return Job(
