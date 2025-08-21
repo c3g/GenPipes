@@ -1935,7 +1935,7 @@ For information on the structure and contents of the LongRead readset file, plea
                     input_cna
                 )
 
-                format_savana_job.name = "savana2cnvkit.{tumor_pair.name}"
+                format_savana_job.name = f"savana2cnvkit.{tumor_pair.name}"
                 format_savana_job.samples = [tumor_pair.normal, tumor_pair.tumor]
                 format_savana_job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 jobs.append(format_savana_job)
@@ -1949,7 +1949,7 @@ For information on the structure and contents of the LongRead readset file, plea
                     ini_section="format2pcgr"
                 )
 
-                format_clairS_job.name = "format2pcgr.{tumor_pair.name}"
+                format_clairS_job.name = f"format2pcgr.{tumor_pair.name}"
                 format_clairS_job.samples = [tumor_pair.normal, tumor_pair.tumor]
                 format_clairS_job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 jobs.append(format_clairS_job)
