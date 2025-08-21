@@ -1968,7 +1968,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             input_cna,
                             ini_section=ini_section
                         ),
-                        bash.ls(output)
+                        bash.ls(output_report)
                     ],
                     name=job_name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
