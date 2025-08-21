@@ -1927,7 +1927,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 output_clairS = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
                 input_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.pcgr.vcf.gz")
 
-                output = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.html")
+                output_report = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.html")
+                output_maf = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.maf")
                 input_dependencies = [input_vcf, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", input_cna]
 
                 format_savana_job = tools.savana2cnvkit(
@@ -1973,7 +1974,7 @@ For information on the structure and contents of the LongRead readset file, plea
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=input_dependencies,
-                    output_dependency=[output]
+                    output_dependency=[output_report, output_maf]
                 )
 
                 samples = [tumor_pair.normal, tumor_pair.tumor]
@@ -1997,7 +1998,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             samples=[tumor_pair.normal, tumor_pair.tumor],
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                             input_dependency=input_dependencies,
-                            output_dependency=[output]
+                            output_dependency=[output_report, output_maf]
                         )
                     )
                 else:
