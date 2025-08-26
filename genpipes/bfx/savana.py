@@ -63,8 +63,8 @@ def run(
         ],
         command="""\
 savana {other_options} \\
+  --tumour {tumor_bam} \\
   --normal {normal_bam} \\
-  --tumor {tumor_bam} \\
   --sample {sample_name} \\
   --ref {genome_fasta} \\
   --threads {threads} \\
