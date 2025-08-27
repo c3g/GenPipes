@@ -29,7 +29,7 @@ def run(
     tumor_bam,
     output_dir,
     sample_name,
-    germline_vcf,
+    germline_vcf = None,
     ini_section='savana'
     ):
     """
@@ -69,6 +69,7 @@ savana {other_options} \\
   --ref {genome_fasta} \\
   --threads {threads} \\
   --cna_threads {cna_threads} \\
+  {germline_vcf} \\
   {mapq} {cn_step_change} \\
   {contigs} \\
   --outdir {output}""".format(
@@ -79,6 +80,7 @@ savana {other_options} \\
             genome_fasta=global_conf.global_get(ini_section, 'genome_fasta'),
             threads=global_conf.global_get(ini_section, 'threads'),
             cna_threads=global_conf.global_get(ini_section, 'cna_threads'),
+            germline_vcf="--snp_vcf " + germline_vcf if germline_vcf else "",
             mapq="--mapq " + global_conf.global_get(ini_section, 'mapq'),
             cn_step_change=global_conf.global_get(ini_section, 'cn_step_change', required=False),
             contigs="--contigs " + global_conf.global_get(ini_section, 'contigs') if global_conf.global_get(ini_section, 'contigs') else "",            
