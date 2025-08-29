@@ -24,10 +24,18 @@ import os
 from ..core.config import global_conf
 from ..core.job import Job
 
-def run(inputs, output, ini_section='multiqc'):
+def run(inputs,
+        output,
+        sample_name=None,
+        ini_section='multiqc'):
     if not isinstance(inputs, list):
         inputs = [inputs]
     output = output + ".html"
+    if sample_name:
+        tmp_output = os.path.join(os.path.dirname(output), f"tmp_multiqc_{sample_name}")
+    else:
+        tmp_output = os.path.join(os.path.dirname(output), "tmp_multiqc")
+
     return Job(
         inputs,
         [output],
@@ -44,7 +52,7 @@ rm -rf {tmp_output}""".format(
             options=global_conf.global_get(ini_section, 'options', required=False),
             input=" ".join([" \\\n  " + input for input in inputs]),
             output=output,
-            tmp_output=os.path.join(os.path.dirname(output), "tmp_multiqc")
+            tmp_output=tmp_output
         )
     )
 

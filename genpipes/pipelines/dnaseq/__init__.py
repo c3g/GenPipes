@@ -1265,7 +1265,8 @@ END
                 output = os.path.join(report_directory, f"{tumor_pair.name}.{self.protocol}.multiqc")
                 job = multiqc.run(
                     patient_folders,
-                    output
+                    output,
+                    tumor_pair.name
                 )
 
                 job.name = f"multiqc.{tumor_pair.name}"
