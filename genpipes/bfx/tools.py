@@ -384,8 +384,8 @@ def savana2cnvkit(
         ],
         command="""\
 python $PYTHON_TOOLS/savana2cnvkit.py \\
-    -i {input} \\
-    -o {output}""".format(
+    --input {input} \\
+    --output {output}""".format(
         input=input,
         output=output
         )
