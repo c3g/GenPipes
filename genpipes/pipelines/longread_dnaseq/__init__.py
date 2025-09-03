@@ -1268,6 +1268,7 @@ For information on the structure and contents of the LongRead readset file, plea
             jobs.append(
                 concat_jobs(
                     [
+                        bash.rm(output_directory),
                         bash.mkdir(output_directory),
                         savana.run(
                             normal_bam,
@@ -1279,7 +1280,8 @@ For information on the structure and contents of the LongRead readset file, plea
                     ],
                     name=f"savana.{tumor_pair.name}",
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    input_dependency=[normal_bam, tumor_bam, clairS_germline_vcf]
                 )
             )
 
