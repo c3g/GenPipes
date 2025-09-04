@@ -1943,18 +1943,27 @@ For information on the structure and contents of the LongRead readset file, plea
                 format_savana_job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 jobs.append(format_savana_job)
                 
-                format_clairS_job = tools.format2pcgr(
-                    output_clairS,
-                    input_vcf,
-                    1,
-                    "somatic",
-                    tumor_pair.tumor.name,
-                    ini_section="format2pcgr"
+                format_clairS_job = concat_jobs(
+                    [
+                        tools.format2pcgr(
+                            output_clairS,
+                            input_vcf,
+                            1,
+                            "somatic",
+                            tumor_pair.tumor.name,
+                            ini_section="format2pcgr"
+                        ),
+                        htslib.tabix(
+                            input_vcf,
+                            "-f -pvcf"
+                        )
+                    ],
+                    name=f"format2pcgr.{tumor_pair.name}",
+                    samples = [tumor_pair.normal, tumor_pair.tumor],
+                    readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+
                 )
 
-                format_clairS_job.name = f"format2pcgr.{tumor_pair.name}"
-                format_clairS_job.samples = [tumor_pair.normal, tumor_pair.tumor]
-                format_clairS_job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 jobs.append(format_clairS_job)
                 
                 pcgr_job = concat_jobs(
