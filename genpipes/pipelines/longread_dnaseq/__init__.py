@@ -37,6 +37,7 @@ from ...bfx import (
     bvatools,
     clair3,
     clairS,
+    cnvkit,
     cpsr,
     deepvariant,
     djerba,
@@ -1933,14 +1934,22 @@ For information on the structure and contents of the LongRead readset file, plea
                 output_maf = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.maf")
                 input_dependencies = [input_vcf, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", input_cna]
 
-                format_savana_job = tools.savana2cnvkit(
-                    output_savana,
-                    input_cna
+                format_savana_job = concat_jobs(
+                    [
+                        tools.savana2cnvkit(
+                            output_savana,
+                            input_cna
+                        ),
+                        cnvkit.file_check(
+                                input_cna,
+                                f"{input_cna}.pass"
+                            )
+                    ],
+                    name = f"savana2cnvkit.{tumor_pair.name}",
+                    samples = [tumor_pair.normal, tumor_pair.tumor],
+                    readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
 
-                format_savana_job.name = f"savana2cnvkit.{tumor_pair.name}"
-                format_savana_job.samples = [tumor_pair.normal, tumor_pair.tumor]
-                format_savana_job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 jobs.append(format_savana_job)
                 
                 format_clairS_job = concat_jobs(
