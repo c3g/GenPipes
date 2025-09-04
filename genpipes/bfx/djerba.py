@@ -132,7 +132,7 @@ def clean_maf(
         command="""\
 col=$( awk -v RS='\\t' '/t_depth/{{print NR; exit}}' {input_maf} ) && \\
 awk -F'\\t' -v col=$col '! ( $col=="" )' {input_maf} > {output_maf} && \\
-gzip {output_maf}""".format(
+gzip -f {output_maf}""".format(
         input_maf=input_maf,
         output_maf=output_maf
         )
