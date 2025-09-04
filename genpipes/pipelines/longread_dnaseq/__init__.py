@@ -1330,8 +1330,9 @@ For information on the structure and contents of the LongRead readset file, plea
             input_bam = os.path.join(alignment_directory, f"{sample.name}.sorted.bam")
             output_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name, "QDNAseq")
             bin_size = global_conf.global_get("qdnaseq", "bin_size")
-            qdnaseq_vcf = os.path.join(output_dir, f"{sample.name}.CNV_calls.{bin_size}k.vcf")
-            qdnaseq_filtered =  os.path.join(output_dir, f"{sample.name}.CNV_calls.{bin_size}k.filtered.vcf.gz")
+            reference = global_conf.global_get("qdnaseq", "reference")
+            qdnaseq_vcf = os.path.join(output_dir, f"{sample.name}.CNV_calls.{bin_size}k.{reference}.vcf")
+            qdnaseq_filtered =  os.path.join(output_dir, f"{sample.name}.CNV_calls.{bin_size}k.{reference}.filtered.vcf.gz")
 
             jobs.append(
                 concat_jobs(
