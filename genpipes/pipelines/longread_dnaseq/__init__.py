@@ -2061,7 +2061,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 tumor_pair.normal.name,
                                 clean_maf + ".gz",
                                 None,
-                                "Nanopore"
+                                "WGS"
                                 ),
                             # djerba report requires internet connection. Script is produced but must be executed locally.
                             djerba.make_script(
