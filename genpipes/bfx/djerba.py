@@ -154,6 +154,7 @@ echo "module purge && \\
 module load {module_djerba} {module_wkhtmltopdf} && \\
 export ONCOKB_TOKEN={oncokb_token} && \\
 export DJERBA_CORE_HTML_DIR={html_directory} && \\
+export DJERBA_TRACKING_DIR={output_dir} && \\
 
 djerba.py {djerba_options} report \\
     -i {config_file} \\
