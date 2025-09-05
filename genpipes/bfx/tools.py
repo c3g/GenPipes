@@ -1392,18 +1392,20 @@ def r_qdna_seq(
         ini_section='qdnaseq'
     ):
 
+    reference = global_conf.global_get(ini_section, "reference")
+
     outputs = [
-        os.path.join(output_dir, f"{sample}.copy_number_calls.{size}k.pdf"),
-        os.path.join(output_dir, f"{sample}.copy_number_segmented.{size}k.pdf"),
-        os.path.join(output_dir, f"{sample}.copy_number_smooth.{size}k.pdf"),
-        os.path.join(output_dir, f"{sample}.noise_plot.{size}k.pdf"),
-        os.path.join(output_dir, f"{sample}.isobarPlot.{size}k.pdf"),
-        os.path.join(output_dir, f"{sample}.read_counts_per_bin.{size}k.pdf"),
-        os.path.join(output_dir, f"{sample}.CNV.{size}k.bed"),
-        os.path.join(output_dir, f"{sample}.CNV.{size}k.tsv"),
-        os.path.join(output_dir, f"{sample}.CNV.{size}k.igv"),
-        os.path.join(output_dir, f"{sample}.CNV_calls.{size}k.vcf"),
-        os.path.join(output_dir, f"{sample}.CNV_calls.{size}k.seg")
+        os.path.join(output_dir, f"{sample}.copy_number_calls.{size}k.{reference}.pdf"),
+        os.path.join(output_dir, f"{sample}.copy_number_segmented.{size}k.{reference}.pdf"),
+        os.path.join(output_dir, f"{sample}.copy_number_smooth.{size}k.{reference}.pdf"),
+        os.path.join(output_dir, f"{sample}.noise_plot.{size}k.{reference}.pdf"),
+        os.path.join(output_dir, f"{sample}.isobarPlot.{size}k.{reference}.pdf"),
+        os.path.join(output_dir, f"{sample}.read_counts_per_bin.{size}k.{reference}.pdf"),
+        os.path.join(output_dir, f"{sample}.CNV.{size}k.{reference}.bed"),
+        os.path.join(output_dir, f"{sample}.CNV.{size}k.{reference}.tsv"),
+        os.path.join(output_dir, f"{sample}.CNV.{size}k.{reference}.igv"),
+        os.path.join(output_dir, f"{sample}.CNV_calls.{size}k.{reference}.vcf"),
+        os.path.join(output_dir, f"{sample}.CNV_calls.{size}k.{reference}.seg")
     ]
 
     return Job(
@@ -1423,7 +1425,7 @@ Rscript $R_TOOLS/runQDNAseq.R \\
         input=input,
         output_dir=output_dir,
         size=size,
-        reference=global_conf.global_get(ini_section, "reference"),
+        reference=reference,
         sample=sample
         )
     )
