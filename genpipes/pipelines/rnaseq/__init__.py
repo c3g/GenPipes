@@ -120,6 +120,7 @@ quality of the data.
             'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),            
             'alignment_1stPass_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment_1stPass'), self.output_dir),
             'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
             'stringtie_directory': os.path.relpath(os.path.join(self.output_dir, 'stringtie'), self.output_dir),
             'ballgown_directory': os.path.relpath(os.path.join(self.output_dir, 'ballgown'), self.output_dir),
             'DGE_directory': os.path.relpath(os.path.join(self.output_dir, 'DGE'), self.output_dir),
@@ -1420,7 +1421,8 @@ pandoc \\
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
-            haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
+            variants_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
+            haplotype_directory = os.path.join(variants_directory, "rawHaplotypeCaller")
             [input] = self.select_input_files(
                 [
                     [os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.realigned.recal.bam")],
@@ -1506,8 +1508,8 @@ pandoc \\
         nb_haplotype_jobs = global_conf.global_get('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
-            haplotype_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, "rawHaplotypeCaller", sample.name)
-            output_haplotype_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name)
+            haplotype_file_prefix = os.path.join(self.output_dirs["variants_directory"], sample.name, "rawHaplotypeCaller", sample.name)
+            output_haplotype_file_prefix = os.path.join(self.output_dirs["variants_directory"], sample.name, sample.name)
             if nb_haplotype_jobs == 1:
                 vcfs_to_merge = [haplotype_file_prefix + ".hc.vcf.gz"]
             else:
@@ -1562,8 +1564,8 @@ pandoc \\
         jobs = []
 
         for sample in self.samples:
-            input = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".hc.vcf.gz")
-            output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".hc.rnaedit.vcf.gz")
+            input = os.path.join(self.output_dirs["variants_directory"], sample.name, sample.name + ".hc.vcf.gz")
+            output = os.path.join(self.output_dirs["variants_directory"], sample.name, sample.name + ".hc.rnaedit.vcf.gz")
 
             job = pipe_jobs(
                 [
@@ -1594,7 +1596,7 @@ pandoc \\
         jobs = []
 
         for sample in self.samples:
-            input_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name)
+            input_file_prefix = os.path.join(self.output_dirs["variants_directory"], sample.name, sample.name)
 
             job = concat_jobs(
                 [
@@ -1623,7 +1625,7 @@ pandoc \\
         jobs = []
 
         for sample in self.samples:
-            input_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name)
+            input_file_prefix = os.path.join(self.output_dirs["variants_directory"], sample.name, sample.name)
 
             [input] = self.select_input_files(
                 [
@@ -1660,7 +1662,7 @@ pandoc \\
         jobs = []
 
         for sample in self.samples:
-            input_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name)
+            input_file_prefix = os.path.join(self.output_dirs["variants_directory"], sample.name, sample.name)
 
             job = concat_jobs(
                 [
@@ -1694,7 +1696,7 @@ pandoc \\
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
         for sample in self.samples:
-            out_dir = os.path.join(self.output_dirs["alignment_directory"])
+            out_dir = os.path.join(self.output_dirs["variants_directory"])
             input_file_prefix = os.path.join(out_dir, sample.name, sample.name)
 
             job = concat_jobs(
@@ -1720,17 +1722,17 @@ pandoc \\
 
         for sample in self.samples:
             input = os.path.join(
-                self.output_dirs["alignment_directory"],
+                self.output_dirs["variants_directory"],
                 sample.name,
                 sample.name + ".hc.vt.vcf.gz"
             )
             output_annot = os.path.join(
-                self.output_dirs["alignment_directory"],
+                self.output_dirs["variants_directory"],
                 sample.name,
                 sample.name + ".hc.vt.annot.vcf.gz"
             )
             output_filter = os.path.join(
-                self.output_dirs["alignment_directory"],
+                self.output_dirs["variants_directory"],
                 sample.name,
                 sample.name + ".hc.vt.annot.flt.vcf.gz"
             )
@@ -1788,13 +1790,13 @@ pandoc \\
 
         for sample in self.samples:
             input = os.path.join(
-                self.output_dirs["alignment_directory"],
+                self.output_dirs["variants_directory"],
                 sample.name,
                 sample.name + ".hc.vt.annot.flt.vcf.gz"
             )
 
             cpsr_directory = os.path.join(
-                self.output_dirs["alignment_directory"],
+                self.output_dirs["variants_directory"],
                 sample.name,
                 "cpsr"
             )
@@ -1829,7 +1831,7 @@ pandoc \\
 
         for sample in self.samples:
             cpsr_directory = os.path.join(
-                self.output_dirs["alignment_directory"],
+                self.output_dirs["variants_directory"],
                 sample.name,
                 "cpsr"
             )
@@ -1838,12 +1840,12 @@ pandoc \\
                 sample.name + ".cpsr." + assembly + ".json.gz"
             )
             input = os.path.join(
-                self.output_dirs["alignment_directory"],
+                self.output_dirs["variants_directory"],
                 sample.name,
                 sample.name + ".hc.vt.annot.flt.vcf.gz"
             )
             pcgr_directory = os.path.join(
-                self.output_dirs["alignment_directory"],
+                self.output_dirs["variants_directory"],
                 sample.name,
                 "pcgr"
             )
