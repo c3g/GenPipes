@@ -208,7 +208,6 @@ def parse_time(time_str):
         if '-' in h:
             d, h = h.split('-')
             h = (int(d) * 24) + int(h)
-            print(h)
     elif len(parts) == 2:
         h = '0'
         m, s = parts

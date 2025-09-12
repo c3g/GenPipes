@@ -233,7 +233,7 @@ def time_str_to_seconds(time_str):
         h, m, s = parts
         if '-' in h:
             d, h = h.split('-')
-            h = d * 24 + h
+            h = (int(d) * 24) + int(h)
     elif len(parts) == 2:
         h = '0'
         m, s = parts
