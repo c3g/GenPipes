@@ -1199,7 +1199,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                     bcftools.reheader(
                                         clairS_germline_vcf,
                                         None,
-                                        f"-n {tumor_pair.normal.name} -Ou"
+                                        f"-n {tumor_pair.normal.name}"
                                     ),
                                     bcftools.view(
                                         None,
