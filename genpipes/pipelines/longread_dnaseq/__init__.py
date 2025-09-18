@@ -2166,7 +2166,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.blastqc,
                 self.metrics_nanoplot,
                 self.minimap2_align,
-                self.pycoqc,
+                #self.pycoqc,
                 self.samtools_merge_bam_files,
                 self.metrics_nanoplot_aligned,
                 self.metrics_mosdepth,
