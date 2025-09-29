@@ -9,12 +9,15 @@ import questionary
 from jinja2 import Environment 
 
 # Configure logging at the module level
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
+wiz_log = logging.getLogger("wizard")
+wiz_log.setLevel(logging.INFO)
+# Define a handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+# Define a formatter
+console_formatter = logging.Formatter("%(message)s")
+wiz_log.addHandler(console_handler)
+console_handler.setFormatter(console_formatter)
 
 def load_guide (file_path):
     """
@@ -93,7 +96,7 @@ class Wizard:
             if node.get("type") != "message":
                 return True
 
-        logger.error("ERROR! You cannot go back further, you're at the first question.")
+        wiz_log.error("ERROR! You cannot go back further, you're at the first question.")
         return False
         
     def exit_text (self, prompt):
@@ -102,7 +105,7 @@ class Wizard:
         """
         answer = questionary.text(f"{prompt} (or type 'back' to go back):").ask()
         if answer is None:
-            logger.info("Exiting GenPipes wizard.")
+            wiz_log.info("Exiting GenPipes wizard.")
             sys.exit(0)
         return answer.strip()
     
@@ -112,7 +115,7 @@ class Wizard:
         """
         answer = questionary.select(prompt, choices=["Yes", "No", "Back"]).ask()
         if answer is None:
-            logger.info("\nExiting GenPipes wizard.")
+            wiz_log.info("\nExiting GenPipes wizard.")
             sys.exit(0)
         return answer
     
@@ -123,7 +126,7 @@ class Wizard:
         extended_choices = choices + ["Back"]
         answer = questionary.select(prompt, choices=extended_choices).ask()
         if answer is None:
-            logger.info("\nExiting GenPipes wizard.")
+            wiz_log.info("\nExiting GenPipes wizard.")
             sys.exit(0)
         return answer
     
@@ -218,7 +221,7 @@ class Wizard:
             #Message: output message for user, if no next node then end of wizard
             elif node_type == "message":
                 message = self.apply_variables(node["message"])
-                logger.info(message)
+                wiz_log.info(message)
                 next_node = node.get("next")
                 if not next_node:
                     break
@@ -233,7 +236,7 @@ class Wizard:
                 if value in cases:
                     self.goto(cases[value]["node"])
                 else:
-                    logger.error(f"ERROR! No matching case for {variable} ='{value}' at node {node['id']}")
+                    wiz_log.error(f"ERROR! No matching case for {variable} ='{value}' at node {node['id']}")
                     sys.exit(1)
 
             #Input: Prompt the user for input and store it as a variable 
@@ -254,43 +257,43 @@ class Wizard:
                     if variable == "raw_readset_filename":
                         if not input.strip():
                             self.add_space()
-                            logger.error("ERROR! You must enter a readset file name. Please try again.")
+                            wiz_log.error("ERROR! You must enter a readset file name. Please try again.")
                             self.add_space()
                             continue
                     if variable == "design_file_name":
                         if not input.strip():
                             self.add_space()
-                            logger.error("ERROR! You must enter a design file name. Please try again.")
+                            wiz_log.error("ERROR! You must enter a design file name. Please try again.")
                             self.add_space()
                             continue
                     if variable == "pair_file_name":
                         if not input.strip():
                             self.add_space()
-                            logger.error("ERROR! You must enter a pair file name. Please try again.")
+                            wiz_log.error("ERROR! You must enter a pair file name. Please try again.")
                             self.add_space()
                             continue
                     if variable == "raw_path_custom_ini":
                         if not input.strip():
                             self.add_space()
-                            logger.error("ERROR! You must enter a path to the custom ini name. Please try again.")
+                            wiz_log.error("ERROR! You must enter a path to the custom ini name. Please try again.")
                             self.add_space()
                             continue
                     if variable == "directory_path":
                         if not input.strip():
                             self.add_space()
-                            logger.error("ERROR! You must enter a full path name to the directory. Please try again.")
+                            wiz_log.error("ERROR! You must enter a full path name to the directory. Please try again.")
                             self.add_space()
                             continue
                     if variable == "g_filename":
                         if not input.strip():
                             self.add_space()
-                            logger.error("ERROR! You must enter a file name. Please try again.")
+                            wiz_log.error("ERROR! You must enter a file name. Please try again.")
                             self.add_space()
                             continue
                     if variable == "reference_genome_ini_filename":
                         if not input.strip():
                             self.add_space()
-                            logger.error("ERROR! You must enter a file name. Please try again.")
+                            wiz_log.error("ERROR! You must enter a file name. Please try again.")
                             self.add_space()
                             continue
 
@@ -303,7 +306,7 @@ class Wizard:
                     break
 
             else:
-                logger.error(f"ERROR! Unknown node type: {node_type} in {self.current_file}")
+                wiz_log.error(f"ERROR! Unknown node type: {node_type} in {self.current_file}")
                 self.add_space()
                 sys.exit(1)
     
@@ -392,7 +395,7 @@ class Wizard:
         valid_range = pipeline_data.get(protocol, pipeline_data.get("default"))
         if not valid_range:
             self.add_space()
-            logger.error(f"ERROR! Please enter a valid step range.")
+            wiz_log.error(f"ERROR! Please enter a valid step range.")
             self.add_space()
             return False
         valid_start, valid_end = valid_range
@@ -404,12 +407,12 @@ class Wizard:
                     start, end = map(int, part.split('-', 1))
                 except ValueError:
                     self.add_space()
-                    logger.error(f"ERROR!'{part}' not in the correct step range format.")
+                    wiz_log.error(f"ERROR!'{part}' not in the correct step range format.")
                     self.add_space()
                     return False
                 if start > end or start < valid_start or end > valid_end:
                     self.add_space()
-                    logger.error(f"ERROR! Range '{part}' is out of bounds.\nPlease enter a valid step range within these bounds: ({valid_start}-{valid_end}).")
+                    wiz_log.error(f"ERROR! Range '{part}' is out of bounds.\nPlease enter a valid step range within these bounds: ({valid_start}-{valid_end}).")
                     self.add_space()
                     return False
             else:
@@ -417,12 +420,12 @@ class Wizard:
                     step = int(part)
                 except ValueError:
                     self.add_space()
-                    logger.error(f"ERROR! '{part}' is not a number.")
+                    wiz_log.error(f"ERROR! '{part}' is not a number.")
                     self.add_space()
                     return False
                 if step < valid_start or step > valid_end:
                     self.add_space()
-                    logger.error(f"ERROR! Step '{step}' is out of bounds.\nPlease enter a valid step range within these bounds: ({valid_start}-{valid_end}).")
+                    wiz_log.error(f"ERROR! Step '{step}' is out of bounds.\nPlease enter a valid step range within these bounds: ({valid_start}-{valid_end}).")
                     self.add_space()
                     return False
 
@@ -430,7 +433,7 @@ class Wizard:
 
 #for testing
 def main():
-    logger.info(r"""
+    wiz_log.info(r"""
     __        __   _                            _          _   _                                               .-+: 
     \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___   | |_| |__   ___                                   .-+*--*- 
      \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \  | __| '_ \ / _ \                                 :+#=.   =*:
