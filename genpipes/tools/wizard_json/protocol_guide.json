@@ -293,19 +293,19 @@
         },
         {
             "id": "rnaseq_denovo_assembly_protocol_help",
-            "type": "confirm",
-            "question": "Did your RNA-seq datasets originate from an organism without any reference genome?",
-            "options": [
+            "type": "selection",
+            "question": "Do you want to only do functional profiling or also create a full de novo assembly?",
+            "choices": [
                 {
-                    "label": "Yes",
-                    "next": {
+                    "label": "Functional profiling only (faster)",
+                    "node": {
                         "external": "general_guide.json",
                         "entryPoint": "seq2fun_protocol_selected"
                     }
                 },
                 {
-                    "label": "No",
-                    "next": {
+                    "label": "Full assembly (slower)",
+                    "node": {
                         "external": "general_guide.json",
                         "entryPoint": "trinity_protocol_selected"
                     }
