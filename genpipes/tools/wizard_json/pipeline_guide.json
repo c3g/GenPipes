@@ -115,15 +115,15 @@
             "options": [
                 {
                     "label": "Yes",
+                    "next": "2_rnaseq_question"
+                },
+                {
+                    "label": "No",
                     "next": {
                         "external": "general_guide.json",
                         "entryPoint": "rnaseq_denovo_assembly_pipeline_selected"
                         
                     }
-                },
-                {
-                    "label": "No",
-                    "next": "2_rnaseq_question"
                 }
             ]
         },
