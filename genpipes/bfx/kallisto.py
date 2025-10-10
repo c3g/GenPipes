@@ -29,7 +29,8 @@ def quant(
     inputs,
     output_dir,
     transcriptome,
-    parameters
+    parameters,
+    ini_section="kallisto"
     ):
     """
     Call to kalliso quant
@@ -43,18 +44,19 @@ def quant(
             os.path.join(output_dir, "abundance.h5")
             ],
         [
-            ['kallisto', 'module_kallisto']
+            [ini_section, 'module_kallisto']
         ],
         command="""\
-kallisto quant \\
+kallisto quant {other_options} \\
   {parameters} \\
   -t {threads} \\
   -i {transcriptome} \\
   -o {output_dir} \\
   {infiles} \\
   2> {output_dir}/kallisto_quant.log""".format(
+            other_options=global_conf.global_get(ini_section, 'other_options'),
             parameters=parameters,
-            threads=global_conf.global_get('kallisto', 'threads'),
+            threads=global_conf.global_get(ini_section, 'threads'),
             transcriptome=transcriptome,
             output_dir=output_dir,
             infiles=" \\\n  ".join(inputs),
