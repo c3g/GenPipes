@@ -242,7 +242,7 @@ For information on the structure and contents of the LongRead readset file, plea
             is_directory = False
 
             if readset.summary_file:
-                input_summary = os.path.join(nanoplot_directory, os.path.basename(readset.summary_file))
+                input_summary = os.path.join(nanoplot_directory, f"{readset.name}.sequencing_summary.txt")
                 link_job = bash.ln(
                     os.path.abspath(readset.summary_file),
                     input_summary,
@@ -253,7 +253,7 @@ For information on the structure and contents of the LongRead readset file, plea
             elif readset.fastq_files:
                 if os.path.isdir(readset.fastq_files):
                     is_directory = True
-                input_fastq = os.path.join(nanoplot_directory, os.path.basename(readset.fastq_files))
+                input_fastq = os.path.join(nanoplot_directory, f"{readset.name}_fastq_pass")
                 link_job = concat_jobs(
                     [
                         bash.rm(input_fastq),
@@ -267,7 +267,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 input_bam = None
                 input_summary = None
             elif readset.bam:
-                input_bam = os.path.join(nanoplot_directory, os.path.basename(readset.bam))
+                input_bam = os.path.join(nanoplot_directory, f"{readset.name}.{os.path.basename(readset.bam)}")
                 link_job = bash.ln(
                     os.path.abspath(readset.bam),
                     input_bam,
