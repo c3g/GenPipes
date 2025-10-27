@@ -2822,7 +2822,7 @@ END
 
                 if self.project_tracking_json:
                     samples = [sample]
-                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_$TIME_STAMP.o")
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_\$TIME_STAMP.o")
                     jobs.append(
                         concat_jobs(
                             [
