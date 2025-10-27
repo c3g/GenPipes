@@ -333,7 +333,8 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
   -j \\"{job_name}\\" \\{metrics}
   -o \\"{json_outfile}\\" \\
   -f {status}
-export PT_JSON_OUTFILE=\\"{json_outfile}\\" {command_separator}
+export PT_JSON_OUTFILE=\\"{json_outfile}\\"
+export TIMESTAMP=\\"{timestamp}\\" {command_separator}
 """.format(
             job2json_project_tracking_script="genpipes tools job2json_project_tracking",
             samples=",".join([sample.name for sample in job.samples]),
@@ -341,6 +342,7 @@ export PT_JSON_OUTFILE=\\"{json_outfile}\\" {command_separator}
             job_name=job.name,
             metrics=('\n  -m \\"' + ','.join(job.metrics) + '\\" \\') if job.metrics else '',
             json_outfile=json_outfile,
+            timestamp=pipeline.timestamp,
             status=job_status,
             command_separator="&&" if (job_status=='\\"RUNNING\\"') else ""
         ) if json_outfile else ""
