@@ -334,7 +334,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
   -o \\"{json_outfile}\\" \\
   -f {status}
 export PT_JSON_OUTFILE=\\"{json_outfile}\\"
-export TIMESTAMP=\\"{timestamp}\\" {command_separator}
+export TIME_STAMP=\\"{timestamp}\\" {command_separator}
 """.format(
             job2json_project_tracking_script="genpipes tools job2json_project_tracking",
             samples=",".join([sample.name for sample in job.samples]),
