@@ -3958,7 +3958,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=samples,
                         readsets=readsets,
-                        input_dependency=[input_cna, output_cna],
+                        input_dependency=[input_cna],
                         output_dependency=[header, output_cna_body, output_cna]
                     )
                 )
@@ -4197,7 +4197,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                        input_dependency=[input_cna, output_cna],
+                        input_dependency=[input_cna],
                         output_dependency=[header, output_cna_body, output_cna],
                         removable_files=[header, output_cna_body]
                     )
