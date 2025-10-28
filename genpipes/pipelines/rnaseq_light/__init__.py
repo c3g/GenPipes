@@ -77,7 +77,7 @@ It is especially useful for quick Quality Control (QC) in gene sequencing studie
         transcriptome_file = global_conf.global_get('kallisto', 'transcriptome_idx', param_type="filepath")
         tx2genes_file = global_conf.global_get('kallisto', 'transcript2genes', param_type="filepath")
         bootstraps = global_conf.global_get('kallisto', 'bootstraps')
-        other_param = global_conf.global_get('kallisto', 'other_options', required=False)
+        other_param = global_conf.global_get('kallisto', 'other_parameters', required=False)
 
         jobs = []
 
