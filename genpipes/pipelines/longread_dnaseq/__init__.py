@@ -1211,7 +1211,8 @@ For information on the structure and contents of the LongRead readset file, plea
                             bcftools.concat(
                                 germline_vcfs_to_merge,
                                 clairS_germline_vcf,
-                                "-a -oZ"
+                                "-a -oZ",
+                                ini_section="merge_filter_clairS"
                             ),
                             htslib.tabix(
                                 clairS_germline_vcf,
@@ -1222,12 +1223,14 @@ For information on the structure and contents of the LongRead readset file, plea
                                     bcftools.reheader(
                                         clairS_germline_vcf,
                                         None,
-                                        f"-n {tumor_pair.normal.name}"
+                                        f"-n {tumor_pair.normal.name}",
+                                        ini_section="merge_filter_clairS"
                                     ),
                                     bcftools.view(
                                         None,
                                         clairS_germline_filtered,
-                                        "-f PASS -Oz"
+                                        "-f PASS -Oz",
+                                        ini_section="merge_filter_clairS"
                                     )
                                 ]
                             ),
