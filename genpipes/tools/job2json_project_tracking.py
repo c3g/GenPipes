@@ -12,6 +12,7 @@ import time
 import random
 import shutil
 import signal
+import hashlib
 
 from datetime import datetime
 
@@ -27,6 +28,7 @@ def main(args=None):
         parser.add_argument('-m', '--metrics', required=False, help="comma-separated list of metrics of the current job: name=value,name=value,... With <name> = metric name; <value> = metric value")
         parser.add_argument('-o','--json_outfile', required=True, help="name of json output file")
         parser.add_argument('-f', '--status', required=False, help="status of job")
+        parser.add_argument('-F', '--file_paths', required=False, help="comma-separated list of output file paths to compute MD5 for (paths as on the executing node)")
         args = parser.parse_args()
 
     sample_list = args.sample_names.split(",")
@@ -79,6 +81,29 @@ def main(args=None):
                                             'metric_name': metric_name,
                                             'metric_value': metric_value
                                             }]
+                                if args.file_paths:
+                                    file_paths = [p for p in args.file_paths.split(",") if p.strip()]
+                                    for fp in file_paths:
+                                        base = os.path.basename(fp)
+                                        md5 = compute_md5sum(fp) if os.path.exists(fp) and os.path.isfile(fp) else None
+                                        try:
+                                            for fobj in job['file']:
+                                                if fobj.get('file_name') == base:
+                                                    fobj['file_md5sum'] = md5
+                                                    break
+                                            else:
+                                                job['file'].append({
+                                                    'location_uri': None,
+                                                    'file_name': base,
+                                                    'file_md5sum': md5
+                                                })
+                                        except KeyError:
+                                            job['file'] = [{
+                                                'location_uri': None,
+                                                'file_name': base,
+                                                'file_md5sum': md5
+                                            }]
+
 
         # Print to file
         with open(args.json_outfile, 'w') as out_json:
@@ -113,6 +138,20 @@ def unlock(filepath):
     Unlocking filepath by removing the .lock file
     """
     shutil.rmtree(filepath + '.lock', ignore_errors=True)
+
+def compute_md5sum(filepath, block_size=8 * 1024 * 1024):
+    """
+    Compute MD5 hex digest of filepath
+    """
+    try:
+        with open(filepath, 'rb') as fh:
+            h = hashlib.md5()
+            for chunk in iter(lambda: fh.read(block_size), b''):
+                h.update(chunk)
+            return h.hexdigest()
+    except Exception as exc:
+        return None
+
 
 if __name__ == '__main__':
     main()
