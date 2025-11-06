@@ -94,7 +94,8 @@ def create(pipeline, sample):
                             if extension:
                                 file_json = {
                                     'location_uri': f'{path_prefix}/{output_file}',
-                                    'file_name': os.path.basename(output_file)
+                                    'file_name': os.path.basename(output_file),
+                                    'file_md5sum': None
                                     }
                                 job_json['file'].append(file_json)
                         else:
