@@ -43,7 +43,8 @@ module purge && \\
   -r {readsets} \\
   -j {job_name} \\
   -o $PT_JSON_OUTFILE \\
-  -m {metrics}""".format(
+  -m {metrics} \\
+  -F ${JOB_OUTPUT_FILES:-}""".format(
     job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "tools", "job2json_project_tracking.py"),
     samples=samples,
     readsets=readsets,
