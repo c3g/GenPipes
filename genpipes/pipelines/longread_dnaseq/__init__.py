@@ -1987,6 +1987,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             1,
                             "somatic",
                             tumor_pair.tumor.name,
+                            "clairS",
                             ini_section="format2pcgr"
                         ),
                         htslib.tabix(
