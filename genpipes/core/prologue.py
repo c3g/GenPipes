@@ -1,7 +1,17 @@
-#!/usr/bin/env python
+import sys
+import os
+
+try:
+    from genpipes._interpreter import INTERPRETER
+except ImportError:
+    INTERPRETER = sys.executable  # fallback if not recorded
+
+# Re-execute with the correct interpreter if needed
+if sys.executable != INTERPRETER:
+    script_path = os.path.abspath(__file__)
+    os.execv(INTERPRETER, [INTERPRETER, script_path] + sys.argv[1:])
 
 import csv
-import os
 import subprocess
 import logging
 import re
