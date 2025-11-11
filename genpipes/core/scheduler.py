@@ -492,7 +492,9 @@ echo "#!/bin/bash
 #PBS {self.cpu(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
 {memory}
 {dependencies}
+module load mugqic/python/3.13.3
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
+module unload mugqic/python/3.13.3
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
@@ -692,8 +694,14 @@ echo "#!/bin/bash
 #SBATCH {self.cpu(job_name_prefix)} {self.gpu(job_name_prefix)}
 {dependencies}
 EPILOGUE_SCRIPT="{os.path.dirname(os.path.abspath(__file__))}/epilogue.py"
-trap "\\$EPILOGUE_SCRIPT" EXIT
+trap '{{
+    module load mugqic/python/3.13.3
+    "\\$EPILOGUE_SCRIPT"
+    module unload mugqic/python/3.13.3
+}}' EXIT
+module load mugqic/python/3.13.3
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
+module unload mugqic/python/3.13.3
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 srun --wait=0 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS

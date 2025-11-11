@@ -47,6 +47,3 @@ allow-direct-references = true
 [tool.pdm.version]
 source = "file"
 path = "genpipes/__version__.py"
-
-[tool.pdm.scripts]
-post_install = "python genpipes/_record_interpreter.py"
