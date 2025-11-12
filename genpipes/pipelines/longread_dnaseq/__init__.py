@@ -1052,6 +1052,7 @@ For information on the structure and contents of the LongRead readset file, plea
             normal_bam = os.path.join(normal_align_directory, f"{tumor_pair.normal.name}.sorted.bam")
             tumor_bam = os.path.join(tumor_align_directory, f"{tumor_pair.tumor.name}.sorted.bam")
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            platform = global_conf.global_get('clairS', 'platform')
             region_directory = os.path.join(self.output_dirs["variants_directory"], tumor_pair.normal.name, "clairS", "regions")
             region_param = None
 
@@ -1079,7 +1080,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 tumor_bam,
                                 clairS_dir,
                                 tumor_pair.tumor.name,
-                                "ont_r10_dorado_sup_5khz_ssrs",
+                                platform,
                                 region_param
                             )
                         ],
@@ -1104,7 +1105,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                     tumor_bam,
                                     output_dir,
                                     tumor_pair.tumor.name,
-                                    "ont",
+                                    platform,
                                     f"--bed_fn={region}"
                                 )
                             ],
