@@ -38,6 +38,7 @@ def run(input_file, samples, readsets, job_name, metrics):
         [],
         command="""\
 module purge && \\
+: "${JOB_OUTPUT_FILES:={placeholder}}" && \\
 {job2json_project_tracking_script} \\
   -s {samples} \\
   -r {readsets} \\
