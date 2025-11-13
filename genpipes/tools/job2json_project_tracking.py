@@ -13,8 +13,13 @@ import random
 import shutil
 import signal
 import hashlib
+import logging 
 
 from datetime import datetime
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
+
 
 def main(args=None):
     """
@@ -82,27 +87,28 @@ def main(args=None):
                                             'metric_value': metric_value
                                             }]
                                 if args.file_paths:
-                                    file_paths = [p for p in args.file_paths.split(",") if p.strip()]
+                                    file_paths = [p.strip() for p in args.file_paths.split(",") if p.strip()]
                                     for fp in file_paths:
                                         base = os.path.basename(fp)
                                         md5 = compute_md5sum(fp) if os.path.exists(fp) and os.path.isfile(fp) else None
-                                        try:
-                                            for fobj in job['file']:
-                                                if fobj.get('file_name') == base:
-                                                    fobj['file_md5sum'] = md5
-                                                    break
-                                            else:
-                                                job['file'].append({
-                                                    'location_uri': None,
-                                                    'file_name': base,
-                                                    'file_md5sum': md5
-                                                })
-                                        except KeyError:
-                                            job['file'] = [{
+
+                                        found = False
+                                        for fobj in job.get('file', []):
+                                            if fobj.get('file_name') == base:
+                                                fobj['file_md5sum'] = md5
+                                                found = True
+                                                break
+
+                                        if not found:
+                                            if 'file' not in job:
+                                                job['file'] = []
+                                            job['file'].append({
                                                 'location_uri': None,
                                                 'file_name': base,
                                                 'file_md5sum': md5
-                                            }]
+                                            })
+
+                                
 
 
         # Print to file
@@ -150,6 +156,7 @@ def compute_md5sum(filepath, block_size=8 * 1024 * 1024):
                 h.update(chunk)
             return h.hexdigest()
     except Exception as exc:
+        log.debug ("compute_md5sum: could not read '%s': %s", filepath, exc)
         return None
 
 
