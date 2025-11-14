@@ -33,7 +33,6 @@ def main(args=None):
         parser.add_argument('-m', '--metrics', required=False, help="comma-separated list of metrics of the current job: name=value,name=value,... With <name> = metric name; <value> = metric value")
         parser.add_argument('-o','--json_outfile', required=True, help="name of json output file")
         parser.add_argument('-f', '--status', required=False, help="status of job")
-        parser.add_argument('-F', '--file_paths', required=False, help="comma-separated list of output file paths to compute MD5 for (paths as on the executing node)")
         args = parser.parse_args()
 
     sample_list = args.sample_names.split(",")
@@ -86,31 +85,17 @@ def main(args=None):
                                             'metric_name': metric_name,
                                             'metric_value': metric_value
                                             }]
-                                if args.file_paths:
-                                    file_paths = [p.strip() for p in args.file_paths.split(",") if p.strip()]
-                                    for fp in file_paths:
-                                        base = os.path.basename(fp)
-                                        md5 = compute_md5sum(fp) if os.path.exists(fp) and os.path.isfile(fp) else None
+                                for fobj in job.get('file', []):
+                                    uri = fobj.get("location_uri")
+                                    local_path = uri_to_local_path(uri)
 
-                                        found = False
-                                        for fobj in job.get('file', []):
-                                            if fobj.get('file_name') == base:
-                                                fobj['file_md5sum'] = md5
-                                                found = True
-                                                break
+                                    if local_path and os.path.exists(local_path) and os.path.isfile(local_path):
+                                        md5 = compute_md5sum(local_path)
+                                    else:
+                                        md5 = None
 
-                                        if not found:
-                                            if 'file' not in job:
-                                                job['file'] = []
-                                            job['file'].append({
-                                                'location_uri': None,
-                                                'file_name': base,
-                                                'file_md5sum': md5
-                                            })
-
-                                
-
-
+                                    fobj["file_md5sum"] = md5
+                        
         # Print to file
         with open(args.json_outfile, 'w') as out_json:
             json.dump(current_json, out_json, indent=4)
@@ -158,6 +143,16 @@ def compute_md5sum(filepath, block_size=8 * 1024 * 1024):
     except Exception as exc:
         log.debug ("compute_md5sum: could not read '%s': %s", filepath, exc)
         return None
+    
+def uri_to_local_path(uri):
+    if uri is None:
+        return None
+    parts = uri.split("://", 1)
+    if len(parts) == 2:
+        return parts[1]   
+
+    return uri
+
 
 
 if __name__ == '__main__':
