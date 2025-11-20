@@ -25,7 +25,7 @@ from ..core.job import Job
 
 log = logging.getLogger(__name__)
 
-def run(input_file, samples, readsets, job_name, metrics, output_files):
+def run(input_file, samples, readsets, job_name, metrics):
     """
     Calls job2json_project_tracking within jobs to update metrics
     """
