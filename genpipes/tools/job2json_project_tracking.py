@@ -87,16 +87,12 @@ def main(args=None):
                                             }]
                                 for fobj in job.get('file', []):
                                     uri = fobj.get("location_uri")
-                                    print("URI:", uri)
                                     local_path = uri_to_local_path(uri)
-                                    print("Local path:", local_path)
 
                                     if local_path and os.path.exists(local_path) and os.path.isfile(local_path):
                                         md5 = compute_md5sum(local_path)
-                                        print("md5sum computed", md5)
                                     else:
                                         md5 = None
-                                        print("error")
 
                                     fobj["file_md5sum"] = md5
                         
