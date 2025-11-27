@@ -145,15 +145,15 @@ def compute_md5sum(filepath, block_size=8 * 1024 * 1024):
         return None
     
 def uri_to_local_path(uri):
+    """
+    Convert location_uri to local path (removing name of cluster)
+    """
     if uri is None:
         return None
     parts = uri.split("://", 1)
     if len(parts) == 2:
         return parts[1]   
-
     return uri
-
-
 
 if __name__ == '__main__':
     main()
