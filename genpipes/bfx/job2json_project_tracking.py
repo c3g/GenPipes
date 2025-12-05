@@ -48,6 +48,6 @@ module purge && \\
     samples=samples,
     readsets=readsets,
     job_name=job_name,
-    metrics=metrics
+    metrics=metrics,
     )
   )
