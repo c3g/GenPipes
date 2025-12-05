@@ -13,8 +13,11 @@ import random
 import shutil
 import signal
 import hashlib
+import logging
 
 from datetime import datetime
+
+log = logging.getLogger(__name__)
 
 def main(args=None):
     """
@@ -136,6 +139,7 @@ def compute_md5sum(filepath, block_size=8 * 1024 * 1024):
                 h.update(chunk)
             return h.hexdigest()
     except Exception as exc:
+        log.debug ("compute_md5sum: could not read '%s': %s", filepath, exc)
         return None
     
 def uri_to_local_path(uri):
