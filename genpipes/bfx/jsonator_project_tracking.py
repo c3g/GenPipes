@@ -43,7 +43,8 @@ def create(pipeline, sample):
     else:
         pipeline_output_dir = pipeline.output_dir
     # /!\ Can't os.path.join otherwise the 'server://' disappears
-    path_prefix = global_conf.global_get("DEFAULT", 'cluster_server', required=True) + "://" + pipeline_output_dir
+    cluster_server = global_conf.global_get("DEFAULT", 'cluster_server', required=True)
+    path_prefix = f"{cluster_server}://{pipeline_output_dir}"
 
     log.debug(f"Updating project_tracking JSON {json_file} for sample '{sample.name}'")
 
@@ -92,8 +93,18 @@ def create(pipeline, sample):
                             # /!\ Can't os.path.join for location_uri otherwise the 'server://' disappears
                             _, extension = os.path.splitext(os.path.basename(output_file))
                             if extension:
+
+                                if "://" in output_file:
+                                    location_uri = output_file
+
+                                elif os.path.isabs(output_file):
+                                    location_uri = f"{cluster_server}://{output_file.lstrip('/')}"
+
+                                else:
+                                    location_uri = f"{path_prefix.rstrip('/')}/{output_file.lstrip('/')}"
+
                                 file_json = {
-                                    'location_uri': f'{path_prefix}/{output_file}',
+                                    'location_uri': location_uri,
                                     'file_name': os.path.basename(output_file),
                                     'file_md5sum': None
                                     }
