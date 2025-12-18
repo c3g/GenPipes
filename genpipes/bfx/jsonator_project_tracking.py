@@ -95,24 +95,19 @@ def create(pipeline, sample):
                             if extension:
 
                                 if "://" in output_file:
-                                    # Already a URI → keep as-is
                                     location_uri = output_file
 
                                 else:
-                                    # Normalize paths
                                     output_file_norm = os.path.normpath(output_file)
                                     pipeline_output_norm = os.path.normpath(pipeline_output_dir)
 
                                     if os.path.isabs(output_file_norm):
                                         if output_file_norm.startswith(pipeline_output_norm + os.sep):
-                                            # Strip duplicated pipeline_output_dir
                                             relative = os.path.relpath(output_file_norm, pipeline_output_norm)
                                             location_uri = f"{cluster_server}://{pipeline_output_norm.lstrip('/')}/{relative}"
                                         else:
-                                            # Absolute path outside pipeline_output_dir
                                             location_uri = f"{cluster_server}://{output_file_norm.lstrip('/')}"
                                     else:
-                                        # Relative path
                                         location_uri = f"{path_prefix.rstrip('/')}/{output_file_norm.lstrip('/')}"
 
                                 file_json = {
