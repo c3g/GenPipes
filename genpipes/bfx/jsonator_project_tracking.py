@@ -104,9 +104,9 @@ def create(pipeline, sample):
                                     if os.path.isabs(output_file_norm):
                                         if output_file_norm.startswith(pipeline_output_norm + os.sep):
                                             relative = os.path.relpath(output_file_norm, pipeline_output_norm)
-                                            location_uri = f"{cluster_server}://{pipeline_output_norm.lstrip('/')}/{relative}"
+                                            location_uri = f"{cluster_server}://{pipeline_output_norm}/{relative}"
                                         else:
-                                            location_uri = f"{cluster_server}://{output_file_norm.lstrip('/')}"
+                                            location_uri = f"{cluster_server}://{output_file_norm}"
                                     else:
                                         location_uri = f"{path_prefix.rstrip('/')}/{output_file_norm.lstrip('/')}"
 
