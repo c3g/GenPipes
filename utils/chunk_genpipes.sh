@@ -10,9 +10,7 @@ echo "usage: $0 <GENPIPES SCRIPT> <OUTPUT FOLDER>
 echo
 echo "   <GENPIPES SCRIPT>       A Genpipes output script"
 echo "   <OUTPUT FOLDER>         Folder where to store chunks"
-echo "   -n <chunk size>         Maximum number of job in chunk,"
-echo "                             default=20"
-
+echo "   -n <chunk size>         Maximum number of job in chunk, default=20"
 }
 
 load_previous_submit_id (){
@@ -38,16 +36,9 @@ EOF
 }
 
 # SCRIPT
-
-
-slurm_user=$USER
-
 max_chunk=20
-while getopts "hn:u:" opt; do
+while getopts "hn:" opt; do
   case $opt in
-    u)
-      slurm_user=${OPTARG}
-    ;;
     n)
       max_chunk=${OPTARG}
     ;;
@@ -64,14 +55,12 @@ done
 
 shift $((OPTIND-1))
 
-
 if [ $# -lt 2 ]; then
   usage
   exit 1
 fi
 genpipes_in=$1
 out_dir=$2
-
 
 rm -rf ${out_dir}/chunk_* 2>/dev/null
 mkdir -p ${out_dir}
@@ -91,7 +80,7 @@ echo "export CHUNK_SIZE=${max_chunk}" >> ${header}
 
 chunk=1
 out_file=/dev/null
-n_job=0
+nb_job=0
 # create chunks
 while IFS= read -r line ; do
     echo "$line" >> $out_file
@@ -129,6 +118,3 @@ split_on="Call home with pipeline statistics"
 csplit -sf ${out_dir}/wget_call -n 1 $out_file /"${split_on}"/-1
 mv ${out_dir}/wget_call0 ${out_file}
 mv ${out_dir}/wget_call1 ${out_dir}/wget_call.sh
-
-
-# Submit and

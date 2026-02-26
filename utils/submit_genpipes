@@ -29,9 +29,9 @@ echo "   -l <N>                  Will retry N time to resubmit a chunk if error 
 
 get_n_jobs () {
   if [[ ${SCHEDULER} ==  'slurm' ]]; then
-    echo $(squeue -u $SHEDULER_USER -h -t pending,running | wc -l)
+    echo "$(squeue -u $SHEDULER_USER -h -t pending,running | wc -l)"
   elif [[ ${SCHEDULER} ==  'pbs' ]]; then
-    echo $(showq  -u $SHEDULER_USER  | grep $SHEDULER_USER  | wc -l )
+    echo "$(showq  -u $SHEDULER_USER  | grep $SHEDULER_USER  | wc -l )"
   fi
 }
 
@@ -40,12 +40,26 @@ cancel_jobs () {
   job_list=$1
   echo $job_list
   echo cancel all jobs from ${job_list}
-  if [[ ${SCHEDULER} ==  'slurm' ]]; then
-    scancel $(cat ${job_list} | awk -F'=' '{print $2}')
-  elif [[ ${SCHEDULER} ==  'pbs' ]]; then
-    qdel $(cat ${job_list} | awk -F'=' '{print $2}')
+
+  if [[ -z "${job_list}" || ! -s "${job_list}" ]]; then
+    echo no submitted jobs found in ${job_list}
+    rm -f "${job_list}" 2>/dev/null
+    return 0
   fi
-  rm ${job_list}  2>/dev/null
+
+  job_ids=$(awk -F'=' '{print $2}' "${job_list}")
+  if [[ -z "${job_ids}" ]]; then
+    echo no job ids found in ${job_list}
+    rm -f "${job_list}" 2>/dev/null
+    return 0
+  fi
+
+  if [[ ${SCHEDULER} ==  'slurm' ]]; then
+    scancel ${job_ids}
+  elif [[ ${SCHEDULER} ==  'pbs' ]]; then
+    qdel ${job_ids}
+  fi
+  rm "${job_list}"  2>/dev/null
   echo canceled all jobs from ${job_list}
 }
 
@@ -55,24 +69,86 @@ cancel_trap () {
     exit 0
 }
 
+report_dependency_problem () {
+  job_script=$1
+  job_err=${job_script%.sh}.err
+  script_dir=$(dirname "${job_script}")
+  current_job_list=${job_script%.sh}.out
+
+  echo "Detected Slurm dependency submission problem for ${job_script}"
+  echo "Dependency-related lines in ${job_script}:"
+  grep -nE -- '--depend=|JOB_DEPENDENCIES' "${job_script}" || true
+
+  dep_out_files=( $(grep -oE 'chunk_[0-9]+\.out' "${job_script}" | sort -Vu) )
+  if [[ ${#dep_out_files[@]} -gt 0 ]]; then
+    echo "Referenced dependency job list files:"
+    for dep_out in "${dep_out_files[@]}"; do
+      dep_file="${script_dir}/${dep_out}"
+      if [[ -s "${dep_file}" ]]; then
+        n_ids=$(awk -F'=' 'NF>1 {print $2}' "${dep_file}" | wc -l)
+        echo "  ${dep_file} (${n_ids} ids)"
+      else
+        echo "  ${dep_file} (missing or empty)"
+      fi
+    done
+  else
+    echo "No explicit chunk_*.out references were found in ${job_script}."
+  fi
+
+  if type sacct >/dev/null 2>&1; then
+    echo "Dependency job states (sacct):"
+    for dep_out in "${dep_out_files[@]}"; do
+      dep_file="${script_dir}/${dep_out}"
+      if [[ -s "${dep_file}" && "${dep_file}" != "${current_job_list}" ]]; then
+        job_ids=$(awk -F'=' 'NF>1 {print $2}' "${dep_file}" | tr '\n' ',')
+        job_ids=${job_ids%,}
+        if [[ -n "${job_ids}" ]]; then
+          echo "  from ${dep_file}:"
+          sacct -n -P -j "${job_ids}" -o JobID,State,ExitCode 2>/dev/null | awk -F'|' 'NF>=3 {print "    "$1"  "$2"  "$3}'
+        fi
+      fi
+    done
+  fi
+
+  echo "Error snippet:"
+  grep -n 'Batch job submission failed: Job dependency problem' "${job_err}" || true
+}
+
 submit () {
   echo submitting $1
   job_script=${1}
   job_list=${job_script%.sh}.out
+  dependency_reported=0
   for ((N=1;N<=RETRY;N++)); do
     # clean cancel if there is an interruption
-    trap "echo cleanup; cancel_trap ${job_list}" EXIT
+    trap 'echo cleanup; cancel_trap ${job_list}' INT TERM
     bash ${job_script} 2> ${job_script%.sh}.err
     ret_code=$?
     if [ ${ret_code} -eq 0 ]; then
-      trap - SIGTERM
+      trap - INT TERM
       touch ${job_list}
       echo ${job_script} was sucessfully submitted
       SUBMIT_RETCODE=0
-      break
+      return 0
     else
       SUBMIT_RETCODE=1
       echo error in submits
+      if [[ ${SCHEDULER} == 'slurm' ]] && grep -q 'Batch job submission failed: Job dependency problem' "${job_script%.sh}.err"; then
+        if [[ ${dependency_reported} -eq 0 ]]; then
+          report_dependency_problem "${job_script}"
+          dependency_reported=1
+        fi
+        echo "Dependency error detected; stopping retries for ${job_script}"
+        echo "Hint: clean stale markers for this run before rerun:"
+        echo "  rm -f ${job_script%.sh}.out ${job_script%.sh}.done"
+        prev_chunk=$(basename "${job_script}" | sed -n 's/^chunk_\([0-9]\+\)\.sh$/\1/p')
+        if [[ -n "${prev_chunk}" && ${prev_chunk} -gt 1 ]]; then
+          prev_chunk=$((prev_chunk-1))
+          echo "  if needed, also verify/remove prior chunk markers: $(dirname "${job_script}")/chunk_${prev_chunk}.out and chunk_${prev_chunk}.done"
+        fi
+        trap - INT TERM
+        return 1
+      fi
       cancel_jobs ${job_list}
       sleep 1
       echo resubmitting
@@ -82,13 +158,15 @@ submit () {
     echo "could not complete submit after $RETRY retry"
     echo "Error log in ${job_script%.sh}.err:"
     cat "${job_script%.sh}.err"
+    trap - INT TERM
+    return 1
   fi
 }
 
 
 #  Script
 
-while getopts "hl:n:u:s:S:" opt; do
+while getopts "hl:n:u:s:S:l:" opt; do
   case $opt in
     u)
       SHEDULER_USER=${OPTARG}
@@ -150,13 +228,9 @@ if [[ $ret_code -ne 0 ]] ; then
   echo and restart $0
   exit 1
 else
-  trap "rm -rf $chunk_folder/.lockdir" EXIT
+  trap 'rm -rf $chunk_folder/.lockdir' EXIT
 fi
-
-
-
 all_sh=($(ls ${chunk_folder}/chunk*sh|sort -V))
-all_done=($chunk_folder/chunk*done)
 
 for sh_script in "${all_sh[@]}"; do
   done_script=${sh_script%.sh}.done
@@ -164,10 +238,12 @@ for sh_script in "${all_sh[@]}"; do
     while true ; do
       curent_n_jobs=$(get_n_jobs)
       if [[ $((MAX_QUEUE-curent_n_jobs)) -gt $CHUNK_SIZE ]]; then
-       submit ${sh_script}
-       touch ${done_script}
-       trap "rm -rf $chunk_folder/.lockdir" EXIT
-       break
+       if submit ${sh_script}; then
+         touch ${done_script}
+         break
+       else
+         exit 1
+       fi
       else
         echo too many jobs, sleeping for $SLEEP_TIME sec
         sleep $SLEEP_TIME
