@@ -87,7 +87,7 @@ options:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   -s, --steps STEPS     step range e.g. '1-5', '3,6,7', '2,4-8'
-  --wrap [WRAP]         Path to the genpipes cvmfs wrapper script. Default is 
+  --wrap [WRAP]         Path to the genpipes cvmfs wrapper script. Default is
                         genpipes/ressources/container/bin/container_wrapper.sh
                         . This is a convenience option for using genpipes in a
                         container

@@ -40,6 +40,9 @@ _shtab_genpipes_options=(
   "(- : *)"{-s,--print-completion}"[print shell completion script]:print_completion:(bash zsh tcsh)"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_defaults_added=0
+
 _shtab_genpipes_ampliconseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
@@ -60,6 +63,9 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
 )
+
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_ampliconseq_defaults_added=0
 
 _shtab_genpipes_chipseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
@@ -83,6 +89,9 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   {-t,--type}"[Type of pipeline (default chipseq)]:protocol:(chipseq atacseq)"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_chipseq_defaults_added=0
+
 _shtab_genpipes_covseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
@@ -103,6 +112,9 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   {-d,--design}"[design file]:design_file:_files"
   "(- : *)"{-v,--version}"[show the version information and exit]"
 )
+
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_covseq_defaults_added=0
 
 _shtab_genpipes_dnaseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
@@ -128,6 +140,9 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   {-t,--type}"[DNAseq analysis type]:protocol:(germline_snv germline_sv germline_high_cov somatic_tumor_only somatic_fastpass somatic_ensemble somatic_sv)"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_dnaseq_defaults_added=0
+
 _shtab_genpipes_longread_dnaseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
@@ -151,6 +166,9 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   {-p,--pairs}"[pairs file]:pairs:_files"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_longread_dnaseq_defaults_added=0
+
 _shtab_genpipes_methylseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
@@ -173,6 +191,9 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   {-t,--type}"[Type of pipeline (default bismark)]:protocol:(bismark gembs hybrid dragen)"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_methylseq_defaults_added=0
+
 _shtab_genpipes_nanopore_covseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
@@ -194,6 +215,9 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   "(- : *)"{-v,--version}"[show the version information and exit]"
   {-t,--type}"[Type of CoVSeQ analysis,basecalling on\/off (default without basecalling)]:protocol:(default basecalling)"
 )
+
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_nanopore_covseq_defaults_added=0
 
 _shtab_genpipes_rnaseq_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
@@ -218,6 +242,9 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   {-b,--batch}"[batch file (to peform batch effect correction]:batch:_files"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_rnaseq_defaults_added=0
+
 _shtab_genpipes_rnaseq_denovo_assembly_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
@@ -241,6 +268,9 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   {-b,--batch}"[batch file (to peform batch effect correction]:batch:_files"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_rnaseq_denovo_assembly_defaults_added=0
+
 _shtab_genpipes_rnaseq_light_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--clean[create \'rm\' commands for all job removable files in the given step range, if they exist\; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default\: false)]"
@@ -262,9 +292,15 @@ Default is genpipes\/ressources\/container\/bin\/container_wrapper.sh. This is a
   "(- : *)"{-v,--version}"[show the version information and exit]"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_rnaseq_light_defaults_added=0
+
 _shtab_genpipes_tools_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
 )
+
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_tools_defaults_added=0
 
 _shtab_genpipes_tools_chunk_genpipes_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
@@ -272,6 +308,9 @@ _shtab_genpipes_tools_chunk_genpipes_options=(
   ":Genpipes output script.:"
   ":Folder where to store chunks.:"
 )
+
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_tools_chunk_genpipes_defaults_added=0
 
 _shtab_genpipes_tools_csvToreadset_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
@@ -281,10 +320,16 @@ _shtab_genpipes_tools_csvToreadset_options=(
   ":Relative path to the data from the project folder.:"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_tools_csvToreadset_defaults_added=0
+
 _shtab_genpipes_tools_get_wrapper_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   {--version,-v}"[Version of the container to get. Default\: 4.0.0]:version:"
 )
+
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_tools_get_wrapper_defaults_added=0
 
 _shtab_genpipes_tools_job2json_project_tracking_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
@@ -296,6 +341,9 @@ _shtab_genpipes_tools_job2json_project_tracking_options=(
   {-f,--status}"[status of job]:status:"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_tools_job2json_project_tracking_defaults_added=0
+
 _shtab_genpipes_tools_log_report_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   "--loglevel[Standard Python log level. Default\: WARNING]:loglevel:(ERROR WARNING INFO CRITICAL)"
@@ -303,6 +351,9 @@ _shtab_genpipes_tools_log_report_options=(
   {--quiet,-q}"[No report printed to terminal]"
   ":Path to a GenPipes job list:"
 )
+
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_tools_log_report_defaults_added=0
 
 _shtab_genpipes_tools_submit_genpipes_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
@@ -313,6 +364,9 @@ _shtab_genpipes_tools_submit_genpipes_options=(
   ":The output folder from the chunk_genpipes.sh script.:"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_tools_submit_genpipes_defaults_added=0
+
 _shtab_genpipes_tools_validate_genpipes_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
   {-r,--readset}"[Readset file to validate]:readset:"
@@ -320,16 +374,26 @@ _shtab_genpipes_tools_validate_genpipes_options=(
   {-p,--pipeline}"[Pipeline name to validate against]:pipeline:(ampliconseq chipseq covseq dnaseq methylseq longread_dnaseq nanopore_covseq rnaseq rnaseq_denovo_assembly rnaseq_light)"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_tools_validate_genpipes_defaults_added=0
+
 _shtab_genpipes_tools_wizard_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
 )
 
+# guard to ensure default positional specs are added only once per session
+_shtab_genpipes_tools_wizard_defaults_added=0
+
 
 _shtab_genpipes() {
-  local context state line curcontext="$curcontext" one_or_more='(-)*' remainder='(*)'
+  local context state line curcontext="$curcontext" one_or_more='(*)' remainder='(-)*' default='*::: :->genpipes'
 
-  if ((${_shtab_genpipes_options[(I)${(q)one_or_more}*]} + ${_shtab_genpipes_options[(I)${(q)remainder}*]} == 0)); then  # noqa: E501
-    _shtab_genpipes_options+=(': :_shtab_genpipes_commands' '*::: :->genpipes')
+  # Add default positional/remainder specs only if none exist, and only once per session
+  if (( ! _shtab_genpipes_defaults_added )); then
+    if (( ${_shtab_genpipes_options[(I)${(q)one_or_more}*]} +          ${_shtab_genpipes_options[(I)${(q)remainder}*]} +          ${_shtab_genpipes_options[(I)${(q)default}]} == 0 )); then
+      _shtab_genpipes_options+=(': :_shtab_genpipes_commands' '*::: :->genpipes')
+    fi
+    _shtab_genpipes_defaults_added=1
   fi
   _arguments -C -s $_shtab_genpipes_options
 
@@ -355,10 +419,14 @@ _shtab_genpipes() {
 }
 
 _shtab_genpipes_tools() {
-  local context state line curcontext="$curcontext" one_or_more='(-)*' remainder='(*)'
+  local context state line curcontext="$curcontext" one_or_more='(*)' remainder='(-)*' default='*::: :->tools'
 
-  if ((${_shtab_genpipes_tools_options[(I)${(q)one_or_more}*]} + ${_shtab_genpipes_tools_options[(I)${(q)remainder}*]} == 0)); then  # noqa: E501
-    _shtab_genpipes_tools_options+=(': :_shtab_genpipes_tools_commands' '*::: :->tools')
+  # Add default positional/remainder specs only if none exist, and only once per session
+  if (( ! _shtab_genpipes_tools_defaults_added )); then
+    if (( ${_shtab_genpipes_tools_options[(I)${(q)one_or_more}*]} +          ${_shtab_genpipes_tools_options[(I)${(q)remainder}*]} +          ${_shtab_genpipes_tools_options[(I)${(q)default}]} == 0 )); then
+      _shtab_genpipes_tools_options+=(': :_shtab_genpipes_tools_commands' '*::: :->tools')
+    fi
+    _shtab_genpipes_tools_defaults_added=1
   fi
   _arguments -C -s $_shtab_genpipes_tools_options
 
