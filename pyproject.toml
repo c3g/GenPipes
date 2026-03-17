@@ -47,7 +47,3 @@ allow-direct-references = true
 [tool.pdm.version]
 source = "file"
 path = "genpipes/__version__.py"
-# source = "scm"
-# version_format = "genpipes.version:format_version"
-# write_to = "genpipes/__version__.py"
-# write_template = "__version__ = '{}'"

@@ -345,6 +345,7 @@ def format2pcgr(input,
                 filter,
                 variant_type,
                 tumor,
+                caller=None,
                 ini_section='filter_ensemble'):
 
     return Job(
@@ -360,12 +361,13 @@ python3 $PYTHON_TOOLS/format2pcgr.py \\
 	-o {output} \\
 	-f {filter} \\
 	-v {variant_type} \\
-	-t {tumor}""".format(
+	-t {tumor} {caller}""".format(
             input=input if input else "",
             output=output if output else "",
             filter=filter,
             variant_type=variant_type,
             tumor=tumor,
+            caller="-tag " + caller if caller else ""
         )
     )
 

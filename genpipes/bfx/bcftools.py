@@ -134,7 +134,7 @@ bcftools \\
         )
     )
 
-def concat(inputs, output, options=None):
+def concat(inputs, output, options=None, ini_section="bcftools_concat"):
     """
     Concatenate or combine VCF/BCF files
     """
@@ -142,7 +142,7 @@ def concat(inputs, output, options=None):
         inputs,
         [output],
         [
-            ['bcftools_concat', 'module_bcftools'],
+            [ini_section, 'module_bcftools'],
         ],
         command="""\
 bcftools \\

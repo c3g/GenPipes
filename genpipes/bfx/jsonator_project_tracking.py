@@ -43,7 +43,8 @@ def create(pipeline, sample):
     else:
         pipeline_output_dir = pipeline.output_dir
     # /!\ Can't os.path.join otherwise the 'server://' disappears
-    path_prefix = global_conf.global_get("DEFAULT", 'cluster_server', required=True) + "://" + pipeline_output_dir
+    cluster_server = global_conf.global_get("DEFAULT", 'cluster_server', required=True)
+    path_prefix = f"{cluster_server}://{pipeline_output_dir}"
 
     log.debug(f"Updating project_tracking JSON {json_file} for sample '{sample.name}'")
 
@@ -92,9 +93,27 @@ def create(pipeline, sample):
                             # /!\ Can't os.path.join for location_uri otherwise the 'server://' disappears
                             _, extension = os.path.splitext(os.path.basename(output_file))
                             if extension:
+
+                                if "://" in output_file:
+                                    location_uri = output_file
+
+                                else:
+                                    output_file_norm = os.path.normpath(output_file)
+                                    pipeline_output_norm = os.path.normpath(pipeline_output_dir)
+
+                                    if os.path.isabs(output_file_norm):
+                                        if output_file_norm.startswith(pipeline_output_norm + os.sep):
+                                            relative = os.path.relpath(output_file_norm, pipeline_output_norm)
+                                            location_uri = f"{cluster_server}://{pipeline_output_norm}/{relative}"
+                                        else:
+                                            location_uri = f"{cluster_server}://{output_file_norm}"
+                                    else:
+                                        location_uri = f"{path_prefix.rstrip('/')}/{output_file_norm.lstrip('/')}"
+
                                 file_json = {
-                                    'location_uri': f'{path_prefix}/{output_file}',
-                                    'file_name': os.path.basename(output_file)
+                                    'location_uri': location_uri,
+                                    'file_name': os.path.basename(output_file),
+                                    'file_md5sum': None
                                     }
                                 job_json['file'].append(file_json)
                         else:

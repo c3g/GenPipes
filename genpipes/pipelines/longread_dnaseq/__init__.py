@@ -242,7 +242,7 @@ For information on the structure and contents of the LongRead readset file, plea
             is_directory = False
 
             if readset.summary_file:
-                input_summary = os.path.join(nanoplot_directory, os.path.basename(readset.summary_file))
+                input_summary = os.path.join(nanoplot_directory, f"{readset.name}.sequencing_summary.txt")
                 link_job = bash.ln(
                     os.path.abspath(readset.summary_file),
                     input_summary,
@@ -253,7 +253,7 @@ For information on the structure and contents of the LongRead readset file, plea
             elif readset.fastq_files:
                 if os.path.isdir(readset.fastq_files):
                     is_directory = True
-                input_fastq = os.path.join(nanoplot_directory, os.path.basename(readset.fastq_files))
+                input_fastq = os.path.join(nanoplot_directory, f"{readset.name}_fastq_pass")
                 link_job = concat_jobs(
                     [
                         bash.rm(input_fastq),
@@ -267,7 +267,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 input_bam = None
                 input_summary = None
             elif readset.bam:
-                input_bam = os.path.join(nanoplot_directory, os.path.basename(readset.bam))
+                input_bam = os.path.join(nanoplot_directory, f"{readset.name}.{os.path.basename(readset.bam)}")
                 link_job = bash.ln(
                     os.path.abspath(readset.bam),
                     input_bam,
@@ -1052,6 +1052,7 @@ For information on the structure and contents of the LongRead readset file, plea
             normal_bam = os.path.join(normal_align_directory, f"{tumor_pair.normal.name}.sorted.bam")
             tumor_bam = os.path.join(tumor_align_directory, f"{tumor_pair.tumor.name}.sorted.bam")
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            platform = global_conf.global_get('clairS', 'platform')
             region_directory = os.path.join(self.output_dirs["variants_directory"], tumor_pair.normal.name, "clairS", "regions")
             region_param = None
 
@@ -1079,7 +1080,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 tumor_bam,
                                 clairS_dir,
                                 tumor_pair.tumor.name,
-                                "ont_r10_dorado_sup_5khz_ssrs",
+                                platform,
                                 region_param
                             )
                         ],
@@ -1104,7 +1105,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                     tumor_bam,
                                     output_dir,
                                     tumor_pair.tumor.name,
-                                    "ont",
+                                    platform,
                                     f"--bed_fn={region}"
                                 )
                             ],
@@ -1211,7 +1212,8 @@ For information on the structure and contents of the LongRead readset file, plea
                             bcftools.concat(
                                 germline_vcfs_to_merge,
                                 clairS_germline_vcf,
-                                "-a -oZ"
+                                "-a -oZ",
+                                ini_section="merge_filter_clairS"
                             ),
                             htslib.tabix(
                                 clairS_germline_vcf,
@@ -1222,12 +1224,14 @@ For information on the structure and contents of the LongRead readset file, plea
                                     bcftools.reheader(
                                         clairS_germline_vcf,
                                         None,
-                                        f"-n {tumor_pair.normal.name}"
+                                        f"-n {tumor_pair.normal.name}",
+                                        ini_section="merge_filter_clairS"
                                     ),
                                     bcftools.view(
                                         None,
                                         clairS_germline_filtered,
-                                        "-f PASS -Oz"
+                                        "-f PASS -Oz",
+                                        ini_section="merge_filter_clairS"
                                     )
                                 ]
                             ),
@@ -1911,7 +1915,7 @@ For information on the structure and contents of the LongRead readset file, plea
 
                 if self.project_tracking_json:
                     samples = [sample]
-                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_$TIMESTAMP.o")
                     jobs.append(
                         concat_jobs(
                             [
@@ -1984,6 +1988,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             1,
                             "somatic",
                             tumor_pair.tumor.name,
+                            "clairS",
                             ini_section="format2pcgr"
                         ),
                         htslib.tabix(
@@ -2024,7 +2029,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 samples = [tumor_pair.normal, tumor_pair.tumor]
 
                 if self.project_tracking_json:
-                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_$TIMESTAMP.o")
                     jobs.append(
                         concat_jobs(
                             [

@@ -333,7 +333,8 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
   -j \\"{job_name}\\" \\{metrics}
   -o \\"{json_outfile}\\" \\
   -f {status}
-export PT_JSON_OUTFILE=\\"{json_outfile}\\" {command_separator}
+export PT_JSON_OUTFILE=\\"{json_outfile}\\"
+export TIMESTAMP=\\"{timestamp}\\" {command_separator}
 """.format(
             job2json_project_tracking_script="genpipes tools job2json_project_tracking",
             samples=",".join([sample.name for sample in job.samples]),
@@ -341,6 +342,7 @@ export PT_JSON_OUTFILE=\\"{json_outfile}\\" {command_separator}
             job_name=job.name,
             metrics=('\n  -m \\"' + ','.join(job.metrics) + '\\" \\') if job.metrics else '',
             json_outfile=json_outfile,
+            timestamp=pipeline.timestamp,
             status=job_status,
             command_separator="&&" if (job_status=='\\"RUNNING\\"') else ""
         ) if json_outfile else ""
@@ -490,7 +492,9 @@ echo "#!/bin/bash
 #PBS {self.cpu(job_name_prefix, adapt=pipeline.force_mem_per_cpu)}
 {memory}
 {dependencies}
+module load mugqic/python/3.13.3
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
+module unload mugqic/python/3.13.3
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS
@@ -690,8 +694,14 @@ echo "#!/bin/bash
 #SBATCH {self.cpu(job_name_prefix)} {self.gpu(job_name_prefix)}
 {dependencies}
 EPILOGUE_SCRIPT="{os.path.dirname(os.path.abspath(__file__))}/epilogue.py"
-trap "\\$EPILOGUE_SCRIPT" EXIT
+trap '{{
+    module load mugqic/python/3.13.3
+    "\\$EPILOGUE_SCRIPT"
+    module unload mugqic/python/3.13.3
+}}' EXIT
+module load mugqic/python/3.13.3
 {os.path.dirname(os.path.abspath(__file__))}/prologue.py
+module unload mugqic/python/3.13.3
 {self.job2json_project_tracking(pipeline, job, "RUNNING")}
 srun --wait=0 {config_step_wrapper} {self.container_line} bash $SCIENTIFIC_FILE
 GenPipes_STATE=\\$PIPESTATUS

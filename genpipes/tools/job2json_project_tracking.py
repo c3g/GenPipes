@@ -12,8 +12,12 @@ import time
 import random
 import shutil
 import signal
+import hashlib
+import logging
 
 from datetime import datetime
+
+log = logging.getLogger(__name__)
 
 def main(args=None):
     """
@@ -79,7 +83,17 @@ def main(args=None):
                                             'metric_name': metric_name,
                                             'metric_value': metric_value
                                             }]
+                                for fobj in job.get('file', []):
+                                    uri = fobj.get("location_uri")
+                                    local_path = uri_to_local_path(uri)
 
+                                    if local_path and os.path.exists(local_path) and os.path.isfile(local_path):
+                                        md5 = compute_md5sum(local_path)
+                                    else:
+                                        md5 = None
+
+                                    fobj["file_md5sum"] = md5
+                        
         # Print to file
         with open(args.json_outfile, 'w') as out_json:
             json.dump(current_json, out_json, indent=4)
@@ -113,6 +127,31 @@ def unlock(filepath):
     Unlocking filepath by removing the .lock file
     """
     shutil.rmtree(filepath + '.lock', ignore_errors=True)
+
+def compute_md5sum(filepath, block_size=8 * 1024 * 1024):
+    """
+    Compute MD5 hex digest of filepath
+    """
+    try:
+        with open(filepath, 'rb') as fh:
+            h = hashlib.md5()
+            for chunk in iter(lambda: fh.read(block_size), b''):
+                h.update(chunk)
+            return h.hexdigest()
+    except Exception as exc:
+        log.debug ("compute_md5sum: could not read '%s': %s", filepath, exc)
+        return None
+    
+def uri_to_local_path(uri):
+    """
+    Convert location_uri to local path (removing name of cluster)
+    """
+    if uri is None:
+        return None
+    parts = uri.split("://", 1)
+    if len(parts) == 2:
+        return parts[1]   
+    return uri
 
 if __name__ == '__main__':
     main()

@@ -372,12 +372,9 @@ Parameters:
                             sample=i,
                             profyle=self.profyle
                         )
-                        dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
                         # do not compute md5sum in the readset input directory
-                        md5sum_job = deliverables.md5sum(
-                            symlink_pair_job.output_files[0],
-                            f"{file_name}.md5",
-                            dir_name
+                        md5sum_job = bash.md5sum(
+                            symlink_pair_job.output_files[0]
                         )
                         jobs.append(
                             concat_jobs(
@@ -2822,7 +2819,7 @@ END
 
                 if self.project_tracking_json:
                     samples = [sample]
-                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_$TIMESTAMP.o")
                     jobs.append(
                         concat_jobs(
                             [
@@ -2960,7 +2957,7 @@ END
                 samples = [tumor_pair.normal, tumor_pair.tumor]
 
                 if self.project_tracking_json:
-                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_{self.timestamp}.o")
+                    pcgr_output_file = os.path.join(self.output_dir, "job_output", "report_pcgr", f"{job_name}_$TIMESTAMP.o")
                     jobs.append(
                         concat_jobs(
                             [
@@ -3958,7 +3955,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=samples,
                         readsets=readsets,
-                        input_dependency=[input_cna, output_cna],
+                        input_dependency=[input_cna],
                         output_dependency=[header, output_cna_body, output_cna]
                     )
                 )
@@ -4197,7 +4194,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                        input_dependency=[input_cna, output_cna],
+                        input_dependency=[input_cna],
                         output_dependency=[header, output_cna_body, output_cna],
                         removable_files=[header, output_cna_body]
                     )
