@@ -204,7 +204,7 @@ def call(
         ini_section="gembs_call"
         ):
     outputs = [
-            output_prefix + ".json",
+            output_prefix + "_call.json",
             output_prefix + ".bcf",
             output_prefix + ".bcf.csi",
             output_prefix + ".bcf.md5"
