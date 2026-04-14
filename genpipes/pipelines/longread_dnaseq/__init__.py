@@ -1957,6 +1957,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
                 output_clairS = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
                 input_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.pcgr.vcf.gz")
+                savana_metrics = os.path.join(savana_directory, f"{tumor_pair.name}_fitted_purity_ploidy.tsv")
 
                 output_report = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.html")
                 output_maf = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.maf")
@@ -2015,6 +2016,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             pcgr_directory,
                             tumor_pair.name,
                             input_cna,
+                            input_savana = savana_metrics,
                             ini_section=ini_section
                         ),
                         bash.ls(output_report)
@@ -2069,8 +2071,12 @@ For information on the structure and contents of the LongRead readset file, plea
             for tumor_pair in self.tumor_pairs.values():
                 djerba_dir = os.path.join(self.output_dirs['report_directory'], tumor_pair.name, "djerba")
                 pcgr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "pcgr")
+                input_tmb = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".tmb.tsv")
                 input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".maf")
                 clean_maf =  os.path.join(djerba_dir, tumor_pair.name + ".pcgr." + assembly + ".clean.maf")
+                msi_input = purple.purity.tsv #TBD
+                hrd_input = chord_pred.txt #TBD
+                snp_count = os.path.join(djerba_dir, "SNP.count.txt")
                 config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
                 djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
 
@@ -2082,14 +2088,21 @@ For information on the structure and contents of the LongRead readset file, plea
                                 input_maf,
                                 clean_maf
                                 ),
+                            djerba.parse_snp_count(
+                                input_tmb,
+                                snp_count
+                                ),
                             djerba.make_config(
                                 config_file,
                                 tumor_pair.name,
                                 tumor_pair.tumor.name,
                                 tumor_pair.normal.name,
                                 clean_maf + ".gz",
-                                None,
-                                "WGS"
+                                purple_input=None,
+                                msi_input=msi_input,
+                                tmb_input=snp_count,
+                                hrd_input=hrd_input,
+                                assay="WGS"
                                 ),
                             # djerba report requires internet connection. Script is produced but must be executed locally.
                             djerba.make_script(
