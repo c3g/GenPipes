@@ -30,6 +30,9 @@ def make_config(
         normal_id,
         maf_input,
         purple_input,
+        msi_input,
+        tmb_input,
+        hrd_input,
         assay="WGTS",
         ini_section = 'report_djerba'
         ):
@@ -94,6 +97,23 @@ whizbam_project = COL
 {"whizbam_project=OCTCAP" if purple_input else ""}
 {"assay = " + assay if purple_input else ""} 
 
+[genomic_landscape]
+attributes = research
+tumour_id = {tumor_id}
+oncotree_code = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else ""}
+tcga_code = TCGA_ALL_TUMOR
+purity = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "Purity" {{print $2}}'`
+msi_file = {msi_input}
+ctdna_file = {tmb_input}
+hrd_path = {hrd_input if hrd_input else "None"}
+sample_type = {global_conf.global_get(ini_section, 'oncokb_cache', required = False) if global_conf.global_get(ini_section, 'oncokb_cache', required = False) else "Unknown"}
+oncokb cache = {global_conf.global_get(ini_section, 'oncokb_cache', required = False) if global_conf.global_get(ini_section, 'oncokb_cache', required = False) else ""}
+apply cache = {global_conf.global_get(ini_section, 'apply_cache', required = False) if global_conf.global_get(ini_section, 'apply_cache', required = False) else "False"}
+update cache = {global_conf.global_get(ini_section, 'update_cache', required = False) if global_conf.global_get(ini_section, 'update_cache', required = False) else "False"}
+clinical = False
+supplementary = False
+coverage = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "AmberMeanDepth" {{print $2}}'`
+
 [gene_information_merger]
 attributes = research,supplementary
 configure_priority = 2000
@@ -137,6 +157,22 @@ gzip -f {output_maf}""".format(
         output_maf=output_maf
         )
     )
+
+def parse_snp_count(
+        input,
+        output
+    ):
+
+    return Job(
+        [input],
+        [output],
+        [],
+        command="""\
+awk 'NR == 2 {{print $2}}' {input} > {output}""".format(
+    input=input,
+    output=output
+    )
+)
 
 def make_script(
         config_file,
