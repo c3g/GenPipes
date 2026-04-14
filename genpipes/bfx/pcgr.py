@@ -94,12 +94,21 @@ def report2(input_vcf,
            output_dir,
            tumor_id,
            input_cna,
+           purple_input=None,
+           savana_input=None,
            ini_section='report_pcgr'
            ):
 
     if cpsr_prefix:
         cpsr_input = f"{cpsr_prefix}.classification.tsv.gz"
         cpsr_yaml = f"{cpsr_prefix}.conf.yaml"
+
+    if purple_input:
+        purity="`awk 'NR == 2 {{print $1}}' {purple_input}`"
+        ploidy="`awk 'NR == 2 {{print $5}}' {purple_input}`"
+    if savana_input:
+        purity="`awk 'NR == 2 {{print $1}}' {savana_input}`"
+        ploidy="`awk 'NR == 2 {{print $2}}' {savana_input}`"
     # use tmp dir for pcgr to avoid disk quota issues caused by bcftools tmp dir settings
     return Job(
         [
@@ -118,7 +127,7 @@ if [ -e {input_cna}.pass ]; then
 fi && \\
 mkdir -p {tmp_dir}/pcgr && \\
 pcgr {options} \\
-    {tumor_type} \\
+    {tumor_type} {purity_ploidy} \\
     {assay} \\
     {tumor_options} \\
     {normal_options} \\
@@ -136,6 +145,7 @@ pcgr {options} \\
 cp -r {tmp_dir}/pcgr {output_dir}""".format(
             options=global_conf.global_get(ini_section, 'options_v2'),
             tumor_type=global_conf.global_get(ini_section, 'tumor_type'),
+            purity_ploidy="--tumor_purity " + purity + " --tumor_ploidy " + ploidy if purple_input or savana_input else "",
             assay=global_conf.global_get(ini_section, 'assay'),
             tumor_options=global_conf.global_get(ini_section, 'tumor_options'),
             normal_options=global_conf.global_get(ini_section, 'normal_options'),

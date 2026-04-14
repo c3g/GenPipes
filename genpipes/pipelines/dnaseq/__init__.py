@@ -2868,6 +2868,7 @@ END
                         panel_directory,
                         "pcgr"
                     )
+                    purple_input = None
                 # Set directory, ini_section, job and sample name for tumor pair Ensemble protocol
                 elif 'ensemble' in self.protocol:
                     ensemble_directory = os.path.join(
@@ -2893,6 +2894,13 @@ END
                         ensemble_directory,
                         tumor_pair.name,
                         "pcgr"
+                    )
+
+                    purple_input = os.path.join(
+                        self.output_dirs['paired_variants_directory'],
+                        tumor_pair.name,
+                        "purple",
+                        f"{tumor_pair.tumor.name}.purple.purity.tsv"
                     )
 
                 input_cpsr = os.path.join(
@@ -2943,6 +2951,7 @@ END
                             pcgr_directory,
                             tumor_pair.name,
                             input_cna=output_cna,
+                            purple_input=purple_input,
                             ini_section=ini_section
                         ),
                         bash.ls(output)
