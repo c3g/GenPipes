@@ -31,6 +31,7 @@ from ...core.sample_tumor_pairs import parse_tumor_pair_file
 from .. import common
 
 from ...bfx import (
+    amber,
     annotsv,
     bash_cmd as bash,
     bcftools,
@@ -38,6 +39,7 @@ from ...bfx import (
     clair3,
     clairS,
     cnvkit,
+    cobalt,
     cpsr,
     deepvariant,
     djerba,
@@ -54,6 +56,7 @@ from ...bfx import (
     nanoplot,
     pbmm2,
     pcgr,
+    purple,
     pycoqc,
     samtools,
     savana,
@@ -1315,6 +1318,133 @@ For information on the structure and contents of the LongRead readset file, plea
 
         return jobs
 
+    def purple(self):
+        """
+        PURPLE is a purity ploidy estimator for whole genome sequenced (WGS) data.
+
+        It combines B-allele frequency (BAF) from AMBER, read depth ratios from COBALT,
+        somatic variants and structural variants to estimate the purity and copy number profile of a tumor sample.
+        Returns:
+            list: A list of purple jobs.
+        """
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+
+            pair_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+
+            [input_normal] = self.select_input_files(
+                [
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
+                ]
+            )
+
+            [input_tumor] = self.select_input_files(
+                [
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
+                ]
+            )
+
+            somatic_hotspots = global_conf.global_get('purple', 'somatic_hotspots', param_type='filepath')
+            driver_gene_panel = global_conf.global_get('purple', 'driver_gene_panel', param_type='filepath')
+
+            purple_dir = os.path.join(pair_dir, "purple")
+            amber_dir = os.path.join(purple_dir, "rawAmber")
+            cobalt_dir = os.path.join(purple_dir, "rawCobalt")
+            ensembl_data_dir = global_conf.global_get('purple', 'ensembl_data_dir', param_type='dirpath')
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            amber_dir,
+                            remove=True
+                        ),
+                        amber.run(
+                            input_normal,
+                            input_tumor,
+                            tumor_pair.normal.name,
+                            tumor_pair.tumor.name,
+                            amber_dir,
+                        )
+                    ],
+                    name="purple.amber." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            cobalt_dir,
+                            remove=True
+                        ),
+                        cobalt.run(
+                            input_normal,
+                            input_tumor,
+                            tumor_pair.normal.name,
+                            tumor_pair.tumor.name,
+                            cobalt_dir,
+                        )
+                    ],
+                    name="purple.cobalt." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+            purple_purity_output = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.purity.tsv")
+            purple_qc_output = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.qc")
+            samples = [tumor_pair.normal, tumor_pair.tumor]
+            job_name = f"purple.purity.{tumor_pair.name}"
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                    purple.parse_purity_metrics_pt(purple_purity_output),
+                    job2json_project_tracking.run(
+                        input_file=purple_purity_output,
+                        samples=",".join([sample.name for sample in samples]),
+                        readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                        job_name=job_name,
+                        metrics="purity=$purity"
+                        )
+                    ])
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        purple.run(
+                            amber_dir,
+                            cobalt_dir,
+                            tumor_pair.normal.name,
+                            tumor_pair.tumor.name,
+                            purple_dir,
+                            ensembl_data_dir,
+                            None, #TBD if these are used
+                            None,
+                            None,
+                            None,
+                            None,
+                            driver_gene_panel
+                        ),
+                        job_project_tracking_metrics
+                    ],
+                    name=job_name,
+                    samples=samples,
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+            self.multiqc_inputs[tumor_pair.name].extend(
+                [purple_purity_output, purple_qc_output]
+            )
+
+        return jobs
+
     def whatshap(self):
         """
         Create a haplotagged file using Whatshap.
@@ -2215,6 +2345,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.clairS,
                 self.merge_filter_clairS,
                 self.savana,
+                self.purple, # TO BE ADDED
+                self.chord, # TO BE ADDED
                 self.report_cpsr,
                 self.report_pcgr,
                 self.report_djerba,
