@@ -2992,6 +2992,18 @@ END
 
         return jobs
     
+    def chord(self):
+        """
+        Predict homologous recombination deficiency with [CHORD] (https://github.com/hartwigmedical/hmftools/tree/master/chord).
+        """
+
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple")
+            snv_indel_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.somatic.vcf.gz")
+            sv_vcf = None
+    
     def report_djerba(self):
         """
         Produce Djerba report.
@@ -8354,6 +8366,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.report_cpsr,
                 self.filter_somatic,
                 self.report_pcgr,
+                self.chord,
                 self.report_djerba,
                 self.run_multiqc,
                 self.sym_link_fastq_pair,
