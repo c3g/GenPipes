@@ -41,6 +41,7 @@ from ...bfx import (
     breakseq2,
     bvatools,
     bwa,
+    chord,
     cnvkit,
     cobalt,
     conpair,
@@ -3004,7 +3005,18 @@ END
             snv_indel_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.somatic.vcf.gz")
             sv_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.sv.vcf.gz")
 
-            # CHORD JOB TBD
+            job = chord.run(
+                tumor_pair.tumor.name,
+                snv_indel_vcf,
+                sv_vcf,
+                purple_dir
+                )
+            
+            job.name = f"chord.{tumor_pair.name}"
+            job.samples = [tumor_pair.tumor, tumor_pair.normal]
+            jobs.append(job)
+
+        return jobs
     
     def report_djerba(self):
         """
