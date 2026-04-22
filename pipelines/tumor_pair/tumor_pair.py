@@ -4574,9 +4574,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
             input_strelka2 = os.path.join(input_directory, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz")
-            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
+            #input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
             input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
-            inputs_somatic = [input_mutect2, input_strelka2, input_vardict, input_varscan2]
+            inputs_somatic = [input_mutect2, input_strelka2, input_varscan2]
 
             for input_vcf in inputs_somatic:
                 if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
@@ -4633,10 +4633,10 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             input_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
 
             input_strelka2 = os.path.join(input_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz")
-            input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
+            #input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
             input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.germline.vt.vcf.gz")
 
-            inputs_germline = [input_strelka2, input_vardict, input_varscan2]
+            inputs_germline = [input_strelka2, input_varscan2]
 
             for input_vcf in inputs_germline:
                 if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
