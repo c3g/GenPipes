@@ -2247,6 +2247,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             tumor_pair_jobs = []
             qualimap_normal_job = concat_jobs(
                 [
+                    bash.rm(
+                        normal_qualimap_directory
+                    ),
                     bash.mkdir(
                         normal_qualimap_directory,
                         remove=False
@@ -2256,6 +2259,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         normal_qualimap_directory,
                         normal_output,
                         options
+                    ),
+                    bash.rm(
+                        os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap", tumor_pair.normal.name)
                     ),
                     bash.mkdir(
                        os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")
@@ -2272,6 +2278,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             qualimap_normal_job.name = normal_job_name
             qualimap_normal_job.samples = normal_samples
             qualimap_normal_job.readsets = list(tumor_pair.normal.readsets)
+            qualimap_normal_job.input_dependency = [normal_input]
             tumor_pair_jobs.append(qualimap_normal_job)
 
             tumor_samples = [tumor_pair.tumor]
@@ -2316,6 +2323,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             qualimap_tumor_job = concat_jobs(
                 [
+                    bash.rm(
+                        tumor_qualimap_directory
+                    ),
                     bash.mkdir(
                         tumor_qualimap_directory,
                         remove=False
@@ -2325,6 +2335,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         tumor_qualimap_directory,
                         tumor_output,
                         options
+                    ),
+                    bash.rm(
+                        os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap", tumor_pair.tumor.name)
                     ),
                     bash.mkdir(
                        os.path.join(self.output_dirs['report'][tumor_pair.name], "qualimap")
@@ -2341,6 +2354,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             qualimap_tumor_job.name = tumor_job_name
             qualimap_tumor_job.samples = tumor_samples
             qualimap_tumor_job.readsets = list(tumor_pair.tumor.readsets)
+            qualimap_tumor_job.input_dependency = [tumor_input]
             tumor_pair_jobs.append(qualimap_tumor_job)
 
             jobs.extend(tumor_pair_jobs)
