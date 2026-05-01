@@ -22,6 +22,8 @@
   - [modkit](#modkit)
   - [clairS](#clairs)
   - [merge_filter_clairS](#merge_filter_clairs)
+  - [clairS_to_purple](#clairs_to_purple)
+  - [purple](#purple)
   - [savana](#savana)
   - [report_cpsr](#report_cpsr)
   - [report_pcgr](#report_pcgr)
@@ -176,10 +178,12 @@ Protocol nanopore_paired_somatic
 8 clairS
 9 merge_filter_clairS
 10 savana
-11 report_cpsr
-12 report_pcgr
-13 report_djerba
-14 multiqc
+11 clairS_to_purple
+12 purple
+13 report_cpsr
+14 report_pcgr
+15 report_djerba
+16 multiqc
 
 Protocol revio
 1 metrics_nanoplot
@@ -302,6 +306,26 @@ merge_filter_clairS
 Merge clairS outputs and filter vcf.
 Germline and somatic outputs are merged for downstream use in CPSR/PCGR, respectively.
 
+clairS_to_purple 
+----------------
+ 
+Convert filtered ClairS somatic VCFs to PURPLE-compatible VCFs.
+This step uses the filtered somatic VCF produced by merge_filter_clairS:
+`variants/<pair>/clairS/<pair>.clairS.somatic.flt.vcf.gz`.
+
+purple 
+------
+ 
+Run AMBER, COBALT, and PURPLE for nanopore paired somatic samples.
+The PURPLE job consumes files produced by earlier steps in this protocol:
+the PURPLE-compatible somatic SNV VCF from clairS_to_purple
+(`purple/<pair>.clairS.somatic.flt.purple.vcf.gz`), the filtered germline
+ClairS VCF from merge_filter_clairS
+(`variants/<pair>/clairS/<pair>.clairS.germline.flt.vcf.gz`), and the
+classified somatic SV VCF from savana
+(`SVariants/<pair>/savana/<pair>.classified.somatic.vcf`). AMBER and COBALT
+run in the same step and provide the copy-number and BAF inputs used by PURPLE.
+
 savana 
 ------
  
@@ -365,4 +389,3 @@ hiphase
 -------
  
 Phase variant calls with HiPhase.
-

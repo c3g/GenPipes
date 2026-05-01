@@ -393,6 +393,39 @@ python $PYTHON_TOOLS/savana2cnvkit.py \\
         )
     )
 
+def clairs_to_purple(
+        input,
+        output,
+        tumor,
+        normal,
+        ini_section="clairS_to_purple"
+        ):
+    script = global_conf.global_get(ini_section, "script", required=False, param_type="filepath")
+    if not script:
+        script = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../../../c3g_tools/tools/ClairS_to_purple.sh")
+        )
+
+    return Job(
+        [input],
+        [output, output + ".tbi"],
+        [
+            [ini_section, "module_htslib"]
+        ],
+        command="""\
+bash {script} \\
+    -i {input} \\
+    -o {output} \\
+    -t {tumor} \\
+    -n {normal}""".format(
+            script=script,
+            input=input,
+            output=output,
+            tumor=tumor,
+            normal=normal
+        )
+    )
+
 def chunkBedbyFileNumber(
         input,
         output,

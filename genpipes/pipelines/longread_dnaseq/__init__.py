@@ -31,13 +31,15 @@ from ...core.sample_tumor_pairs import parse_tumor_pair_file
 from .. import common
 
 from ...bfx import (
-    annotsv,
+        amber,
+        annotsv,
     bash_cmd as bash,
     bcftools,
     bvatools,
     clair3,
     clairS,
     cnvkit,
+    cobalt,
     cpsr,
     deepvariant,
     djerba,
@@ -54,6 +56,7 @@ from ...bfx import (
     nanoplot,
     pbmm2,
     pcgr,
+    purple,
     pycoqc,
     samtools,
     savana,
@@ -162,6 +165,7 @@ For information on the structure and contents of the LongRead readset file, plea
             'svim_directory': os.path.relpath(os.path.join(self.output_dir, 'svim'), self.output_dir),
             'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
             'SVariants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir),
+            'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'pairedVariants'), self.output_dir),
             'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
             'annotsv_directory': os.path.relpath(os.path.join(self.output_dir, 'annotSV'), self.output_dir),
@@ -1277,7 +1281,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 )
 
         return jobs
-    
+
     def savana(self):
         """
         Call somatic structural variants and copy number aberrations with Savana.
@@ -1313,6 +1317,133 @@ For information on the structure and contents of the LongRead readset file, plea
                 )
             )
 
+        return jobs
+
+    def purple(self):
+        """
+        Run AMBER, COBALT, and PURPLE for nanopore paired somatic samples.
+        """
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            normal_align_directory = os.path.join(self.output_dirs["alignment_directory"], tumor_pair.normal.name)
+            tumor_align_directory = os.path.join(self.output_dirs["alignment_directory"], tumor_pair.tumor.name)
+            normal_bam = os.path.join(normal_align_directory, f"{tumor_pair.normal.name}.sorted.bam")
+            tumor_bam = os.path.join(tumor_align_directory, f"{tumor_pair.tumor.name}.sorted.bam")
+
+            purple_dir = os.path.join(self.output_dirs["paired_variants_directory"], tumor_pair.name, "purple")
+            amber_dir = os.path.join(purple_dir, "rawAmber")
+            cobalt_dir = os.path.join(purple_dir, "rawCobalt")
+
+            clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+            germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
+            raw_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+            somatic_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.purple.vcf.gz")
+            somatic_sv_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
+
+            somatic_hotspots = global_conf.global_get('purple', 'somatic_hotspots', param_type='filepath')
+            germline_hotspots = None
+            driver_gene_panel = global_conf.global_get('purple', 'driver_gene_panel', param_type='filepath')
+            ensembl_data_dir = global_conf.global_get('purple', 'ensembl_data_dir', param_type='dirpath')
+  
+        # Convert filtered ClairS somatic VCFs to PURPLE-compatible VCFs.
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(purple_dir),
+                        tools.clairs_to_purple(
+                            raw_somatic_vcf,
+                            somatic_vcf,
+                            tumor_pair.tumor.name,
+                            tumor_pair.normal.name
+                        )
+                    ],
+                    name=f"clairS_to_purple.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                )
+            )
+            
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(amber_dir),
+                        amber.run(
+                            normal_bam,
+                            tumor_bam,
+                            tumor_pair.tumor.name,
+                            tumor_pair.normal.name,
+                            amber_dir
+                        )
+                    ],
+                    name=f"purple.amber.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                )
+            )
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(cobalt_dir),
+                        cobalt.run(
+                            normal_bam,
+                            tumor_bam,
+                            tumor_pair.tumor.name,
+                            tumor_pair.normal.name,
+                            cobalt_dir
+                        )
+                    ],
+                    name=f"purple.cobalt.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                )
+            )
+
+            purple_purity_output = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.purity.tsv")
+            purple_qc_output = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.qc")
+            samples = [tumor_pair.normal, tumor_pair.tumor]
+            job_name = f"purple.purity.{tumor_pair.name}"
+            job_project_tracking_metrics = []
+
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                    purple.parse_purity_metrics_pt(purple_purity_output),
+                    job2json_project_tracking.run(
+                        input_file=purple_purity_output,
+                        samples=",".join([sample.name for sample in samples]),
+                        readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                        job_name=job_name,
+                        metrics="purity=$purity"
+                        )
+                    ])
+                
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(purple_dir),
+                        purple.run(amber_dir,
+                                   cobalt_dir,
+                                   tumor_pair.tumor.name,
+                                   tumor_pair.normal.name,
+                                   purple_dir,
+                                   ensembl_data_dir,
+                                   somatic_vcf,
+                                   somatic_sv_vcf,
+                                   None,
+                                   somatic_hotspots,
+                                   germline_hotspots,
+                                   driver_gene_panel,
+                                   germline_vcf)
+                        ],
+                    name=f"purple.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                )
+            )
+        
         return jobs
 
     def whatshap(self):
@@ -2202,6 +2333,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.clairS,
                 self.merge_filter_clairS,
                 self.savana,
+                self.purple,
                 self.report_cpsr,
                 self.report_pcgr,
                 self.report_djerba,
