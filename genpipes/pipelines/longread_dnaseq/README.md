@@ -22,7 +22,6 @@
   - [modkit](#modkit)
   - [clairS](#clairs)
   - [merge_filter_clairS](#merge_filter_clairs)
-  - [clairS_to_purple](#clairs_to_purple)
   - [purple](#purple)
   - [savana](#savana)
   - [report_cpsr](#report_cpsr)
@@ -74,7 +73,8 @@ approach, please consult [this GitHub repository](https://github.com/nanoporetec
 
 For the nanopore_paired_somatic protocol, alignment and metrics generation follow the same steps for both the normal 
 and the tumor sample. Variant calling for each sample is done with ClairS, followed by detection of somatic structural 
-variants with SAVANA. Finally, CPSR and PCGR reports are created for germline and somatic variants, respectively. 
+variants with SAVANA. AnnotSV annotates the somatic structural variants from SAVANA using the filtered somatic
+ClairS VCF as SNV/indel input. Finally, CPSR and PCGR reports are created for germline and somatic variants, respectively. 
 
 The Revio protocol uses pbmm2 to align reads to the reference genome, followed by variant calling with DeepVariant
 and structural variant calling with HiFiCNV, TRGT, and Sawfish. Variants are annotated with AnnotSV and phased
@@ -168,22 +168,21 @@ Protocol nanopore
 16 modkit
 
 Protocol nanopore_paired_somatic
-1 blastqc
-2 metrics_nanoplot
-3 minimap2_align
-4 samtools_merge_bam_files
-5 metrics_nanoplot_aligned
-6 metrics_mosdepth
-7 set_variant_calling_regions
-8 clairS
-9 merge_filter_clairS
-10 savana
-11 clairS_to_purple
-12 purple
-13 report_cpsr
-14 report_pcgr
-15 report_djerba
-16 multiqc
+1 metrics_nanoplot
+2 minimap2_align
+3 samtools_merge_bam_files
+4 metrics_nanoplot_aligned
+5 metrics_mosdepth
+6 set_variant_calling_regions
+7 clairS
+8 merge_filter_clairS
+9 savana
+10 purple
+11 report_cpsr
+12 report_pcgr
+13 report_djerba
+14 annotSV
+15 multiqc
 
 Protocol revio
 1 metrics_nanoplot
@@ -306,25 +305,20 @@ merge_filter_clairS
 Merge clairS outputs and filter vcf.
 Germline and somatic outputs are merged for downstream use in CPSR/PCGR, respectively.
 
-clairS_to_purple 
-----------------
- 
-Convert filtered ClairS somatic VCFs to PURPLE-compatible VCFs.
-This step uses the filtered somatic VCF produced by merge_filter_clairS:
-`variants/<pair>/clairS/<pair>.clairS.somatic.flt.vcf.gz`.
-
 purple 
 ------
  
 Run AMBER, COBALT, and PURPLE for nanopore paired somatic samples.
-The PURPLE job consumes files produced by earlier steps in this protocol:
-the PURPLE-compatible somatic SNV VCF from clairS_to_purple
-(`purple/<pair>.clairS.somatic.flt.purple.vcf.gz`), the filtered germline
-ClairS VCF from merge_filter_clairS
-(`variants/<pair>/clairS/<pair>.clairS.germline.flt.vcf.gz`), and the
-classified somatic SV VCF from savana
-(`SVariants/<pair>/savana/<pair>.classified.somatic.vcf`). AMBER and COBALT
-run in the same step and provide the copy-number and BAF inputs used by PURPLE.
+This step also runs the internal `clairS_to_purple` job, which converts the
+filtered ClairS somatic VCF
+(`variants/<pair>/clairS/<pair>.clairS.somatic.flt.vcf.gz`) to the
+PURPLE-compatible somatic SNV VCF
+(`pairedVariants/<pair>/purple/<pair>.clairS.somatic.flt.purple.vcf.gz`).
+The PURPLE job also consumes the filtered germline ClairS VCF from
+merge_filter_clairS (`variants/<pair>/clairS/<pair>.clairS.germline.flt.vcf.gz`)
+and the classified somatic SV VCF from savana
+(`SVariants/<pair>/savana/<pair>.classified.somatic.vcf`). AMBER and COBALT run
+in the same step and provide the copy-number and BAF inputs used by PURPLE.
 
 savana 
 ------
@@ -383,7 +377,9 @@ Call structural variants from mapped HiFi sequencing reads with Sawfish.
 annotSV 
 -------
  
-Annotate and rank structural variants with AnnotSV.
+Annotate and rank structural variants with AnnotSV. In the nanopore_paired_somatic protocol, AnnotSV uses
+`SVariants/<pair>/savana/<pair>.classified.somatic.vcf` as SV input and
+`variants/<pair>/clairS/<pair>.clairS.somatic.flt.vcf.gz` as SNV/indel input.
 
 hiphase 
 -------
