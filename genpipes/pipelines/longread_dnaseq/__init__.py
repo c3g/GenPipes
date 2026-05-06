@@ -36,6 +36,7 @@ from ...bfx import (
     bash_cmd as bash,
     bcftools,
     bvatools,
+    chord,
     clair3,
     clairS,
     cnvkit,
@@ -1954,16 +1955,16 @@ For information on the structure and contents of the LongRead readset file, plea
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            # TBD modify inputs to be savana and clairS vcfs (?)
-            purple_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "purple")
-            snv_indel_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.somatic.vcf.gz")
-            sv_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.sv.vcf.gz")
+            savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+            savana_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
+            clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            clairS_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
 
             job = chord.run(
                 tumor_pair.tumor.name,
-                snv_indel_vcf,
-                sv_vcf,
-                purple_dir
+                clairS_vcf,
+                savana_vcf,
+                savana_dir # TBD if we want to output here
                 )
             
             job.name = f"chord.{tumor_pair.name}"
