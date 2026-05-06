@@ -105,7 +105,8 @@ approach, please consult [this GitHub repository](https://github.com/nanoporetec
 
 For the nanopore_paired_somatic protocol, alignment and metrics generation follow the same steps for both the normal 
 and the tumor sample. Variant calling for each sample is done with ClairS, followed by detection of somatic structural 
-variants with SAVANA. Finally, CPSR and PCGR reports are created for germline and somatic variants, respectively. 
+variants with SAVANA. AnnotSV annotates the somatic structural variants from SAVANA using the filtered somatic
+ClairS VCF as SNV/indel input. Finally, CPSR and PCGR reports are created for germline and somatic variants, respectively. 
 
 The Revio protocol uses pbmm2 to align reads to the reference genome, followed by variant calling with DeepVariant
 and structural variant calling with HiFiCNV, TRGT, and Sawfish. Variants are annotated with AnnotSV and phased
@@ -165,6 +166,7 @@ For information on the structure and contents of the LongRead readset file, plea
             'svim_directory': os.path.relpath(os.path.join(self.output_dir, 'svim'), self.output_dir),
             'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
             'SVariants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir),
+            'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'pairedVariants'), self.output_dir),
             'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
             'annotsv_directory': os.path.relpath(os.path.join(self.output_dir, 'annotSV'), self.output_dir),
@@ -1357,6 +1359,34 @@ For information on the structure and contents of the LongRead readset file, plea
             cobalt_dir = os.path.join(purple_dir, "rawCobalt")
             ensembl_data_dir = global_conf.global_get('purple', 'ensembl_data_dir', param_type='dirpath')
 
+            clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+            germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
+            raw_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+            somatic_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.purple.vcf.gz")
+            somatic_sv_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
+
+            # Convert filtered ClairS somatic VCFs to purple-compatible VCFs
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            purple_dir
+                        ),
+                        tools.clairs2purple(
+                            raw_somatic_vcf,
+                            somatic_vcf,
+                            tumor_pair.normal.name,
+                            tumor_pair.tumor.name
+                        )
+                    ],
+                    name=f"clairS_to_purple.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+            
+            
             jobs.append(
                 concat_jobs(
                     [
@@ -1418,6 +1448,9 @@ For information on the structure and contents of the LongRead readset file, plea
             jobs.append(
                 concat_jobs(
                     [
+                        bash.mkdir(
+                            purple_dir
+                            ),
                         purple.run(
                             amber_dir,
                             cobalt_dir,
@@ -1425,12 +1458,13 @@ For information on the structure and contents of the LongRead readset file, plea
                             tumor_pair.tumor.name,
                             purple_dir,
                             ensembl_data_dir,
-                            None, #TBD if these are used
+                            somatic_vcf, #TBD if these are used
+                            somatic_sv_vcf,
                             None,
+                            somatic_hotspots,
                             None,
-                            None,
-                            None,
-                            driver_gene_panel
+                            driver_gene_panel,
+                            germline_vcf
                         ),
                         job_project_tracking_metrics
                     ],
@@ -1756,69 +1790,110 @@ For information on the structure and contents of the LongRead readset file, plea
         """
         jobs =[]
 
-        for sample in self.samples:
-            annotsv_directory = os.path.join(self.output_dirs["annotsv_directory"], sample.name)
-            svariants_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
-            hificnv_vcf = os.path.join(svariants_dir, "hificnv", f"{sample.name}.hificnv.filt.vcf.gz")
-            sawfish_vcf = os.path.join(svariants_dir, "sawfish", f"{sample.name}.sawfish.flt.vcf.gz")
-            deepvariant_vcf = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant", f"{sample.name}.deepvariant.flt.vcf.gz")
+        if self.protocol == "revio":
+            for sample in self.samples:
+                annotsv_directory = os.path.join(self.output_dirs["annotsv_directory"], sample.name)
+                svariants_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
+                hificnv_vcf = os.path.join(svariants_dir, "hificnv", f"{sample.name}.hificnv.filt.vcf.gz")
+                sawfish_vcf = os.path.join(svariants_dir, "sawfish", f"{sample.name}.sawfish.flt.vcf.gz")
+                deepvariant_vcf = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant", f"{sample.name}.deepvariant.flt.vcf.gz")
 
-            hificnv_dir = os.path.join(annotsv_directory, "hificnv")
-            sawfish_dir = os.path.join(annotsv_directory, "sawfish")
-            hificnv_annot = os.path.join(hificnv_dir, f"{sample.name}.hificnv.annotsv.tsv")
-            sawfish_annot = os.path.join(sawfish_dir, f"{sample.name}.sawfish.annotsv.tsv")
+                hificnv_dir = os.path.join(annotsv_directory, "hificnv")
+                sawfish_dir = os.path.join(annotsv_directory, "sawfish")
+                hificnv_annot = os.path.join(hificnv_dir, f"{sample.name}.hificnv.annotsv.tsv")
+                sawfish_annot = os.path.join(sawfish_dir, f"{sample.name}.sawfish.annotsv.tsv")
 
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(hificnv_dir),
-                        annotsv.annotate(
-                            hificnv_vcf,
-                            hificnv_annot,
-                            deepvariant_vcf
-                        ),
-                        annotsv.html(
-                            hificnv_annot,
-                            hificnv_dir,
-                            f"{sample.name}.hificnv.annotsv"
-                        ),
-                        annotsv.excel(
-                            hificnv_annot,
-                            hificnv_dir,
-                            f"{sample.name}.hificnv.annotsv"
-                        )
-                    ],
-                    name=f"annotsv.hificnv.{sample.name}",
-                    samples=[sample],
-                    readsets=[*list(sample.readsets)]
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(hificnv_dir),
+                            annotsv.annotate(
+                                hificnv_vcf,
+                                hificnv_annot,
+                                deepvariant_vcf
+                            ),
+                            annotsv.html(
+                                hificnv_annot,
+                                hificnv_dir,
+                                f"{sample.name}.hificnv.annotsv"
+                            ),
+                            annotsv.excel(
+                                hificnv_annot,
+                                hificnv_dir,
+                                f"{sample.name}.hificnv.annotsv"
+                            )
+                        ],
+                        name=f"annotsv.hificnv.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
+                    )
                 )
-            )
 
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(sawfish_dir),
-                        annotsv.annotate(
-                            sawfish_vcf,
-                            sawfish_annot,
-                            deepvariant_vcf
-                        ),
-                        annotsv.html(
-                            sawfish_annot,
-                            sawfish_dir,
-                            f"{sample.name}.sawfish.annotsv"
-                        ),
-                        annotsv.excel(
-                            sawfish_annot,
-                            sawfish_dir,
-                            f"{sample.name}.sawfish.annotsv"
-                        )
-                    ],
-                    name=f"annotsv.sawfish.{sample.name}",
-                    samples=[sample],
-                    readsets=[*list(sample.readsets)]
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(sawfish_dir),
+                            annotsv.annotate(
+                                sawfish_vcf,
+                                sawfish_annot,
+                                deepvariant_vcf
+                            ),
+                            annotsv.html(
+                                sawfish_annot,
+                                sawfish_dir,
+                                f"{sample.name}.sawfish.annotsv"
+                            ),
+                            annotsv.excel(
+                                sawfish_annot,
+                                sawfish_dir,
+                                f"{sample.name}.sawfish.annotsv"
+                            )
+                        ],
+                        name=f"annotsv.sawfish.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
+                    )
                 )
-            )
+
+        elif self.protocol == "nanopore_paired_somatic":
+            for tumor_pair in self.tumor_pairs.values():
+                annotsv_directory = os.path.join(self.output_dirs["annotsv_directory"], tumor_pair.name, "savana")
+                savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+                savana_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
+                clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+                clairS_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+                savana_annot = os.path.join(annotsv_directory, f"{tumor_pair.name}.savana.annotsv.tsv")
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                annotsv_directory
+                                ),
+                            annotsv.annotate(
+                                savana_vcf,
+                                savana_annot,
+                                clairS_vcf
+                            ),
+                            annotsv.html(
+                                savana_annot,
+                                annotsv_directory,
+                                f"{tumor_pair.name}.savana.annotsv"
+                            ),
+                            annotsv.excel(
+                                savana_annot,
+                                annotsv_directory,
+                                f"{tumor_pair.name}.savana_ClairS.annotsv"
+                            )
+                        ],
+                        name=f"annotsv.savana.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
+                    )
+                )
+
+        else:
+            _raise(SanitycheckError(f"Error: AnnotSV not meant to run with protocol {self.protocol} !"))
 
         return jobs
     
@@ -1868,6 +1943,32 @@ For information on the structure and contents of the LongRead readset file, plea
                     readsets=[*list(sample.readsets)]
                 )
             )
+
+        return jobs
+    
+    def chord(self):
+        """
+        Predict homologous recombination deficiency with [CHORD] (https://github.com/hartwigmedical/hmftools/tree/master/chord).
+        """
+
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            # TBD modify inputs to be savana and clairS vcfs (?)
+            purple_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "purple")
+            snv_indel_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.somatic.vcf.gz")
+            sv_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.sv.vcf.gz")
+
+            job = chord.run(
+                tumor_pair.tumor.name,
+                snv_indel_vcf,
+                sv_vcf,
+                purple_dir
+                )
+            
+            job.name = f"chord.{tumor_pair.name}"
+            job.samples = [tumor_pair.tumor, tumor_pair.normal]
+            jobs.append(job)
 
         return jobs
     
@@ -2345,7 +2446,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.clairS,
                 self.merge_filter_clairS,
                 self.savana,
-                self.purple, # TO BE ADDED
+                self.purple,
+                self.annotSV,
                 self.chord, # TO BE ADDED
                 self.report_cpsr,
                 self.report_pcgr,
