@@ -1374,11 +1374,21 @@ For information on the structure and contents of the LongRead readset file, plea
                         bash.mkdir(
                             purple_dir
                         ),
-                        tools.clairs2purple(
-                            raw_somatic_vcf,
-                            somatic_vcf,
-                            tumor_pair.normal.name,
-                            tumor_pair.tumor.name
+                        pipe_jobs(
+                            [
+                                tools.clairs2purple(
+                                    raw_somatic_vcf,
+                                    tumor_pair.normal.name,
+                                    tumor_pair.tumor.name
+                                ),
+                                htslib.bgzip(
+                                    None,
+                                    somatic_vcf
+                                )
+                            ]
+                        ),
+                        htslib.tabix(
+                            somatic_vcf
                         )
                     ],
                     name=f"clairS_to_purple.{tumor_pair.name}",
