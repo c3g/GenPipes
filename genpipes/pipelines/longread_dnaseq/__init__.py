@@ -1887,9 +1887,9 @@ For information on the structure and contents of the LongRead readset file, plea
                                 f"{tumor_pair.name}.savana_ClairS.annotsv"
                             )
                         ],
-                        name=f"annotsv.savana.{sample.name}",
-                        samples=[sample],
-                        readsets=[*list(sample.readsets)]
+                        name=f"annotsv.savana.{tumor_pair.name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
