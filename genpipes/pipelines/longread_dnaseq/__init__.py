@@ -1974,7 +1974,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 tumor_pair.tumor.name,
                 clairS_vcf,
                 savana_vcf,
-                savana_dir # TBD if we want to output here
+                savana_dir # TBD if we want to leave output here
                 )
             
             job.name = f"chord.{tumor_pair.name}"
@@ -2316,8 +2316,10 @@ For information on the structure and contents of the LongRead readset file, plea
                 input_tmb = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".tmb.tsv")
                 input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".maf")
                 clean_maf =  os.path.join(djerba_dir, tumor_pair.name + ".pcgr." + assembly + ".clean.maf")
-                msi_input = purple.purity.tsv #TBD
-                hrd_input = chord_pred.txt #TBD
+                purple_dir = pair_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple")
+                msi_input = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.purity.tsv")
+                savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+                hrd_input = os.path.join(savana_dir, tumor_pair.tumor.name + ".chord.prediction.tsv")
                 snp_count = os.path.join(djerba_dir, "SNP.count.txt")
                 config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
                 djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
