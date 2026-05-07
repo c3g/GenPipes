@@ -1376,7 +1376,7 @@ For information on the structure and contents of the LongRead readset file, plea
                         ),
                         pipe_jobs(
                             [
-                                tools.clairs2purple(
+                                tools.clairS2purple(
                                     raw_somatic_vcf,
                                     tumor_pair.normal.name,
                                     tumor_pair.tumor.name
