@@ -51,7 +51,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $CHORD_JAR \
   -threads {threads} \\
   -ref_genome {reference_sequence} \\
   -sample {tumor_name} \\
-  -snv_indel_vcf {snv_indel_vcf} \\
+  -snv_indel_vcf_file {snv_indel_vcf} \\
   -sv_vcf_file {sv_vcf} \\
   -output_dir {output_dir}""".format(
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
