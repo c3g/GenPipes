@@ -1501,3 +1501,27 @@ cut -f1-8 {input} | head -n 11 >> {output}""".format(
         input=input
     )
 )
+
+def clairS2purple(
+    input,
+    normal,
+    tumor,
+    ini_section="clairS2purple"
+    ):
+
+    return Job(
+        [input],
+        [],
+        [
+            [ini_section, "module_c3g_tools"]
+        ],
+        command="""\
+bash clairS2purple.sh \\
+    -i {input} \\
+    -n {normal} \\
+    -t {tumor}""".format(
+        input=input,
+        normal=normal,
+        tumor=tumor
+        )
+    )
