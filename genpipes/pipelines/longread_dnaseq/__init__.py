@@ -1366,6 +1366,8 @@ For information on the structure and contents of the LongRead readset file, plea
             raw_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
             somatic_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.purple.vcf.gz")
             somatic_sv_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
+            amber_options = global_conf.global_get('amber', 'other_options')
+            cobalt_options = global_conf.global_get('cobalt', 'other_options')
 
             # Convert filtered ClairS somatic VCFs to purple-compatible VCFs
             jobs.append(
@@ -1411,6 +1413,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             tumor_pair.normal.name,
                             tumor_pair.tumor.name,
                             amber_dir,
+                            amber_options
                         )
                     ],
                     name="purple.amber." + tumor_pair.name,
@@ -1431,6 +1434,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             tumor_pair.normal.name,
                             tumor_pair.tumor.name,
                             cobalt_dir,
+                            cobalt_options
                         )
                     ],
                     name="purple.cobalt." + tumor_pair.name,
