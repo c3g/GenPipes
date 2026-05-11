@@ -1353,6 +1353,7 @@ For information on the structure and contents of the LongRead readset file, plea
             )
 
             somatic_hotspots = global_conf.global_get('purple', 'somatic_hotspots', param_type='filepath')
+            germline_hotspots = global_conf.global_get('purple', 'germline_hotspots', param_type='filepath')
             driver_gene_panel = global_conf.global_get('purple', 'driver_gene_panel', param_type='filepath')
 
             purple_dir = os.path.join(pair_dir, "purple")
@@ -1362,10 +1363,8 @@ For information on the structure and contents of the LongRead readset file, plea
 
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
             savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
-            germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
             raw_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
             somatic_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.purple.vcf.gz")
-            somatic_sv_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
             amber_options = global_conf.global_get('amber', 'other_options')
             cobalt_options = global_conf.global_get('cobalt', 'other_options')
 
@@ -1474,13 +1473,12 @@ For information on the structure and contents of the LongRead readset file, plea
                             tumor_pair.tumor.name,
                             purple_dir,
                             ensembl_data_dir,
-                            somatic_vcf, #TBD if these are used
-                            somatic_sv_vcf,
+                            somatic_vcf,
+                            None,
                             None,
                             somatic_hotspots,
-                            None,
-                            driver_gene_panel,
-                            germline_vcf
+                            germline_hotspots,
+                            driver_gene_panel
                         ),
                         job_project_tracking_metrics
                     ],
