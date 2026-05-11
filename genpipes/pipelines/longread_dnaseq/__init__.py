@@ -1390,7 +1390,8 @@ For information on the structure and contents of the LongRead readset file, plea
                             ]
                         ),
                         htslib.tabix(
-                            somatic_vcf
+                            somatic_vcf,
+                            "-f -pvcf"
                         )
                     ],
                     name=f"clairS_to_purple.{tumor_pair.name}",
