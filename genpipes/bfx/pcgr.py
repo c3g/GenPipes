@@ -94,8 +94,8 @@ def report2(input_vcf,
            output_dir,
            tumor_id,
            input_cna,
-           input_purple=None,
-           input_savana=None,
+           purple_input=None,
+           savana_input=None,
            ini_section='report_pcgr'
            ):
 
