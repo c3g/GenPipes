@@ -2258,7 +2258,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             pcgr_directory,
                             tumor_pair.name,
                             input_cna,
-                            input_savana = savana_metrics,
+                            savana_input = savana_metrics,
                             ini_section=ini_section
                         ),
                         bash.ls(output_report)
