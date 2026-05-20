@@ -339,3 +339,49 @@ bcftools \\
         output="-o " + output if output else ""
     )
     )
+
+def merge(inputs, output, options, ini_section='bcftools_merge'):
+    """
+    merge vcfs from non-overlapping samples
+    """
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+
+    return Job(
+        input,
+        [output],
+        [
+            [ini_section, 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+    merge {options} \\
+    {output} {input}""".format(
+        options=options,
+        inputs="".join(" \\\n  " + input for input in inputs),
+        output="-o " + output if output else ""
+        )
+    )
+
+def setgt(input, output, options, ini_section='bcftools_setgt'):
+    """
+    set genotypes
+    """
+
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+    +setGT {other_options} {input} \\
+    {options} \\
+    {output}""".format(
+        other_options=global_conf.global_get(ini_section, "other_options", required=False),
+        options=options,
+        input=input if input else "",
+        output="-o " + output if output else ""
+        )
+    )

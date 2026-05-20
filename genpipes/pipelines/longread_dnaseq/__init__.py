@@ -1362,9 +1362,14 @@ For information on the structure and contents of the LongRead readset file, plea
             ensembl_data_dir = global_conf.global_get('purple', 'ensembl_data_dir', param_type='dirpath')
 
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
-            savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
             raw_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
             somatic_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.purple.vcf.gz")
+            
+            savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+            savana_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
+            savana_normal = os.path.join(savana_dir, f"{tumor_pair.name}.classified.normal.vcf")
+            savana_paired = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.paired.vcf")
+
             amber_options = global_conf.global_get('amber', 'other_options')
             cobalt_options = global_conf.global_get('cobalt', 'other_options')
 
@@ -1399,6 +1404,54 @@ For information on the structure and contents of the LongRead readset file, plea
                 )
             )
             
+            # Convert filtered savana VCFs to purple-compatible VCFs
+            jobs.append(
+                concat_jobs(
+                    [
+                        pipe_jobs(
+                            [
+                                bcftools.reheader(
+                                    savana_vcf,
+                                    None,
+                                f"-n {tumor_pair.normal.name}"
+                                ),
+                                bcftools.setgt(
+                                    None,
+                                    None,
+                                    "-- -t a -n ."
+                                ),
+                                bcftools.setgt(
+                                    None,
+                                    None,
+                                    "-- -t q -i 'INFO/NORMAL_ALN_SUPPORT=0' -n c:0/0"
+                                ),
+                                bcftools.view(
+                                    None,
+                                    savana_normal,
+                                    "-Oz"
+                                )
+                            ],
+                        ),
+                        htslib.tabix(
+                            savana_normal,
+                            "-f -pvcf"
+                        ),
+                        bcftools.merge(
+                            [savana_vcf, savana_normal],
+                            savana_paired,
+                            "-Oz"
+                        ),
+                        htslib.tabix(
+                            savana_paired,
+                            "-f -pvcf"
+                        )
+                    ],
+                    name=f"savana_to_purple.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+
             
             jobs.append(
                 concat_jobs(
@@ -1474,7 +1527,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             purple_dir,
                             ensembl_data_dir,
                             somatic_vcf,
-                            None,
+                            savana_paired,
                             None,
                             somatic_hotspots,
                             germline_hotspots,
@@ -2319,7 +2372,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 input_tmb = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".tmb.tsv")
                 input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".maf")
                 clean_maf =  os.path.join(djerba_dir, tumor_pair.name + ".pcgr." + assembly + ".clean.maf")
-                purple_dir = pair_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple")
+                purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple")
+                purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
                 msi_input = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.purity.tsv")
                 savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
                 hrd_input = os.path.join(savana_dir, tumor_pair.tumor.name + ".chord.prediction.tsv")
@@ -2335,6 +2389,11 @@ For information on the structure and contents of the LongRead readset file, plea
                                 input_maf,
                                 clean_maf
                                 ),
+                            bash.zip(
+                                purple_dir,
+                                purple_zip,
+                                recursive=True
+                                ),
                             djerba.parse_snp_count(
                                 input_tmb,
                                 snp_count
@@ -2345,7 +2404,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 tumor_pair.tumor.name,
                                 tumor_pair.normal.name,
                                 clean_maf + ".gz",
-                                purple_input=None,
+                                purple_zip,
                                 msi_input=msi_input,
                                 tmb_input=snp_count,
                                 hrd_input=hrd_input,
@@ -2361,7 +2420,7 @@ For information on the structure and contents of the LongRead readset file, plea
                         name="report_djerba." + tumor_pair.name,
                         samples=[tumor_pair.tumor],
                         readsets=list(tumor_pair.tumor.readsets),
-                        input_dependency=[input_maf],
+                        input_dependency=[input_maf, os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")],
                         output_dependency=[config_file, djerba_script]
                         )
                     )
