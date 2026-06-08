@@ -31,6 +31,7 @@ import shtab
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
 
 # GenPipes Modules
+from ..__version__ import __version__
 from ..core.config import global_conf, _raise, SanitycheckError
 from ..core.job import Job, concat_jobs, pipe_jobs
 from ..core.pipeline import Pipeline
@@ -147,13 +148,18 @@ class GenPipesPipeline(Pipeline):
         readset_files = ",".join(list_name.values())
         unique_identifier = f"{server_ip}-{pipeline_name}-{readset_files}".replace("'", "''")
 
-        request = '&'.join([
+        request_parts = [
             "hostname=" + host_name,
             "ip=" + server_ip,
             "pipeline=" + pipeline_name,
             "steps=" + ",".join([step.name for step in self.step_to_execute]),
-            "samples=" + str(len(self.samples))
-        ])
+            "samples=" + str(len(self.samples)),
+            "version=" + __version__,
+            "user=" + (os.environ.get("USER") or os.getlogin()),
+        ]
+        if self.protocol:
+            request_parts.append("protocol=" + self.protocol)
+        request = '&'.join(request_parts)
         # that is crazy, to have to rely on the bash interface/arguments that deep in the code.
         self.job_scheduler.write("""
 {separator_line}
