@@ -104,11 +104,11 @@ def report2(input_vcf,
         cpsr_yaml = f"{cpsr_prefix}.conf.yaml"
 
     if purple_input:
-        purity="`awk 'NR == 2 {{print $1}}' {purple_input}`"
-        ploidy="`awk 'NR == 2 {{print $5}}' {purple_input}`"
+        purity=f"`awk 'NR == 2 {{print $1}}' {purple_input}`"
+        ploidy=f"`awk 'NR == 2 {{print $5}}' {purple_input}`"
     if savana_input:
-        purity="`awk 'NR == 2 {{print $1}}' {savana_input}`"
-        ploidy="`awk 'NR == 2 {{print $2}}' {savana_input}`"
+        purity=f"`awk 'NR == 2 {{print $1}}' {savana_input}`"
+        ploidy=f"`awk 'NR == 2 {{print $2}}' {savana_input}`"
     # use tmp dir for pcgr to avoid disk quota issues caused by bcftools tmp dir settings
     return Job(
         [

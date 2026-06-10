@@ -348,7 +348,7 @@ def merge(inputs, output, options, ini_section='bcftools_merge'):
         inputs = [inputs]
 
     return Job(
-        input,
+        inputs,
         [output],
         [
             [ini_section, 'module_bcftools']
@@ -356,7 +356,7 @@ def merge(inputs, output, options, ini_section='bcftools_merge'):
         command="""\
 bcftools \\
     merge {options} \\
-    {output} {input}""".format(
+    {output} {inputs}""".format(
         options=options,
         inputs="".join(" \\\n  " + input for input in inputs),
         output="-o " + output if output else ""

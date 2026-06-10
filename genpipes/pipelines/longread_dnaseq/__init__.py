@@ -1367,8 +1367,9 @@ For information on the structure and contents of the LongRead readset file, plea
             
             savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
             savana_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
-            savana_normal = os.path.join(savana_dir, f"{tumor_pair.name}.classified.normal.vcf")
-            savana_paired = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.paired.vcf")
+            savana_vcf_gz = os.path.join(purple_dir,f"{tumor_pair.name}.classified.somatic.vcf.gz")
+            savana_normal = os.path.join(savana_dir, f"{tumor_pair.name}.classified.normal.vcf.gz")
+            savana_paired = os.path.join(purple_dir, f"{tumor_pair.name}.classified.somatic.paired.vcf.gz")
 
             amber_options = global_conf.global_get('amber', 'other_options')
             cobalt_options = global_conf.global_get('cobalt', 'other_options')
@@ -1432,12 +1433,30 @@ For information on the structure and contents of the LongRead readset file, plea
                                 )
                             ],
                         ),
+                        pipe_jobs(
+                            [
+                                bcftools.reheader(
+                                    savana_vcf,
+                                    None,
+                                f"-n {tumor_pair.tumor.name}"
+                                ),
+                                bcftools.view(
+                                    None,
+                                    savana_vcf_gz,
+                                    "-Oz"
+                                ),
+                            ],
+                        ),
+                        htslib.tabix(
+                            savana_vcf_gz,
+                             "-f -pvcf"
+                                ),
                         htslib.tabix(
                             savana_normal,
                             "-f -pvcf"
                         ),
                         bcftools.merge(
-                            [savana_vcf, savana_normal],
+                            [savana_vcf_gz, savana_normal],
                             savana_paired,
                             "-Oz"
                         ),
