@@ -1298,6 +1298,7 @@ For information on the structure and contents of the LongRead readset file, plea
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
             clairS_germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
             output_directory = os.path.join(self.output_dirs['SVariants_directory'], tumor_pair.name, 'savana')
+            savana_vcf = os.path.join(output_directory, f"{tumor_pair.name}.classified.somatic.vcf")
 
             jobs.append(
                 concat_jobs(
@@ -1310,6 +1311,10 @@ For information on the structure and contents of the LongRead readset file, plea
                             output_directory,
                             tumor_pair.name,
                             clairS_germline_vcf
+                        ),
+                        htslib.bgzip(
+                            savana_vcf,
+                            f"{savana_vcf}.gz"
                         )
                     ],
                     name=f"savana.{tumor_pair.name}",
@@ -1366,7 +1371,7 @@ For information on the structure and contents of the LongRead readset file, plea
             somatic_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.purple.vcf.gz")
             
             savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
-            savana_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
+            savana_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf.gz")
             savana_normal = os.path.join(savana_dir, f"{tumor_pair.name}.classified.normal.vcf.gz")
             savana_paired = os.path.join(purple_dir, f"{tumor_pair.name}.classified.somatic.paired.vcf.gz")
 
