@@ -36,6 +36,9 @@ def make_config(
         assay="WGTS",
         ini_section = 'report_djerba'
         ):
+    """
+    Creates djerba config file from available inputs produced by the pipeline.
+    """
 
     config_content = f"""\
 [core]
@@ -143,6 +146,9 @@ def clean_maf(
         input_maf,
         output_maf
         ):
+    """
+    Prepares maf file for use with djerba by removing rows without depth information.
+    """
     
     output = [output_maf + ".gz"]
     return Job(
@@ -162,6 +168,9 @@ def parse_snp_count(
         input,
         output
     ):
+    """
+    Parses tmb output tsv from pcgr to produce SNP count txt file for djerba.
+    """
 
     return Job(
         [input],
