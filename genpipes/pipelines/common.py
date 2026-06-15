@@ -1310,6 +1310,35 @@ END
 
         return jobs
 
+    def log_report(self):
+        """
+        Generate genpipes log_report after all jobs have completed or failed.
+        """
+
+        jobs = []
+        log_report_job_dependencies = []
+
+        # has to find appropriate job list file based on time stamp and pipeline/protocol
+        job_list = os.path.join(self.output_dir, "job_output", f"{self.pipeline.__class__.__name__}{self.protocol}.job_list.$TIMESTAMP")
+        log_output = os.path.join(self.output_dir, "log_report.{pipeline.timestamp}.tsv")
+
+        step_list = [step for step in self.step_list if step.jobs]
+        for step in step_list:
+            for job in step.jobs:
+                log_report_job_dependencies.extend(job.output_files)
+
+        job = Job(
+            log_report_job_dependencies,
+            [log_output],
+            [
+                ["log_report", "module_genpipes"]
+            ],
+            command="""\
+genpipes tools log_report --tsv {log_report} {job_list}""".format(
+        log_report=log_output,
+        job_list=job_list
+        )
+    )
 
 class Error(Exception):
     """
