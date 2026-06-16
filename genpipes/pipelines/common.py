@@ -1323,8 +1323,10 @@ END
         log_output = os.path.join(self.output_dir, f"log_report.{self.timestamp}.tsv")
 
         step_list = [step for step in self.step_list]
+        print(step_list)
         for step in step_list:
-            print(vars(step))
+            print(step)
+            print(dir(step))
             for job in step.jobs:
                 print(job)
                 log_report_job_dependencies.extend(job.output_files)
