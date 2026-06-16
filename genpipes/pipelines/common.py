@@ -35,6 +35,7 @@ from ..__version__ import __version__
 from ..core.config import global_conf, _raise, SanitycheckError
 from ..core.job import Job, concat_jobs, pipe_jobs
 from ..core.pipeline import Pipeline
+from ..core.pipeline import Step
 from ..core.design import parse_design_file
 from ..core.readset import parse_illumina_readset_file, parse_longread_readset_file
 from ..core.sample_tumor_pairs import *
@@ -1322,13 +1323,10 @@ END
         job_list = os.path.join(self.output_dir, "job_output", f"{self.__class__.__name__}{self.protocol}.job_list.{self.timestamp}")
         log_output = os.path.join(self.output_dir, f"log_report.{self.timestamp}.tsv")
 
-        step_list = [step for step in self.step_list]
+        step_list = [Step(step) for step in self.step_list]
         print(step_list)
         for step in step_list:
-            print(step)
-            print(dir(step))
             for job in step.jobs:
-                print(job)
                 log_report_job_dependencies.extend(job.output_files)
 
         job = Job(
