@@ -1324,7 +1324,7 @@ END
 
         step_list = [step for step in self.step_list]
         for step in step_list:
-            vars(step)
+            print(vars(step))
             for job in step.jobs:
                 print(job)
                 log_report_job_dependencies.extend(job.output_files)
