@@ -1322,9 +1322,11 @@ END
         job_list = os.path.join(self.output_dir, "job_output", f"{self.__class__.__name__}{self.protocol}.job_list.{self.timestamp}")
         log_output = os.path.join(self.output_dir, f"log_report.{self.timestamp}.tsv")
 
-        step_list = [step for step in self.step_list if step.jobs]
+        step_list = [step for step in self.step_list]
         for step in step_list:
+            print(step)
             for job in step.jobs:
+                print(job)
                 log_report_job_dependencies.extend(job.output_files)
 
         job = Job(
