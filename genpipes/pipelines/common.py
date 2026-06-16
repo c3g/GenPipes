@@ -1319,8 +1319,8 @@ END
         log_report_job_dependencies = []
 
         # has to find appropriate job list file based on time stamp and pipeline/protocol
-        job_list = os.path.join(self.output_dir, "job_output", f"{self.pipeline.__class__.__name__}{self.protocol}.job_list.$TIMESTAMP")
-        log_output = os.path.join(self.output_dir, "log_report.{pipeline.timestamp}.tsv")
+        job_list = os.path.join(self.output_dir, "job_output", f"{self.__class__.__name__}{self.protocol}.job_list.{self.timestamp}")
+        log_output = os.path.join(self.output_dir, f"log_report.{self.timestamp}.tsv")
 
         step_list = [step for step in self.step_list if step.jobs]
         for step in step_list:
