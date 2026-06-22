@@ -1980,14 +1980,16 @@ awk -v OFS="\t" '{{ print $1,$0}}' \\
                 self.filter_annotated_components,
                 self.gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered,
                 self.differential_expression_filtered,
-                self.multiqc
+                self.multiqc,
+                self.log_report
             ], 'seq2fun':
             [
                 self.picard_sam_to_fastq,
                 self.merge_fastq,
                 self.seq2fun,
                 self.differential_expression_seq2fun,
-                self.pathway_enrichment_seq2fun
+                self.pathway_enrichment_seq2fun,
+                self.log_report
             ]
         }
 

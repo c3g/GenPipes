@@ -179,6 +179,40 @@ wget --quiet "{server}?{request}&md5=$LOG_MD5" -O /dev/null || echo "${{bold}}${
             self.genpipes_log()
 
 
+    def log_report(self):
+        """
+        Generate genpipes log_report after all jobs have completed or failed.
+        """
+
+        jobs = []
+        log_report_job_dependencies = []
+
+        # has to find appropriate job list file based on time stamp and pipeline/protocol
+        job_list = os.path.join(self.output_dir, "job_output", f"{self.__class__.__name__}.{self.protocol}.job_list.{self.timestamp}")
+        log_output = os.path.join(self.output_dir, f"log_report.{self.timestamp}.tsv")
+
+        step_list = [step for step in self.step_to_execute]
+        for step in step_list:
+            if step.name != "log_report":
+                for job in step.jobs:
+                    log_report_job_dependencies.extend(job.output_files)
+
+        log_report_job = Job(
+            log_report_job_dependencies,
+            [log_output],
+            [
+                ["log_report", "module_genpipes"]
+            ],
+            command="""\
+genpipes tools log_report --tsv {log_report} {job_list}""".format(
+        log_report=log_output,
+        job_list=job_list
+        )
+    )
+        log_report_job.name = "log_report"
+        jobs.append(log_report_job)
+
+        return jobs
 
 # Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
 # Specific steps must be defined in Illumina children pipelines.
@@ -1308,41 +1342,6 @@ END
             job.removable_files = [input_bam, f"{input_bam}.bai"]
 
             jobs.append(job)
-
-        return jobs
-
-    def log_report(self):
-        """
-        Generate genpipes log_report after all jobs have completed or failed.
-        """
-
-        jobs = []
-        log_report_job_dependencies = []
-
-        # has to find appropriate job list file based on time stamp and pipeline/protocol
-        job_list = os.path.join(self.output_dir, "job_output", f"{self.__class__.__name__}.{self.protocol}.job_list.{self.timestamp}")
-        log_output = os.path.join(self.output_dir, f"log_report.{self.timestamp}.tsv")
-
-        step_list = [step for step in self.step_to_execute]
-        for step in step_list:
-            if step.name != "log_report":
-                for job in step.jobs:
-                    log_report_job_dependencies.extend(job.output_files)
-
-        log_report_job = Job(
-            log_report_job_dependencies,
-            [log_output],
-            [
-                ["log_report", "module_genpipes"]
-            ],
-            command="""\
-genpipes tools log_report --tsv {log_report} {job_list}""".format(
-        log_report=log_output,
-        job_list=job_list
-        )
-    )
-        log_report_job.name = "log_report"
-        jobs.append(log_report_job)
 
         return jobs
 

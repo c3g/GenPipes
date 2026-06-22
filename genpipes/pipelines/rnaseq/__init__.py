@@ -2743,7 +2743,8 @@ END
                 self.ballgown,
                 self.differential_expression,
                 self.multiqc,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'variants':
             [
                 self.picard_sam_to_fastq,
@@ -2770,7 +2771,8 @@ END
                 self.gatk_callable_loci,
                 self.wiggle,
                 self.multiqc,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'cancer':
             [
                 self.picard_sam_to_fastq,
@@ -2801,7 +2803,8 @@ END
                 self.gatk_callable_loci,
                 self.wiggle,
                 self.multiqc,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ]
         }
 
