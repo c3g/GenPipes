@@ -1986,7 +1986,8 @@ module load {global_conf.global_get('prepare_report', 'module_R')} {global_conf.
             self.prepare_table,
             self.prepare_report_ivar,
             self.prepare_report_freebayes,
-            self.run_multiqc
+            self.run_multiqc,
+            self.log_report
         ]}
 
 def main(parsed_args):

@@ -856,7 +856,8 @@ fi""".format(
                     self.snpeff_annotate,
                     self.quast_consensus_metrics,
                     self.rename_consensus_header,
-                    self.prepare_report
+                    self.prepare_report,
+                    self.log_report
                 ],
             'basecalling':
                 [
@@ -871,7 +872,8 @@ fi""".format(
                     self.snpeff_annotate,
                     self.quast_consensus_metrics,
                     self.rename_consensus_header,
-                    self.prepare_report
+                    self.prepare_report,
+                    self.log_report
                 ]
             }
 

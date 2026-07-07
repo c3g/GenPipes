@@ -1887,7 +1887,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.prepare_methylkit,           # step 15
                 self.methylkit_differential_analysis,
                 self.multiqc,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'gembs':
             [
                 self.picard_sam_to_fastq,
@@ -1910,7 +1911,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.prepare_methylkit,
                 self.methylkit_differential_analysis,
                 self.multiqc,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'hybrid': 
             [
                 self.picard_sam_to_fastq,
@@ -1930,7 +1932,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.prepare_methylkit,            # step 15
                 self.methylkit_differential_analysis,
                 self.multiqc,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'dragen':
             [
                 self.picard_sam_to_fastq,
@@ -1952,7 +1955,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.prepare_methylkit,
                 self.methylkit_differential_analysis,
                 self.multiqc,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ]
         }
 

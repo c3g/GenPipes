@@ -2189,7 +2189,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.dysgu,
                 self.svim,
                 self.multiqc,
-                self.modkit
+                self.modkit,
+                self.log_report
             ], 'nanopore_paired_somatic': [
                 self.blastqc,
                 self.metrics_nanoplot,
@@ -2205,7 +2206,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.report_cpsr,
                 self.report_pcgr,
                 self.report_djerba,
-                self.multiqc
+                self.multiqc,
+                self.log_report
             ], 'revio':
             [
                 self.metrics_nanoplot,
@@ -2222,7 +2224,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.annotSV,
                 self.hiphase,
                 self.report_cpsr,
-                self.multiqc
+                self.multiqc,
+                self.log_report
             ]
         }
 
