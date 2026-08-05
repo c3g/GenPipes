@@ -1801,6 +1801,9 @@ pandoc \\
                 "cpsr"
             )
 
+            assembly = global_conf.global_get('report_cpsr', 'assembly')
+            cpsr_output = os.path.join(cpsr_directory, f"{sample.name}.cpsr.{assembly}.html")
+
             jobs.append(
                 concat_jobs(
                     [
@@ -1809,7 +1812,8 @@ pandoc \\
                             input,
                             cpsr_directory,
                             sample.name
-                        )
+                        ),
+                        bash.ls(cpsr_output)
                     ],
                     name="report_cpsr." + sample.name,
                     samples=[sample],

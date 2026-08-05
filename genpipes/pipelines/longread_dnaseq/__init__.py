@@ -2069,6 +2069,8 @@ For information on the structure and contents of the LongRead readset file, plea
                     f"{sample.name}.annot.vcf.gz"
                 )
                 cpsr_directory = os.path.join(output_directory, sample.name, "cpsr")
+                assembly = global_conf.global_get(ini_section, 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{sample.name}.cpsr.{assembly}.html")
                 
                 jobs.append(
                     concat_jobs(
@@ -2081,7 +2083,8 @@ For information on the structure and contents of the LongRead readset file, plea
                                 cpsr_directory,
                                 sample.name,
                                 ini_section=ini_section
-                            )
+                            ),
+                            bash.ls(cpsr_output)
                         ],
                         name=job_name,
                         samples=samples,
@@ -2094,6 +2097,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
                 input_file = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
                 cpsr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "cpsr")
+                assembly = global_conf.global_get('report_cpsr', 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{tumor_pair.normal.name}.cpsr.{assembly}.html")
 
                 jobs.append(
                     concat_jobs(
@@ -2106,7 +2111,8 @@ For information on the structure and contents of the LongRead readset file, plea
                                 cpsr_directory,
                                 tumor_pair.normal.name,
                                 "report_cpsr"
-                            )
+                            ),
+                            bash.ls(cpsr_output)
                         ],
                         name=f"report_cpsr.{tumor_pair.name}",
                         samples=[tumor_pair.normal],
@@ -2120,6 +2126,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 hiphase_directory = os.path.join(self.output_dirs["hiphase_directory"], sample.name)
                 deepvariant_phased = os.path.join(hiphase_directory, f"{sample.name}.deepvariant.hiphase.vcf.gz")
                 cpsr_directory = os.path.join(self.output_dirs["report_directory"], sample.name, "cpsr")
+                assembly = global_conf.global_get('report_cpsr', 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{sample.name}.cpsr.{assembly}.html")
 
                 jobs.append(
                     concat_jobs(
@@ -2130,7 +2138,8 @@ For information on the structure and contents of the LongRead readset file, plea
                                 cpsr_directory,
                                 sample.name,
                                 "report_cpsr"
-                            )
+                            ),
+                            bash.ls(cpsr_output)
                         ],
                         name=f"report_cpsr.{sample.name}",
                         samples=[sample],
