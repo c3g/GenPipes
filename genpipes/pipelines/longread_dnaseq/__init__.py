@@ -1368,6 +1368,8 @@ For information on the structure and contents of the LongRead readset file, plea
 
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
             raw_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+            somatic_tumor_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.tumor.vcf.gz")
+            somatic_normal_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.normal.vcf.gz")
             somatic_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.purple.vcf.gz")
             
             savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
@@ -1385,18 +1387,72 @@ For information on the structure and contents of the LongRead readset file, plea
                         bash.mkdir(
                             purple_dir
                         ),
+                        # Tumor column: GT, AD and DP as reported by ClairS (>= 0.5.0)
                         pipe_jobs(
                             [
-                                tools.clairS2purple(
+                                bcftools.annotate(
                                     raw_somatic_vcf,
-                                    tumor_pair.normal.name,
-                                    tumor_pair.tumor.name
-                                ),
-                                htslib.bgzip(
                                     None,
-                                    somatic_vcf
+                                    "-x '^FORMAT/GT,FORMAT/AD,FORMAT/DP'"
+                                ),
+                                bcftools.reheader(
+                                    None,
+                                    None,
+                                    f"-n {tumor_pair.tumor.name}"
+                                ),
+                                bcftools.view(
+                                    None,
+                                    somatic_tumor_vcf,
+                                    "-Oz"
                                 )
                             ]
+                        ),
+                        htslib.tabix(
+                            somatic_tumor_vcf,
+                            "-f -pvcf"
+                        ),
+                        # Normal column: promote NAD/NDP to AD/DP, then call the germline genotype
+                        pipe_jobs(
+                            [
+                                bcftools.annotate(
+                                    raw_somatic_vcf,
+                                    None,
+                                    "-x 'INFO,^FORMAT/GT,FORMAT/NAD,FORMAT/NDP' --rename-annots <(printf 'FORMAT/NAD\\tAD\\nFORMAT/NDP\\tDP\\n')"
+                                ),
+                                bcftools.setgt(
+                                    None,
+                                    None,
+                                    "-- -t a -n c:0/0"
+                                ),
+                                # added as heterozygous if the alternate allele is supported by more than 20% of the reads
+                                bcftools.setgt(
+                                    None,
+                                    None,
+                                    "-- -t q -i 'FMT/AD[0:1] > 0.2*FMT/DP' -n c:0/1"
+                                ),
+                                bcftools.reheader(
+                                    None,
+                                    None,
+                                    f"-n {tumor_pair.normal.name}"
+                                ),
+                                bcftools.view(
+                                    None,
+                                    somatic_normal_vcf,
+                                    "-Oz"
+                                )
+                            ]
+                        ),
+                        htslib.tabix(
+                            somatic_normal_vcf,
+                            "-f -pvcf"
+                        ),
+                        bcftools.merge(
+                            [
+                                somatic_tumor_vcf,
+                                somatic_normal_vcf
+                            ],
+                            somatic_vcf,
+                            "-Oz"
                         ),
                         htslib.tabix(
                             somatic_vcf,
