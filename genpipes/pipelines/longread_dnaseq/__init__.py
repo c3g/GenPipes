@@ -2181,8 +2181,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 cpsr_directory,
                                 sample.name,
                                 ini_section=ini_section
-                            ),
-                            bash.ls(cpsr_output)
+                            )
                         ],
                         name=job_name,
                         samples=samples,
@@ -2209,8 +2208,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 cpsr_directory,
                                 tumor_pair.normal.name,
                                 "report_cpsr"
-                            ),
-                            bash.ls(cpsr_output)
+                            )
                         ],
                         name=f"report_cpsr.{tumor_pair.name}",
                         samples=[tumor_pair.normal],
@@ -2236,8 +2234,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 cpsr_directory,
                                 sample.name,
                                 "report_cpsr"
-                            ),
-                            bash.ls(cpsr_output)
+                            )
                         ],
                         name=f"report_cpsr.{sample.name}",
                         samples=[sample],
