@@ -476,11 +476,11 @@ For information on the structure and contents of the LongRead readset file, plea
                         samples=[readset.sample]
                     )
                 )
-
-                return jobs
         
             else:
-                log.info("Warning: summary file not available for readset \"" + readset.name + "\". Skipping pycoQC")
+                log.info("Summary file not available for readset \"" + readset.name + "\". Skipping pycoQC")
+
+        return jobs
 
 
     def samtools_merge_bam_files(self):
