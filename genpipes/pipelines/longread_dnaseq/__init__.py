@@ -1315,6 +1315,10 @@ For information on the structure and contents of the LongRead readset file, plea
                         htslib.bgzip(
                             savana_vcf,
                             f"{savana_vcf}.gz"
+                        ),
+                        htslib.tabix(
+                            f"{savana_vcf}.gz",
+                            "-f -pvcf"
                         )
                     ],
                     name=f"savana.{tumor_pair.name}",
