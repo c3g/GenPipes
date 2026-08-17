@@ -2667,8 +2667,7 @@ END
                                 cpsr_directory,
                                 sample_name,
                                 ini_section=ini_section
-                            ),
-                            bash.ls(cpsr_output)
+                            )
                         ],
                         name=job_name,
                         samples=samples,
@@ -2723,8 +2722,7 @@ END
                                 cpsr_directory,
                                 tumor_pair.name,
                                 ini_section=ini_section
-                            ),
-                            bash.ls(cpsr_output)
+                            )
                         ],
                         name=job_name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
