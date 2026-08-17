@@ -2606,7 +2606,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.savana,
                 self.purple,
                 self.annotSV,
-                self.chord, # TO BE ADDED
+                self.chord,
                 self.report_cpsr,
                 self.report_pcgr,
                 self.report_djerba,
