@@ -457,29 +457,31 @@ For information on the structure and contents of the LongRead readset file, plea
 
             if readset.summary_file:
                 in_summary = readset.summary_file
-            else:
-                _raise(SanitycheckError("Error: summary file not available for readset \"" + readset.name + "\"!"))
+            
+                align_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
+                in_bam = os.path.join(align_directory, readset.name + ".sorted.bam")
 
-            align_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
-            in_bam = os.path.join(align_directory, readset.name + ".sorted.bam")
-
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(pycoqc_directory),
-                    pycoqc.pycoqc(
-                        readset_name=readset.name,
-                        input_summary=in_summary,
-                        output_directory=pycoqc_directory,
-                        input_barcode=None,
-                        input_bam=in_bam
-                        )
-                ],
-                    name="pycoqc." + readset.name,
-                    samples=[readset.sample]
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(pycoqc_directory),
+                        pycoqc.pycoqc(
+                            readset_name=readset.name,
+                            input_summary=in_summary,
+                            output_directory=pycoqc_directory,
+                            input_barcode=None,
+                            input_bam=in_bam
+                            )
+                    ],
+                        name="pycoqc." + readset.name,
+                        samples=[readset.sample]
+                    )
                 )
-            )
 
-        return jobs
+                return jobs
+        
+            else:
+                log.info("Warning: summary file not available for readset \"" + readset.name + "\". Skipping pycoQC")
+
 
     def samtools_merge_bam_files(self):
         """
