@@ -221,13 +221,31 @@ For information on the structure and contents of the LongRead readset file, plea
 
             if readset.fastq_files:
                 reads_fastq_dir = readset.fastq_files
+                bam2fq_job = None
+            elif readset.bam:
+                reads_fastq_dir = os.path.join(blast_directory, "raw_reads")
+                bam2fq_job = concat_jobs(
+                    [
+                        bash.mkdir(reads_fastq_dir),
+                        samtools.fastq(
+                            readset.bam,
+                            os.path.join(reads_fastq_dir, f"{readset.name}.fastq.gz"),
+                            "-TMM,ML"
+                        )
+                    ]
+                )
             else:
-                _raise(SanitycheckError("Error: FASTQ file not available for readset \"" + readset.name + "\"!"))
-
-            job = tools.sh_blastQC_ONT(
-                blast_directory,
-                reads_fastq_dir,
-                readset.name
+                _raise(SanitycheckError("Error: FASTQ or BAM file not available for readset \"" + readset.name + "\"!"))
+            
+            job = concat_jobs(
+                [
+                    bam2fq_job,
+                    tools.sh_blastQC_ONT(
+                        blast_directory,
+                        reads_fastq_dir,
+                        readset.name
+                    )
+                ]
             )
             job.samples = [readset.sample]
             jobs.append(job)
@@ -341,6 +359,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 input_dependency = readset.bam
                 bam2fq_job = samtools.fastq(
                         readset.bam,
+                        None,
                         "-TMM,ML"
                         )
 
