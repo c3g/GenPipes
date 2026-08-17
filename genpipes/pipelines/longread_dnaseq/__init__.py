@@ -248,7 +248,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 ]
             )
             job.samples = [readset.sample]
-            job.name = f"blastQC.{readset}"
+            job.name = f"blastQC.{readset.name}"
             jobs.append(job)
 
         return jobs
