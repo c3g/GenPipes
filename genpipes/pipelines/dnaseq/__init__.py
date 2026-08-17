@@ -8266,7 +8266,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.metrics_vcftools_missing_indiv,
                 self.metrics_vcftools_depth_indiv,
                 self.metrics_gatk_sample_fingerprint,
-                self.metrics_gatk_cluster_fingerprint
+                self.metrics_gatk_cluster_fingerprint,
+                self.log_report
             ], 'germline_sv':
             [
                 self.gatk_sam_to_fastq,
@@ -8293,7 +8294,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.cnvkit_sv_annotation,
                 self.run_breakseq2,
 	            self.ensemble_metasv,
-                self.metasv_sv_annotation
+                self.metasv_sv_annotation,
+                self.log_report
             ], 'germline_high_cov':
             [
                 self.gatk_sam_to_fastq,
@@ -8310,7 +8312,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.snp_effect,
                 self.gemini_annotations,
                 self.run_multiqc,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'somatic_tumor_only':
             [
                 self.gatk_sam_to_fastq,
@@ -8334,7 +8337,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.split_tumor_only,
                 self.filter_tumor_only,
                 self.report_cpsr,
-                self.report_pcgr
+                self.report_pcgr,
+                self.log_report
             ], 'somatic_fastpass':
             [
                 self.gatk_sam_to_fastq,
@@ -8359,7 +8363,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.sym_link_report,
                 self.sym_link_fastq_pair,
                 self.sym_link_panel,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'somatic_ensemble':
             [
                 self.gatk_sam_to_fastq,
@@ -8400,7 +8405,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.sym_link_final_bam,
                 self.sym_link_report,
                 self.sym_link_ensemble,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'somatic_sv':
             [
                 self.gatk_sam_to_fastq,
