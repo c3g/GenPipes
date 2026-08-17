@@ -336,11 +336,11 @@ For information on the structure and contents of the LongRead readset file, plea
                 minimap2_input = readset.fastq_files
                 input_dependency = readset.fastq_files
                 bam2fq_job = None
-            elif readset.bam_files:
+            elif readset.bam:
                 minimap2_input = None
-                input_dependency = readset.bam_files
+                input_dependency = readset.bam
                 bam2fq_job = samtools.fastq(
-                        readset.bam_files,
+                        readset.bam,
                         "-TMM,ML"
                         )
 
