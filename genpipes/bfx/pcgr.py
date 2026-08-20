@@ -216,7 +216,7 @@ def create_input_fusion(input_file, output_file):
         [output_file],
         [],
         command=f"""\
-awk -v OFS="\\t" '{{print \$3,\$1,\$2,$7}}' {input_file} | \\
+awk -v OFS="\\t" '{{print $3,$1,$2,$7}}' {input_file} | \\
     grep -v '@' | sed 's/FusionName/FusionGene/' | \\
     sed 's/JunctionReadCount/SplitReads/' > {output_file}"""
     )
