@@ -96,6 +96,7 @@ def report2(input_vcf,
            input_cna,
            purple_input=None,
            savana_input=None,
+           fusion_input=None,
            ini_section='report_pcgr'
            ):
 
@@ -137,6 +138,7 @@ pcgr {options} \\
     --input_vcf {input_vcf} \\
     {cpsr_report} {cpsr_yaml} \\
     $input_cna \\
+    {fusion_input} \\
     --refdata_dir $PCGR_DATA \\
     --vep_dir $PCGR_VEP_CACHE \\
     --output_dir {tmp_dir}/pcgr \\
@@ -156,6 +158,7 @@ cp -r {tmp_dir}/pcgr {output_dir}""".format(
             cpsr_report="--input_cpsr " + cpsr_input if cpsr_input else "",
             cpsr_yaml="--input_cpsr_yaml " + cpsr_yaml if cpsr_yaml else "",
             input_cna=input_cna,
+            fusion_input="--input_rna_fusion " + fusion_input if fusion_input else "",
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
             output_dir=os.path.dirname(output_dir),
             assembly=global_conf.global_get(ini_section, 'assembly'),
@@ -199,3 +202,18 @@ def parse_pcgr_passed_variants_pt(input_file):
         command=f"""\
 export pcgr_passed_variants=`grep "pcgr-gene-annotate - INFO - Number of PASSed variant calls:" {input_file} | awk -F': ' '{{print $2}}'`"""
         )
+
+def create_input_fusion(input_file, output_file):
+    """
+    Filter and reformat fusion calls from annoFuse for input to pcgr.
+    """
+
+    return Job(
+        [input_file],
+        [output_file],
+        [],
+        command=f"""\
+awk -v OFS="\\t" '{{print \$3,\$1,\$2,$7}}' {input_file} | \\
+    grep -v '@' | sed 's/FusionName/FusionGene/' | \\
+    sed 's/JunctionReadCount/SplitReads/' > {output_file}"""
+    )
