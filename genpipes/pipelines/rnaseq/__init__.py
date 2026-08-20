@@ -1897,7 +1897,7 @@ pandoc \\
                 final_command = bash.ls(output[0])
                 input_dependencies = [input, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml"]
 
-                if self.args.type == "cancer":
+                if self.protocol == "cancer":
                     annofuse_dir = os.path.join(self.output_dirs["fusion_directory"], sample.name, "annoFuse")
                     fusion_calls = os.path.join(annofuse_dir, f"{sample.name}.putative_driver_fusions.tsv")
                     fusion_input = os.path.join(annofuse_dir, f"{sample.name}.putative_driver_fusions.pcgl.tsv")
