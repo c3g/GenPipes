@@ -2420,7 +2420,7 @@ For information on the structure and contents of the LongRead readset file, plea
                         bash.mkdir(
                             pcgr_directory
                         ),
-                        pcgr.report2(
+                        pcgr.report(
                             input_vcf,
                             input_cpsr,
                             pcgr_directory,

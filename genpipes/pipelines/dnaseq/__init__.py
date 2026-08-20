@@ -2953,7 +2953,7 @@ END
                         bash.mkdir(
                             pcgr_directory,
                         ),
-                        pcgr.report2(
+                        pcgr.report(
                             input_file,
                             input_cpsr,
                             pcgr_directory,
