@@ -66,6 +66,17 @@ tumour_id = {tumor_id}
 normal_id = {normal_id}
 requisition_approved = 0000-00-00
 
+[sample]
+attributes = research
+oncotree_code = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else ""}
+sample_type = 
+tumour_id = {tumor_id}
+callability = NA
+donor = {tumor_pair_name}
+purity = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "Purity" {{print $2}}'`
+ploidy = f"`awk 'NR == 2 {{print $5}}' pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.purity.tsv`"
+mean_coverage = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "AmberMeanDepth" {{print $2}}'`
+
 [treatment_options_merger]
 attributes = research,supplementary
 configure_priority = 300
@@ -100,14 +111,12 @@ whizbam_project = COL
 {"whizbam_project=OCTCAP" if purple_input else ""}
 {"assay = " + assay if purple_input else ""} 
 
-[genomic_landscape]
+[hmf.genomic_landscape]
 attributes = research
 tumour_id = {tumor_id}
 oncotree_code = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else ""}
 tcga_code = TCGA_ALL_TUMOR
-purity = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "Purity" {{print $2}}'`
 msi_file = {msi_input}
-ctdna_file = {tmb_input}
 hrd_path = {hrd_input if hrd_input else "None"}
 sample_type = {global_conf.global_get(ini_section, 'oncokb_cache', required = False) if global_conf.global_get(ini_section, 'oncokb_cache', required = False) else "Unknown"}
 oncokb cache = {global_conf.global_get(ini_section, 'oncokb_cache', required = False) if global_conf.global_get(ini_section, 'oncokb_cache', required = False) else ""}
@@ -115,7 +124,6 @@ apply cache = {global_conf.global_get(ini_section, 'apply_cache', required = Fal
 update cache = {global_conf.global_get(ini_section, 'update_cache', required = False) if global_conf.global_get(ini_section, 'update_cache', required = False) else "False"}
 clinical = False
 supplementary = False
-coverage = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "AmberMeanDepth" {{print $2}}'`
 
 [gene_information_merger]
 attributes = research,supplementary
