@@ -3098,7 +3098,7 @@ END
                         name="report_djerba." + tumor_pair.name,
                         samples=[tumor_pair.tumor],
                         readsets=list(tumor_pair.tumor.readsets),
-                        input_dependency=[input_vcf, os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")],
+                        input_dependency=[input_vcf, msi_input, chord_input],
                         output_dependency=[config_file, djerba_script]
                         )
                     )
