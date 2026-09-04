@@ -2474,9 +2474,8 @@ For information on the structure and contents of the LongRead readset file, plea
             1. Outputs from purple:
                 1a. Zipped purple output directory.
                 1b. *purple.purity.tsv as-is.
-            2. Outputs from PCGR:
-                2a. Tumor mutational burden tsv, transformed into a text file containing SNP count with the function djerba.parse_snp_count().
-                2b. MAF file, transformed by djerba.clean_maf() function to remove rows without depth information.
+            2. Output from PCGR:
+                2a. MAF file, transformed by djerba.clean_maf() function to remove rows without depth information.
             3. Output from CHORD:
                 3a. *.chord.prediction.tsv as-is.
         """
