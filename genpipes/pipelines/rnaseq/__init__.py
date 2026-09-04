@@ -1812,8 +1812,7 @@ pandoc \\
                             input,
                             cpsr_directory,
                             sample.name
-                        ),
-                        bash.ls(cpsr_output)
+                        )
                     ],
                     name="report_cpsr." + sample.name,
                     samples=[sample],
