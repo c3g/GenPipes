@@ -68,7 +68,7 @@ requisition_approved = 0000-00-00
 
 [sample]
 attributes = research
-oncotree_code = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else ""}
+oncotree_code = {global_conf.global_get(ini_section, 'oncotree_code', required = False) if global_conf.global_get(ini_section, 'oncotree_code', required = False) else ""}
 sample_type = 
 tumour_id = {tumor_id}
 callability = NA
@@ -94,7 +94,7 @@ depends_extract =
 extract_priority = 800
 render_priority = 700
 maf_path = {maf_input}
-oncotree_code = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else ""}
+oncotree_code = {global_conf.global_get(ini_section, 'oncotree_code', required = False) if global_conf.global_get(ini_section, 'oncotree_code', required = False) else ""}
 tumour_id = {tumor_id}
 normal_id = {normal_id}
 whizbam_project = COL
@@ -106,7 +106,7 @@ whizbam_project = COL
 {"attributes = research" if purple_input else ""}
 {"configure_priority = 900" if purple_input else ""}
 {"tumour_id = " + tumor_id if purple_input else ""}
-{"oncotree_code = " + global_conf.global_get(ini_section, 'cancer_type') if purple_input else ""}
+{"oncotree_code = " + global_conf.global_get(ini_section, 'oncotree_code') if purple_input else ""}
 {"purple_zip = " + purple_input if purple_input else ""}
 {"whizbam_project=OCTCAP" if purple_input else ""}
 {"assay = " + assay if purple_input else ""} 
@@ -114,7 +114,7 @@ whizbam_project = COL
 [hmf.genomic_landscape]
 attributes = research
 tumour_id = {tumor_id}
-oncotree_code = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else ""}
+oncotree_code = {global_conf.global_get(ini_section, 'oncotree_code', required = False) if global_conf.global_get(ini_section, 'oncotree_code', required = False) else ""}
 tcga_code = TCGA_ALL_TUMOR
 msi_file = {msi_input}
 hrd_path = {hrd_input if hrd_input else "None"}
