@@ -2490,7 +2490,6 @@ For information on the structure and contents of the LongRead readset file, plea
             for tumor_pair in self.tumor_pairs.values():
                 djerba_dir = os.path.join(self.output_dirs['report_directory'], tumor_pair.name, "djerba")
                 pcgr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "pcgr")
-                input_tmb = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".tmb.tsv")
                 input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".maf")
                 clean_maf =  os.path.join(djerba_dir, tumor_pair.name + ".pcgr." + assembly + ".clean.maf")
                 purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple")
@@ -2498,7 +2497,6 @@ For information on the structure and contents of the LongRead readset file, plea
                 msi_input = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.purity.tsv")
                 savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
                 hrd_input = os.path.join(savana_dir, tumor_pair.tumor.name + ".chord.prediction.tsv")
-                snp_count = os.path.join(djerba_dir, "SNP.count.txt")
                 config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
                 djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
 
@@ -2515,10 +2513,6 @@ For information on the structure and contents of the LongRead readset file, plea
                                 purple_zip,
                                 recursive=True
                                 ),
-                            djerba.parse_snp_count(
-                                input_tmb,
-                                snp_count
-                                ),
                             djerba.make_config(
                                 config_file,
                                 tumor_pair.name,
@@ -2527,7 +2521,6 @@ For information on the structure and contents of the LongRead readset file, plea
                                 clean_maf + ".gz",
                                 purple_zip,
                                 msi_input=msi_input,
-                                tmb_input=snp_count,
                                 hrd_input=hrd_input,
                                 assay="WGS"
                                 ),
