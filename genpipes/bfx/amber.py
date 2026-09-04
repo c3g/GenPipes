@@ -24,20 +24,27 @@ import os
 from ..core.config import global_conf
 from ..core.job import Job
 
-def run(normal, tumor, normal_name, tumor_name, output_dir, other_options=None):
+def run(normal, 
+        tumor, 
+        normal_name, 
+        tumor_name, 
+        output_dir, 
+        other_options=None,
+        ini_section="amber"
+        ):
     tumor_output = os.path.join(output_dir, tumor_name + ".amber.baf.pcf")
 
     return Job(
         [normal, tumor],
         [tumor_output],
         [
-            ['amber', 'module_java'],
-            ['amber', 'module_R'],
-            ['amber', 'module_amber'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_R'],
+            [ini_section, 'module_amber'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $AMBER_JAR \\
-    -threads {threads} \\
+    -threads {threads} {other_options} \\
     -ref_genome_version {build} \\
     -reference {reference} \\
     -reference_bam {reference_bam} \\
@@ -45,12 +52,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $AMBER_JAR \
     -tumor_bam {tumor_bam} \\
     -loci {loci} \\
     -output_dir {output_dir}""".format(
-        tmp_dir=global_conf.global_get('amber', 'tmp_dir'),
-        java_other_options=global_conf.global_get('amber', 'java_other_options'),
-        ram=global_conf.global_get('amber', 'ram'),
-        threads=global_conf.global_get('amber', 'threads'),
-        build=global_conf.global_get('amber', 'assembly_alias2'),
-        loci=global_conf.global_get('amber', 'loci'),
+        tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+        java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+        ram=global_conf.global_get(ini_section, 'ram'),
+        threads=global_conf.global_get(ini_section, 'threads'),
+        build=global_conf.global_get(ini_section, 'assembly_alias2'),
+        loci=global_conf.global_get(ini_section, 'loci'),
         reference=normal_name,
         reference_bam=normal,
         tumor=tumor_name,

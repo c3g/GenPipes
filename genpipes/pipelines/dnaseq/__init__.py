@@ -41,6 +41,7 @@ from ...bfx import (
     breakseq2,
     bvatools,
     bwa,
+    chord,
     cnvkit,
     cobalt,
     conpair,
@@ -2651,6 +2652,10 @@ END
                     sample.name,
                     "cpsr",
                 )
+
+                assembly = global_conf.global_get(ini_section, 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{sample.name}.cpsr.{assembly}.html")
+                
                 jobs.append(
                     concat_jobs(
                         [
@@ -2702,6 +2707,9 @@ END
                         tumor_pair.name,
                         "cpsr"
                     )
+
+                assembly = global_conf.global_get(ini_section, 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{tumor_pair.name}.cpsr.{assembly}.html")
 
                 jobs.append(
                     concat_jobs(
@@ -2868,6 +2876,7 @@ END
                         panel_directory,
                         "pcgr"
                     )
+                    purple_input = None
                 # Set directory, ini_section, job and sample name for tumor pair Ensemble protocol
                 elif 'ensemble' in self.protocol:
                     ensemble_directory = os.path.join(
@@ -2893,6 +2902,13 @@ END
                         ensemble_directory,
                         tumor_pair.name,
                         "pcgr"
+                    )
+
+                    purple_input = os.path.join(
+                        self.output_dirs['paired_variants_directory'],
+                        tumor_pair.name,
+                        "purple",
+                        f"{tumor_pair.tumor.name}.purple.purity.tsv"
                     )
 
                 input_cpsr = os.path.join(
@@ -2943,6 +2959,7 @@ END
                             pcgr_directory,
                             tumor_pair.name,
                             input_cna=output_cna,
+                            purple_input=purple_input,
                             ini_section=ini_section
                         ),
                         bash.ls(output)
@@ -2983,9 +3000,42 @@ END
 
         return jobs
     
+    def chord(self):
+        """
+        Predict homologous recombination deficiency with [CHORD] (https://github.com/hartwigmedical/hmftools/tree/master/chord).
+        """
+
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            purple_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "purple")
+            snv_indel_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.somatic.vcf.gz")
+            sv_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.sv.vcf.gz")
+
+            job = chord.run(
+                tumor_pair.tumor.name,
+                snv_indel_vcf,
+                sv_vcf,
+                purple_dir
+                )
+            
+            job.name = f"chord.{tumor_pair.name}"
+            job.samples = [tumor_pair.tumor, tumor_pair.normal]
+            jobs.append(job)
+
+        return jobs
+    
     def report_djerba(self):
         """
         Produce Djerba report.
+        Takes as input:
+            1. Outputs from purple:
+                1a. Zipped purple output directory.
+                1b. *purple.purity.tsv as-is.
+            2. Output from PCGR:
+                2a. MAF file, transformed by djerba.clean_maf() function to remove rows without depth information.
+            3. Output from CHORD:
+                3a. *.chord.prediction.tsv as-is.
         """
         jobs = []
         
@@ -2999,17 +3049,19 @@ END
             assembly = global_conf.global_get('report_pcgr', 'assembly')
         
             for tumor_pair in self.tumor_pairs.values():
+                purple_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "purple")
+                chord_input = os.path.join(purple_dir, tumor_pair.tumor.name + ".chord.prediction.tsv")
+
                 djerba_dir = os.path.join(self.output_dirs['report_directory'], tumor_pair.name, "djerba")
-                purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
                 purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
             
-                #cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
-                input_cpsr = None
                 input_vcf = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz")
-                pcgr_directory = os.path.join(djerba_dir, "pcgr")
-                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")
-                clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".clean.maf") # MAF from pcgr version 1.4.1 required, remove any empty t_depth lines, needs to be gzipped
-            
+                ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
+                pcgr_directory = os.path.join(ensemble_directory, tumor_pair.name, "pcgr")
+                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".maf")
+                clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".clean.maf")
+                msi_input = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
+
                 config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
                 djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
 
@@ -3017,14 +3069,6 @@ END
                     concat_jobs(
                         [
                             bash.mkdir(djerba_dir),
-                            bash.mkdir(pcgr_directory),
-                            pcgr.report(
-                                input_vcf,
-                                input_cpsr,
-                                pcgr_directory,
-                                tumor_pair.name,
-                                ini_section='report_djerba'
-                                ),# add pcgr job to create MAF in correct format (1.4.1), remove chrM, gzip.
                             djerba.clean_maf(
                                 input_maf,
                                 clean_maf
@@ -3040,7 +3084,9 @@ END
                                 tumor_pair.tumor.name,
                                 tumor_pair.normal.name,
                                 clean_maf + ".gz",
-                                purple_zip
+                                purple_zip,
+                                msi_input=msi_input,
+                                hrd_input=chord_input
                                 ),
                             # djerba report requires internet connection. Script is produced but must be executed locally.
                             djerba.make_script(
@@ -3052,7 +3098,7 @@ END
                         name="report_djerba." + tumor_pair.name,
                         samples=[tumor_pair.tumor],
                         readsets=list(tumor_pair.tumor.readsets),
-                        input_dependency=[input_vcf, os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")],
+                        input_dependency=[input_vcf, msi_input, chord_input],
                         output_dependency=[config_file, djerba_script]
                         )
                     )
@@ -8341,7 +8387,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.report_cpsr,
                 self.filter_somatic,
                 self.report_pcgr,
-                self.report_djerba,
                 self.run_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,
@@ -8365,8 +8410,53 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.linx_annotations_germline,
                 self.linx_plot,
                 self.run_multiqc,
-                self.cram_output,
-                self.log_report
+                self.cram_output
+            ], 'somatic_ensemble_sv':
+            [
+                self.gatk_sam_to_fastq,
+                self.trim_fastp,
+                self.bwa_mem2_samtools_sort,
+                self.gatk_mark_duplicates,
+                self.set_interval_list,
+                self.conpair_concordance_contamination,
+                self.metrics_dna_picard_metrics,
+                self.metrics_dna_sample_mosdepth,
+                self.sequenza,
+                self.manta_sv_calls,
+                self.strelka2_paired_somatic,
+                self.strelka2_paired_germline,
+                self.strelka2_paired_snpeff,
+                self.gridss_paired_somatic,
+                self.purple_sv,
+                self.linx_annotations_somatic,
+                self.linx_annotations_germline,
+                self.linx_plot,
+                self.rawmpileup,
+                self.paired_varscan2,
+                self.merge_varscan2,
+                self.paired_mutect2,
+                self.merge_mutect2,
+                self.vardict_paired,
+                self.merge_filter_paired_vardict,
+                self.ensemble_somatic,
+                self.gatk_variant_annotator_somatic,
+                self.merge_gatk_variant_annotator_somatic,
+                self.ensemble_germline_loh,
+                self.gatk_variant_annotator_germline,
+                self.merge_gatk_variant_annotator_germline,
+                self.cnvkit_batch,
+                self.filter_germline,
+                self.report_cpsr,
+                self.filter_somatic,
+                self.report_pcgr,
+                self.chord,
+                self.report_djerba,
+                self.run_multiqc,
+                self.sym_link_fastq_pair,
+                self.sym_link_final_bam,
+                self.sym_link_report,
+                self.sym_link_ensemble,
+                self.cram_output
             ]
         }
 class DnaSeq(DnaSeqRaw):
@@ -8411,7 +8501,7 @@ class DnaSeq(DnaSeqRaw):
             "--type",
             help="DNAseq analysis type",
             dest='protocol',
-            choices=["germline_snv", "germline_sv", "germline_high_cov", "somatic_tumor_only", "somatic_fastpass", "somatic_ensemble", "somatic_sv"],
+            choices=["germline_snv", "germline_sv", "germline_high_cov", "somatic_tumor_only", "somatic_fastpass", "somatic_ensemble", "somatic_sv", "somatic_ensemble_sv"],
             default="germline_snv"
             )
         return cls._argparser

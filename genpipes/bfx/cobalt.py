@@ -24,7 +24,14 @@ import os
 from ..core.config import global_conf
 from ..core.job import Job
 
-def run(normal, tumor, normal_name, tumor_name, output_dir, other_options=None):
+def run(normal, 
+        tumor, 
+        normal_name, 
+        tumor_name, 
+        output_dir, 
+        other_options=None,
+        ini_section="cobalt"
+        ):
     normal_output = os.path.join(output_dir, normal_name + ".cobalt.ratio.pcf")
     tumor_output = os.path.join(output_dir, tumor_name + ".cobalt.ratio.pcf")
 
@@ -32,24 +39,24 @@ def run(normal, tumor, normal_name, tumor_name, output_dir, other_options=None):
         [normal, tumor],
         [normal_output, tumor_output],
         [
-            ['cobalt', 'module_java'],
-            ['cobalt', 'module_R'],
-            ['cobalt', 'module_cobalt'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_R'],
+            [ini_section, 'module_cobalt'],
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $COBALT_JAR \\
-  -threads {threads} \\
+  -threads {threads} {other_options} \\
   -reference {reference} \\
   -reference_bam {reference_bam} \\
   -tumor {tumor} \\
   -tumor_bam {tumor_bam} \\
   -gc_profile {gc_profile} \\
   -output_dir {output_dir}""".format(
-        tmp_dir=global_conf.global_get('cobalt', 'tmp_dir'),
-        java_other_options=global_conf.global_get('cobalt', 'java_other_options'),
-        ram=global_conf.global_get('cobalt', 'ram'),
-        threads=global_conf.global_get('cobalt', 'threads'),
-        gc_profile=global_conf.global_get('cobalt', 'gc_profile'),
+        tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
+        java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
+        ram=global_conf.global_get(ini_section, 'ram'),
+        threads=global_conf.global_get(ini_section, 'threads'),
+        gc_profile=global_conf.global_get(ini_section, 'gc_profile'),
         reference=normal_name,
         reference_bam=normal,
         tumor=tumor_name,

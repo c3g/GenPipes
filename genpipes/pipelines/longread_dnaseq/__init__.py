@@ -31,13 +31,16 @@ from ...core.sample_tumor_pairs import parse_tumor_pair_file
 from .. import common
 
 from ...bfx import (
+    amber,
     annotsv,
     bash_cmd as bash,
     bcftools,
     bvatools,
+    chord,
     clair3,
     clairS,
     cnvkit,
+    cobalt,
     cpsr,
     deepvariant,
     djerba,
@@ -54,6 +57,7 @@ from ...bfx import (
     nanoplot,
     pbmm2,
     pcgr,
+    purple,
     pycoqc,
     samtools,
     savana,
@@ -102,7 +106,8 @@ approach, please consult [this GitHub repository](https://github.com/nanoporetec
 
 For the nanopore_paired_somatic protocol, alignment and metrics generation follow the same steps for both the normal 
 and the tumor sample. Variant calling for each sample is done with ClairS, followed by detection of somatic structural 
-variants with SAVANA. Finally, CPSR and PCGR reports are created for germline and somatic variants, respectively. 
+variants with SAVANA. AnnotSV annotates the somatic structural variants from SAVANA using the filtered somatic
+ClairS VCF as SNV/indel input. Finally, CPSR and PCGR reports are created for germline and somatic variants, respectively. 
 
 The Revio protocol uses pbmm2 to align reads to the reference genome, followed by variant calling with DeepVariant
 and structural variant calling with HiFiCNV, TRGT, and Sawfish. Variants are annotated with AnnotSV and phased
@@ -162,6 +167,7 @@ For information on the structure and contents of the LongRead readset file, plea
             'svim_directory': os.path.relpath(os.path.join(self.output_dir, 'svim'), self.output_dir),
             'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
             'SVariants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir),
+            'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'pairedVariants'), self.output_dir),
             'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
             'annotsv_directory': os.path.relpath(os.path.join(self.output_dir, 'annotSV'), self.output_dir),
@@ -215,15 +221,34 @@ For information on the structure and contents of the LongRead readset file, plea
 
             if readset.fastq_files:
                 reads_fastq_dir = readset.fastq_files
+                bam2fq_job = None
+            elif readset.bam:
+                reads_fastq_dir = os.path.join(blast_directory, "raw_reads")
+                bam2fq_job = concat_jobs(
+                    [
+                        bash.mkdir(reads_fastq_dir),
+                        samtools.fastq(
+                            readset.bam,
+                            os.path.join(reads_fastq_dir, f"{readset.name}.fastq.gz"),
+                            "-TMM,ML"
+                        )
+                    ]
+                )
             else:
-                _raise(SanitycheckError("Error: FASTQ file not available for readset \"" + readset.name + "\"!"))
-
-            job = tools.sh_blastQC_ONT(
-                blast_directory,
-                reads_fastq_dir,
-                readset.name
+                _raise(SanitycheckError("Error: FASTQ or BAM file not available for readset \"" + readset.name + "\"!"))
+            
+            job = concat_jobs(
+                [
+                    bam2fq_job,
+                    tools.sh_blastQC_ONT(
+                        blast_directory,
+                        reads_fastq_dir,
+                        readset.name
+                    )
+                ]
             )
             job.samples = [readset.sample]
+            job.name = f"blastQC.{readset.name}"
             jobs.append(job)
 
         return jobs
@@ -330,11 +355,12 @@ For information on the structure and contents of the LongRead readset file, plea
                 minimap2_input = readset.fastq_files
                 input_dependency = readset.fastq_files
                 bam2fq_job = None
-            elif readset.bam_files:
+            elif readset.bam:
                 minimap2_input = None
-                input_dependency = readset.bam_files
+                input_dependency = readset.bam
                 bam2fq_job = samtools.fastq(
-                        readset.bam_files,
+                        readset.bam,
+                        None,
                         "-TMM,ML"
                         )
 
@@ -431,29 +457,31 @@ For information on the structure and contents of the LongRead readset file, plea
 
             if readset.summary_file:
                 in_summary = readset.summary_file
-            else:
-                _raise(SanitycheckError("Error: summary file not available for readset \"" + readset.name + "\"!"))
+            
+                align_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
+                in_bam = os.path.join(align_directory, readset.name + ".sorted.bam")
 
-            align_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
-            in_bam = os.path.join(align_directory, readset.name + ".sorted.bam")
-
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(pycoqc_directory),
-                    pycoqc.pycoqc(
-                        readset_name=readset.name,
-                        input_summary=in_summary,
-                        output_directory=pycoqc_directory,
-                        input_barcode=None,
-                        input_bam=in_bam
-                        )
-                ],
-                    name="pycoqc." + readset.name,
-                    samples=[readset.sample]
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(pycoqc_directory),
+                        pycoqc.pycoqc(
+                            readset_name=readset.name,
+                            input_summary=in_summary,
+                            output_directory=pycoqc_directory,
+                            input_barcode=None,
+                            input_bam=in_bam
+                            )
+                    ],
+                        name="pycoqc." + readset.name,
+                        samples=[readset.sample]
+                    )
                 )
-            )
+        
+            else:
+                log.info("Summary file not available for readset \"" + readset.name + "\". Skipping pycoQC")
 
         return jobs
+
 
     def samtools_merge_bam_files(self):
         """
@@ -1292,6 +1320,7 @@ For information on the structure and contents of the LongRead readset file, plea
             clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
             clairS_germline_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
             output_directory = os.path.join(self.output_dirs['SVariants_directory'], tumor_pair.name, 'savana')
+            savana_vcf = os.path.join(output_directory, f"{tumor_pair.name}.classified.somatic.vcf")
 
             jobs.append(
                 concat_jobs(
@@ -1304,6 +1333,14 @@ For information on the structure and contents of the LongRead readset file, plea
                             output_directory,
                             tumor_pair.name,
                             clairS_germline_vcf
+                        ),
+                        htslib.bgzip(
+                            savana_vcf,
+                            f"{savana_vcf}.gz"
+                        ),
+                        htslib.tabix(
+                            f"{savana_vcf}.gz",
+                            "-f -pvcf"
                         )
                     ],
                     name=f"savana.{tumor_pair.name}",
@@ -1311,6 +1348,306 @@ For information on the structure and contents of the LongRead readset file, plea
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[normal_bam, tumor_bam, clairS_germline_vcf]
                 )
+            )
+
+        return jobs
+
+    def purple(self):
+        """
+        PURPLE is a purity ploidy estimator for whole genome sequenced (WGS) data.
+
+        It combines B-allele frequency (BAF) from AMBER, read depth ratios from COBALT,
+        somatic variants and structural variants to estimate the purity and copy number profile of a tumor sample.
+        Returns:
+            list: A list of purple jobs.
+        """
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+
+            pair_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+
+            [input_normal] = self.select_input_files(
+                [
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.dup.bam")],
+                    [os.path.join(normal_alignment_directory, f"{tumor_pair.normal.name}.sorted.bam")]
+                ]
+            )
+
+            [input_tumor] = self.select_input_files(
+                [
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.dup.bam")],
+                    [os.path.join(tumor_alignment_directory, f"{tumor_pair.tumor.name}.sorted.bam")]
+                ]
+            )
+
+            somatic_hotspots = global_conf.global_get('purple', 'somatic_hotspots', param_type='filepath')
+            germline_hotspots = global_conf.global_get('purple', 'germline_hotspots', param_type='filepath')
+            driver_gene_panel = global_conf.global_get('purple', 'driver_gene_panel', param_type='filepath')
+
+            purple_dir = os.path.join(pair_dir, "purple")
+            amber_dir = os.path.join(purple_dir, "rawAmber")
+            cobalt_dir = os.path.join(purple_dir, "rawCobalt")
+            ensembl_data_dir = global_conf.global_get('purple', 'ensembl_data_dir', param_type='dirpath')
+
+            clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            raw_somatic_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+            somatic_tumor_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.tumor.vcf.gz")
+            somatic_normal_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.normal.vcf.gz")
+            somatic_vcf = os.path.join(purple_dir, f"{tumor_pair.name}.clairS.somatic.flt.purple.vcf.gz")
+            
+            savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+            savana_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf.gz")
+            savana_normal = os.path.join(savana_dir, f"{tumor_pair.name}.classified.normal.vcf.gz")
+            savana_tumor = os.path.join(savana_dir, f"{tumor_pair.name}.classified.tumor.vcf.gz")
+            savana_paired = os.path.join(purple_dir, f"{tumor_pair.name}.classified.somatic.paired.vcf.gz")
+
+            amber_options = global_conf.global_get('amber', 'other_options')
+            cobalt_options = global_conf.global_get('cobalt', 'other_options')
+
+            # Convert filtered ClairS somatic VCFs to purple-compatible VCFs
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            purple_dir
+                        ),
+                        # Tumor column: GT, AD and DP as reported by ClairS (>= 0.5.0)
+                        pipe_jobs(
+                            [
+                                bcftools.annotate(
+                                    raw_somatic_vcf,
+                                    None,
+                                    "-x '^FORMAT/GT,FORMAT/AD,FORMAT/DP'"
+                                ),
+                                bcftools.reheader(
+                                    None,
+                                    None,
+                                    f"-n {tumor_pair.tumor.name}"
+                                ),
+                                bcftools.view(
+                                    None,
+                                    somatic_tumor_vcf,
+                                    "-Oz"
+                                )
+                            ]
+                        ),
+                        htslib.tabix(
+                            somatic_tumor_vcf,
+                            "-f -pvcf"
+                        ),
+                        # Normal column: promote NAD/NDP to AD/DP, then call the germline genotype
+                        pipe_jobs(
+                            [
+                                bcftools.annotate(
+                                    raw_somatic_vcf,
+                                    None,
+                                    "-x 'INFO,^FORMAT/GT,FORMAT/NAD,FORMAT/NDP' --rename-annots <(printf 'FORMAT/NAD\\tAD\\nFORMAT/NDP\\tDP\\n')"
+                                ),
+                                bcftools.setgt(
+                                    None,
+                                    None,
+                                    "-- -t a -n c:0/0"
+                                ),
+                                # added as heterozygous if the alternate allele is supported by more than 20% of the reads
+                                bcftools.setgt(
+                                    None,
+                                    None,
+                                    "-- -t q -i 'FMT/AD[0:1] > 0.2*FMT/DP' -n c:0/1"
+                                ),
+                                bcftools.reheader(
+                                    None,
+                                    None,
+                                    f"-n {tumor_pair.normal.name}"
+                                ),
+                                bcftools.view(
+                                    None,
+                                    somatic_normal_vcf,
+                                    "-Oz"
+                                )
+                            ]
+                        ),
+                        htslib.tabix(
+                            somatic_normal_vcf,
+                            "-f -pvcf"
+                        ),
+                        bcftools.merge(
+                            [
+                                somatic_tumor_vcf,
+                                somatic_normal_vcf
+                            ],
+                            somatic_vcf,
+                            "-Oz"
+                        ),
+                        htslib.tabix(
+                            somatic_vcf,
+                            "-f -pvcf"
+                        )
+                    ],
+                    name=f"clairS_to_purple.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+            
+            # Convert filtered savana VCFs to purple-compatible VCFs
+            jobs.append(
+                concat_jobs(
+                    [
+                        pipe_jobs(
+                            [
+                                bcftools.reheader(
+                                    savana_vcf,
+                                    None,
+                                    f"-n {tumor_pair.tumor.name}"
+                                ),
+                                bcftools.view(
+                                    None,
+                                    savana_tumor,
+                                    "-Oz"
+                                )
+                            ],
+                        ),
+                        htslib.tabix(
+                            savana_tumor,
+                            "-f -pvcf"
+                        ),
+                        pipe_jobs(
+                            [
+                                bcftools.reheader(
+                                    savana_vcf,
+                                    None,
+                                    f"-n {tumor_pair.normal.name}"
+                                ),
+                                bcftools.setgt(
+                                    None,
+                                    None,
+                                    "-- -t a -n ."
+                                ),
+                                bcftools.setgt(
+                                    None,
+                                    None,
+                                    "-- -t q -i 'INFO/NORMAL_ALN_SUPPORT=0' -n c:0/0"
+                                ),
+                                bcftools.view(
+                                    None,
+                                    savana_normal,
+                                    "-Oz"
+                                )
+                            ],
+                        ),
+                        htslib.tabix(
+                            savana_normal,
+                            "-f -pvcf"
+                        ),
+                        bcftools.merge(
+                            [savana_tumor, savana_normal],
+                            savana_paired,
+                            "-Oz"
+                        ),
+                        htslib.tabix(
+                            savana_paired,
+                            "-f -pvcf"
+                        )
+                    ],
+                    name=f"savana_to_purple.{tumor_pair.name}",
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+
+            
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            amber_dir,
+                            remove=True
+                        ),
+                        amber.run(
+                            input_normal,
+                            input_tumor,
+                            tumor_pair.normal.name,
+                            tumor_pair.tumor.name,
+                            amber_dir,
+                            amber_options
+                        )
+                    ],
+                    name="purple.amber." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            cobalt_dir,
+                            remove=True
+                        ),
+                        cobalt.run(
+                            input_normal,
+                            input_tumor,
+                            tumor_pair.normal.name,
+                            tumor_pair.tumor.name,
+                            cobalt_dir,
+                            cobalt_options
+                        )
+                    ],
+                    name="purple.cobalt." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+            purple_purity_output = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.purity.tsv")
+            purple_qc_output = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.qc")
+            samples = [tumor_pair.normal, tumor_pair.tumor]
+            job_name = f"purple.purity.{tumor_pair.name}"
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                    purple.parse_purity_metrics_pt(purple_purity_output),
+                    job2json_project_tracking.run(
+                        input_file=purple_purity_output,
+                        samples=",".join([sample.name for sample in samples]),
+                        readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                        job_name=job_name,
+                        metrics="purity=$purity"
+                        )
+                    ])
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            purple_dir
+                            ),
+                        purple.run(
+                            amber_dir,
+                            cobalt_dir,
+                            tumor_pair.normal.name,
+                            tumor_pair.tumor.name,
+                            purple_dir,
+                            ensembl_data_dir,
+                            somatic_vcf,
+                            savana_paired,
+                            None,
+                            somatic_hotspots,
+                            germline_hotspots,
+                            driver_gene_panel
+                        ),
+                        job_project_tracking_metrics
+                    ],
+                    name=job_name,
+                    samples=samples,
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                )
+            )
+            self.multiqc_inputs[tumor_pair.name].extend(
+                [purple_purity_output, purple_qc_output]
             )
 
         return jobs
@@ -1626,69 +1963,110 @@ For information on the structure and contents of the LongRead readset file, plea
         """
         jobs =[]
 
-        for sample in self.samples:
-            annotsv_directory = os.path.join(self.output_dirs["annotsv_directory"], sample.name)
-            svariants_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
-            hificnv_vcf = os.path.join(svariants_dir, "hificnv", f"{sample.name}.hificnv.filt.vcf.gz")
-            sawfish_vcf = os.path.join(svariants_dir, "sawfish", f"{sample.name}.sawfish.flt.vcf.gz")
-            deepvariant_vcf = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant", f"{sample.name}.deepvariant.flt.vcf.gz")
+        if self.protocol == "revio":
+            for sample in self.samples:
+                annotsv_directory = os.path.join(self.output_dirs["annotsv_directory"], sample.name)
+                svariants_dir = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
+                hificnv_vcf = os.path.join(svariants_dir, "hificnv", f"{sample.name}.hificnv.filt.vcf.gz")
+                sawfish_vcf = os.path.join(svariants_dir, "sawfish", f"{sample.name}.sawfish.flt.vcf.gz")
+                deepvariant_vcf = os.path.join(self.output_dirs["variants_directory"], sample.name, "deepvariant", f"{sample.name}.deepvariant.flt.vcf.gz")
 
-            hificnv_dir = os.path.join(annotsv_directory, "hificnv")
-            sawfish_dir = os.path.join(annotsv_directory, "sawfish")
-            hificnv_annot = os.path.join(hificnv_dir, f"{sample.name}.hificnv.annotsv.tsv")
-            sawfish_annot = os.path.join(sawfish_dir, f"{sample.name}.sawfish.annotsv.tsv")
+                hificnv_dir = os.path.join(annotsv_directory, "hificnv")
+                sawfish_dir = os.path.join(annotsv_directory, "sawfish")
+                hificnv_annot = os.path.join(hificnv_dir, f"{sample.name}.hificnv.annotsv.tsv")
+                sawfish_annot = os.path.join(sawfish_dir, f"{sample.name}.sawfish.annotsv.tsv")
 
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(hificnv_dir),
-                        annotsv.annotate(
-                            hificnv_vcf,
-                            hificnv_annot,
-                            deepvariant_vcf
-                        ),
-                        annotsv.html(
-                            hificnv_annot,
-                            hificnv_dir,
-                            f"{sample.name}.hificnv.annotsv"
-                        ),
-                        annotsv.excel(
-                            hificnv_annot,
-                            hificnv_dir,
-                            f"{sample.name}.hificnv.annotsv"
-                        )
-                    ],
-                    name=f"annotsv.hificnv.{sample.name}",
-                    samples=[sample],
-                    readsets=[*list(sample.readsets)]
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(hificnv_dir),
+                            annotsv.annotate(
+                                hificnv_vcf,
+                                hificnv_annot,
+                                deepvariant_vcf
+                            ),
+                            annotsv.html(
+                                hificnv_annot,
+                                hificnv_dir,
+                                f"{sample.name}.hificnv.annotsv"
+                            ),
+                            annotsv.excel(
+                                hificnv_annot,
+                                hificnv_dir,
+                                f"{sample.name}.hificnv.annotsv"
+                            )
+                        ],
+                        name=f"annotsv.hificnv.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
+                    )
                 )
-            )
 
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(sawfish_dir),
-                        annotsv.annotate(
-                            sawfish_vcf,
-                            sawfish_annot,
-                            deepvariant_vcf
-                        ),
-                        annotsv.html(
-                            sawfish_annot,
-                            sawfish_dir,
-                            f"{sample.name}.sawfish.annotsv"
-                        ),
-                        annotsv.excel(
-                            sawfish_annot,
-                            sawfish_dir,
-                            f"{sample.name}.sawfish.annotsv"
-                        )
-                    ],
-                    name=f"annotsv.sawfish.{sample.name}",
-                    samples=[sample],
-                    readsets=[*list(sample.readsets)]
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(sawfish_dir),
+                            annotsv.annotate(
+                                sawfish_vcf,
+                                sawfish_annot,
+                                deepvariant_vcf
+                            ),
+                            annotsv.html(
+                                sawfish_annot,
+                                sawfish_dir,
+                                f"{sample.name}.sawfish.annotsv"
+                            ),
+                            annotsv.excel(
+                                sawfish_annot,
+                                sawfish_dir,
+                                f"{sample.name}.sawfish.annotsv"
+                            )
+                        ],
+                        name=f"annotsv.sawfish.{sample.name}",
+                        samples=[sample],
+                        readsets=[*list(sample.readsets)]
+                    )
                 )
-            )
+
+        elif self.protocol == "nanopore_paired_somatic":
+            for tumor_pair in self.tumor_pairs.values():
+                annotsv_directory = os.path.join(self.output_dirs["annotsv_directory"], tumor_pair.name, "savana")
+                savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+                savana_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
+                clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+                clairS_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+                savana_annot = os.path.join(annotsv_directory, f"{tumor_pair.name}.savana.annotsv.tsv")
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                annotsv_directory
+                                ),
+                            annotsv.annotate(
+                                savana_vcf,
+                                savana_annot,
+                                clairS_vcf
+                            ),
+                            annotsv.html(
+                                savana_annot,
+                                annotsv_directory,
+                                f"{tumor_pair.name}.savana.annotsv"
+                            ),
+                            annotsv.excel(
+                                savana_annot,
+                                annotsv_directory,
+                                f"{tumor_pair.name}.savana_ClairS.annotsv"
+                            )
+                        ],
+                        name=f"annotsv.savana.{tumor_pair.name}",
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    )
+                )
+
+        else:
+            _raise(SanitycheckError(f"Error: AnnotSV not meant to run with protocol {self.protocol} !"))
 
         return jobs
     
@@ -1741,6 +2119,32 @@ For information on the structure and contents of the LongRead readset file, plea
 
         return jobs
     
+    def chord(self):
+        """
+        Predict homologous recombination deficiency with [CHORD] (https://github.com/hartwigmedical/hmftools/tree/master/chord).
+        """
+
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+            savana_vcf = os.path.join(savana_dir, f"{tumor_pair.name}.classified.somatic.vcf")
+            clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
+            clairS_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
+
+            job = chord.run(
+                tumor_pair.tumor.name,
+                clairS_vcf,
+                savana_vcf,
+                savana_dir # TBD if we want to leave output here
+                )
+            
+            job.name = f"chord.{tumor_pair.name}"
+            job.samples = [tumor_pair.tumor, tumor_pair.normal]
+            jobs.append(job)
+
+        return jobs
+    
     def report_cpsr(self):
         """
         Creates a cpsr germline report (https://sigven.github.io/cpsr/)
@@ -1766,6 +2170,8 @@ For information on the structure and contents of the LongRead readset file, plea
                     f"{sample.name}.annot.vcf.gz"
                 )
                 cpsr_directory = os.path.join(output_directory, sample.name, "cpsr")
+                assembly = global_conf.global_get(ini_section, 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{sample.name}.cpsr.{assembly}.html")
                 
                 jobs.append(
                     concat_jobs(
@@ -1791,6 +2197,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
                 input_file = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.germline.flt.vcf.gz")
                 cpsr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "cpsr")
+                assembly = global_conf.global_get('report_cpsr', 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{tumor_pair.normal.name}.cpsr.{assembly}.html")
 
                 jobs.append(
                     concat_jobs(
@@ -1817,6 +2225,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 hiphase_directory = os.path.join(self.output_dirs["hiphase_directory"], sample.name)
                 deepvariant_phased = os.path.join(hiphase_directory, f"{sample.name}.deepvariant.hiphase.vcf.gz")
                 cpsr_directory = os.path.join(self.output_dirs["report_directory"], sample.name, "cpsr")
+                assembly = global_conf.global_get('report_cpsr', 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{sample.name}.cpsr.{assembly}.html")
 
                 jobs.append(
                     concat_jobs(
@@ -1957,6 +2367,7 @@ For information on the structure and contents of the LongRead readset file, plea
                 clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
                 output_clairS = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
                 input_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.pcgr.vcf.gz")
+                savana_metrics = os.path.join(savana_directory, f"{tumor_pair.name}_fitted_purity_ploidy.tsv")
 
                 output_report = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.html")
                 output_maf = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.maf")
@@ -2015,6 +2426,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             pcgr_directory,
                             tumor_pair.name,
                             input_cna,
+                            savana_input = savana_metrics,
                             ini_section=ini_section
                         ),
                         bash.ls(output_report)
@@ -2058,6 +2470,14 @@ For information on the structure and contents of the LongRead readset file, plea
     def report_djerba(self):
         """
         Produce Djerba report.
+        Takes as input:
+            1. Outputs from purple:
+                1a. Zipped purple output directory.
+                1b. *purple.purity.tsv as-is.
+            2. Output from PCGR:
+                2a. MAF file, transformed by djerba.clean_maf() function to remove rows without depth information.
+            3. Output from CHORD:
+                3a. *.chord.prediction.tsv as-is.
         """
         jobs = []
         
@@ -2071,6 +2491,11 @@ For information on the structure and contents of the LongRead readset file, plea
                 pcgr_directory = os.path.join(self.output_dirs["report_directory"], tumor_pair.name, "pcgr")
                 input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".maf")
                 clean_maf =  os.path.join(djerba_dir, tumor_pair.name + ".pcgr." + assembly + ".clean.maf")
+                purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple")
+                purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
+                msi_input = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.purity.tsv")
+                savana_dir = os.path.join(self.output_dirs["SVariants_directory"], tumor_pair.name, "savana")
+                hrd_input = os.path.join(savana_dir, tumor_pair.tumor.name + ".chord.prediction.tsv")
                 config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
                 djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
 
@@ -2082,14 +2507,21 @@ For information on the structure and contents of the LongRead readset file, plea
                                 input_maf,
                                 clean_maf
                                 ),
+                            bash.zip(
+                                purple_dir,
+                                purple_zip,
+                                recursive=True
+                                ),
                             djerba.make_config(
                                 config_file,
                                 tumor_pair.name,
                                 tumor_pair.tumor.name,
                                 tumor_pair.normal.name,
                                 clean_maf + ".gz",
-                                None,
-                                "WGS"
+                                purple_zip,
+                                msi_input=msi_input,
+                                hrd_input=hrd_input,
+                                assay="WGS"
                                 ),
                             # djerba report requires internet connection. Script is produced but must be executed locally.
                             djerba.make_script(
@@ -2101,7 +2533,7 @@ For information on the structure and contents of the LongRead readset file, plea
                         name="report_djerba." + tumor_pair.name,
                         samples=[tumor_pair.tumor],
                         readsets=list(tumor_pair.tumor.readsets),
-                        input_dependency=[input_maf],
+                        input_dependency=[input_maf, msi_input, hrd_input],
                         output_dependency=[config_file, djerba_script]
                         )
                     )
@@ -2203,6 +2635,9 @@ For information on the structure and contents of the LongRead readset file, plea
                 self.clairS,
                 self.merge_filter_clairS,
                 self.savana,
+                self.purple,
+                self.annotSV,
+                self.chord,
                 self.report_cpsr,
                 self.report_pcgr,
                 self.report_djerba,

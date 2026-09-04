@@ -98,12 +98,14 @@ cpsr {options} \\
     --output_dir {tmp_dir}/cpsr \\
     --genome_assembly {assembly} \\
     --sample_id {tumor_id} && \\
-cp -r {tmp_dir}/cpsr {output_dir}""".format(
+cp -r {tmp_dir}/cpsr {output_dir} && \\
+ls {output_file}""".format(
             options=global_conf.global_get(ini_section, 'options_v2'),
             input=input,
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
             output_dir=os.path.dirname(output_dir),
             assembly=global_conf.global_get(ini_section, 'assembly'),
-            tumor_id=tumor_id
+            tumor_id=tumor_id,
+            output_file=output[0]
         )
     )

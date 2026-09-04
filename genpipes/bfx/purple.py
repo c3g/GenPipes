@@ -37,6 +37,7 @@ def run(
     somatic_hotspots=None,
     germline_hotspots=None,
     driver_gene_panel=None,
+    germline_vcf=None,
     ini_section='purple'
     ):
 
@@ -51,8 +52,12 @@ def run(
         os.path.join(output_dir, tumor_name + ".purple.driver.catalog.germline.tsv")
     ]
 
-    if structural_sv is not None and sv_recovery is not None:
+    if structural_sv is not None:
         input_files.append(structural_sv)
+        circos_plot = os.path.join(output_dir, "plot", tumor_name + ".circos.png")
+        purple_outputs.append(circos_plot)
+
+    if structural_sv is not None and sv_recovery is not None:
         input_files.append(sv_recovery)
         purple_sv = os.path.join(output_dir, tumor_name + ".purple.sv.vcf.gz")
         driver_somatic = os.path.join(output_dir, tumor_name + ".purple.driver.catalog.somatic.tsv")
@@ -60,10 +65,6 @@ def run(
         purple_outputs.append(purple_sv)
         purple_outputs.append(driver_somatic)
         purple_outputs.append(driver_germline)
-
-    if structural_sv is not None:
-        circos_plot = os.path.join(output_dir, "plot", tumor_name + ".circos.png")
-        purple_outputs.append(circos_plot)
 
     return Job(
         input_files,
@@ -88,7 +89,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
   -amber {amber} \\
   -gc_profile {gc_profile} \\
   -ensembl_data_dir {ensembl_data_dir} \\
-  -somatic_vcf {somatic_snv} {structural_sv} {sv_recovery} {somatic_hotspots} {germline_hotspots} {driver_gene_panel} {circos} \\
+  -somatic_vcf {somatic_snv} {structural_sv} {germline_vcf} {sv_recovery} {somatic_hotspots} {germline_hotspots} {driver_gene_panel} {circos} \\
   -output_dir {output_dir}""".format(
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
             java_other_options=global_conf.global_get(ini_section, 'java_other_options'),
@@ -107,6 +108,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
             somatic_snv=somatic_snv,
             structural_sv=" \\\n  -somatic_sv_vcf " +  structural_sv if structural_sv else "",
             sv_recovery=" \\\n  -sv_recovery_vcf " +  sv_recovery if sv_recovery else "",
+            germline_vcf=" \\\n  -germline_vcf " +  germline_vcf if germline_vcf else "",
             somatic_hotspots=" \\\n  -somatic_hotspots " + somatic_hotspots if somatic_hotspots else "",
             germline_hotspots=" \\\n  -germline_hotspots " + germline_hotspots if germline_hotspots else "",
             driver_gene_panel=" \\\n  -driver_gene_panel " + driver_gene_panel if driver_gene_panel else "",

@@ -30,9 +30,14 @@ def make_config(
         normal_id,
         maf_input,
         purple_input,
+        msi_input,
+        hrd_input,
         assay="WGTS",
         ini_section = 'report_djerba'
         ):
+    """
+    Creates djerba config file from available inputs produced by the pipeline.
+    """
 
     config_content = f"""\
 [core]
@@ -60,6 +65,17 @@ tumour_id = {tumor_id}
 normal_id = {normal_id}
 requisition_approved = 0000-00-00
 
+[sample]
+attributes = research
+oncotree_code = {global_conf.global_get(ini_section, 'oncotree_code', required = False) if global_conf.global_get(ini_section, 'oncotree_code', required = False) else ""}
+sample_type = {global_conf.global_get(ini_section, 'sample_type', required = False) if global_conf.global_get(ini_section, 'sample_type', required = False) else ""}
+tumour_id = {tumor_id}
+callability = NA
+donor = {tumor_pair_name}
+purity = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "Purity" {{print $2}}'`
+ploidy = f"`awk 'NR == 2 {{print $5}}' pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.purity.tsv`"
+mean_coverage = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "AmberMeanDepth" {{print $2}}'`
+
 [treatment_options_merger]
 attributes = research,supplementary
 configure_priority = 300
@@ -77,7 +93,7 @@ depends_extract =
 extract_priority = 800
 render_priority = 700
 maf_path = {maf_input}
-oncotree_code = {global_conf.global_get(ini_section, 'cancer_type', required = False) if global_conf.global_get(ini_section, 'cancer_type', required = False) else ""}
+oncotree_code = {global_conf.global_get(ini_section, 'oncotree_code', required = False) if global_conf.global_get(ini_section, 'oncotree_code', required = False) else ""}
 tumour_id = {tumor_id}
 normal_id = {normal_id}
 whizbam_project = COL
@@ -89,10 +105,24 @@ whizbam_project = COL
 {"attributes = research" if purple_input else ""}
 {"configure_priority = 900" if purple_input else ""}
 {"tumour_id = " + tumor_id if purple_input else ""}
-{"oncotree_code = " + global_conf.global_get(ini_section, 'cancer_type') if purple_input else ""}
+{"oncotree_code = " + global_conf.global_get(ini_section, 'oncotree_code') if purple_input else ""}
 {"purple_zip = " + purple_input if purple_input else ""}
 {"whizbam_project=OCTCAP" if purple_input else ""}
 {"assay = " + assay if purple_input else ""} 
+
+[hmf.genomic_landscape]
+attributes = research
+tumour_id = {tumor_id}
+oncotree_code = {global_conf.global_get(ini_section, 'oncotree_code', required = False) if global_conf.global_get(ini_section, 'oncotree_code', required = False) else ""}
+tcga_code = TCGA_ALL_TUMOR
+msi_file = {msi_input}
+hrd_path = {hrd_input}
+sample_type = {global_conf.global_get(ini_section, 'sample_type', required = False) if global_conf.global_get(ini_section, 'sample_type', required = False) else "Unknown"}
+oncokb cache = {global_conf.global_get(ini_section, 'oncokb_cache', required = False) if global_conf.global_get(ini_section, 'oncokb_cache', required = False) else ""}
+apply cache = {global_conf.global_get(ini_section, 'apply_cache', required = False) if global_conf.global_get(ini_section, 'apply_cache', required = False) else "False"}
+update cache = {global_conf.global_get(ini_section, 'update_cache', required = False) if global_conf.global_get(ini_section, 'update_cache', required = False) else "False"}
+clinical = False
+supplementary = False
 
 [gene_information_merger]
 attributes = research,supplementary
@@ -123,6 +153,9 @@ def clean_maf(
         input_maf,
         output_maf
         ):
+    """
+    Prepares maf file for use with djerba by removing rows without depth information.
+    """
     
     output = [output_maf + ".gz"]
     return Job(

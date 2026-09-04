@@ -1801,6 +1801,9 @@ pandoc \\
                 "cpsr"
             )
 
+            assembly = global_conf.global_get('report_cpsr', 'assembly')
+            cpsr_output = os.path.join(cpsr_directory, f"{sample.name}.cpsr.{assembly}.html")
+
             jobs.append(
                 concat_jobs(
                     [
@@ -1809,7 +1812,8 @@ pandoc \\
                             input,
                             cpsr_directory,
                             sample.name
-                        )
+                        ),
+                        bash.ls(cpsr_output)
                     ],
                     name="report_cpsr." + sample.name,
                     samples=[sample],
@@ -1876,6 +1880,8 @@ pandoc \\
                                 )
                             ]
                         )
+                fusion_command = None
+                fusion_input = None
             # output file name patterns have changed in pcgr versions >2.0.0
             # cpsr input changed in pcgr 2.1.0
             elif global_conf.global_get('report_pcgr', 'module_pcgr').split("/")[2] > "2":
@@ -1890,6 +1896,15 @@ pandoc \\
                     ]
                 final_command = bash.ls(output[0])
                 input_dependencies = [input, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml"]
+
+                if self.protocol == "cancer":
+                    annofuse_dir = os.path.join(self.output_dirs["fusion_directory"], sample.name, "annoFuse")
+                    fusion_calls = os.path.join(annofuse_dir, f"{sample.name}.putative_driver_fusions.tsv")
+                    fusion_input = os.path.join(annofuse_dir, f"{sample.name}.putative_driver_fusions.pcgl.tsv")
+                    fusion_command = pcgr.create_input_fusion(
+                        fusion_calls,
+                        fusion_input
+                    )
             
             else:
                 output = [
@@ -1899,6 +1914,8 @@ pandoc \\
                     ]
                 final_command = bash.ls(output[0])
                 input_dependencies = [input, input_cpsr]
+                fusion_command = None
+                fusion_input = None
 
             jobs.append(
                 concat_jobs(
@@ -1906,12 +1923,14 @@ pandoc \\
                         bash.mkdir(
                             pcgr_directory,
                         ),
+                        fusion_command,
                         pcgr.report(
                             input,
                             input_cpsr,
                             pcgr_directory,
                             sample.name,
-                            input_cna=None
+                            input_cna=None,
+                            fusion_input=fusion_input
                         ),
                         final_command
                     ],
@@ -2791,11 +2810,11 @@ END
                 self.run_vcfanno,
                 self.decompose_and_normalize,
                 self.filter_gatk,
-                self.report_cpsr,
-                self.report_pcgr,
                 self.run_star_fusion,
                 self.run_arriba,
                 self.run_annofuse,
+                self.report_cpsr,
+                self.report_pcgr,
                 self.picard_rna_metrics,
                 self.estimate_ribosomal_rna,
                 self.rnaseqc2,
