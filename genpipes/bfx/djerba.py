@@ -31,7 +31,6 @@ def make_config(
         maf_input,
         purple_input,
         msi_input,
-        tmb_input,
         hrd_input,
         assay="WGTS",
         ini_section = 'report_djerba'
@@ -171,25 +170,6 @@ gzip -f {output_maf}""".format(
         output_maf=output_maf
         )
     )
-
-def parse_snp_count(
-        input,
-        output
-    ):
-    """
-    Parses tmb output tsv from pcgr to produce SNP count txt file for djerba.
-    """
-
-    return Job(
-        [input],
-        [output],
-        [],
-        command="""\
-awk 'NR == 2 {{print $2}}' {input} > {output}""".format(
-    input=input,
-    output=output
-    )
-)
 
 def make_script(
         config_file,
