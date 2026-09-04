@@ -68,7 +68,7 @@ requisition_approved = 0000-00-00
 [sample]
 attributes = research
 oncotree_code = {global_conf.global_get(ini_section, 'oncotree_code', required = False) if global_conf.global_get(ini_section, 'oncotree_code', required = False) else ""}
-sample_type = 
+sample_type = {global_conf.global_get(ini_section, 'sample_type', required = False) if global_conf.global_get(ini_section, 'sample_type', required = False) else ""}
 tumour_id = {tumor_id}
 callability = NA
 donor = {tumor_pair_name}
