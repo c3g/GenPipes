@@ -116,8 +116,8 @@ tumour_id = {tumor_id}
 oncotree_code = {global_conf.global_get(ini_section, 'oncotree_code', required = False) if global_conf.global_get(ini_section, 'oncotree_code', required = False) else ""}
 tcga_code = TCGA_ALL_TUMOR
 msi_file = {msi_input}
-hrd_path = {hrd_input if hrd_input else "None"}
-sample_type = {global_conf.global_get(ini_section, 'oncokb_cache', required = False) if global_conf.global_get(ini_section, 'oncokb_cache', required = False) else "Unknown"}
+hrd_path = {hrd_input}
+sample_type = {global_conf.global_get(ini_section, 'sample_type', required = False) if global_conf.global_get(ini_section, 'sample_type', required = False) else "Unknown"}
 oncokb cache = {global_conf.global_get(ini_section, 'oncokb_cache', required = False) if global_conf.global_get(ini_section, 'oncokb_cache', required = False) else ""}
 apply cache = {global_conf.global_get(ini_section, 'apply_cache', required = False) if global_conf.global_get(ini_section, 'apply_cache', required = False) else "False"}
 update cache = {global_conf.global_get(ini_section, 'update_cache', required = False) if global_conf.global_get(ini_section, 'update_cache', required = False) else "False"}
