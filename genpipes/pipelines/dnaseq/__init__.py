@@ -3028,6 +3028,15 @@ END
     def report_djerba(self):
         """
         Produce Djerba report.
+        Takes as input:
+            1. Outputs from purple:
+                1a. Zipped purple output directory.
+                1b. *purple.purity.tsv as-is.
+            2. Outputs from PCGR:
+                2a. Tumor mutational burden tsv, transformed into a text file containing SNP count with the function djerba.parse_snp_count().
+                2b. MAF file, transformed by djerba.clean_maf() function to remove rows without depth information.
+            3. Output from CHORD:
+                3a. *.chord.prediction.tsv as-is.
         """
         jobs = []
         
@@ -3041,23 +3050,18 @@ END
             assembly = global_conf.global_get('report_pcgr', 'assembly')
         
             for tumor_pair in self.tumor_pairs.values():
-                if self.args.type == "somatic_ensemble":
-                    purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple")
-                    chord_input = None
-                else:
-                    purple_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "purple")
-                    chord_input = os.path.join(purple_dir, tumor_pair.tumor.name + ".chord.prediction.tsv")
+                purple_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "purple")
+                chord_input = os.path.join(purple_dir, tumor_pair.tumor.name + ".chord.prediction.tsv")
 
                 djerba_dir = os.path.join(self.output_dirs['report_directory'], tumor_pair.name, "djerba")
                 purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
             
                 input_vcf = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz")
-                pcgr_directory = os.path.join(djerba_dir, "pcgr")
-                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")
-                clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".clean.maf") # MAF from pcgr version 1.4.1 required, remove any empty t_depth lines, needs to be gzipped
-                input_tmb = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".tmb.tsv")
+                ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
+                pcgr_directory = os.path.join(ensemble_directory, tumor_pair.name, "pcgr")
+                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".maf")
+                clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".clean.maf")
                 msi_input = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
-                snp_count = os.path.join(djerba_dir, "SNP.count.txt")
 
                 config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
                 djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
@@ -3066,14 +3070,6 @@ END
                     concat_jobs(
                         [
                             bash.mkdir(djerba_dir),
-                            bash.mkdir(pcgr_directory),
-                            pcgr.report(
-                                input_vcf,
-                                None,
-                                pcgr_directory,
-                                tumor_pair.name,
-                                ini_section='report_djerba'
-                                ),# add pcgr job to create MAF in correct format (1.4.1), remove chrM, gzip.
                             djerba.clean_maf(
                                 input_maf,
                                 clean_maf
@@ -3083,10 +3079,6 @@ END
                                 purple_zip,
                                 recursive=True
                                 ),
-                            djerba.parse_snp_count(
-                                input_tmb,
-                                snp_count
-                                ),
                             djerba.make_config(
                                 config_file,
                                 tumor_pair.name,
@@ -3095,7 +3087,6 @@ END
                                 clean_maf + ".gz",
                                 purple_zip,
                                 msi_input=msi_input,
-                                tmb_input=snp_count,
                                 hrd_input=chord_input
                                 ),
                             # djerba report requires internet connection. Script is produced but must be executed locally.
@@ -8397,7 +8388,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.report_cpsr,
                 self.filter_somatic,
                 self.report_pcgr,
-                self.report_djerba,
                 self.run_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,
