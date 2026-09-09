@@ -49,13 +49,16 @@ def run(
         os.path.join(output_dir, tumor_name + ".purple.purity.tsv"),
         os.path.join(output_dir, tumor_name + ".purple.qc"),
         os.path.join(output_dir, tumor_name + ".purple.driver.catalog.somatic.tsv"),
-        os.path.join(output_dir, tumor_name + ".purple.driver.catalog.germline.tsv")
+        os.path.join(output_dir, tumor_name + ".purple.driver.catalog.germline.tsv"),
+        os.path.join(output_dir, tumor_name + ".purple.somatic.vcf.gz"),
     ]
 
     if structural_sv is not None:
         input_files.append(structural_sv)
+        sv_vcf = os.path.join(output_dir, f"{tumor_name}.purple.sv.vcf.gz")
         circos_plot = os.path.join(output_dir, "plot", tumor_name + ".circos.png")
         purple_outputs.append(circos_plot)
+        purple_outputs.append(sv_vcf)
 
     if structural_sv is not None and sv_recovery is not None:
         input_files.append(sv_recovery)
