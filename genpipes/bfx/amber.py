@@ -62,7 +62,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $AMBER_JAR \
         reference_bam=normal,
         tumor=tumor_name,
         tumor_bam=tumor,
-        other_options=other_options,
+        other_options=other_options if other_options else "",
         output_dir=output_dir,
         )
     )
