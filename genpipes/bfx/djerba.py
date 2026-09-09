@@ -164,7 +164,7 @@ def clean_maf(
         [],
         command="""\
 col=$( awk -v RS='\\t' '/t_depth/{{print NR; exit}}' {input_maf} ) && \\
-awk -F'\\t' -v col=$col '! ( $col=="" )' {input_maf} > {output_maf} && \\
+awk -F'\\t' -v col=$col '! ( $col=="" )' {input_maf} | sed 's/gnomADe_/gnomAD_/g' > {output_maf} && \\
 gzip -f {output_maf}""".format(
         input_maf=input_maf,
         output_maf=output_maf
