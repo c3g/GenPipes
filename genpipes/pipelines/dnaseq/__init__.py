@@ -8456,7 +8456,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.sym_link_final_bam,
                 self.sym_link_report,
                 self.sym_link_ensemble,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ]
         }
 class DnaSeq(DnaSeqRaw):
