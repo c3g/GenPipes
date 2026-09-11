@@ -3867,7 +3867,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             bash.sed(
                                 None,
                                 None,
-                                r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                                r"-e 's/=<ID=AF,Number=1/=<ID=AF,Number=A/'"
                             ),
                             htslib.bgzip_tabix(
                                 None,
@@ -4105,7 +4105,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             bash.sed(
                                 None,
                                 None,
-                                r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                                r"-e 's/=<ID=AF,Number=1/=<ID=AF,Number=A/'"
                             ),
                             htslib.bgzip_tabix(
                                 None,
