@@ -54,8 +54,8 @@ cnvkit.py batch {options} \\
   {reference} \\
   {target_bed} \\
   {output_cnn} \\
-  --output-dir {outdir} \\
   --normal {normal_bam} \\
+  --output-dir {outdir} \\
   {tumor_bam}""".format(
         options=global_conf.global_get('cnvkit_batch', 'batch_options'),
         threads=global_conf.global_get('cnvkit_batch', 'threads'),
