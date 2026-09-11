@@ -119,7 +119,7 @@ def segment(input_cnr,
         ],
         command="""\
 cnvkit.py segment {options} \\
-  {input_cnr} {vcf} {sample_id} \\
+  {input_cnr} {vcf} {sample_id} {normal_id} \\
   -o {output_cns}""".format(
         options=global_conf.global_get('cnvkit_batch', 'segment_options'),
         input_cnr=input_cnr,
