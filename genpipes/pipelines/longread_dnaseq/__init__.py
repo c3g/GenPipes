@@ -2367,7 +2367,8 @@ For information on the structure and contents of the LongRead readset file, plea
                 clairS_dir = os.path.join(self.output_dirs["variants_directory"], tumor_pair.name, "clairS")
                 output_clairS = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.vcf.gz")
                 input_vcf = os.path.join(clairS_dir, f"{tumor_pair.name}.clairS.somatic.flt.pcgr.vcf.gz")
-                savana_metrics = os.path.join(savana_directory, f"{tumor_pair.name}_fitted_purity_ploidy.tsv")
+                purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple")
+                purple_metrics = os.path.join(purple_dir, f"{tumor_pair.tumor.name}.purple.purity.tsv")
 
                 output_report = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.html")
                 output_maf = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.maf")
@@ -2426,7 +2427,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             pcgr_directory,
                             tumor_pair.name,
                             input_cna,
-                            savana_input = savana_metrics,
+                            purple_input = purple_metrics,
                             ini_section=ini_section
                         ),
                         bash.ls(output_report)
