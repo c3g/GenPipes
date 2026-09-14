@@ -191,7 +191,7 @@ def create_input_cna(
  cat {header} > {output}
  while read line; do 
     LOCUS=$(echo $line | awk 'BEGIN {{OFS="\\t"}} {{print $1, $2, $3}}')
-    grep "$LOCUS" {cnvkit_calls} | awk 'BEGIN {{OFS="\\t"}} {{print $1, $2, $3, $5, $8, $9}}' >> {output}; done < {cna_body}"""
+    grep "$LOCUS" {cnvkit_calls} | awk 'BEGIN {{OFS="\\t"}} {{print $1, $2, $3, $5, $10, $11}}' >> {output}; done < {cna_body}"""
 )
 
 def parse_pcgr_passed_variants_pt(input_file):
