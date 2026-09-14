@@ -73,7 +73,7 @@ tumour_id = {tumor_id}
 callability = NA
 donor = {tumor_pair_name}
 purity = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "Purity" {{print $2}}'`
-ploidy = f"`awk 'NR == 2 {{print $5}}' pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.purity.tsv`"
+ploidy = `awk 'NR == 2 {{print $5}}' pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.purity.tsv`
 mean_coverage = `cat pairedVariants/{tumor_pair_name}/purple/{tumor_id}.purple.qc | awk '$1 == "AmberMeanDepth" {{print $2}}'`
 
 [treatment_options_merger]
