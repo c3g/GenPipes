@@ -2904,12 +2904,20 @@ END
                         "pcgr"
                     )
 
-                    purple_input = os.path.join(
-                        self.output_dirs['paired_variants_directory'],
-                        tumor_pair.name,
-                        "purple",
-                        f"{tumor_pair.tumor.name}.purple.purity.tsv"
-                    )
+                    if 'sv' in self.protocol:
+                        purple_input = os.path.join(
+                            self.output_dirs['sv_variants_directory'],
+                            tumor_pair.name,
+                            "purple",
+                            f"{tumor_pair.tumor.name}.purple.purity.tsv"
+                        )
+                    else:
+                        purple_input = os.path.join(
+                            self.output_dirs['paired_variants_directory'],
+                            tumor_pair.name,
+                            "purple",
+                            f"{tumor_pair.tumor.name}.purple.purity.tsv"
+                        )
 
                 input_cpsr = os.path.join(
                     cpsr_directory,
@@ -3867,7 +3875,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             bash.sed(
                                 None,
                                 None,
-                                r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                                r"-e 's/=<ID=AF,Number=1/=<ID=AF,Number=A/'"
                             ),
                             htslib.bgzip_tabix(
                                 None,
@@ -4105,7 +4113,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             bash.sed(
                                 None,
                                 None,
-                                r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                                r"-e 's/=<ID=AF,Number=1/=<ID=AF,Number=A/'"
                             ),
                             htslib.bgzip_tabix(
                                 None,
