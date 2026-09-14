@@ -2372,7 +2372,7 @@ For information on the structure and contents of the LongRead readset file, plea
 
                 output_report = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.html")
                 output_maf = os.path.join(pcgr_directory, f"{tumor_pair.name}.pcgr.{assembly}.maf")
-                input_dependencies = [input_vcf, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", input_cna]
+                input_dependencies = [input_vcf, input_cpsr + ".classification.tsv.gz", input_cpsr + ".conf.yaml", input_cna, purple_metrics]
 
                 format_savana_job = concat_jobs(
                     [
