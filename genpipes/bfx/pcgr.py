@@ -132,7 +132,7 @@ fi && \\
 mkdir -p {tmp_dir}/pcgr && \\
 pcgr {options} \\
     {tumor_type} {purity_ploidy} \\
-    {assay} \\
+    {assay} {sex} \\
     {tumor_options} \\
     {normal_options} \\
     {mutsig_options} \\
@@ -152,6 +152,7 @@ cp -r {tmp_dir}/pcgr {output_dir}""".format(
             tumor_type=global_conf.global_get(ini_section, 'tumor_type'),
             purity_ploidy="--tumor_purity " + purity + " --tumor_ploidy " + ploidy if purple_input or savana_input else "",
             assay=global_conf.global_get(ini_section, 'assay'),
+            sex="--sex " + global_conf.global_get(ini_section, 'sample_sex', required=False) if global_conf.global_get(ini_section, 'sample_sex', required=False) else "",
             tumor_options=global_conf.global_get(ini_section, 'tumor_options'),
             normal_options=global_conf.global_get(ini_section, 'normal_options'),
             mutsig_options=global_conf.global_get(ini_section, 'mutsig_options'),
