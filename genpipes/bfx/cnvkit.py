@@ -148,13 +148,13 @@ cnvkit.py call {options} \\
   {input_cns} \\
   --vcf {input_vcf} \\
   --sample-id {sample_id} \\
-  --normal-id {normal_id} \\
+  {normal_id} \\
   -o {output_cns}""".format(
         options=global_conf.global_get('cnvkit_batch', 'call_options'),
         input_cns=input_cns,
         input_vcf=input_vcf,
         sample_id=sample_id,
-        normal_id=normal_id,
+        normal_id="--normal-id " + normal_id if normal_id else "",
         output_cns=output_cns,
         )
     )
