@@ -3889,10 +3889,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 )
 
                 call_cns = os.path.join(cnvkit_dir, f"{sample.name}.call.cns")
-
-                input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample.name}.cnvkit.vcf.gz")
-                header = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample.name}.header")
-                output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample.name}.cnvkit.body.tsv")
                 output_cna = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample.name}.cnvkit.cna.tsv")
                 output_check = f"{output_cna}.pass"
 
@@ -3936,10 +3932,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             ),
                             cnvkit.segment(
                                 os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
-                                os.path.join(cnvkit_dir, f"{sample.name}.cns"),
-                                vcf=flt_vcf,
-                                sample_id=sample_id,
-                                normal_id=normal_id
+                                os.path.join(cnvkit_dir, f"{sample.name}.cns")
                             ),
                             cnvkit.segmetrics(
                                 os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
@@ -3962,7 +3955,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             ),
                             cnvkit.call(
                                 os.path.join(cnvkit_dir, f"{sample.name}.seg.cns"),
-                                call_cns
+                                call_cns,
+                                input_vcf=flt_vcf,
+                                sample_id=sample_id,
+                                normal_id=normal_id
                             ),
                             pipe_jobs(
                                 [
@@ -3988,16 +3984,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                     concat_jobs(
                         [
                             pcgr.create_header(
-                                header
-                            ),
-                            bcftools.query(
-                                input_cna,
-                                output_cna_body,
-                                query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                                output_cna
                             ),
                             pcgr.create_input_cna(
-                                output_cna_body,
-                                header,
                                 call_cns,
                                 output_cna
                             ),
@@ -4009,8 +3998,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=samples,
                         readsets=readsets,
-                        input_dependency=[input_cna],
-                        output_dependency=[header, output_cna_body, output_cna]
+                        input_dependency=[call_cns],
+                        output_dependency=[output_cna]
                     )
                 )
 
@@ -4127,10 +4116,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 )
 
                 call_cns = os.path.join(cnvkit_dir, f"{sample_name}.call.cns")
-
-                input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample_name}.cnvkit.vcf.gz")
-                header = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.header")
-                output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.body.tsv")
                 output_cna = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.cna.tsv")
                 output_check = f"{output_cna}.pass"
 
@@ -4199,7 +4184,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             cnvkit.call(
                                 os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
                                 call_cns,
-                                vcf=flt_vcf,
+                                input_vcf=flt_vcf,
                                 sample_id=sample_id,
                                 normal_id=normal_id
                             ),
@@ -4241,10 +4226,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                        input_dependency=[input_cna],
-                        output_dependency=[header, output_cna_body, output_cna],
-                        removable_files=[header, output_cna_body]
-                    )
+                        input_dependency=[call_cns],
+                        output_dependency=[output_cna]                    )
                 )
 
                 jobs.append(
