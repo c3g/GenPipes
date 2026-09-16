@@ -4126,8 +4126,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
 
                 call_cns = os.path.join(cnvkit_dir, f"{sample_name}.call.cns")
                 
-                input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample.name}.cnvkit.vcf.gz")
-                output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample.name}.cnvkit.body.tsv")
+                input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample_name}.cnvkit.vcf.gz")
+                output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.body.tsv")
                 output_cna = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.cna.tsv")
                 output_check = f"{output_cna}.pass"
 
