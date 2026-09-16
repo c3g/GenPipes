@@ -4174,10 +4174,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             ),
                             cnvkit.segment(
                                 os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
-                                os.path.join(cnvkit_dir, f"{sample_name}.cns"),
-                                vcf=flt_vcf,
-                                sample_id=sample_id,
-                                normal_id=normal_id
+                                os.path.join(cnvkit_dir, f"{sample_name}.cns")
                             ),
                             cnvkit.segmetrics(
                                 os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
@@ -4201,7 +4198,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             ),
                             cnvkit.call(
                                 os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
-                                call_cns
+                                call_cns,
+                                vcf=flt_vcf,
+                                sample_id=sample_id,
+                                normal_id=normal_id
                             ),
                             pipe_jobs(
                                 [
@@ -4227,16 +4227,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                     concat_jobs(
                         [
                             pcgr.create_header(
-                                header,
-                            ),
-                            bcftools.query(
-                                input_cna,
-                                output_cna_body,
-                                query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                                output_cna,
                             ),
                             pcgr.create_input_cna(
-                                output_cna_body,
-                                header,
                                 call_cns,
                                 output_cna
                             ),
