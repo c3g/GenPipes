@@ -187,7 +187,7 @@ def create_input_cna(
         [output],
         [],
         command=f"""\
-awk -v OFS="\\t" 'NR > 1 {{print $1, $2, $3, $10, $11}}' >> {output}"""
+awk -v OFS="\\t" 'NR > 1 {{print $1, $2, $3, $10, $11}}' {cnvkit_calls} >> {output}"""
 )
 
 def parse_pcgr_passed_variants_pt(input_file):
