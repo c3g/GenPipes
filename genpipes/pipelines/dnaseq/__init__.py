@@ -3956,7 +3956,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             cnvkit.call(
                                 os.path.join(cnvkit_dir, f"{sample.name}.seg.cns"),
                                 call_cns,
-                                vcf=flt_vcf,
+                                input_vcf=flt_vcf,
                                 sample_id=sample_id,
                                 normal_id=normal_id
                             ),
@@ -4184,7 +4184,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             cnvkit.call(
                                 os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
                                 call_cns,
-                                vcf=flt_vcf,
+                                input_vcf=flt_vcf,
                                 sample_id=sample_id,
                                 normal_id=normal_id
                             ),
