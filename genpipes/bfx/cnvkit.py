@@ -137,7 +137,7 @@ def call(input_cns,
          normal_id=None
          ):
     return Job(
-        [input_cns],
+        [input_vcf,input_cns],
         [output_cns],
         [
             ['cnvkit_batch', 'module_cnvkit'],
