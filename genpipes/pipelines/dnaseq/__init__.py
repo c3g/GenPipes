@@ -3891,7 +3891,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 call_cns = os.path.join(cnvkit_dir, f"{sample.name}.call.cns")
                 
                 input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample.name}.cnvkit.vcf.gz")
-                output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample.name}.cnvkit.body.tsv")
                 output_cna = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample.name}.cnvkit.cna.tsv")
                 output_check = f"{output_cna}.pass"
 
@@ -3986,17 +3985,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 jobs.append(
                     concat_jobs(
                         [
-                            pcgr.create_header(
-                                output_cna
-                            ),
-                            bcftools.query(
-                                input_cna,
-                                output_cna_body,
-                                query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
-                            ),
                             pcgr.create_input_cna(
-                                output_cna_body,
-                                call_cns,
+                                input_cna,
                                 output_cna
                             ),
                             cnvkit.file_check(
@@ -4007,7 +3997,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=samples,
                         readsets=readsets,
-                        input_dependency=[input_cna, call_cns],
+                        input_dependency=[input_cna],
                         output_dependency=[output_cna]
                     )
                 )
@@ -4127,7 +4117,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 call_cns = os.path.join(cnvkit_dir, f"{sample_name}.call.cns")
                 
                 input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample_name}.cnvkit.vcf.gz")
-                output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.body.tsv")
                 output_cna = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.cna.tsv")
                 output_check = f"{output_cna}.pass"
 
@@ -4223,17 +4212,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 jobs.append(
                     concat_jobs(
                         [
-                            pcgr.create_header(
-                                output_cna,
-                            ),
-                            bcftools.query(
-                                input_cna,
-                                output_cna_body,
-                                query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
-                            ),
                             pcgr.create_input_cna(
-                                output_cna_body,
-                                call_cns,
+                                input_cna,
                                 output_cna
                             ),
                             cnvkit.file_check(
@@ -4244,9 +4224,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                        input_dependency=[input_cna, call_cns],
+                        input_dependency=[input_cna],
                         output_dependency=[output_cna],
-                        removable_files=[output_cna_body]
                     )
                 )
 

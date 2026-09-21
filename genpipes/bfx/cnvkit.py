@@ -134,7 +134,7 @@ def call(input_cns,
          output_cns,
          input_vcf,
          sample_id,
-         normal_id
+         normal_id=None
          ):
     return Job(
         [input_cns],

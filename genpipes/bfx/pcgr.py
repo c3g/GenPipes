@@ -170,27 +170,19 @@ cp -r {tmp_dir}/pcgr {output_dir}""".format(
         )
     )
 
-def create_header(output):
-    return Job(
-        command=f"""\
-`cat > {output} << END
-Chromosome\tStart\tEnd\tnMajor\tnMinor
-END`"""
-        )
-
 def create_input_cna(
-        cna_body,
-        cnvkit_calls,
+        input_vcf,
         output
         ):
     return Job(
-        [cnvkit_calls],
+        [input_vcf],
         [output],
         [],
         command=f"""\
-while read line; do
-    LOCUS=$(echo $line | awk 'BEGIN {{OFS="\\t"}} {{print $1, $2, $3}}')
-    grep "$LOCUS" {cnvkit_calls} | awk -v OFS="\\t" '{{print $1, $2, $3, $10, $11}}' >> {output}; done < {cna_body}"""
+bcftools view -e 'CN1="." || CN2="."' {input_vcf} \\
+    | bcftools query -f '%CHROM\\t%POS\\t%INFO/END\\t%INFO/FOLD_CHANGE_LOG\\t[%CN1]\\t[%CN2]\\n' \\
+    | {{ printf 'Chromosome\\tStart\\tEnd\\tSegment_Mean\\tnMajor\\tnMinor\\n'; cat; }} \\
+    > {output}"""
 )
 
 def parse_pcgr_passed_variants_pt(input_file):
