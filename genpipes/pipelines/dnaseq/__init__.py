@@ -3997,7 +3997,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                                         """-e 'CN1="." || CN2="."'"""
                                     ),
                                     bcftools.query(
-                                        vcf_gz,
+                                        None,
                                         output_cna_body,
                                         query_options="-f '%CHROM\\t%POS\\t%INFO/END\\t[%CN1]\\t[%CN2]\\n'"
                                     )
@@ -4243,7 +4243,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                                         """-e 'CN1="." || CN2="."'"""
                                     ),
                                     bcftools.query(
-                                        vcf_gz,
+                                        None,
                                         output_cna_body,
                                         query_options="-f '%CHROM\\t%POS\\t%INFO/END\\t[%CN1]\\t[%CN2]\\n'"
                                     )
