@@ -184,7 +184,7 @@ def create_input_cna(
         output
         ):
     return Job(
-        [cnvkit_calls],
+        [cna_body,cnvkit_calls],
         [output],
         [],
         command=f"""\
