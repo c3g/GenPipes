@@ -69,6 +69,31 @@ def ln(
         removable_files=[link] if remove else []
     )
 
+def conditional_ln(
+    target_file,
+    link,
+    input_file=None,
+    output=None,
+    remove=False
+    ):
+    """
+    Invokes ln command, but only creates the link if it doesn't already exist as a real file.
+    """
+    
+    input_files = [input_file] if input_file else [target_file]
+    outputs = [output] if output else [link]
+    
+    return Job(
+        input_files,
+        outputs,
+        command=f"""\
+if [ ! -e {link} ]; then
+  ln -s -f {target_file} {link}
+fi""",
+        removable_files=[link] if remove else []
+    )
+
+
 def mv(
     source,
     target,
