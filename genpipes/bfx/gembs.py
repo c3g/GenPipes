@@ -214,7 +214,7 @@ def call(
             output_prefix + ".bcf.md5"
             ]
 
-    call_job = Job(
+    return Job(
         [input],
         outputs,
         [
@@ -236,13 +236,6 @@ gemBS {gembs_flags} {gembs_options} \\
       dbSNP="-D " + global_conf.global_get(ini_section, 'dbSNP_index') if global_conf.global_get(ini_section, 'dbSNP_index', required=False) else ""
       )
     )
-
-    link_job = bash_cmd.conditional_ln(
-        target_file=output_prefix + "_call.json",
-        link=output_prefix + ".json"
-    )
-
-    return concat_jobs([call_job, link_job])
 
 def extract(
         input,
