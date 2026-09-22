@@ -22,12 +22,8 @@ import os
 import re
 
 # MUGQIC Modules
-from . import bash_cmd
 from ..core.config import global_conf
-from ..core.job import Job, concat_jobs
-
-
-
+from ..core.job import Job
 
 def make_config(genpipes_dir, output):
 

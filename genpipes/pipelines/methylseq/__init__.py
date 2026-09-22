@@ -1265,8 +1265,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                             bash.conditional_ln(
                                 target_file=output_prefix + "_call.json",
                                 link=output_prefix + ".json"
-                            )
-                        ],
+                                )
+                            ],
                         name = "gembs_call." + sample.name,
                         samples = [sample],
                         input_dependency=[bam,gembs_config]
