@@ -22,8 +22,12 @@ import os
 import re
 
 # MUGQIC Modules
+from . import bash_cmd
 from ..core.config import global_conf
-from ..core.job import Job
+from ..core.job import Job, concat_jobs
+
+
+
 
 def make_config(genpipes_dir, output):
 
@@ -210,7 +214,7 @@ def call(
             output_prefix + ".bcf.md5"
             ]
 
-    return Job(
+    call_job = Job(
         [input],
         outputs,
         [
@@ -232,6 +236,13 @@ gemBS {gembs_flags} {gembs_options} \\
       dbSNP="-D " + global_conf.global_get(ini_section, 'dbSNP_index') if global_conf.global_get(ini_section, 'dbSNP_index', required=False) else ""
       )
     )
+
+    link_job = bash_cmd.conditional_ln(
+        target_file=output_prefix + "_call.json",
+        link=output_prefix + ".json"
+    )
+
+    return concat_jobs([call_job, link_job])
 
 def extract(
         input,
