@@ -87,7 +87,7 @@ def conditional_ln(
         input_files,
         outputs,
         command=f"""\
-if [ ! -e {link} ] || [ -L {link} ]; then
+if [ ! -e {link} ]; then
   ln -s -f {target_file} {link}
 fi""",
         removable_files=[link] if remove else []
