@@ -7831,7 +7831,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                 bcftools.view(
                                     None,
                                     None,
-                                    filter_options=f"-Oz -s ^{tumor_pair.normal.name}"
+                                    filter_options=f"-Oz -s ^{tumor_pair.tumor.name}"
                                 ),
                                 bcftools.sort(
                                     None,
