@@ -7340,7 +7340,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
 
     def ensemble_somatic(self):
         """
-        Apply Bcbio.variations ensemble approach for mutect2, Vardict, Samtools and VarScan2 calls.
+        Apply Bcbio.variations ensemble approach for mutect2, Vardict, Strelka2 and VarScan2 calls.
         Filter ensemble calls to retain only calls overlapping 2 or more callers.
         Returns:
             list: A list of ensemble somatic jobs.
