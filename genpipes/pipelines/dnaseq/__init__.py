@@ -41,6 +41,7 @@ from ...bfx import (
     breakseq2,
     bvatools,
     bwa,
+    chord,
     cnvkit,
     cobalt,
     conpair,
@@ -2651,6 +2652,10 @@ END
                     sample.name,
                     "cpsr",
                 )
+
+                assembly = global_conf.global_get(ini_section, 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{sample.name}.cpsr.{assembly}.html")
+                
                 jobs.append(
                     concat_jobs(
                         [
@@ -2702,6 +2707,9 @@ END
                         tumor_pair.name,
                         "cpsr"
                     )
+
+                assembly = global_conf.global_get(ini_section, 'assembly')
+                cpsr_output = os.path.join(cpsr_directory, f"{tumor_pair.name}.cpsr.{assembly}.html")
 
                 jobs.append(
                     concat_jobs(
@@ -2868,6 +2876,7 @@ END
                         panel_directory,
                         "pcgr"
                     )
+                    purple_input = None
                 # Set directory, ini_section, job and sample name for tumor pair Ensemble protocol
                 elif 'ensemble' in self.protocol:
                     ensemble_directory = os.path.join(
@@ -2894,6 +2903,21 @@ END
                         tumor_pair.name,
                         "pcgr"
                     )
+
+                    if 'sv' in self.protocol:
+                        purple_input = os.path.join(
+                            self.output_dirs['sv_variants_directory'],
+                            tumor_pair.name,
+                            "purple",
+                            f"{tumor_pair.tumor.name}.purple.purity.tsv"
+                        )
+                    else:
+                        purple_input = os.path.join(
+                            self.output_dirs['paired_variants_directory'],
+                            tumor_pair.name,
+                            "purple",
+                            f"{tumor_pair.tumor.name}.purple.purity.tsv"
+                        )
 
                 input_cpsr = os.path.join(
                     cpsr_directory,
@@ -2943,6 +2967,7 @@ END
                             pcgr_directory,
                             tumor_pair.name,
                             input_cna=output_cna,
+                            purple_input=purple_input,
                             ini_section=ini_section
                         ),
                         bash.ls(output)
@@ -2983,9 +3008,42 @@ END
 
         return jobs
     
+    def chord(self):
+        """
+        Predict homologous recombination deficiency with [CHORD] (https://github.com/hartwigmedical/hmftools/tree/master/chord).
+        """
+
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.values():
+            purple_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "purple")
+            snv_indel_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.somatic.vcf.gz")
+            sv_vcf = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.sv.vcf.gz")
+
+            job = chord.run(
+                tumor_pair.tumor.name,
+                snv_indel_vcf,
+                sv_vcf,
+                purple_dir
+                )
+            
+            job.name = f"chord.{tumor_pair.name}"
+            job.samples = [tumor_pair.tumor, tumor_pair.normal]
+            jobs.append(job)
+
+        return jobs
+    
     def report_djerba(self):
         """
         Produce Djerba report.
+        Takes as input:
+            1. Outputs from purple:
+                1a. Zipped purple output directory.
+                1b. *purple.purity.tsv as-is.
+            2. Output from PCGR:
+                2a. MAF file, transformed by djerba.clean_maf() function to remove rows without depth information.
+            3. Output from CHORD:
+                3a. *.chord.prediction.tsv as-is.
         """
         jobs = []
         
@@ -2999,17 +3057,19 @@ END
             assembly = global_conf.global_get('report_pcgr', 'assembly')
         
             for tumor_pair in self.tumor_pairs.values():
+                purple_dir = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "purple")
+                chord_input = os.path.join(purple_dir, tumor_pair.tumor.name + ".chord.prediction.tsv")
+
                 djerba_dir = os.path.join(self.output_dirs['report_directory'], tumor_pair.name, "djerba")
-                purple_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple") # has to be a zipped directory, create zip file as part of job
                 purple_zip = os.path.join(djerba_dir, tumor_pair.tumor.name + ".purple.zip")
             
-                #cpsr_directory = os.path.join(ensemble_directory, tumor_pair.name, "cpsr")
-                input_cpsr = None
                 input_vcf = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz")
-                pcgr_directory = os.path.join(djerba_dir, "pcgr")
-                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".maf")
-                clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr_acmg." + assembly + ".clean.maf") # MAF from pcgr version 1.4.1 required, remove any empty t_depth lines, needs to be gzipped
-            
+                ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
+                pcgr_directory = os.path.join(ensemble_directory, tumor_pair.name, "pcgr")
+                input_maf = os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".maf")
+                clean_maf =  os.path.join(pcgr_directory, tumor_pair.name + ".pcgr." + assembly + ".clean.maf")
+                msi_input = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
+
                 config_file = os.path.join(djerba_dir, tumor_pair.name + ".djerba.ini")
                 djerba_script = os.path.join(djerba_dir, "djerba_report." + tumor_pair.name + ".sh")
 
@@ -3017,14 +3077,6 @@ END
                     concat_jobs(
                         [
                             bash.mkdir(djerba_dir),
-                            bash.mkdir(pcgr_directory),
-                            pcgr.report(
-                                input_vcf,
-                                input_cpsr,
-                                pcgr_directory,
-                                tumor_pair.name,
-                                ini_section='report_djerba'
-                                ),# add pcgr job to create MAF in correct format (1.4.1), remove chrM, gzip.
                             djerba.clean_maf(
                                 input_maf,
                                 clean_maf
@@ -3040,7 +3092,9 @@ END
                                 tumor_pair.tumor.name,
                                 tumor_pair.normal.name,
                                 clean_maf + ".gz",
-                                purple_zip
+                                purple_zip,
+                                msi_input=msi_input,
+                                hrd_input=chord_input
                                 ),
                             # djerba report requires internet connection. Script is produced but must be executed locally.
                             djerba.make_script(
@@ -3052,7 +3106,7 @@ END
                         name="report_djerba." + tumor_pair.name,
                         samples=[tumor_pair.tumor],
                         readsets=list(tumor_pair.tumor.readsets),
-                        input_dependency=[input_vcf, os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")],
+                        input_dependency=[input_vcf, msi_input, chord_input],
                         output_dependency=[config_file, djerba_script]
                         )
                     )
@@ -3821,7 +3875,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             bash.sed(
                                 None,
                                 None,
-                                r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                                r"-e 's/=<ID=AF,Number=1/=<ID=AF,Number=A/'"
                             ),
                             htslib.bgzip_tabix(
                                 None,
@@ -3835,8 +3889,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 )
 
                 call_cns = os.path.join(cnvkit_dir, f"{sample.name}.call.cns")
-
-                input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample.name}.cnvkit.vcf.gz")
+                
                 header = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample.name}.header")
                 output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample.name}.cnvkit.body.tsv")
                 output_cna = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample.name}.cnvkit.cna.tsv")
@@ -3882,10 +3935,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             ),
                             cnvkit.segment(
                                 os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
-                                os.path.join(cnvkit_dir, f"{sample.name}.cns"),
-                                vcf=flt_vcf,
-                                sample_id=sample_id,
-                                normal_id=normal_id
+                                os.path.join(cnvkit_dir, f"{sample.name}.cns")
                             ),
                             cnvkit.segmetrics(
                                 os.path.join(cnvkit_dir, f"{sample.name}.cnr"),
@@ -3908,7 +3958,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             ),
                             cnvkit.call(
                                 os.path.join(cnvkit_dir, f"{sample.name}.seg.cns"),
-                                call_cns
+                                call_cns,
+                                input_vcf=flt_vcf,
+                                sample_id=sample_id,
+                                normal_id=normal_id
                             ),
                             pipe_jobs(
                                 [
@@ -3936,15 +3989,22 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             pcgr.create_header(
                                 header
                             ),
-                            bcftools.query(
-                                input_cna,
-                                output_cna_body,
-                                query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                            pipe_jobs(
+                                [
+                                    bcftools.view(
+                                        vcf_gz,
+                                        None,
+                                        """-e 'CN1="." || CN2="."'"""
+                                    ),
+                                    bcftools.query(
+                                        None,
+                                        output_cna_body,
+                                        query_options="-f '%CHROM\\t%POS\\t%INFO/END\\t[%CN1]\\t[%CN2]\\n'"
+                                    )
+                                ],
                             ),
-                            pcgr.create_input_cna(
-                                output_cna_body,
-                                header,
-                                call_cns,
+                            bash.cat(
+                                [header, output_cna_body],
                                 output_cna
                             ),
                             cnvkit.file_check(
@@ -3955,8 +4015,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=samples,
                         readsets=readsets,
-                        input_dependency=[input_cna],
-                        output_dependency=[header, output_cna_body, output_cna]
+                        input_dependency=[vcf_gz],
+                        output_dependency=[output_cna],
+                        removable_files=[header,output_cna_body]
                     )
                 )
 
@@ -4059,7 +4120,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             bash.sed(
                                 None,
                                 None,
-                                r"-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                                r"-e 's/=<ID=AF,Number=1/=<ID=AF,Number=A/'"
                             ),
                             htslib.bgzip_tabix(
                                 None,
@@ -4073,8 +4134,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                 )
 
                 call_cns = os.path.join(cnvkit_dir, f"{sample_name}.call.cns")
-
-                input_cna = os.path.join(self.output_dirs['sv_variants_directory'], sample_name, f"{sample_name}.cnvkit.vcf.gz")
+                
                 header = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.header")
                 output_cna_body = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.body.tsv")
                 output_cna = os.path.join(self.output_dirs['sv_variants_directory'], f"{sample_name}.cnvkit.cna.tsv")
@@ -4120,10 +4180,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             ),
                             cnvkit.segment(
                                 os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
-                                os.path.join(cnvkit_dir, f"{sample_name}.cns"),
-                                vcf=flt_vcf,
-                                sample_id=sample_id,
-                                normal_id=normal_id
+                                os.path.join(cnvkit_dir, f"{sample_name}.cns")
                             ),
                             cnvkit.segmetrics(
                                 os.path.join(cnvkit_dir, f"{sample_name}.cnr"),
@@ -4147,7 +4204,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                             ),
                             cnvkit.call(
                                 os.path.join(cnvkit_dir, f"{sample_name}.seg.cns"),
-                                call_cns
+                                call_cns,
+                                input_vcf=flt_vcf,
+                                sample_id=sample_id,
+                                normal_id=normal_id
                             ),
                             pipe_jobs(
                                 [
@@ -4173,17 +4233,24 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                     concat_jobs(
                         [
                             pcgr.create_header(
-                                header,
+                                header
                             ),
-                            bcftools.query(
-                                input_cna,
-                                output_cna_body,
-                                query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                            pipe_jobs(
+                                [
+                                    bcftools.view(
+                                        vcf_gz,
+                                        None,
+                                        """-e 'CN1="." || CN2="."'"""
+                                    ),
+                                    bcftools.query(
+                                        None,
+                                        output_cna_body,
+                                        query_options="-f '%CHROM\\t%POS\\t%INFO/END\\t[%CN1]\\t[%CN2]\\n'"
+                                    )
+                                ],
                             ),
-                            pcgr.create_input_cna(
-                                output_cna_body,
-                                header,
-                                call_cns,
+                            bash.cat(
+                                [header, output_cna_body],
                                 output_cna
                             ),
                             cnvkit.file_check(
@@ -4194,9 +4261,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""",
                         name=f"cnvkit_batch.cna.{sample_name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                        input_dependency=[input_cna],
-                        output_dependency=[header, output_cna_body, output_cna],
-                        removable_files=[header, output_cna_body]
+                        input_dependency=[vcf_gz],
+                        output_dependency=[output_cna],
+                        removable_files=[header,output_cna_body]
                     )
                 )
 
@@ -7273,7 +7340,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
 
     def ensemble_somatic(self):
         """
-        Apply Bcbio.variations ensemble approach for mutect2, Vardict, Samtools and VarScan2 calls.
+        Apply Bcbio.variations ensemble approach for mutect2, Vardict, Strelka2 and VarScan2 calls.
         Filter ensemble calls to retain only calls overlapping 2 or more callers.
         Returns:
             list: A list of ensemble somatic jobs.
@@ -7764,7 +7831,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                                 bcftools.view(
                                     None,
                                     None,
-                                    filter_options=f"-Oz -s ^{tumor_pair.normal.name}"
+                                    filter_options=f"-Oz -s ^{tumor_pair.tumor.name}"
                                 ),
                                 bcftools.sort(
                                     None,
@@ -8208,7 +8275,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.metrics_vcftools_missing_indiv,
                 self.metrics_vcftools_depth_indiv,
                 self.metrics_gatk_sample_fingerprint,
-                self.metrics_gatk_cluster_fingerprint
+                self.metrics_gatk_cluster_fingerprint,
+                self.log_report
             ], 'germline_sv':
             [
                 self.gatk_sam_to_fastq,
@@ -8235,7 +8303,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.cnvkit_sv_annotation,
                 self.run_breakseq2,
 	            self.ensemble_metasv,
-                self.metasv_sv_annotation
+                self.metasv_sv_annotation,
+                self.log_report
             ], 'germline_high_cov':
             [
                 self.gatk_sam_to_fastq,
@@ -8252,7 +8321,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.snp_effect,
                 self.gemini_annotations,
                 self.run_multiqc,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'somatic_tumor_only':
             [
                 self.gatk_sam_to_fastq,
@@ -8276,7 +8346,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.split_tumor_only,
                 self.filter_tumor_only,
                 self.report_cpsr,
-                self.report_pcgr
+                self.report_pcgr,
+                self.log_report
             ], 'somatic_fastpass':
             [
                 self.gatk_sam_to_fastq,
@@ -8301,7 +8372,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.sym_link_report,
                 self.sym_link_fastq_pair,
                 self.sym_link_panel,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'somatic_ensemble':
             [
                 self.gatk_sam_to_fastq,
@@ -8336,13 +8408,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.report_cpsr,
                 self.filter_somatic,
                 self.report_pcgr,
-                self.report_djerba,
                 self.run_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,
                 self.sym_link_report,
                 self.sym_link_ensemble,
-                self.cram_output
+                self.cram_output,
+                self.log_report
             ], 'somatic_sv':
             [
                 self.gatk_sam_to_fastq,
@@ -8360,6 +8432,53 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {os.path.join(germline_di
                 self.linx_plot,
                 self.run_multiqc,
                 self.cram_output
+            ], 'somatic_ensemble_sv':
+            [
+                self.gatk_sam_to_fastq,
+                self.trim_fastp,
+                self.bwa_mem2_samtools_sort,
+                self.gatk_mark_duplicates,
+                self.set_interval_list,
+                self.conpair_concordance_contamination,
+                self.metrics_dna_picard_metrics,
+                self.metrics_dna_sample_mosdepth,
+                self.sequenza,
+                self.manta_sv_calls,
+                self.strelka2_paired_somatic,
+                self.strelka2_paired_germline,
+                self.strelka2_paired_snpeff,
+                self.gridss_paired_somatic,
+                self.purple_sv,
+                self.linx_annotations_somatic,
+                self.linx_annotations_germline,
+                self.linx_plot,
+                self.rawmpileup,
+                self.paired_varscan2,
+                self.merge_varscan2,
+                self.paired_mutect2,
+                self.merge_mutect2,
+                self.vardict_paired,
+                self.merge_filter_paired_vardict,
+                self.ensemble_somatic,
+                self.gatk_variant_annotator_somatic,
+                self.merge_gatk_variant_annotator_somatic,
+                self.ensemble_germline_loh,
+                self.gatk_variant_annotator_germline,
+                self.merge_gatk_variant_annotator_germline,
+                self.cnvkit_batch,
+                self.filter_germline,
+                self.report_cpsr,
+                self.filter_somatic,
+                self.report_pcgr,
+                self.chord,
+                self.report_djerba,
+                self.run_multiqc,
+                self.sym_link_fastq_pair,
+                self.sym_link_final_bam,
+                self.sym_link_report,
+                self.sym_link_ensemble,
+                self.cram_output,
+                self.log_report
             ]
         }
 class DnaSeq(DnaSeqRaw):
@@ -8404,7 +8523,7 @@ class DnaSeq(DnaSeqRaw):
             "--type",
             help="DNAseq analysis type",
             dest='protocol',
-            choices=["germline_snv", "germline_sv", "germline_high_cov", "somatic_tumor_only", "somatic_fastpass", "somatic_ensemble", "somatic_sv"],
+            choices=["germline_snv", "germline_sv", "germline_high_cov", "somatic_tumor_only", "somatic_fastpass", "somatic_ensemble", "somatic_sv", "somatic_ensemble_sv"],
             default="germline_snv"
             )
         return cls._argparser

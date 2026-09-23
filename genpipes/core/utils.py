@@ -114,9 +114,6 @@ def container_wrapper_argparse(script, argv):
 
         wrap_option = ['--container', 'wrapper', parsed.wrap]
 
-        if ('batch' in argv) and '--no-json' not in argv:
-            parser.error('Combining --wrap  and -j "batch" options requires --no-json')
-
         sys.stderr.write('wrapping\n')
         sys.stderr.write(f"{parsed.wrap} {script} {' '.join(argv)} {' '.join(wrap_option)}\n")
         # Running the pipeline inside the container

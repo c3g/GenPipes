@@ -54,8 +54,8 @@ cnvkit.py batch {options} \\
   {reference} \\
   {target_bed} \\
   {output_cnn} \\
-  --output-dir {outdir} \\
   --normal {normal_bam} \\
+  --output-dir {outdir} \\
   {tumor_bam}""".format(
         options=global_conf.global_get('cnvkit_batch', 'batch_options'),
         threads=global_conf.global_get('cnvkit_batch', 'threads'),
@@ -119,7 +119,7 @@ def segment(input_cnr,
         ],
         command="""\
 cnvkit.py segment {options} \\
-  {input_cnr} {vcf} {sample_id} \\
+  {input_cnr} {vcf} {sample_id} {normal_id} \\
   -o {output_cns}""".format(
         options=global_conf.global_get('cnvkit_batch', 'segment_options'),
         input_cnr=input_cnr,
@@ -131,9 +131,13 @@ cnvkit.py segment {options} \\
     )
 
 def call(input_cns,
-         output_cns):
+         output_cns,
+         input_vcf,
+         sample_id,
+         normal_id=None
+         ):
     return Job(
-        [input_cns],
+        [input_vcf,input_cns],
         [output_cns],
         [
             ['cnvkit_batch', 'module_cnvkit'],
@@ -142,9 +146,15 @@ def call(input_cns,
         command="""\
 cnvkit.py call {options} \\
   {input_cns} \\
+  --vcf {input_vcf} \\
+  --sample-id {sample_id} \\
+  {normal_id} \\
   -o {output_cns}""".format(
         options=global_conf.global_get('cnvkit_batch', 'call_options'),
         input_cns=input_cns,
+        input_vcf=input_vcf,
+        sample_id=sample_id,
+        normal_id="--normal-id " + normal_id if normal_id else "",
         output_cns=output_cns,
         )
     )

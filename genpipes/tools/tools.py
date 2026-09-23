@@ -71,8 +71,21 @@ def add_subcommands(parser):
     parser_submit_genpipes.add_argument('-s', type=int, help='Number of second to sleep when queue is full. Default: 120', default=120)
     parser_submit_genpipes.add_argument('-S', help='Scheduler running on the cluster. Default: slurm', choices=["slurm", "pbs"], default="slurm")
     parser_submit_genpipes.add_argument('-l', type=int, help='Will retry N time(s) to resubmit a chunk if error occurs. Default: 10', default=10)
+    parser_submit_genpipes.add_argument('-u', help='Scheduler user to monitor queue for. Default: $USER')
     parser_submit_genpipes.add_argument('chunk_folder', help="The output folder from the chunk_genpipes.sh script.")
     parser_submit_genpipes.set_defaults(func=run_submit_genpipes)
+
+    # Create the parser for the "chunk_and_submit_genpipes" subcommand
+    parser_chunk_and_submit_genpipes = tools_subparsers.add_parser('chunk_and_submit_genpipes', help='Chunk a Genpipes script and submit all chunks to the scheduler.')
+    parser_chunk_and_submit_genpipes.add_argument('-n', type=int, help='Maximum number of jobs per chunk. Default: 20', default=20)
+    parser_chunk_and_submit_genpipes.add_argument('-q', type=int, help='Maximum number of jobs in scheduler queue. Default: 500', default=500)
+    parser_chunk_and_submit_genpipes.add_argument('-s', type=int, help='Number of seconds to sleep when queue is full. Default: 120', default=120)
+    parser_chunk_and_submit_genpipes.add_argument('-S', help='Scheduler running on the cluster. Default: slurm', choices=["slurm", "pbs"], default="slurm")
+    parser_chunk_and_submit_genpipes.add_argument('-l', type=int, help='Will retry N time(s) to resubmit a chunk if error occurs. Default: 10', default=10)
+    parser_chunk_and_submit_genpipes.add_argument('-u', help='Scheduler user to monitor queue for. Default: $USER')
+    parser_chunk_and_submit_genpipes.add_argument('genpipes_script', help="Genpipes output script.")
+    parser_chunk_and_submit_genpipes.add_argument('output_folder', help="Folder where to store chunks.")
+    parser_chunk_and_submit_genpipes.set_defaults(func=run_chunk_and_submit_genpipes)
 
     # Create the parser for the "get_wrapper" subcommand
     parser_get_wrapper = tools_subparsers.add_parser('get_wrapper', help='Get Genpipes In A Container image.')
@@ -137,7 +150,26 @@ def run_submit_genpipes(args):
         cmd += ['-S', args.S]
     if args.l:
         cmd += ['-l', str(args.l)]
+    if args.u:
+        cmd += ['-u', args.u]
     cmd += [args.chunk_folder]
+    subprocess.run(cmd, check=False)
+
+def run_chunk_and_submit_genpipes(args):
+    """
+    Run chunk_and_submit_genpipes.sh with the given arguments.
+    """
+    chunk_and_submit = os.path.join(os.path.dirname(__file__), 'chunk_and_submit_genpipes.sh')
+    cmd = [chunk_and_submit]
+    cmd += ['-n', str(args.n)]
+    cmd += ['-q', str(args.q)]
+    cmd += ['-s', str(args.s)]
+    cmd += ['-S', args.S]
+    cmd += ['-l', str(args.l)]
+    if args.u:
+        cmd += ['-u', args.u]
+    cmd += [args.genpipes_script]
+    cmd += [args.output_folder]
     subprocess.run(cmd, check=False)
 
 def run_get_wrapper(args):

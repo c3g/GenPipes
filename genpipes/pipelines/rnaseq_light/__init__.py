@@ -459,7 +459,8 @@ cat {kallisto_report_file} >> {kallisto_multiqc_file}""".format(
             self.kallisto_count_matrix,
             self.gq_seq_utils_exploratory_analysis_rnaseq_light,
             self.sleuth_differential_expression,
-            self.multiqc
+            self.multiqc,
+            self.log_report
         ]}
 
 def main(parsed_args):

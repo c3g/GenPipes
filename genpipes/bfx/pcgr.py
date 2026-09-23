@@ -29,6 +29,9 @@ def report(input_vcf,
            output_dir,
            tumor_id,
            input_cna=None,
+           purple_input=None,
+           savana_input=None,
+           fusion_input=None,
            ini_section='report_pcgr'
            ):
 
@@ -37,7 +40,7 @@ def report(input_vcf,
     else:
         call = 'pcgr.py'
     if global_conf.global_get(ini_section, 'module_pcgr').split("/")[2] >= "2":
-        return report2(input_vcf, cpsr_report, output_dir, tumor_id, input_cna, ini_section=ini_section)
+        return report2(input_vcf, cpsr_report, output_dir, tumor_id, input_cna, purple_input, savana_input, fusion_input, ini_section=ini_section)
     else:
         tumor_id = tumor_id[:35]
 
@@ -94,12 +97,22 @@ def report2(input_vcf,
            output_dir,
            tumor_id,
            input_cna,
+           purple_input=None,
+           savana_input=None,
+           fusion_input=None,
            ini_section='report_pcgr'
            ):
 
     if cpsr_prefix:
         cpsr_input = f"{cpsr_prefix}.classification.tsv.gz"
         cpsr_yaml = f"{cpsr_prefix}.conf.yaml"
+
+    if purple_input:
+        purity=f"`awk 'NR == 2 {{print $1}}' {purple_input}`"
+        ploidy=f"`awk 'NR == 2 {{print $5}}' {purple_input}`"
+    if savana_input:
+        purity=f"`awk 'NR == 2 {{print $1}}' {savana_input}`"
+        ploidy=f"`awk 'NR == 2 {{print $2}}' {savana_input}`"
     # use tmp dir for pcgr to avoid disk quota issues caused by bcftools tmp dir settings
     return Job(
         [
@@ -118,8 +131,8 @@ if [ -e {input_cna}.pass ]; then
 fi && \\
 mkdir -p {tmp_dir}/pcgr && \\
 pcgr {options} \\
-    {tumor_type} \\
-    {assay} \\
+    {tumor_type} {purity_ploidy} \\
+    {assay} {sex} \\
     {tumor_options} \\
     {normal_options} \\
     {mutsig_options} \\
@@ -128,6 +141,7 @@ pcgr {options} \\
     --input_vcf {input_vcf} \\
     {cpsr_report} {cpsr_yaml} \\
     $input_cna \\
+    {fusion_input} \\
     --refdata_dir $PCGR_DATA \\
     --vep_dir $PCGR_VEP_CACHE \\
     --output_dir {tmp_dir}/pcgr \\
@@ -136,7 +150,9 @@ pcgr {options} \\
 cp -r {tmp_dir}/pcgr {output_dir}""".format(
             options=global_conf.global_get(ini_section, 'options_v2'),
             tumor_type=global_conf.global_get(ini_section, 'tumor_type'),
+            purity_ploidy="--tumor_purity " + purity + " --tumor_ploidy " + ploidy if purple_input or savana_input else "",
             assay=global_conf.global_get(ini_section, 'assay'),
+            sex="--sex " + global_conf.global_get(ini_section, 'sample_sex', required=False) if global_conf.global_get(ini_section, 'sample_sex', required=False) else "",
             tumor_options=global_conf.global_get(ini_section, 'tumor_options'),
             normal_options=global_conf.global_get(ini_section, 'normal_options'),
             mutsig_options=global_conf.global_get(ini_section, 'mutsig_options'),
@@ -146,6 +162,7 @@ cp -r {tmp_dir}/pcgr {output_dir}""".format(
             cpsr_report="--input_cpsr " + cpsr_input if cpsr_input else "",
             cpsr_yaml="--input_cpsr_yaml " + cpsr_yaml if cpsr_yaml else "",
             input_cna=input_cna,
+            fusion_input="--input_rna_fusion " + fusion_input if fusion_input else "",
             tmp_dir=global_conf.global_get(ini_section, 'tmp_dir'),
             output_dir=os.path.dirname(output_dir),
             assembly=global_conf.global_get(ini_section, 'assembly'),
@@ -157,25 +174,23 @@ def create_header(output):
     return Job(
         command=f"""\
 `cat > {output} << END
-Chromosome\tStart\tEnd\tSegment_Mean\tnMajor\tnMinor
+Chromosome\tStart\tEnd\tnMajor\tnMinor
 END`"""
         )
 
 def create_input_cna(
         cna_body,
-        header,
         cnvkit_calls,
         output
         ):
     return Job(
-        [cna_body, cnvkit_calls],
+        [cna_body,cnvkit_calls],
         [output],
         [],
         command=f"""\
- cat {header} > {output}
- while read line; do 
+while read line; do
     LOCUS=$(echo $line | awk 'BEGIN {{OFS="\\t"}} {{print $1, $2, $3}}')
-    grep "$LOCUS" {cnvkit_calls} | awk 'BEGIN {{OFS="\\t"}} {{print $1, $2, $3, $5, $8, $9}}' >> {output}; done < {cna_body}"""
+    grep "$LOCUS" {cnvkit_calls} | awk -v OFS="\\t" '{{print $1, $2, $3, $10, $11}}' >> {output}; done < {cna_body}"""
 )
 
 def parse_pcgr_passed_variants_pt(input_file):
@@ -189,3 +204,18 @@ def parse_pcgr_passed_variants_pt(input_file):
         command=f"""\
 export pcgr_passed_variants=`grep "pcgr-gene-annotate - INFO - Number of PASSed variant calls:" {input_file} | awk -F': ' '{{print $2}}'`"""
         )
+
+def create_input_fusion(input_file, output_file):
+    """
+    Filter and reformat fusion calls from annoFuse for input to pcgr.
+    """
+
+    return Job(
+        [input_file],
+        [output_file],
+        [],
+        command=f"""\
+awk -v OFS="\\t" '{{print $3,$1,$2,$7}}' {input_file} | \\
+    grep -v '@' | sed 's/FusionName/FusionGene/' | \\
+    sed 's/JunctionReadCount/SplitReads/' > {output_file}"""
+    )

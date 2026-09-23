@@ -1964,7 +1964,8 @@ done""",
                 self.multiqc_report,
                 self.cram_output,
                 self.gatk_haplotype_caller,
-                self.merge_and_call_individual_gvcf #24
+                self.merge_and_call_individual_gvcf,
+                self.log_report #25
             ], 'atacseq':
             [
                 self.picard_sam_to_fastq,
@@ -1990,7 +1991,8 @@ done""",
                 self.multiqc_report,
                 self.cram_output,
                 self.gatk_haplotype_caller,
-                self.merge_and_call_individual_gvcf
+                self.merge_and_call_individual_gvcf,
+                self.log_report
             ]
         }
 

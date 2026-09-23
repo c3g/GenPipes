@@ -642,7 +642,8 @@ printf "{sample}\\t{readset}\\t${{minLen}}\\t${{maxLen}}\\t${{minFlashOverlap}}\
                 self.flash_pass2,
                 self.merge_flash_stats,
                 self.asva,
-                self.multiqc
+                self.multiqc,
+                self.log_report
                 ]
             }
 
