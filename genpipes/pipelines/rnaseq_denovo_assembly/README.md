@@ -28,6 +28,7 @@
   - [gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered](#gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered)
   - [differential_expression_filtered](#differential_expression_filtered)
   - [multiqc](#multiqc)
+  - [log_report](#log_report)
   - [merge_fastq](#merge_fastq)
   - [seq2fun](#seq2fun)
   - [differential_expression_seq2fun](#differential_expression_seq2fun)
@@ -186,6 +187,7 @@ Protocol trinity
 22 gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered
 23 differential_expression_filtered
 24 multiqc
+25 log_report
 
 Protocol seq2fun
 1 picard_sam_to_fastq
@@ -193,6 +195,7 @@ Protocol seq2fun
 3 seq2fun
 4 differential_expression_seq2fun
 5 pathway_enrichment_seq2fun
+6 log_report
 ```
 
 picard_sam_to_fastq 
@@ -331,6 +334,11 @@ multiqc
 Aggregate results from bioinformatics analyses across many samples into a single report.
 MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
 perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
+
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
 
 merge_fastq 
 -----------

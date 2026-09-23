@@ -25,6 +25,7 @@
   - [prepare_report_ivar](#prepare_report_ivar)
   - [prepare_report_freebayes](#prepare_report_freebayes)
   - [run_multiqc](#run_multiqc)
+  - [log_report](#log_report)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -121,6 +122,7 @@ Protocol default
 19 prepare_report_ivar
 20 prepare_report_freebayes
 21 run_multiqc
+22 log_report
 ```
 
 host_reads_removal 
@@ -257,4 +259,9 @@ run_multiqc
 -----------
  
 Run [multiqc](https://multiqc.info/) on all samples.
+
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
 

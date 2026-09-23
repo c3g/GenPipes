@@ -12,6 +12,7 @@
   - [merge_flash_stats](#merge_flash_stats)
   - [asva](#asva)
   - [multiqc](#multiqc)
+  - [log_report](#log_report)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -96,6 +97,7 @@ Protocol default
 6 merge_flash_stats
 7 asva
 8 multiqc
+9 log_report
 ```
 
 trimmomatic16S 
@@ -149,4 +151,9 @@ multiqc
  
 A quality control report for all samples is generated.
 For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
+
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
 

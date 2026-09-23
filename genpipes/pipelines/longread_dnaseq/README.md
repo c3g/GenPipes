@@ -20,9 +20,13 @@
   - [svim](#svim)
   - [multiqc](#multiqc)
   - [modkit](#modkit)
+  - [log_report](#log_report)
   - [clairS](#clairs)
   - [merge_filter_clairS](#merge_filter_clairs)
   - [savana](#savana)
+  - [purple](#purple)
+  - [annotSV](#annotsv)
+  - [chord](#chord)
   - [report_cpsr](#report_cpsr)
   - [report_pcgr](#report_pcgr)
   - [report_djerba](#report_djerba)
@@ -32,7 +36,6 @@
   - [hificnv](#hificnv)
   - [trgt_genotyping](#trgt_genotyping)
   - [sawfish](#sawfish)
-  - [annotSV](#annotsv)
   - [hiphase](#hiphase)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -72,7 +75,8 @@ approach, please consult [this GitHub repository](https://github.com/nanoporetec
 
 For the nanopore_paired_somatic protocol, alignment and metrics generation follow the same steps for both the normal 
 and the tumor sample. Variant calling for each sample is done with ClairS, followed by detection of somatic structural 
-variants with SAVANA. Finally, CPSR and PCGR reports are created for germline and somatic variants, respectively. 
+variants with SAVANA. AnnotSV annotates the somatic structural variants from SAVANA using the filtered somatic
+ClairS VCF as SNV/indel input. Finally, CPSR and PCGR reports are created for germline and somatic variants, respectively. 
 
 The Revio protocol uses pbmm2 to align reads to the reference genome, followed by variant calling with DeepVariant
 and structural variant calling with HiFiCNV, TRGT, and Sawfish. Variants are annotated with AnnotSV and phased
@@ -164,6 +168,7 @@ Protocol nanopore
 14 svim
 15 multiqc
 16 modkit
+17 log_report
 
 Protocol nanopore_paired_somatic
 1 blastqc
@@ -176,10 +181,14 @@ Protocol nanopore_paired_somatic
 8 clairS
 9 merge_filter_clairS
 10 savana
-11 report_cpsr
-12 report_pcgr
-13 report_djerba
-14 multiqc
+11 purple
+12 annotSV
+13 chord
+14 report_cpsr
+15 report_pcgr
+16 report_djerba
+17 multiqc
+18 log_report
 
 Protocol revio
 1 metrics_nanoplot
@@ -197,6 +206,7 @@ Protocol revio
 13 hiphase
 14 report_cpsr
 15 multiqc
+16 log_report
 ```
 
 blastqc 
@@ -291,6 +301,11 @@ modkit
  
 Methylation analysis for nanopore data.
 
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
+
 clairS 
 ------
  
@@ -306,6 +321,24 @@ savana
 ------
  
 Call somatic structural variants and copy number aberrations with Savana.
+
+purple 
+------
+ 
+PURPLE is a purity ploidy estimator for whole genome sequenced (WGS) data.
+
+It combines B-allele frequency (BAF) from AMBER, read depth ratios from COBALT,
+somatic variants and structural variants to estimate the purity and copy number profile of a tumor sample.
+
+annotSV 
+-------
+ 
+Annotate and rank structural variants with AnnotSV.
+
+chord 
+-----
+ 
+Predict homologous recombination deficiency with [CHORD] (https://github.com/hartwigmedical/hmftools/tree/master/chord).
 
 report_cpsr 
 -----------
@@ -325,6 +358,14 @@ report_djerba
 -------------
  
 Produce Djerba report.
+Takes as input:
+    1. Outputs from purple:
+        1a. Zipped purple output directory.
+        1b. *purple.purity.tsv as-is.
+    2. Output from PCGR:
+        2a. MAF file, transformed by djerba.clean_maf() function to remove rows without depth information.
+    3. Output from CHORD:
+        3a. *.chord.prediction.tsv as-is.
 
 pbmm2_align 
 -----------
@@ -355,11 +396,6 @@ sawfish
 -------
  
 Call structural variants from mapped HiFi sequencing reads with Sawfish.
-
-annotSV 
--------
- 
-Annotate and rank structural variants with AnnotSV.
 
 hiphase 
 -------

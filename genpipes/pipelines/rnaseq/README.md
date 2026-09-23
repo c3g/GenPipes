@@ -25,6 +25,7 @@
   - [differential_expression](#differential_expression)
   - [multiqc](#multiqc)
   - [cram_output](#cram_output)
+  - [log_report](#log_report)
   - [skewer_trimming](#skewer_trimming)
   - [split_N_trim](#split_n_trim)
   - [sambamba_merge_splitNtrim_files](#sambamba_merge_splitntrim_files)
@@ -40,11 +41,11 @@
   - [gemini_annotations](#gemini_annotations)
   - [gatk_callable_loci](#gatk_callable_loci)
   - [filter_gatk](#filter_gatk)
-  - [report_cpsr](#report_cpsr)
-  - [report_pcgr](#report_pcgr)
   - [run_star_fusion](#run_star_fusion)
   - [run_arriba](#run_arriba)
   - [run_annofuse](#run_annofuse)
+  - [report_cpsr](#report_cpsr)
+  - [report_pcgr](#report_pcgr)
   - [rseqc](#rseqc)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -171,6 +172,7 @@ Protocol stringtie
 19 differential_expression
 20 multiqc
 21 cram_output
+22 log_report
 
 Protocol variants
 1 picard_sam_to_fastq
@@ -198,6 +200,7 @@ Protocol variants
 23 wiggle
 24 multiqc
 25 cram_output
+26 log_report
 
 Protocol cancer
 1 picard_sam_to_fastq
@@ -216,11 +219,11 @@ Protocol cancer
 14 run_vcfanno
 15 decompose_and_normalize
 16 filter_gatk
-17 report_cpsr
-18 report_pcgr
-19 run_star_fusion
-20 run_arriba
-21 run_annofuse
+17 run_star_fusion
+18 run_arriba
+19 run_annofuse
+20 report_cpsr
+21 report_pcgr
 22 picard_rna_metrics
 23 estimate_ribosomal_rna
 24 rnaseqc2
@@ -229,6 +232,7 @@ Protocol cancer
 27 wiggle
 28 multiqc
 29 cram_output
+30 log_report
 ```
 
 picard_sam_to_fastq 
@@ -368,6 +372,11 @@ cram_output
 Generate long term storage version of the final alignment files in CRAM format.
 Using this function will add the orginal final bam file to the removable file list.
 
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
+
 skewer_trimming 
 ---------------
  
@@ -464,20 +473,6 @@ filter_gatk
 Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
 the filter on those generated fields.
 
-report_cpsr 
------------
- 
-Creates a cpsr gremline report (https://sigven.github.io/cpsr/)
-input: filtered ensemble gremline vcf
-output: html report and addtionalflat files
-
-report_pcgr 
------------
- 
-Creates a PCGR somatic + germline report (https://sigven.github.io/cpsr/)
-input: filtered ensemble gremline vcf
-output: html report and addtionalflat files
-
 run_star_fusion 
 ---------------
  
@@ -498,6 +493,20 @@ run_annofuse
 [annofuse](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-03922-7)
 is a R package and it is used to annotate, prioritize, and interactively explore putative oncogenic
 RNA fusions.
+
+report_cpsr 
+-----------
+ 
+Creates a cpsr gremline report (https://sigven.github.io/cpsr/)
+input: filtered ensemble gremline vcf
+output: html report and addtionalflat files
+
+report_pcgr 
+-----------
+ 
+Creates a PCGR somatic + germline report (https://sigven.github.io/cpsr/)
+input: filtered ensemble gremline vcf
+output: html report and addtionalflat files
 
 rseqc 
 -----

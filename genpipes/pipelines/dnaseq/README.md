@@ -31,6 +31,7 @@
   - [metrics_vcftools_depth_indiv](#metrics_vcftools_depth_indiv)
   - [metrics_gatk_sample_fingerprint](#metrics_gatk_sample_fingerprint)
   - [metrics_gatk_cluster_fingerprint](#metrics_gatk_cluster_fingerprint)
+  - [log_report](#log_report)
   - [delly_call_filter](#delly_call_filter)
   - [delly_sv_annotation](#delly_sv_annotation)
   - [germline_manta](#germline_manta)
@@ -80,13 +81,14 @@
   - [ensemble_germline_loh](#ensemble_germline_loh)
   - [gatk_variant_annotator_germline](#gatk_variant_annotator_germline)
   - [merge_gatk_variant_annotator_germline](#merge_gatk_variant_annotator_germline)
-  - [report_djerba](#report_djerba)
   - [sym_link_ensemble](#sym_link_ensemble)
   - [gridss_paired_somatic](#gridss_paired_somatic)
   - [purple_sv](#purple_sv)
   - [linx_annotations_somatic](#linx_annotations_somatic)
   - [linx_annotations_germline](#linx_annotations_germline)
   - [linx_plot](#linx_plot)
+  - [chord](#chord)
+  - [report_djerba](#report_djerba)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -192,6 +194,7 @@ Protocol germline_snv
 25 metrics_vcftools_depth_indiv
 26 metrics_gatk_sample_fingerprint
 27 metrics_gatk_cluster_fingerprint
+28 log_report
 
 Protocol germline_sv
 1 gatk_sam_to_fastq
@@ -219,6 +222,7 @@ Protocol germline_sv
 23 run_breakseq2
 24 ensemble_metasv
 25 metasv_sv_annotation
+26 log_report
 
 Protocol germline_high_cov
 1 gatk_sam_to_fastq
@@ -236,6 +240,7 @@ Protocol germline_high_cov
 13 gemini_annotations
 14 run_multiqc
 15 cram_output
+16 log_report
 
 Protocol somatic_tumor_only
 1 gatk_sam_to_fastq
@@ -260,6 +265,7 @@ Protocol somatic_tumor_only
 20 filter_tumor_only
 21 report_cpsr
 22 report_pcgr
+23 log_report
 
 Protocol somatic_fastpass
 1 gatk_sam_to_fastq
@@ -285,6 +291,7 @@ Protocol somatic_fastpass
 21 sym_link_fastq_pair
 22 sym_link_panel
 23 cram_output
+24 log_report
 
 Protocol somatic_ensemble
 1 gatk_sam_to_fastq
@@ -319,13 +326,13 @@ Protocol somatic_ensemble
 30 report_cpsr
 31 filter_somatic
 32 report_pcgr
-33 report_djerba
-34 run_multiqc
-35 sym_link_fastq_pair
-36 sym_link_final_bam
-37 sym_link_report
-38 sym_link_ensemble
-39 cram_output
+33 run_multiqc
+34 sym_link_fastq_pair
+35 sym_link_final_bam
+36 sym_link_report
+37 sym_link_ensemble
+38 cram_output
+39 log_report
 
 Protocol somatic_sv
 1 gatk_sam_to_fastq
@@ -342,6 +349,53 @@ Protocol somatic_sv
 12 linx_plot
 13 run_multiqc
 14 cram_output
+
+Protocol somatic_ensemble_sv
+1 gatk_sam_to_fastq
+2 trim_fastp
+3 bwa_mem2_samtools_sort
+4 gatk_mark_duplicates
+5 set_interval_list
+6 conpair_concordance_contamination
+7 metrics_dna_picard_metrics
+8 metrics_dna_sample_mosdepth
+9 sequenza
+10 manta_sv_calls
+11 strelka2_paired_somatic
+12 strelka2_paired_germline
+13 strelka2_paired_snpeff
+14 gridss_paired_somatic
+15 purple_sv
+16 linx_annotations_somatic
+17 linx_annotations_germline
+18 linx_plot
+19 rawmpileup
+20 paired_varscan2
+21 merge_varscan2
+22 paired_mutect2
+23 merge_mutect2
+24 vardict_paired
+25 merge_filter_paired_vardict
+26 ensemble_somatic
+27 gatk_variant_annotator_somatic
+28 merge_gatk_variant_annotator_somatic
+29 ensemble_germline_loh
+30 gatk_variant_annotator_germline
+31 merge_gatk_variant_annotator_germline
+32 cnvkit_batch
+33 filter_germline
+34 report_cpsr
+35 filter_somatic
+36 report_pcgr
+37 chord
+38 report_djerba
+39 run_multiqc
+40 sym_link_fastq_pair
+41 sym_link_final_bam
+42 sym_link_report
+43 sym_link_ensemble
+44 cram_output
+45 log_report
 ```
 
 gatk_sam_to_fastq 
@@ -550,6 +604,11 @@ CheckFingerprint (Picard). Checks the sample identity of the sequence/genotype d
 against a set of known genotypes in the supplied genotype file (in VCF format).
 input: sample SAM/BAM or VCF
 output: fingerprint file
+
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
 
 delly_call_filter 
 -----------------
@@ -850,7 +909,7 @@ The fully merged vcf is filtered using following steps:
 ensemble_somatic 
 ----------------
  
-Apply Bcbio.variations ensemble approach for mutect2, Vardict, Samtools and VarScan2 calls.
+Apply Bcbio.variations ensemble approach for mutect2, Vardict, Strelka2 and VarScan2 calls.
 Filter ensemble calls to retain only calls overlapping 2 or more callers.
 
 gatk_variant_annotator_somatic 
@@ -878,11 +937,6 @@ merge_gatk_variant_annotator_germline
 -------------------------------------
  
 Merge annotated germline and LOH vcfs.
-
-report_djerba 
--------------
- 
-Produce Djerba report.
 
 sym_link_ensemble 
 -----------------
@@ -925,4 +979,22 @@ linx_plot
 ---------
  
 Generate Linx Plot of the tumor pair analysis.
+
+chord 
+-----
+ 
+Predict homologous recombination deficiency with [CHORD] (https://github.com/hartwigmedical/hmftools/tree/master/chord).
+
+report_djerba 
+-------------
+ 
+Produce Djerba report.
+Takes as input:
+    1. Outputs from purple:
+        1a. Zipped purple output directory.
+        1b. *purple.purity.tsv as-is.
+    2. Output from PCGR:
+        2a. MAF file, transformed by djerba.clean_maf() function to remove rows without depth information.
+    3. Output from CHORD:
+        3a. *.chord.prediction.tsv as-is.
 
