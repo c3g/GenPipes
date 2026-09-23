@@ -13,6 +13,7 @@
   - [quast_consensus_metrics](#quast_consensus_metrics)
   - [rename_consensus_header](#rename_consensus_header)
   - [prepare_report](#prepare_report)
+  - [log_report](#log_report)
   - [guppy_basecall](#guppy_basecall)
   - [guppy_demultiplex](#guppy_demultiplex)
   - [pycoqc](#pycoqc)
@@ -101,6 +102,7 @@ Protocol default
 7 quast_consensus_metrics
 8 rename_consensus_header
 9 prepare_report
+10 log_report
 
 Protocol basecalling
 1 guppy_basecall
@@ -115,6 +117,7 @@ Protocol basecalling
 10 quast_consensus_metrics
 11 rename_consensus_header
 12 prepare_report
+13 log_report
 ```
 
 host_reads_removal 
@@ -161,6 +164,11 @@ prepare_report
 --------------
  
 Prepare analysis report.
+
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
 
 guppy_basecall 
 --------------

@@ -28,6 +28,7 @@
   - [cram_output](#cram_output)
   - [gatk_haplotype_caller](#gatk_haplotype_caller)
   - [merge_and_call_individual_gvcf](#merge_and_call_individual_gvcf)
+  - [log_report](#log_report)
   - [macs2_atacseq_callpeak](#macs2_atacseq_callpeak)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -131,6 +132,7 @@ Protocol chipseq
 22 cram_output
 23 gatk_haplotype_caller
 24 merge_and_call_individual_gvcf
+25 log_report
 
 Protocol atacseq
 1 picard_sam_to_fastq
@@ -157,6 +159,7 @@ Protocol atacseq
 22 cram_output
 23 gatk_haplotype_caller
 24 merge_and_call_individual_gvcf
+25 log_report
 ```
 
 picard_sam_to_fastq 
@@ -315,6 +318,11 @@ merge_and_call_individual_gvcf
 ------------------------------
  
 Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
 
 macs2_atacseq_callpeak 
 ----------------------

@@ -22,6 +22,7 @@
   - [methylkit_differential_analysis](#methylkit_differential_analysis)
   - [multiqc](#multiqc)
   - [cram_output](#cram_output)
+  - [log_report](#log_report)
   - [gembs_prepare](#gembs_prepare)
   - [gembs_map](#gembs_map)
   - [gembs_call](#gembs_call)
@@ -143,6 +144,7 @@ Protocol bismark
 16 methylkit_differential_analysis
 17 multiqc
 18 cram_output
+19 log_report
 
 Protocol gembs
 1 picard_sam_to_fastq
@@ -165,6 +167,7 @@ Protocol gembs
 18 methylkit_differential_analysis
 19 multiqc
 20 cram_output
+21 log_report
 
 Protocol hybrid
 1 picard_sam_to_fastq
@@ -185,6 +188,7 @@ Protocol hybrid
 16 methylkit_differential_analysis
 17 multiqc
 18 cram_output
+19 log_report
 
 Protocol dragen
 1 picard_sam_to_fastq
@@ -207,6 +211,7 @@ Protocol dragen
 18 methylkit_differential_analysis
 19 multiqc
 20 cram_output
+21 log_report
 ```
 
 picard_sam_to_fastq 
@@ -332,6 +337,11 @@ cram_output
  
 Generate long term storage version of the final alignment files in CRAM format.
 Using this function will add the orginal final bam file to the removable file list.
+
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
 
 gembs_prepare 
 -------------

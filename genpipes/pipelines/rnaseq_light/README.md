@@ -12,6 +12,7 @@
   - [gq_seq_utils_exploratory_analysis_rnaseq_light](#gq_seq_utils_exploratory_analysis_rnaseq_light)
   - [sleuth_differential_expression](#sleuth_differential_expression)
   - [multiqc](#multiqc)
+  - [log_report](#log_report)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -97,6 +98,7 @@ Protocol default
 6 gq_seq_utils_exploratory_analysis_rnaseq_light
 7 sleuth_differential_expression
 8 multiqc
+9 log_report
 ```
 
 picard_sam_to_fastq 
@@ -151,4 +153,9 @@ multiqc
  
 A quality control report for all samples is generated.
 For more detailed information about MultiQC visit: [MultiQC](http://multiqc.info/)
+
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
 
