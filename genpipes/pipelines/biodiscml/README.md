@@ -9,6 +9,7 @@
   - [Usage](#usage)
   - [biomarker_discovery](#biomarker_discovery)
   - [report](#report)
+  - [log_report](#log_report)
   - [References](#references)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -148,6 +149,9 @@ For each contrast, the pipeline writes into `<contrast>/`:
 - `<contrast>.bestmodel.done`: marks the end of the `biomarker_discovery` step.
 - `<contrast>.biodiscml_report.html`: the interactive HTML report (see [report](#report)).
 
+In the output directory itself, `log_report.<timestamp>.tsv` summarizes every job of the run (see
+[log_report](#log_report)).
+
 Usage
 -----
 
@@ -222,6 +226,7 @@ Steps:
 Protocol biodiscml
 1 biomarker_discovery
 2 report
+3 log_report
 ```
 
 Example:
@@ -255,6 +260,11 @@ dependency: Plotly is embedded, the file opens in any browser.
 
 The report is rendered from a Jupyter notebook bundled with the pipeline
 (`biodiscml_report.ipynb`); set `report_notebook` in the `[biodiscml]` ini section to use a custom one.
+
+log_report 
+----------
+ 
+Generate genpipes log_report after all jobs have completed or failed.
 
 References
 ----------

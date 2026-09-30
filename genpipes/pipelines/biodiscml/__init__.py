@@ -30,6 +30,7 @@ from ...core.job import concat_jobs
 from ...core.pipeline import Pipeline
 from ...bfx import bash_cmd as bash
 from ...bfx import biodiscml
+from ..common import GenPipesPipeline
 
 # Notebook bundled with the pipeline; override with `report_notebook` in the [biodiscml] ini section.
 DEFAULT_REPORT_NOTEBOOK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "biodiscml_report.ipynb")
@@ -194,11 +195,15 @@ Added as part of CFI Innovation Fund 2025 project #45950, Activity 1.4 ("New ML 
 
         return jobs
 
+    # Not a GenPipesPipeline (no readsets), but its log_report step only relies on the base Pipeline
+    log_report = GenPipesPipeline.log_report
+
     def protocols(self):
         return {
             "biodiscml": [
                 self.biomarker_discovery,
-                self.report
+                self.report,
+                self.log_report
             ]
         }
 
