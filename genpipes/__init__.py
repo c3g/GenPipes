@@ -18,6 +18,7 @@ from .__version__ import __version__
 
 PIPELINES = {
     "AmpliconSeq": "AmpliconSeq pipeline",
+    "BioDiscML": "BioDiscML biomarker discovery pipeline",
     "ChipSeq": "ChipSeq pipeline",
     "CoVSeq": "CoVSeq pipeline",
     "DnaSeq": "DnaSeq pipeline",
