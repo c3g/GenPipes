@@ -103,8 +103,22 @@ other_options=
 `ram` sets the Java maximum heap (`-Xmx`); it must stay below `[biomarker_discovery] cluster_mem`, since
 the Java 8 build used by BioDiscML does not detect the job's memory limit by itself.
 
-BioDiscML's full training can take many hours on large matrices: adjust
-`[biomarker_discovery] cluster_walltime`, `cluster_cpu` and `cluster_mem` to the size of the data.
+BioDiscML's full training (about 7,200 classifier/feature search combinations) can take many hours on
+large matrices: adjust `[biomarker_discovery] cluster_walltime`, `cluster_cpu` and `cluster_mem` to the
+size of the data. As an indication, with the default 8 CPUs:
+
+| Dataset | Full training |
+| --- | --- |
+| 8 samples x 50 features | ~45 min |
+| 62 samples x 2,000 features | over 24 h (5,000 models trained in the first 13 h, then a few very slow classifiers) |
+
+For matrices with more than a few hundred features, pre-filter the features, or restrict the classifiers
+with `classificationFastWay` (see above).
+
+If training is interrupted (e.g. by the walltime), the models already trained are kept in
+`<contrast>_c.classification.results.csv`, and the best models can still be selected from them by
+running BioDiscML's `-bestmodel` on the existing results (with `cpus=0` in the config, see
+[biomarker_discovery](#biomarker_discovery)), then the `report` step (`-s 2`).
 
 Output files
 ------------
@@ -248,6 +262,8 @@ For each requested contrast, reformats the feature matrix and design file into a
 training file (samples x features, with a class column built from the design file's 1/2 coding),
 generates a BioDiscML config.conf, trains models across BioDiscML's classifiers, then selects the
 best model(s) based on the sorting metric configured in the [biodiscml] ini section.
+Best model selection runs single-threaded (`cpus=0`, in `config.bestmodel.conf`), to avoid a
+concurrency bug in BioDiscML 1.8.14 that can make it loop forever while retrieving correlated features.
 
 report 
 ------
