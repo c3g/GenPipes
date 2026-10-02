@@ -89,7 +89,7 @@ def add_subcommands(parser):
 
     # Create the parser for the "get_wrapper" subcommand
     parser_get_wrapper = tools_subparsers.add_parser('get_wrapper', help='Get Genpipes In A Container image.')
-    parser_get_wrapper.add_argument('--version', '-v', help="Version of the container to get. Default: 4.0.0")
+    parser_get_wrapper.add_argument('--version', '-v', help=f"Version of the container to get. Default: {get_default_giac_version()}")
     parser_get_wrapper.set_defaults(func=run_get_wrapper)
 
     # Create the parser for the "validate_genpipes" subcommand
@@ -171,6 +171,20 @@ def run_chunk_and_submit_genpipes(args):
     cmd += [args.genpipes_script]
     cmd += [args.output_folder]
     subprocess.run(cmd, check=False)
+
+def get_default_giac_version():
+    """
+    Read the default GenPipes in a Container version from get_wrapper.sh, the only place where it is set.
+    """
+    get_wrapper = os.path.join(os.path.dirname(__file__), 'get_wrapper.sh')
+    try:
+        with open(get_wrapper, 'r') as get_wrapper_file:
+            for line in get_wrapper_file:
+                if line.startswith('GIAC_VERSION='):
+                    return line.strip().split('=', 1)[1]
+    except OSError:
+        pass
+    return "see get_wrapper.sh"
 
 def run_get_wrapper(args):
     """
