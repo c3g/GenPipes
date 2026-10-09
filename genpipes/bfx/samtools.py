@@ -148,7 +148,7 @@ samtools merge -f {other_options} \\
   {input_bams}""".format(
             other_options=global_conf.global_get(ini_section, 'other_options'),
             output_format=postfix,
-            threads="--threads " + global_conf.global_get(ini_section, 'threads'),
+            threads="--threads " + global_conf.global_get(ini_section, 'threads', required=False) if global_conf.global_get(ini_section, 'threads', required=False) else "",
             sample_output=sample_output,
             input_bams="".join([" \\\n  " + input_bam for input_bam in input_bams]),
         )
