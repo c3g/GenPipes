@@ -1996,7 +1996,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 f"{sample.name}.hificnv.annotsv"
                             )
                         ],
-                        name=f"annotsv.hificnv.{sample.name}",
+                        name=f"annotSV.hificnv.{sample.name}",
                         samples=[sample],
                         readsets=[*list(sample.readsets)]
                     )
@@ -2022,7 +2022,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 f"{sample.name}.sawfish.annotsv"
                             )
                         ],
-                        name=f"annotsv.sawfish.{sample.name}",
+                        name=f"annotSV.sawfish.{sample.name}",
                         samples=[sample],
                         readsets=[*list(sample.readsets)]
                     )
@@ -2059,7 +2059,7 @@ For information on the structure and contents of the LongRead readset file, plea
                                 f"{tumor_pair.name}.savana.annotsv"
                             )
                         ],
-                        name=f"annotsv.savana.{tumor_pair.name}",
+                        name=f"annotSV.savana.{tumor_pair.name}",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
