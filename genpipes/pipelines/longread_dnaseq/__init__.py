@@ -2056,7 +2056,7 @@ For information on the structure and contents of the LongRead readset file, plea
                             annotsv.excel(
                                 savana_annot,
                                 annotsv_directory,
-                                f"{tumor_pair.name}.savana_ClairS.annotsv"
+                                f"{tumor_pair.name}.savana.annotsv"
                             )
                         ],
                         name=f"annotsv.savana.{tumor_pair.name}",
