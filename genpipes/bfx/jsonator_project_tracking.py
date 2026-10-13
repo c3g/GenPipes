@@ -125,7 +125,8 @@ def create(pipeline, sample):
     return json_file
 
 def init(
-    operation_name,
+    operation_pipeline,
+    operation_protocol,
     operation_config_version,
     operation_cmd_line,
     operation_config_md5sum,
@@ -145,7 +146,9 @@ def init(
         'operation_config_data': ''.join(operation_config_data),
         'operation_platform': global_conf.global_get("DEFAULT", 'cluster_server', required=True),
         'operation_cmd_line': operation_cmd_line,
-        'operation_name': f'GenPipes_{operation_name}',
+        'operation_name': 'genpipes',
+        'operation_pipeline': operation_pipeline,
+        'operation_protocol': operation_protocol,
         'sample': []
     }
 
@@ -154,7 +157,8 @@ def init(
     if not os.path.exists(json_folder):
         os.makedirs(json_folder)
 
-    json_file = os.path.join(json_folder, f"{operation_name}_{timestamp}.json")
+    json_basename = f"{operation_pipeline}.{operation_protocol}" if operation_protocol else operation_pipeline
+    json_file = os.path.join(json_folder, f"{json_basename}_{timestamp}.json")
     log.debug(f"Initializing project_tracking JSON: {json_file}")
     with open(json_file, 'w', encoding='utf-8') as j_file:
         json.dump(json_output, j_file, ensure_ascii=False, indent=4)
