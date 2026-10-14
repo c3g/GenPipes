@@ -111,8 +111,6 @@ Added as part of CFI Innovation Fund 2025 project #45950, Activity 1.4 ("New ML 
         training file (samples x features, with a class column built from the design file's 1/2 coding),
         generates a BioDiscML config.conf, trains models across BioDiscML's classifiers, then selects the
         best model(s) based on the sorting metric configured in the [biodiscml] ini section.
-        Best model selection runs single-threaded (`cpus=0`, in `config.bestmodel.conf`), to avoid a
-        concurrency bug in BioDiscML 1.8.14 that can make it loop forever while retrieving correlated features.
         """
         feature_matrix = os.path.relpath(self.feature_matrix.name, self.output_dir)
         design_file = os.path.relpath(self.design_file.name, self.output_dir)
@@ -122,7 +120,7 @@ Added as part of CFI Innovation Fund 2025 project #45950, Activity 1.4 ("New ML 
             contrast_directory = os.path.join(self.output_dir, contrast)
             train_file = os.path.join(contrast_directory, f"{contrast}.biodiscml_input.csv")
             config_file = os.path.join(contrast_directory, "config.conf")
-            # BioDiscML (v1.8.14) always inserts ".classification." for
+            # BioDiscML (v1.8.14, v1.9) always inserts ".classification." for
             # doClassification=true runs, regardless of outputDir (see
             # bfx.biodiscml.config's docstring) -- confirmed by running it.
             results_file = os.path.join(contrast_directory, f"{contrast}_c.classification.results.csv")

@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=BioDiscML
-VERSION=1.8.14
+VERSION=1.9
 ARCHIVE=${SOFTWARE}-${VERSION}.zip
 ARCHIVE_URL=https://github.com/mickaelleclercq/BioDiscML/releases/download/v${VERSION}/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}

@@ -114,7 +114,11 @@ def config(
     Generate a BioDiscML config.conf file for a training run on
     ``train_file`` (as produced by ``format_input``).
 
-    Note: BioDiscML (checked against v1.8.14) does not actually honour the
+    ``positiveClass`` is set to ``case`` (the design file's ``2``), so that
+    the sensitivity, specificity, PPV, FDR, F-score and AUPRC reported by
+    BioDiscML (>= 1.9) are those of the case class.
+
+    Note: BioDiscML (checked against v1.8.14 and v1.9) does not actually honour the
     ``outputDir`` config key for its main output files (``*_a.*``, ``*_b.*``,
     ``*_c.*``, ``*_d.*`` -- confirmed by running it for real): it writes
     them to the process' current working directory regardless. So
@@ -128,6 +132,7 @@ def config(
     number_of_best_models = global_conf.global_get('biodiscml', 'number_of_best_models')
     sorting_metric = global_conf.global_get('biodiscml', 'number_of_best_models_sorting_metric')
     cpus = global_conf.global_get('biodiscml', 'cpus')
+    seed = global_conf.global_get('biodiscml', 'seed')
     other_options = global_conf.global_get('biodiscml', 'other_options', required=False)
 
     return Job(
@@ -142,9 +147,11 @@ excluded=sample
 sampling={sampling}
 doClassification=true
 classificationClassName={class_column}
+positiveClass=case
 numberOfBestModels={number_of_best_models}
 numberOfBestModelsSortingMetric={sorting_metric}
 cpus={cpus}
+seed={seed}
 {other_options}
 CONF
 )""".format(
@@ -157,6 +164,7 @@ CONF
             number_of_best_models=number_of_best_models,
             sorting_metric=sorting_metric,
             cpus=cpus,
+            seed=seed,
             other_options=other_options
         )
     )
@@ -217,17 +225,7 @@ def best_model(
     file touched on completion so GenPipes has a stable dependency to
     track. Validating this behaviour against real runs, and tightening the
     declared outputs accordingly, is part of the Activity 1.4 workplan.
-
-    Runs single-threaded (``cpus=0``, in a copy of ``config_file``):
-    BioDiscML (v1.8.14) fills a plain TreeMap from a parallel stream when
-    retrieving correlated features, which can corrupt the map into a cycle
-    -- the run then never ends, writing an ever-growing ``*details.txt``
-    (observed: 22 GB in 10 minutes on an 8-sample dataset that usually
-    completes in seconds). ``cpus`` sets the common ForkJoinPool's
-    parallelism, and 0 makes parallel streams run in the calling thread
-    only. Model selection is light, so this doesn't slow the step down.
     """
-    bestmodel_config_file = os.path.join(os.path.dirname(config_file), "config.bestmodel.conf")
     return Job(
         [config_file, results_file],
         [sentinel],
@@ -236,10 +234,9 @@ def best_model(
             ['biodiscml', 'module_biodiscml']
         ],
         command="""\
-sed 's/^cpus=.*/cpus=0/' {config_file} > {bestmodel_config_file} && \\
 cd {work_dir} && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $BIODISCML_JAR \\
-  -config {bestmodel_config_file} \\
+  -config {config_file} \\
   -bestmodel && \\
 touch {sentinel}""".format(
             work_dir=work_dir,
@@ -247,7 +244,6 @@ touch {sentinel}""".format(
             java_other_options=global_conf.global_get('biodiscml', 'java_other_options', required=False),
             ram=global_conf.global_get('biodiscml', 'ram'),
             config_file=config_file,
-            bestmodel_config_file=bestmodel_config_file,
             sentinel=sentinel
         )
     )

@@ -85,7 +85,11 @@ BioDiscML is normally driven by a `config.conf` file. The pipeline generates it 
 | `number_of_best_models` | `numberOfBestModels` | Number of models retained by `-bestmodel` |
 | `number_of_best_models_sorting_metric` | `numberOfBestModelsSortingMetric` | Metric used to rank and retain the models (default `AVG_MCC`; any column of the results file, see [Output files](#output-files)) |
 | `cpus` | `cpus` | Number of threads used by BioDiscML; keep equal to `[biomarker_discovery] cluster_cpu` |
+| `seed` | `seed` | Seed of BioDiscML's random number generators (default `1`): the same data, configuration and seed give the same results |
 | `other_options` | any | Extra `key=value` lines appended verbatim to `config.conf` (one per line) |
+
+The pipeline also sets `positiveClass=case`: the class-specific metrics (sensitivity, specificity, PPV,
+FDR, F-score, AUPRC) are those of the `case` samples (coded `2` in the design file).
 
 Any other BioDiscML option can be passed through `other_options`; see BioDiscML's
 [config.conf template](https://github.com/mickaelleclercq/BioDiscML/blob/master/config.conf) for the
@@ -103,22 +107,21 @@ other_options=
 `ram` sets the Java maximum heap (`-Xmx`); it must stay below `[biomarker_discovery] cluster_mem`, since
 the Java 8 build used by BioDiscML does not detect the job's memory limit by itself.
 
-BioDiscML's full training (about 7,200 classifier/feature search combinations) can take many hours on
-large matrices: adjust `[biomarker_discovery] cluster_walltime`, `cluster_cpu` and `cluster_mem` to the
-size of the data. As an indication, with the default 8 CPUs:
+BioDiscML's full training (about 7,200 classifier/feature search combinations) can take many hours, or
+days, on large matrices: adjust `[biomarker_discovery] cluster_walltime`, `cluster_cpu` and `cluster_mem` to the
+size of the data. As an indication:
 
 | Dataset | Full training |
 | --- | --- |
-| 8 samples x 50 features | ~45 min |
-| 62 samples x 2,000 features | over 24 h (5,000 models trained in the first 13 h, then a few very slow classifiers) |
+| 8 samples x 50 features | ~1 h 15 min on 8 CPUs |
+| 62 samples x 2,000 features | several days (about 5,900 models trained in 4 days on 20 CPUs: a few classifiers, such as `rules.DTNB`, take hours per model) |
 
 For matrices with more than a few hundred features, pre-filter the features, or restrict the classifiers
 with `classificationFastWay` (see above).
 
 If training is interrupted (e.g. by the walltime), the models already trained are kept in
 `<contrast>_c.classification.results.csv`, and the best models can still be selected from them by
-running BioDiscML's `-bestmodel` on the existing results (with `cpus=0` in the config, see
-[biomarker_discovery](#biomarker_discovery)), then the `report` step (`-s 2`).
+running BioDiscML's `-bestmodel` on the existing results, then the `report` step (`-s 2`).
 
 Output files
 ------------
@@ -150,7 +153,7 @@ For each contrast, the pipeline writes into `<contrast>/`:
 
   Each evaluation reports accuracy (`ACC`), AUC, AUPRC, sensitivity (`SEN`), specificity (`SPE`),
   Matthews correlation coefficient (`MCC`), mean absolute error (`MAE`) and balanced error rate (`BER`),
-  among others. See BioDiscML's
+  among others. Sensitivity, specificity, PPV, FDR, F-score and AUPRC are computed for the `case` class. See BioDiscML's
   [readme](https://github.com/mickaelleclercq/BioDiscML/blob/master/readme.md#output-files) for the
   complete list.
 - For each retained model, `<contrast>_d.<model>.*`:
@@ -262,8 +265,6 @@ For each requested contrast, reformats the feature matrix and design file into a
 training file (samples x features, with a class column built from the design file's 1/2 coding),
 generates a BioDiscML config.conf, trains models across BioDiscML's classifiers, then selects the
 best model(s) based on the sorting metric configured in the [biodiscml] ini section.
-Best model selection runs single-threaded (`cpus=0`, in `config.bestmodel.conf`), to avoid a
-concurrency bug in BioDiscML 1.8.14 that can make it loop forever while retrieving correlated features.
 
 report 
 ------
