@@ -1,2 +1,3 @@
 include genpipes/pipelines/*/*.ini
 include resources/autocomplete/*
+include genpipes/pipelines/biodiscml/*.ipynb
