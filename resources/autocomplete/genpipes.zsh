@@ -336,7 +336,7 @@ _shtab_genpipes_tools_csvToreadset_defaults_added=0
 
 _shtab_genpipes_tools_get_wrapper_options=(
   "(- : *)"{-h,--help}"[show this help message and exit]"
-  {--version,-v}"[Version of the container to get. Default\: 4.0.0]:version:"
+  {--version,-v}"[Version of the container to get. Default\: v4.1.0]:version:"
 )
 
 # guard to ensure default positional specs are added only once per session
