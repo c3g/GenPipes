@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: single reading column (~72ch) with full-width tables/diagrams in scroll boxes; phase table is the spine. */
+/* Layout: single reading column (~72ch); tables and diagrams in scroll boxes. */
 :root {
   --bg: #f6f8f8;
   --surface: #ffffff;
@@ -31,332 +31,217 @@
 
 body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--f-body);
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 80px; }
-main { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px; }
-section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+main { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 h1, h2 { font-family: var(--f-display); font-weight: 600; text-wrap: balance; line-height: 1.2; margin: 0; }
 h1 { font-size: 2.4rem; }
-h2 { font-size: 1.6rem; }
-h3 { font-size: 1.05rem; margin: 10px 0 0; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.05rem; margin: 8px 0 0; }
 p, ul, ol { margin: 0; max-width: 72ch; }
 li + li { margin-top: 4px; }
-a { color: var(--accent); }
 code { font-family: var(--f-mono); font-size: 0.86em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
 pre { font-family: var(--f-mono); font-size: 0.82rem; line-height: 1.55; background: var(--code-bg); border: 1px solid var(--line);
-  border-radius: 6px; padding: 14px 16px; margin: 0; overflow-x: auto; }
+  border-radius: 6px; padding: 12px 14px; margin: 0; overflow-x: auto; }
 pre code { background: none; padding: 0; font-size: inherit; }
 .eyebrow { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-.lede { font-size: 1.12rem; color: var(--muted); }
-header { display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+header { display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 24px; }
 .meta { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill { font-size: 0.78rem; font-weight: 600; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; background: var(--surface); color: var(--muted); }
 .pill.status { color: var(--warn); border-color: var(--warn); }
-
-.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
-.compare > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.tag { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; }
-.tag.bad { color: var(--bad); } .tag.ok { color: var(--ok); }
-.callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 6px 6px 0; max-width: 72ch; }
-
-.parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-.part { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.part .letter { font-family: var(--f-display); font-size: 1.4rem; color: var(--accent); line-height: 1; }
-.part strong { font-size: 0.98rem; }
-.part p { font-size: 0.9rem; color: var(--muted); }
-.part .sched { font-size: 0.75rem; font-family: var(--f-mono); color: var(--fg); margin-top: auto; }
+.pill.release { color: var(--accent); border-color: var(--accent); }
+.summary { background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 14px 18px; }
 
 .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
-th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
 tr:last-child td { border-bottom: none; }
 th { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; white-space: nowrap; }
 td:first-child { font-weight: 600; white-space: nowrap; }
+td.yes { color: var(--ok); font-weight: 600; } td.no { color: var(--muted); }
 
-.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; }
+.diagrams { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; min-width: 0; }
 .diagram pre.mermaid { background: none; border: none; padding: 0; text-align: center; }
-
-ol.steps { padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
-ol.steps li + li, ol.questions li + li { margin-top: 0; }
-ol.questions { padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; }
-.muted { color: var(--muted); }
+.muted { color: var(--muted); font-size: 0.9rem; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-@media (max-width: 480px) { h1 { font-size: 1.9rem; } h2 { font-size: 1.35rem; } }
+@media (max-width: 480px) { h1 { font-size: 1.9rem; } h2 { font-size: 1.3rem; } }
 </style>
 
 <main>
 <header>
-  <span class="eyebrow">GenPipes · design proposal · revision 2</span>
-  <h1>Smarter restart</h1>
-  <p class="lede">Retry jobs that fail for lack of memory or walltime automatically, with more resources each time, and stop resource changes from rerunning work that is already done.</p>
+  <span class="eyebrow">GenPipes · design proposal</span>
+  <h1>Smart restart</h1>
   <div class="meta">
-    <span class="pill status">Proposal · for team review</span>
+    <span class="pill status">For team review</span>
+    <span class="pill release">GenPipes 7.0 · breaking changes allowed</span>
     <span class="pill">SLURM · PBS · batch</span>
-    <span class="pill">Not implemented</span>
   </div>
-  <p class="muted">Revision 2: automatic retries now run through an external monitor that reconciles the job DAG, following a team member's proposal. The in-job retry from revision 1 is now under alternatives considered.</p>
+  <div class="summary">
+    <ul>
+      <li><strong>Problem 1:</strong> jobs that fail for memory or walltime need a manual fix and resubmission.</li>
+      <li><strong>Problem 2:</strong> changing <code>threads</code>/<code>ram</code> reruns finished jobs and everything downstream.</li>
+      <li><strong>Fix:</strong> resource values become runtime variables, so they're no longer in the job hash. Failed jobs get more resources when <code>genpipes</code> is rerun, and an opt-in Slurm monitor retries them automatically.</li>
+      <li><strong>Key decisions:</strong> hashes break once in 7.0, with a migration tool; an explicit resource API; <code>JOB_LIST</code> is the source of truth; PBS gets everything except the monitor; the safety net comes first.</li>
+    </ul>
+  </div>
 </header>
 
 <section>
-  <h2>The two problems</h2>
-  <ol>
-    <li><strong>Resource failures need manual work.</strong> When a job fails with <code>OUT_OF_MEMORY</code>, <code>TIMEOUT</code> or a Java heap error, the user reads the log, edits an ini, runs <code>genpipes</code> again and resubmits. Nothing retries automatically.</li>
-    <li><strong>Changing a resource restarts finished work.</strong> Raising <code>threads</code> or <code>ram</code> for one failed sample reruns every done job in that step, and everything downstream of it.</li>
-  </ol>
-</section>
-
-<section>
-  <h2>Root cause</h2>
-  <p>The done file is named after <code>md5(job.command_with_modules)</code>. The <code>cluster_*</code> values are not in that hash; they only go into <code>#SBATCH</code> lines. But the base inis copy resources into the command, so they end up hashed anyway.</p>
-  <div class="compare">
-    <div>
-      <span class="tag bad">TODAY · values are part of the hash</span>
-<pre><code>[picard_mark_duplicates]
-cluster_mem = 16G
-ram = %(cluster_mem)s
-
-# scientific .sh (hashed)
-java -Xmx16G -jar picard.jar \
-  MarkDuplicates ...</code></pre>
-    </div>
-    <div>
-      <span class="tag ok">PROPOSED · only the variable name is hashed</span>
-<pre><code># submission file (not hashed)
-export GP_RES_picard_mark_duplicates__ram=16G
-
-# scientific .sh (hashed)
-java -Xmx${GP_RES_picard_mark_duplicates__ram} \
-  -jar picard.jar MarkDuplicates ...</code></pre>
-    </div>
-  </div>
-  <p>Across <code>bfx/</code> there are about 93 <code>threads</code>, 154 <code>ram</code>, 94 <code>java_other_options</code> and 165 <code>tmp_dir</code> lookups, plus free-form values such as <code>options = -t %(cluster_cpu)s</code>. <code>Job.is_up2date</code> returns False as soon as any upstream job is scheduled, so one changed hash cascades to every child job.</p>
-  <p class="callout">A retry, whether started by a monitor or by a user, can't change memory or threads without changing the scientific <code>.sh</code>. With today's hashing, that also moves the job's <code>.done</code> path. So resource values must become runtime variables before automatic retries can work.</p>
-</section>
-
-<section>
-  <h2>Design in four parts</h2>
-  <div class="parts">
-    <div class="part"><span class="letter">A</span><strong>Resource tokens</strong><p>Resource values in commands become <code>${GP_RES_…}</code> variables. The hash sees only the name.</p><span class="sched">all schedulers</span></div>
-    <div class="part"><span class="letter">B</span><strong>Attempt history in JOB_LIST</strong><p>Each submission row records attempt, replaced id, failure class and resources. The last row for a job name is its current attempt.</p><span class="sched">all schedulers</span></div>
-    <div class="part"><span class="letter">C</span><strong>Escalation at regeneration</strong><p>Running <code>genpipes</code> again raises resources only for jobs that failed for a resource reason.</p><span class="sched">all schedulers</span></div>
-    <div class="part"><span class="letter">D</span><strong>Restart monitor</strong><p>Checks the jobs regularly, resubmits resource failures with more resources and reconnects their descendants.</p><span class="sched">SLURM · then PBS · batch loop</span></div>
-  </div>
-
-  <h3>A · Resource tokens</h3>
+  <h2>Cause</h2>
   <ul>
-    <li>The ini lists which keys are resources, by class: CPU (<code>cluster_cpu</code>, <code>threads</code>, <code>*_threads</code>), memory (<code>cluster_mem</code>, <code>ram</code>, <code>*_ram</code>, <code>max_records_in_ram</code>), time (<code>cluster_walltime</code>), and opaque (<code>tmp_dir</code>: kept out of the hash, never scaled).</li>
-    <li><strong><code>java_other_options</code> stays hashed.</strong> Its content depends on the tool behind it, so only the known JVM resource flags inside it (<code>-Xmx</code>, <code>-Xms</code>, <code>-XX:ParallelGCThreads</code>, <code>-XX:ConcGCThreads</code>, <code>-XX:ActiveProcessorCount</code>) become tokens. Everything else stays in the hash. In the worst case, a change that only affects speed still reruns the job, which is today's behaviour.</li>
-    <li><code>global_get</code> returns a <code>ResourceInt</code>/<code>ResourceStr</code>. It keeps the real value for Python logic and renders as a token in commands. Arithmetic falls back to a literal value, which behaves exactly as it does today.</li>
-    <li>A custom <code>configparser.Interpolation</code> turns <code>%(cluster_cpu)s</code> inside free-form options into tokens, so the inis don't need edits.</li>
-    <li><code>Job</code> collects its tokens into <code>job.resources</code>. The scheduler reads resources from there, which is what makes per-job escalation possible.</li>
-    <li>Values are exported in the submission file. The scientific <code>.sh</code> carries <code>: "${VAR:=default}"</code> lines, so it can still be run by hand.</li>
-    <li>Per-step opt-out <code>hash_resources = threads</code> puts values back in the hash for tools whose output depends on the thread count.</li>
-    <li><strong>Migration:</strong> if the new <code>.done</code> is missing but the legacy-hash <code>.done</code> exists, accept it and create the new one. Upgrading mid-project then reruns nothing.</li>
-    <li><code>.done</code> gets JSON content (hash, resources, attempt, job id, version). Up-to-date checks still only test that it exists.</li>
+    <li>The <code>.done</code> name is <code>md5(command_with_modules)</code>. <code>cluster_*</code> values aren't hashed, but the inis copy them into commands: <code>threads = %(cluster_cpu)s</code>, <code>ram = %(cluster_mem)s</code> (which becomes <code>-Xmx</code>), <code>options = -t %(cluster_cpu)s</code>.</li>
+    <li>So a resource change changes the hash, the job reruns, and <code>is_up2date</code> cascades to every child job.</li>
+    <li>A Java heap error can't be fixed through <code>cluster_mem</code> alone: <code>-Xmx</code> is written into the command, and the job ends as <code>FAILED</code>.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Design</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>What</th><th>SLURM</th><th>PBS</th><th>Batch</th></tr></thead>
+    <tbody>
+      <tr><td>A. Explicit resources</td><td>Resource values become <code>${GP_RES_…}</code> variables; the hash sees only the names</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>B. Attempt history</td><td><code>JOB_LIST</code> gets a header and attempt columns</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>C. Escalation at regeneration</td><td>Rerunning <code>genpipes</code> raises resources for jobs that failed for memory or time</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>D. Restart monitor</td><td>Resubmits those failures automatically and reconnects the waiting jobs</td><td class="yes">opt-in</td><td class="no">–</td><td class="no">retry loop</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>A · Explicit resources</h3>
+<pre><code>ram   = global_conf.resource(section, "ram")        # "${GP_RES_&lt;section&gt;__ram}", plain str
+ram_g = global_conf.resource_value(section, "ram")  # "16G", only for Python logic
+command = f"java -Xmx{ram} -jar picard.jar MarkDuplicates ..."</code></pre>
+  <ul>
+    <li>The variable is plain text, so every way of building a string gives the same result. A <code>str</code>/<code>int</code> subclass doesn't work: <code>join</code>, <code>+</code> and <code>%d</code> use the real value. All ~300 call sites are converted.</li>
+    <li><code>tmp_dir</code> is never hashed. <code>java_other_options</code> stays hashed, except the JVM resource flags inside it (<code>-Xmx</code>, <code>-Xms</code>, GC thread counts).</li>
+    <li><strong>ini cleanup:</strong> <code>options = -t %(cluster_cpu)s</code> becomes a <code>threads</code> key. <code>--sanity-check</code> reports an error when an option copies in a resource value.</li>
+    <li>Values are exported at submission through the heredoc path. The <code>.sh</code> keeps defaults so it can be run by hand.</li>
+    <li><code>hash_resources = threads</code> keeps thread counts in the hash for tools whose output depends on them. <code>.done</code> becomes JSON.</li>
+    <li><strong>Migration:</strong> <code>genpipes tools migrate_done &lt;dir&gt; [--dry-run] [--keep-legacy]</code> renames 6.x <code>.done</code> files to their 7.0 names. Going back to 6.x needs <code>--keep-legacy</code>.</li>
   </ul>
 
-  <h3>B · Attempt history in JOB_LIST</h3>
-  <p><code>JOB_LIST</code> already has one row per submitted job (id, name, dependency ids, <code>.o</code> path), which is enough to rebuild the DAG. It becomes the source of truth. There is no SQLite: its locking is unreliable on Lustre/NFS. New columns are appended, and existing readers use columns 0–3 by position:</p>
-<pre><code>id  name  deps  o_path  attempt  replaces_id  failure_class  resources_json</code></pre>
+  <h3>B · Attempt history</h3>
+<pre><code>job_id  job_name  dependencies  output  attempt  replaces_id  failure_class  resources</code></pre>
   <ul>
-    <li>Each restart appends a row, so the last row for a job name is its current attempt. <code>cancel_running_pipeline</code> then also cancels the retries.</li>
-    <li>One classifier, <code>core/failure.py</code>:
-      <ul>
-        <li>SLURM: the <code>sacct</code> state.</li>
-        <li>PBS: the scheduler's "exceeded limit" messages plus the exit code.</li>
-        <li>Batch: exit code 137.</li>
-        <li>All schedulers: <code>retry_fail_patterns</code> in the <code>.o</code>, such as <code>java.lang.OutOfMemoryError</code>.</li>
-      </ul>
-    </li>
-    <li>Classes: <code>MEMORY</code> and <code>TIME</code> (escalate), <code>NODE</code> (rerun as is), <code>OTHER</code> (never retried).</li>
+    <li>Each restart appends a row; the last row for a job name is its current attempt. Readers use column names.</li>
+    <li>Failure classes come from a pure, tested <code>core/failure.py</code>: <code>sacct</code> states on SLURM, Torque messages on PBS, exit 137 in batch, plus log patterns such as <code>java.lang.OutOfMemoryError</code>. The classes are <code>MEMORY</code>/<code>TIME</code> (escalate), <code>NODE</code> (rerun as is) and <code>OTHER</code> (never retried).</li>
   </ul>
 
   <h3>C · Escalation at regeneration</h3>
-  <p><code>create_jobs</code> reads every <code>job_list.*</code> file in <code>job_output/</code>. When a job is not up to date and its last attempt failed with <code>MEMORY</code> or <code>TIME</code>, only that job's resources are scaled, and the change is logged:</p>
 <pre><code>bwa_mem2.S1 failed OUT_OF_MEMORY (attempt 2/3): cluster_mem 32G -> 48G, ram 30G -> 45G</code></pre>
-  <p>Thanks to A, samples S2 to Sn keep their hashes. New flags: <code>--no-escalate</code> and <code>--reset-attempts</code>. C and the monitor use the same policy, per step with <code>[DEFAULT]</code> as fallback, and the caps come from the cluster inis:</p>
+  <ul>
+    <li>Only the failed job's resources change; its hash doesn't, so other samples aren't affected. Flags: <code>--no-escalate</code>, <code>--reset-attempts</code>.</li>
+    <li><strong>Duplicate guard:</strong> jobs whose latest attempt is still pending or running are skipped (<code>--force</code> overrides).</li>
+  </ul>
 <pre><code>[DEFAULT]
-retry_max_attempts    = 3          # including the first; 1 disables retries
+retry_max_attempts    = 3          # including the first; 1 disables
 retry_on              = MEMORY,TIME,NODE
-retry_mem_factor      = 1.5        # cluster_mem and every mem-class token
+retry_mem_factor      = 1.5        # also scales ram/-Xmx
 retry_walltime_factor = 2
 retry_cpu_factor      = 1
 retry_fail_patterns   = java.lang.OutOfMemoryError,std::bad_alloc,Cannot allocate memory
-monitor_interval      = 10m        # grows to monitor_max_interval when nothing changes
+monitor_interval      = 10m
 monitor_max_interval  = 30m
-retry_max_mem         = 750G       # caps set per cluster in common_ini/*.ini
+retry_max_mem         = 750G       # caps per cluster in common_ini/*.ini
 retry_max_walltime    = 7-00:00:00
 retry_max_cpu         = 192</code></pre>
 
-  <h3>D · Restart monitor</h3>
-  <p><code>genpipes tools monitor &lt;job_list&gt;</code> does two things.</p>
-  <p><strong>1. A check every 10 minutes</strong> (<code>monitor_interval</code>):</p>
-  <div class="diagram">
+  <h3>D · Restart monitor (Slurm, <code>--monitor</code>)</h3>
+  <p>A pure <code>reconcile(dag, states, history, policy) → actions</code>, plus a Slurm adapter with four operations: query, submit, update dependencies, cancel.</p>
+  <div class="diagrams">
+    <div class="diagram">
 <pre class="mermaid">
 flowchart TD
-  A["Wake up (every 10 min)"] --> B["Read JOB_LIST:<br/>which jobs exist and which depends on which"]
-  B --> C["Ask SLURM the state of every job<br/>(one sacct call)"]
-  C --> D{"Did any job fail?"}
-  D -- yes --> E["Handle each failed job<br/>(next chart)"]
-  D -- no --> F{"Are all jobs finished?"}
+  A["Wake up (every 10 min)"] --> B["Read JOB_LIST"]
+  B --> C["One sacct call for all jobs"]
+  C --> D{"Any job failed?"}
+  D -- yes --> E["Handle each failed job"]
+  D -- no --> F{"All jobs finished?"}
   E --> F
-  F -- "no: sleep 10 min" --> A
-  F -- yes --> G["Print a summary and stop"]
+  F -- no --> A
+  F -- yes --> G["Summary, stop"]
 </pre>
-  </div>
-  <p><strong>2. The decision for each failed job:</strong></p>
-  <div class="diagram">
+    </div>
+    <div class="diagram">
 <pre class="mermaid">
 flowchart TD
-  A["A job failed"] --> B{"Why?<br/>(SLURM state + its log)"}
-  B -- "out of memory or out of time" --> C{"Retries left and<br/>under the cluster limits?"}
-  B -- "node crashed" --> C
-  B -- "any other error<br/>(bug, bad input)" --> X["Give up on this job:<br/>cancel the jobs waiting on it<br/>and report it"]
+  A["A job failed"] --> B{"Why?"}
+  B -- "memory / time / node" --> C{"Retries left,<br/>under caps?"}
+  B -- "other error" --> X["Give up: cancel waiting jobs, report"]
   C -- no --> X
-  C -- yes --> R["Resubmit it with more memory or time<br/>(it gets a new job id)"]
-  R --> W["Jobs waiting on the old id<br/>now wait on the new id"]
+  C -- yes --> R["Resubmit with more resources (new id)"]
+  R --> W["Waiting jobs now wait on the new id"]
 </pre>
+    </div>
   </div>
-  <p><strong>Example.</strong> The chain is <code>trim.S1 → align.S1 → markdup.S1 → call.S1</code>, and <code>markdup.S1</code> (job 1003) runs out of memory at 16G.</p>
-  <div class="tbl"><table>
-    <thead><tr><th>Check</th><th>What SLURM reports</th><th>What the monitor does</th></tr></thead>
-    <tbody>
-      <tr><td>10:00</td><td><code>1003 OUT_OF_MEMORY</code>; <code>call.S1</code> waiting on 1003</td><td>Resubmits <code>markdup.S1</code> with 24G as job 1005 and adds a <code>JOB_LIST</code> row (attempt 2, replaces 1003). Changes <code>call.S1</code> to wait on 1005.</td></tr>
-      <tr><td>10:10</td><td>1005 running, <code>call.S1</code> waiting</td><td>Nothing failed, so it sleeps.</td></tr>
-      <tr><td>Later</td><td>All jobs completed</td><td>Prints a summary and stops.</td></tr>
-    </tbody>
-  </table></div>
-  <p>The details of each part:</p>
-  <ol class="steps">
-    <li><strong>Lock.</strong> <code>job_output/.monitor.lock</code> holds host, pid and a heartbeat time. Another monitor can take over only when the heartbeat is older than 3 cycles. Don't rely on <code>flock</code> on Lustre.</li>
-    <li><strong>DAG.</strong> Rebuilt from <code>JOB_LIST</code> (plus <code>chunk_N.out</code> for chunked submissions), taking the latest row per job name.</li>
-    <li><strong>One scheduler query per cycle:</strong> <code>sacct -X -P -j &lt;ids&gt;</code> on SLURM, <code>qstat -f -x</code> on PBS.</li>
-    <li><strong>Retry.</strong> Write <code>restart_N.submit</code> with scaled resources and reuse the scientific <code>.sh</code>. Run <code>sbatch</code> with no dependency: the job ran, so its parents had completed. Append its <code>JOB_LIST</code> row right away, so a crash mid-cycle can't submit the job twice. <code>--comment=gp:&lt;job&gt;:&lt;attempt&gt;</code> lets a restarted monitor find attempts it submitted but never recorded.</li>
-    <li><strong>Reconnect descendants, in DAG order.</strong> A running job never needs reconnecting: its <code>afterok</code> dependencies were met before it started. Pending descendants get <code>scontrol update Dependency=</code> with the current ids, which keeps their queue priority. Descendants that were already cancelled are resubmitted.</li>
-    <li><strong>Keep children pending.</strong> Rorqual, fir and narval all set <code>kill_invalid_depend</code>, so by default Slurm cancels the children of a failed job immediately. With <code>--monitor</code>, jobs that have dependencies are submitted with <code>--kill-on-invalid-dep=no</code>, which overrides the cluster setting for that job (confirmed in the <code>sbatch</code> man page on all three). They stay pending until the monitor reconnects them. If the monitor stops for good, the final-failure path, a <code>log_report</code> warning and <code>monitor --cleanup</code> make sure they don't stay pending for ever.</li>
-    <li><strong>Throttle and respect limits.</strong> Rorqual limits each user to bursts of 50 scheduler requests, then about 10 per second. The monitor spaces its <code>sbatch</code> and <code>scontrol</code> calls (at most 5 per second). It also checks that there is room under the 1000-job submit limit before resubmitting, and waits for the next check if there isn't.</li>
-    <li><strong>Late submissions.</strong> A pending job still pointing at a replaced id is fixed in the same pass. That covers children submitted after the retry by <code>chunk_and_submit_genpipes</code>. Running a cycle twice does no harm.</li>
-    <li><strong>Final failure:</strong> cancel the pending descendants and record the reason. The monitor stops when every job's latest row is completed or a final failure.</li>
-  </ol>
-  <h3>Where the monitor runs</h3>
-  <p>Alliance does not allow long-running processes on login nodes. <code>sbatch</code> works from inside jobs (confirmed by the team).</p>
-  <ol class="steps">
-    <li><strong>One long, small monitor job (preferred).</strong> 1 CPU, about 1 GB, 24 h. It runs the check loop itself. Shortly before its walltime, if the pipeline isn't finished, it submits its replacement and exits. Narval asks for jobs of at least one hour and at most 1000 jobs per user (from a search snippet of the Narval wiki page). A 5-minute job resubmitted every 10 minutes would conflict with that, and each run would also wait in the queue. Cost: about 24 core-hours per day per pipeline. Later refinement: one monitor per user watching all their active pipelines.</li>
-    <li><strong><code>scrontab</code></strong>, Slurm's own scheduler-side cron. <strong>Not available on rorqual, fir or narval:</strong> "scrontab is disabled on this cluster". Kept only as an option for other sites.</li>
-    <li><strong>In the foreground</strong>, for a local run or a user's own server.</li>
-  </ol>
-  <p>Batch mode has no monitor; each job is wrapped in a memory-retry loop instead.</p>
-
-  <h3>Polling frequency</h3>
+  <p><strong>Example:</strong> <code>markdup.S1</code> (job 1003) runs out of memory at 16G. At the next check the monitor resubmits it with 24G as job 1005, appends a <code>JOB_LIST</code> row (attempt 2, replaces 1003) and points <code>call.S1</code> at 1005.</p>
   <ul>
-    <li><strong>One state query per check:</strong> a single <code>sacct -X -P -j &lt;ids&gt;</code> for every current id. <code>sacct</code> reads Slurm's accounting database, not the main scheduler process (<code>slurmctld</code>), which is the one that slows down for everyone when it's flooded.</li>
-    <li><strong><code>squeue</code> and <code>scontrol</code> only when a job failed</strong>, to reconnect its pending descendants.</li>
-    <li><strong>Adaptive:</strong> 10 min by default, growing to 30 min after 3 checks in a row with no change, and back to 10 min after any change. Values below 2 min are refused.</li>
-    <li>For comparison, the nf-core configuration for Alliance clusters has Nextflow poll every 60 s. This design is 10–30 times lighter, and a few minutes of delay is short compared with how long a job runs before it hits a limit.</li>
+    <li><strong>Lock:</strong> one per <code>JOB_LIST</code>, created atomically and kept alive with a heartbeat. No <code>flock</code>, which is unreliable on Lustre.</li>
+    <li><strong>No double submission:</strong> the row is written right after <code>sbatch</code>, and <code>--comment=gp:&lt;job&gt;:&lt;attempt&gt;</code> lets a restarted monitor find attempts it already submitted.</li>
+    <li><strong>Waiting jobs:</strong> with <code>--monitor</code>, jobs that have dependencies get <code>--kill-on-invalid-dep=no</code>. Every checked cluster sets <code>kill_invalid_depend</code>, which would otherwise cancel them as soon as their parent fails. Pending ones are reconnected with <code>scontrol update</code>, cancelled ones are resubmitted, and on a final failure they're cancelled (plus <code>monitor --cleanup</code>).</li>
+    <li><strong>Late submissions:</strong> a job submitted later with an old id is fixed at the next check.</li>
+    <li><strong>Limits:</strong> at most 5 scheduler calls per second, and a check that there's room under the 1000-job limit.</li>
+    <li><strong>Files per attempt:</strong> a new <code>restart_N.submit</code> and <code>restart_N.o</code>; the scientific <code>.sh</code> is reused.</li>
+    <li><strong>Hosting:</strong> one 1-CPU, about 1 GB, 24 h job that resubmits itself until the pipeline is done (<code>scrontab</code> is disabled, login nodes are off-limits). Cost: about 24 core-hours per day per pipeline.</li>
+    <li><strong>Polling:</strong> one <code>sacct</code> per check, every 10 min, growing to 30 min when idle. Nextflow's Alliance config polls every 60 s.</li>
   </ul>
-
-  <h3>Files per attempt</h3>
-  <div class="tbl"><table>
-    <thead><tr><th>File</th><th>On retry</th><th>Why</th></tr></thead>
-    <tbody>
-      <tr><td>Scientific .sh</td><td>Reused unchanged</td><td>Resources are <code>GP_RES_*</code> variables, so the command, its hash and <code>JOB_DONE</code> stay the same.</td></tr>
-      <tr><td>Submission file</td><td>New: <code>restart_N.submit</code></td><td>The <code>#SBATCH</code> resources and <code>GP_RES_*</code> values differ.</td></tr>
-      <tr><td>.o log</td><td>New: <code>restart_N.o</code></td><td>SLURM overwrites the file unless you pass <code>--open-mode=append</code>. Several epilogues in one file would confuse <code>log_report</code> and mix in the earlier failure. <code>JOB_LIST</code> links each attempt to its <code>.o</code>.</td></tr>
-    </tbody>
-  </table></div>
-</section>
-
-<section>
-  <h2>How the parts work together</h2>
-  <ul>
-    <li><strong>The user does nothing.</strong> The monitor retries resource failures while the pipeline runs.</li>
-    <li><strong>The monitor gives up or isn't used.</strong> The user runs <code>genpipes</code> again, and escalation at regeneration starts from the <code>JOB_LIST</code> history.</li>
-    <li><strong>The user edits resources by hand.</strong> Thanks to the resource variables, done jobs and their descendants are not rerun.</li>
-  </ul>
-</section>
-
-<section>
-  <h2>Alternatives considered</h2>
-  <div class="tbl"><table>
-    <thead><tr><th>Option</th><th>Why not chosen</th></tr></thead>
-    <tbody>
-      <tr><td>In-job retry from the EXIT trap (rev. 1)</td><td>Can't run when the job is SIGKILLed at walltime or killed outright by PBS at its memory limit. Needs <code>sbatch</code> from every job. Children submitted after the retry still point at the old id. The logic would be split between bash and Python.</td></tr>
-      <tr><td>SQLite for the DAG</td><td><code>JOB_LIST</code> already has the DAG, and SQLite locking is unreliable on Lustre/NFS.</td></tr>
-      <tr><td>Appending restarts to the .sh</td><td>Running the script again would resubmit them.</td></tr>
-      <tr><td>Login-node daemon</td><td>Not allowed by Alliance policy. Replaced by a monitor job.</td></tr>
-      <tr><td>Short monitor job every 10 min</td><td>Conflicts with Narval's one-hour minimum, and each run waits in the queue, so checks would be irregular. Replaced by one long monitor job.</td></tr>
-      <tr><td>Requeue the same job id</td><td>Users cannot increase a pending job's <code>TimeLimit</code>, so TIMEOUT can't be fixed. Requeue is also disabled on rorqual, fir and narval (<code>JobRequeue = 0</code>).</td></tr>
-      <tr><td>Sentinel job per job</td><td>Doubles the job count, and <code>cluster_max_jobs</code> is 3000 on rorqual.</td></tr>
-      <tr><td>Search-and-replace hashing</td><td>Fragile: a value like <code>8</code> can appear anywhere in a command.</td></tr>
-      <tr><td>Explicit API at each call site</td><td>Means editing about 300 call sites. Tokens give the same result through the config layer.</td></tr>
-    </tbody>
-  </table></div>
 </section>
 
 <section>
   <h2>Phases</h2>
   <div class="tbl"><table>
-    <thead><tr><th>Phase</th><th>Content</th><th>Needs</th><th>What users see</th></tr></thead>
+    <thead><tr><th>Phase</th><th>Content</th></tr></thead>
     <tbody>
-      <tr><td>0 · Foundations</td><td><code>job.resources</code> read by the scheduler; failure classifier; new <code>JOB_LIST</code> columns; JSON in <code>.done</code>; pytest scaffold; remove <code>daemon</code> from <code>-j</code></td><td>–</td><td><code>-j daemon</code> no longer offered</td></tr>
-      <tr><td>1 · Neutral hashing</td><td>Tokens, interpolation, exports, legacy migration, opt-out, sanity-check warnings</td><td>0</td><td>Resource changes stop rerunning done jobs</td></tr>
-      <tr><td>2 · Regen escalation</td><td>Part C, reading the <code>JOB_LIST</code> history</td><td>0 (1 for <code>-Xmx</code>)</td><td>Rerunning <code>genpipes</code> raises resources for failed jobs</td></tr>
-      <tr><td>3 · Restart monitor</td><td>Reconciliation, lock, adaptive polling, long monitor job that renews itself. SLURM first, then PBS; batch retry loop</td><td>1, 2</td><td>Failed jobs retry without user action; opt-in with <code>--monitor</code> until CIT validates it</td></tr>
-      <tr><td>4 · Reporting</td><td><code>log_report</code> groups attempts; project tracking records attempts inside the run's single operation; docs</td><td>3</td><td>Attempt history in reports</td></tr>
+      <tr><td>0 · Safety net</td><td>Snapshot harness (each pipeline generated from <code>cit.ini</code>, with every job's command and hash recorded), failure classifier with fixtures, <code>job.resources</code>, removal of <code>-j daemon</code>.</td></tr>
+      <tr><td>1 · Explicit resources</td><td>API and call-site conversion, ini cleanup, exports, <code>hash_resources</code>, JSON <code>.done</code>, <code>JOB_LIST</code> header, <code>migrate_done</code>. The snapshot diff must show only values replaced by variables.</td></tr>
+      <tr><td>2 · Escalation</td><td>Part C and the duplicate guard, on all schedulers.</td></tr>
+      <tr><td>3 · Restart monitor</td><td><code>reconcile()</code>, Slurm adapter, lock, monitor job, batch retry loop. Opt-in until CIT validates it.</td></tr>
+      <tr><td>4 · Reporting</td><td>Attempts in <code>log_report</code> and project tracking (one operation per run). Default resources suggested from recorded usage.</td></tr>
     </tbody>
   </table></div>
-  <p class="muted">Phase 2 can ship before phase 1 for scheduler-level resources (<code>cluster_mem</code>, <code>cluster_walltime</code>). Java heap failures need phase 1.</p>
+  <p class="muted">Tests: the snapshot harness; unit tests for hashing, migration, escalation and the classifier; <code>reconcile()</code> against a fake scheduler (crash mid-check, late children, two monitors, the job limit); CIT runs that go over their memory and walltime on purpose.</p>
 </section>
 
 <section>
-  <h2>Testing</h2>
-  <ul>
-    <li><strong>Unit tests (new):</strong> the hash is stable when threads, ram or tmp_dir change and changes when a scientific option changes; opt-out; legacy migration; escalation math (units, <code>per cpu</code>, caps); classifier on recorded <code>sacct</code>, PBS and Java logs.</li>
-    <li><strong>Monitor with a fake scheduler:</strong> uses recorded <code>JOB_LIST</code> and <code>sacct</code> output. Checks which jobs are retried, reconnected, resubmitted or cancelled; DAG order; a crash mid-cycle followed by a restart, with no double submission; a late child pointing at a replaced id; and two monitors started at once.</li>
-    <li><strong>Script snapshots:</strong> generate the <code>rnaseq_light</code>, <code>dnaseq</code> and <code>chipseq</code> scripts before and after. The only differences should be tokens and exports.</li>
-    <li><strong>On a cluster (CIT):</strong> a test step that goes over its memory and walltime, plus a chunked submission where the failure happens before the children are submitted.</li>
-  </ul>
+  <h2>PBS (Abacus)</h2>
+  <p>PBS gets parts A, B, C and the duplicate guard, but <strong>not the monitor</strong>. That would need a PBS adapter, a way to host the monitor and Abacus IT's involvement, all thrown away after a move to Slurm. <code>--monitor</code> on PBS stops with a clear message.</p>
+  <h3>Features that need Slurm: the case for migrating Abacus</h3>
+  <ol>
+    <li><strong>Automatic retries.</strong> On Abacus, the user still has to rerun <code>genpipes</code>.</li>
+    <li><strong>Reliable failure detection:</strong> Slurm job states, versus parsing PBS logs.</li>
+    <li><strong>Accurate usage data.</strong> The PBS epilogue estimates requested memory from the CPU count (×5G, or ×15G on <code>lm</code>) and records no average memory or disk I/O, so right-sizing is unreliable.</li>
+    <li><strong>Epilogue changes without IT.</strong> <code>#PBS -T GenPipes</code> needs Abacus IT to redeploy every change.</li>
+    <li><strong>Dependency control:</strong> keeping waiting jobs pending and reconnecting them to a new job.</li>
+    <li><strong>One code path</strong> instead of two to maintain and test.</li>
+  </ol>
 </section>
 
 <section>
   <h2>Open questions</h2>
-  <ol class="questions">
-    <li><strong>Hosting the monitor on Alliance clusters.</strong> <code>sbatch</code> from inside a job is confirmed, and <code>scrontab</code> is disabled on rorqual, fir and narval. Still to do: repeat the checks on nibi (commands under cluster facts). Ask Alliance support whether a 1-CPU, 24 h, mostly idle monitor job is acceptable, and whether one <code>sacct</code> every 10–30 min is fine.</li>
-    <li><strong>Thread-dependent tools.</strong> Which steps give different output with a different thread count? They get <code>hash_resources = threads</code> by default.</li>
-    <li><strong>PBS/Abacus.</strong> How would a monitor run there? What happens to <code>afterok</code> children when the parent fails under Torque? Does <code>qalter -W depend=</code> work for reconnecting them?</li>
-    <li><strong>Defaults.</strong> Default <code>retry_max_attempts</code>, factors, <code>monitor_interval</code>, and per-cluster caps.</li>
-    <li><strong>JVM resource flags.</strong> Is <code>-Xmx</code>, <code>-Xms</code>, <code>-XX:ParallelGCThreads</code>, <code>-XX:ConcGCThreads</code>, <code>-XX:ActiveProcessorCount</code> the right list? Are there tools where one of them changes the output?</li>
+  <ol>
+    <li><strong>Alliance support:</strong> is a mostly idle 24 h monitor job acceptable, and is one <code>sacct</code> every 10–30 min fine?</li>
+    <li>Which tools' output depends on the thread count?</li>
+    <li>Is the JVM resource flag list right?</li>
+    <li>Defaults: attempts, factors, intervals, caps per cluster.</li>
+    <li>Abacus <code>.o</code> files from jobs killed for memory and for walltime.</li>
+    <li>Check nibi.</li>
   </ol>
 </section>
 
 <section>
   <h2>Cluster facts</h2>
-  <p class="muted">Checked on 2026-10-26. Nibi is still to check.</p>
   <div class="tbl"><table>
-    <thead><tr><th>Setting</th><th>rorqual</th><th>fir</th><th>narval</th><th>Effect on the design</th></tr></thead>
+    <thead><tr><th></th><th>rorqual</th><th>fir</th><th>narval</th></tr></thead>
     <tbody>
-      <tr><td>scrontab</td><td>disabled</td><td>disabled</td><td>disabled</td><td>The monitor runs as one long job.</td></tr>
-      <tr><td>crontab</td><td>not allowed</td><td>allowed (login node)</td><td>not allowed</td><td>Not used: it's tied to one login node, and fir is the only cluster that allows it.</td></tr>
-      <tr><td>DependencyParameters</td><td><code>kill_invalid_depend</code></td><td><code>kill_invalid_depend</code></td><td><code>kill_invalid_depend</code></td><td>Children of a failed job are cancelled immediately unless submitted with <code>--kill-on-invalid-dep=no</code>. GenPipes sets that flag when <code>--monitor</code> is on.</td></tr>
-      <tr><td>JobRequeue</td><td><code>0</code></td><td><code>0</code></td><td><code>0</code></td><td>The requeue alternative is not possible.</td></tr>
-      <tr><td>MinJobAge</td><td><code>300 sec</code></td><td><code>30 sec</code></td><td><code>300 sec</code></td><td>Finished jobs leave <code>squeue</code> quickly. Job state comes from <code>sacct</code>, and rebuilt dependencies never name completed jobs.</td></tr>
-      <tr><td>KillWait</td><td><code>60 sec</code></td><td><code>30 sec</code></td><td><code>60 sec</code></td><td>–</td></tr>
-      <tr><td>Request rate limit</td><td>bucket 50, 10/s</td><td>bucket 50, 10/s</td><td>none</td><td>Per user on rorqual and fir: bursts of 50 scheduler requests, then about 10 per second. The monitor throttles itself the same way everywhere. The GenPipes script's <code>sleep 0.1</code> between submissions is already close to this limit.</td></tr>
-      <tr><td>Max submitted jobs</td><td><code>1000</code> per account</td><td>none in accounts or QOS</td><td><code>1000</code> per account</td><td>Where a limit exists, the monitor checks for room first.</td></tr>
-      <tr><td>Longest partition</td><td>–</td><td>28 days (default 1 h)</td><td>7 days</td><td>A 24 h monitor job fits.</td></tr>
-      <tr><td>Slurm version</td><td><code>25.11.8</code></td><td><code>26.05.4</code></td><td><code>25.11.8</code></td><td>–</td></tr>
+      <tr><td>scrontab</td><td>disabled</td><td>disabled</td><td>disabled</td></tr>
+      <tr><td>kill_invalid_depend</td><td>yes</td><td>yes</td><td>yes</td></tr>
+      <tr><td>JobRequeue</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>MinJobAge</td><td>300 s</td><td>30 s</td><td>300 s</td></tr>
+      <tr><td>Request rate limit</td><td>50 burst, 10/s</td><td>50 burst, 10/s</td><td>none</td></tr>
+      <tr><td>Max submitted jobs</td><td>1000</td><td>none found</td><td>1000</td></tr>
+      <tr><td>Slurm</td><td>25.11.8</td><td>26.05.4</td><td>25.11.8</td></tr>
     </tbody>
   </table></div>
-  <p>To repeat these checks on another cluster:</p>
-<pre><code>scrontab -l
-scontrol show config | grep -Ei "^(DependencyParameters|JobRequeue|MinJobAge|KillWait|SlurmctldParameters|SLURM_VERSION)"
-sacctmgr -nP show assoc user=$USER format=account,maxjobs,maxsubmit</code></pre>
-</section>
-
-<section>
-  <h2>Decisions</h2>
-  <ol class="questions">
-    <li><strong>Project tracking: one operation per run, not per attempt.</strong> A GenPipes run stays a single operation. A job's retries are recorded as attempts of that job inside it (attempt number, failure class, resources, scheduler id), and the job's final state is its last attempt.</li>
-    <li><strong><code>java_other_options</code> stays in the hash.</strong> Its content depends on the tool, so only known JVM resource flags inside it become tokens. The flag list is still an open question.</li>
-    <li><strong>Remove <code>daemon</code> from the <code>-j</code> choices.</strong> It is a leftover: a <code>DaemonScheduler</code> drafted in 2014 that printed the pipeline as JSON for an external runner. It was dropped from the options in 2015 and the class was deleted in 2024, but the choice stayed in <code>core/pipeline.py</code>, so <code>-j daemon</code> currently fails. Done in phase 0.</li>
-  </ol>
+  <p class="muted">Checked 2026-10-26. Council review 2026-10-27: Contrarian led to the explicit API, the duplicate guard and the per-<code>JOB_LIST</code> lock; First Principles to the hashing fix first and the monitor last; Executor to the snapshot harness first; Expansionist to the pure <code>reconcile()</code>.</p>
 </section>
 </main>
